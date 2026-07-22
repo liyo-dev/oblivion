@@ -33,8 +33,16 @@ public class EnemyProjectile : MonoBehaviour
     private System.Collections.Generic.List<GameObject> _attachedVfx;
     
     private Collider[] _playerDetectionBuffer = new Collider[8];
+    private RaycastHit[] _sweepHitBuffer = new RaycastHit[8];
     private int _playerLayerMask;
     private float _nextProximityCheck;
+    // FIX INC-027: posición del último chequeo de proximidad, usada para barrer (sweep) todo el
+    // tramo recorrido desde entonces. Antes se comprobaba solo un punto instantáneo cada 0.05s;
+    // con rocas rápidas (rockSpeed=18, rockRainSpeed=12) el proyectil podía avanzar más que el
+    // radio de detección entre dos chequeos y "pasar por encima" del jugador sin llegar a
+    // solaparse con él en ningún muestreo puntual.
+    private Vector3 _lastCheckedPosition;
+    private bool _hasLastCheckedPosition;
 
     // Pool estático para VFX de impacto — evita GC spikes cuando muchos proyectiles mueren a la vez
     private static readonly Dictionary<EntityId, Stack<GameObject>> _hitFxPool = new Dictionary<EntityId, Stack<GameObject>>(4);
@@ -104,6 +112,7 @@ public class EnemyProjectile : MonoBehaviour
         damage = dmg >= 0f ? dmg : baseDamage;
         initialized = true;
         _spawnTime = Time.time;
+        _hasLastCheckedPosition = false; // reinicia el sweep de proximidad (INC-027)
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"[EnemyProjectile] Inicializado — daño: {damage}, velocidad: {speed}");
@@ -206,61 +215,106 @@ public class EnemyProjectile : MonoBehaviour
     {
         if (hasHit) return;
 
-        float detectionRadius = 0.8f;
-        int hitCount = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, _playerDetectionBuffer, _playerLayerMask);
+        const float detectionRadius = 0.8f;
+        Vector3 currentPos = transform.position;
 
-        if (hitCount > 0)
+        // FIX INC-027: en lugar de comprobar solo el punto actual, barremos (SphereCast) desde la
+        // última posición chequeada hasta la actual. Así, aunque el proyectil avance más que el
+        // radio de detección entre dos chequeos (rocas rápidas), no puede "saltarse" al jugador.
+        int hitCount;
+        if (_hasLastCheckedPosition)
         {
-            for (int i = 0; i < hitCount; i++)
+            Vector3 segment = currentPos - _lastCheckedPosition;
+            float segmentLength = segment.magnitude;
+
+            if (segmentLength > 0.001f)
             {
-                var hit = _playerDetectionBuffer[i];
+                hitCount = Physics.SphereCastNonAlloc(_lastCheckedPosition, detectionRadius, segment / segmentLength,
+                    _sweepHitBuffer, segmentLength, _playerLayerMask);
 
-                var playerHealth = hit.GetComponent<PlayerHealthSystem>() ?? hit.GetComponentInParent<PlayerHealthSystem>();
-                if (playerHealth != null)
+                for (int i = 0; i < hitCount; i++)
                 {
-                    // Respetar escudo: si el jugador está defendiendo, bloquear sin dañar
-                    var shield = hit.GetComponentInParent<PlayerShieldController>();
-                    if (shield != null && shield.IsDefending)
-                    {
-                        hasHit = true;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                        Debug.Log("[EnemyProjectile] 🛡️ Bloqueado por escudo (proximity)");
-#endif
-                        DestroyProjectile();
+                    if (TryResolvePlayerHit(_sweepHitBuffer[i].collider))
                         return;
-                    }
-
-                    hasHit = true;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    Debug.Log($"[EnemyProjectile] 🎯 Impacto JUGADOR por proximidad: {damage} daño");
-#endif
-                    playerHealth.TakeDamage(damage, _bypassInvulnerabilityOnHit);
-                    DestroyProjectile();
-                    return;
                 }
-
-                Transform checkTransform = hit.transform;
-                for (int j = 0; j < 5 && checkTransform != null; j++)
+            }
+            else
+            {
+                hitCount = Physics.OverlapSphereNonAlloc(currentPos, detectionRadius, _playerDetectionBuffer, _playerLayerMask);
+                for (int i = 0; i < hitCount; i++)
                 {
-                    if (checkTransform.CompareTag("Player"))
-                    {
-                        var shield = checkTransform.GetComponentInChildren<PlayerShieldController>();
-                        if (shield != null && shield.IsDefending)
-                        {
-                            hasHit = true;
-                            DestroyProjectile();
-                            return;
-                        }
-                        hasHit = true;
-                        ApplyDamage(checkTransform.gameObject);
-                        DestroyProjectile();
+                    if (TryResolvePlayerHit(_playerDetectionBuffer[i]))
                         return;
-                    }
-                    checkTransform = checkTransform.parent;
                 }
             }
         }
+        else
+        {
+            hitCount = Physics.OverlapSphereNonAlloc(currentPos, detectionRadius, _playerDetectionBuffer, _playerLayerMask);
+            for (int i = 0; i < hitCount; i++)
+            {
+                if (TryResolvePlayerHit(_playerDetectionBuffer[i]))
+                    return;
+            }
+        }
 
+        _lastCheckedPosition = currentPos;
+        _hasLastCheckedPosition = true;
+    }
+
+    /// <summary>
+    /// Evalúa un collider detectado (por proximidad o por sweep) y aplica daño/bloqueo si es el jugador.
+    /// Devuelve true si el proyectil impactó y ya fue destruido.
+    /// </summary>
+    private bool TryResolvePlayerHit(Collider hit)
+    {
+        if (hit == null) return false;
+
+        var playerHealth = hit.GetComponent<PlayerHealthSystem>() ?? hit.GetComponentInParent<PlayerHealthSystem>();
+        if (playerHealth != null)
+        {
+            // Respetar escudo: si el jugador está defendiendo, bloquear sin dañar
+            var shield = hit.GetComponentInParent<PlayerShieldController>();
+            if (shield != null && shield.IsDefending)
+            {
+                hasHit = true;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.Log("[EnemyProjectile] 🛡️ Bloqueado por escudo (proximity)");
+#endif
+                DestroyProjectile();
+                return true;
+            }
+
+            hasHit = true;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log($"[EnemyProjectile] 🎯 Impacto JUGADOR por proximidad: {damage} daño");
+#endif
+            playerHealth.TakeDamage(damage, _bypassInvulnerabilityOnHit);
+            DestroyProjectile();
+            return true;
+        }
+
+        Transform checkTransform = hit.transform;
+        for (int j = 0; j < 5 && checkTransform != null; j++)
+        {
+            if (checkTransform.CompareTag("Player"))
+            {
+                var shield = checkTransform.GetComponentInChildren<PlayerShieldController>();
+                if (shield != null && shield.IsDefending)
+                {
+                    hasHit = true;
+                    DestroyProjectile();
+                    return true;
+                }
+                hasHit = true;
+                ApplyDamage(checkTransform.gameObject);
+                DestroyProjectile();
+                return true;
+            }
+            checkTransform = checkTransform.parent;
+        }
+
+        return false;
     }
 
     // ✅ OnTriggerEnter: PRINCIPAL - Para colisiones con triggers (jugador, obstáculos)

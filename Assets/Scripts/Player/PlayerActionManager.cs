@@ -530,10 +530,14 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
 #endif
             return false;
         }
-        
+
         return CanUse(PlayerAbility.Magic);
     }
-    
+
+    // FIX INC-012: expone si el jugador está en modo Vuelo para que vThirdPersonController
+    // pueda saltarse su chequeo interno de "isGrounded" al lanzar magia mientras vuela.
+    public bool IsFlying() => IsInMode(ActionMode.Flying);
+
     public bool CanInteract()
     {
         // IMPORTANTE: Cooldown después de interactuar para evitar que el botón A se procese como salto

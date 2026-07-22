@@ -50,6 +50,7 @@ public class PlayerSaveData
         public string npcId;
         public Vector3 position;
         public Quaternion rotation;
+        public bool hasRotation; // FIX INC-028: ver comentario en PlayerPresetSO.NpcPosEntry
         public bool hasActiveState;
         public bool isActive;
     }

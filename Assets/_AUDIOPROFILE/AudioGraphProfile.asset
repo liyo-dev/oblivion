@@ -159,3 +159,7 @@ MonoBehaviour:
     music: {fileID: 8300000, guid: f1b6b495ea9afd54ca743f778e2c2e4a, type: 3}
     fadeIn: 0.5
     fadeOut: 0.5
+  - sequenceId: REINO_EXIT
+    music: {fileID: 8300000, guid: a3cc4bb37e6b3b14885e644f20e9271a, type: 3}
+    fadeIn: 0.5
+    fadeOut: 0.5

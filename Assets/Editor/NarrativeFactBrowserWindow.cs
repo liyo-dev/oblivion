@@ -279,8 +279,11 @@ public class NarrativeFactBrowserWindow : EditorWindow
 
     private void ScanEventsFromAssets()
     {
-        // Scan NPC modules for event keys
-        var npcConfigs = AssetDatabase.FindAssets("t:NPCNarrativeConfig");
+        // FIX INC-033: NPCNarrativeConfig (módulo narrativo obsoleto) fue eliminado por ser
+        // redundante con NPCInteractiveNarrativeConfig, que es el módulo real que usan los NPCs
+        // hoy en día (ver NPCBehaviourManagerV2). Actualizamos el escaneo para que apunte al
+        // módulo vigente en vez de a un tipo que ya no existe.
+        var npcConfigs = AssetDatabase.FindAssets("t:NPCInteractiveNarrativeConfig");
         foreach (var guid in npcConfigs)
         {
             var path = AssetDatabase.GUIDToAssetPath(guid);

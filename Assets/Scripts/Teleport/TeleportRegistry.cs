@@ -152,6 +152,29 @@ public static class TeleportRegistry
         existing.displayName = displayName;
     }
 
+    /// <summary>
+    /// FIX INC-023: recalcula el displayName de todos los puntos desbloqueados usando la
+    /// localización actual. Necesario porque UnlockPoint() puede ejecutarse muy pronto
+    /// (al usar el teletransporte por primera vez, justo cuando se registra el punto de
+    /// origen) antes de que LocalizationManager.Instance esté listo; en ese caso el nombre
+    /// se cachea con el fallback en inglés (anchorId con "_" por espacios) y se queda así
+    /// el resto de la sesión aunque la localización termine de cargar. Al recargar la
+    /// partida, LoadFromSaveData vuelve a resolver el nombre y por eso "se arregla solo".
+    /// Llamar a esto justo antes de mostrar la UI (que requiere ya varios frames/acciones
+    /// del jugador, tiempo de sobra para que LocalizationManager esté listo) corrige el
+    /// nombre sin esperar a un recargado de partida.
+    /// </summary>
+    public static void RefreshAllDisplayNames()
+    {
+        if (LocalizationManager.Instance == null) return;
+
+        foreach (var point in _unlockedPoints.Values)
+        {
+            if (point == null || string.IsNullOrEmpty(point.anchorId)) continue;
+            point.displayName = GetLocalizedPointName(point.anchorId);
+        }
+    }
+
     /// <summary>Guarda los puntos desbloqueados en una lista serializable.</summary>
     public static List<string> ToSaveData()
     {

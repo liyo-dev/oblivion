@@ -271,6 +271,9 @@ public class Interactable : MonoBehaviour
             case InteractableMode.UseWorldPoint:
                 StartWorldPointActivity(interactor);
                 break;
+            case InteractableMode.ConfirmationPopup:
+                StartConfirmationPopup();
+                break;
         }
     }
 
@@ -431,6 +434,41 @@ public class Interactable : MonoBehaviour
             Debug.LogError($"[Interactable] ShowWithChoices failed: {ex.Message}\n{ex.StackTrace}");
             if (GameState.Is(GamePhase.SavePrompt)) GameState.Pop(GamePhase.SavePrompt);
         }
+    }
+
+    /// <summary>
+    /// FIX INC-048: variante de StartDialogueWithOptions() que usa el popup de confirmación
+    /// unificado (ConfirmationPopupUI) en vez del cuadro de diálogo con opciones. Reutiliza los
+    /// mismos campos serializados (dialogue = mensaje, confirmFollowUp/cancelFollowUp = diálogo
+    /// opcional posterior, OnConfirm = evento al confirmar) para no duplicar configuración en el
+    /// Inspector ni romper los Interactables existentes en modo OpenDialogueWithOptions.
+    /// </summary>
+    void StartConfirmationPopup()
+    {
+        var npcAnimator = GetComponent<NPCSimpleAnimator>();
+        if (npcAnimator != null && _npcManager != null)
+        {
+            if (_npcManager.Context == null || !_npcManager.Context.IsInCombat)
+                StartCoroutine(PlayInteractionAnimation(npcAnimator));
+        }
+
+        var popup = ConfirmationPopupUI.Instance;
+        if (popup == null)
+        {
+            Debug.LogWarning($"[Interactable:{name}] ConfirmationPopupUI.Instance es null (¿Start.unity no está cargada?). Usando diálogo con opciones como fallback.");
+            StartDialogueWithOptions();
+            return;
+        }
+
+        string prompt = ResolveDialogueText(dialogue, string.Empty);
+
+        OnStarted?.Invoke();
+        SetHintVisible(false);
+        GameState.Push(GamePhase.SavePrompt);
+
+        popup.Show(prompt,
+            onConfirm: () => HandleChoiceResult(confirmFollowUp, invokeConfirm: true),
+            onCancel:  () => HandleChoiceResult(cancelFollowUp, invokeConfirm: false));
     }
 
     string ResolveDialogueText(DialogueAsset asset, string fallback)

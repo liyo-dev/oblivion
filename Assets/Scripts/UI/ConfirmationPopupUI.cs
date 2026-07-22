@@ -36,6 +36,7 @@ public class ConfirmationPopupUI : MonoBehaviour
     private bool _confirmSelected = true;
     private Coroutine _blinkRoutine;
     private float _shownAt;
+    private GameObject _previousSelected;
 
 #if UNITY_EDITOR
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -58,6 +59,12 @@ public class ConfirmationPopupUI : MonoBehaviour
         _onCancel = onCancel;
         _savedTimeScale = Time.timeScale;
         Time.timeScale = 0f;
+
+        // Guardamos qué botón tenía el foco antes de abrir el popup para poder
+        // restaurar la selección al cerrarlo. Sin esto, el EventSystem se queda
+        // sin objeto seleccionado y el menú deja de responder a mando/teclado
+        // (INC-047: controles bloqueados tras confirmar/cancelar "Nueva Partida").
+        _previousSelected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
 
         if (messageText) messageText.text = message;
 
@@ -187,7 +194,19 @@ public class ConfirmationPopupUI : MonoBehaviour
         if (cancelButton)  cancelButton.onClick.RemoveAllListeners();
         _onConfirm = null;
         _onCancel  = null;
+
+        // Restauramos el foco al botón que lo tenía antes de abrir el popup (p.ej. "Nueva
+        // Partida" en el menú principal). Antes se limpiaba con SetSelectedGameObject(null)
+        // y nunca se reasignaba, dejando el menú sin objeto seleccionado: con mando/teclado
+        // los controles parecían "muertos" al volver (INC-047).
         EventSystem.current?.SetSelectedGameObject(null);
+        if (_previousSelected != null && _previousSelected.activeInHierarchy)
+        {
+            var selectable = _previousSelected.GetComponent<Selectable>();
+            if (selectable != null && selectable.IsInteractable())
+                EventSystem.current?.SetSelectedGameObject(_previousSelected);
+        }
+        _previousSelected = null;
     }
 
     /// <summary>

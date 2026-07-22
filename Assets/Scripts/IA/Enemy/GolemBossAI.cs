@@ -1102,7 +1102,19 @@ public class GolemBossAI : MonoBehaviour
             {
                 break; // Llegamos, hora de golpear
             }
-            
+
+            // FIX INC-024: la embestida persigue al jugador con SetDestination cada frame sin
+            // pasar por UpdateBehavior (que es donde se comprueba el leash normalmente), así que
+            // por sí sola podía arrastrar al Golem muy lejos del área de batalla (las paredes de
+            // la barrera no tienen collider, solo empujan al jugador). Cortamos la embestida si
+            // se aleja demasiado de casa y dejamos que el chequeo de leash del siguiente tick lo
+            // devuelva al área en vez de seguir persiguiendo indefinidamente.
+            if (Vector3.Distance(transform.position, _homePosition) > maxLeashDistance * 1.5f)
+            {
+                Log("🚧 Embestida cortada: el Golem se estaba alejando demasiado del área de batalla.");
+                break;
+            }
+
             yield return null;
         }
         

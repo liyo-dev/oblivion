@@ -51,7 +51,12 @@ public class PlayerPresetSO : ScriptableObject
     {
         public string npcId;        // normalizado: nombre del GameObject
         public Vector3 position;    // última posición persistida
-        public Quaternion rotation; // última rotación persistida (Quaternion.identity = sin persistir)
+        public Quaternion rotation; // última rotación persistida
+        // FIX INC-028: antes se usaba "rotation == Quaternion.identity" como sentinel de "sin
+        // persistir", pero identity ES una rotación válida (p.ej. Eldran en la taberna). Eso hacía
+        // que al cargar la partida se descartara su rotación guardada y quedara con la del
+        // prefab (de espaldas). Ahora se marca explícitamente si hay rotación persistida.
+        public bool hasRotation;    // si se ha guardado explícitamente la rotación
         public bool hasActiveState; // si se ha guardado explícitamente el estado activo
         public bool isActive;       // si el NPC debe estar activo o no (solo válido si hasActiveState=true)
     }

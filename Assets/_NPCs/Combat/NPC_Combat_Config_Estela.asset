@@ -22,9 +22,9 @@ MonoBehaviour:
   isAggressive: 0
   canChaseOutOfBounds: 0
   maxChaseDistance: 20
-  alertIconPrefab: {fileID: 0}
-  questionIconPrefab: {fileID: 0}
-  exclamationIconPrefab: {fileID: 0}
+  alertIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
+  questionIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
+  exclamationIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
   alertIconDuration: 2
   alertIconHeight: 2.5
   healthBarPrefab: {fileID: 662809776453450714, guid: c9ac1bd5123d1544b8b85daac217ad0b, type: 3}

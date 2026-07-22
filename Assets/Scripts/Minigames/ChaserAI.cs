@@ -196,6 +196,18 @@ public class ChaserAI : MonoBehaviour
                 }
             }
             
+            // ✅ FIX: Asegurar que el agente escribe la posición calculada al Transform.
+            // Si el NPC quedó "congelado" en un estado previo de su FSM (p.ej.
+            // FollowPlayerState parado junto al jugador) con updatePosition en false,
+            // el NavMeshAgent puede seguir moviéndose internamente sin que el personaje
+            // se mueva visualmente (se queda "pillado"). Restaurar aquí es la garantía
+            // final del contrato de traspaso de control descrito en TDD.md.
+            // NOTA: NO tocar updateRotation — si hay NPCSimpleAnimator (caso de Estela),
+            // este ya controla la rotación en su propio LateUpdate (ApplySmoothRotation);
+            // poner updateRotation=true haría que el NavMeshAgent y el animator se
+            // peleen por rotar el Transform cada frame (mismo patrón de bug que el
+            // temblor de rotación corregido en TabernaSequencer).
+            agent.updatePosition = true;
             agent.isStopped = false;
             agent.SetDestination(target.position);
             Debug.Log($"[ChaserAI] ✅ NavMeshAgent configurado. Speed: {agent.speed}, Destination: {target.position}");

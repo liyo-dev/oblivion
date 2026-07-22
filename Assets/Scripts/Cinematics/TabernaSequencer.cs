@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Sendero.Core.Feedback;
+using Game.NPC;
 
 /// Orquestador de la escena de la taberna:
 ///   0. El grupo discute lo ocurrido mientras espera la comida.
@@ -199,6 +200,8 @@ public class TabernaSequencer : CinematicSequencerBase
     private NavMeshAgent         _eldranAgent;
     private NavMeshAgent         _estelaAgent;
     private NavMeshAgent         _liamAgent;
+    private NPCBehaviourManagerV2 _eldranBehaviour;
+    private NPCBehaviourManagerV2 _estelaBehaviour;
     private Coroutine            _eatLoopCoroutine;
     private Coroutine            _estelaFacingLock;
     private Coroutine            _liamFacingLock;
@@ -223,6 +226,7 @@ public class TabernaSequencer : CinematicSequencerBase
             _eldranEmotion    = _eldranTransform.GetComponentInChildren<NPCEmotionController>();
             _eldranSimpleAnim = _eldranTransform.GetComponentInChildren<NPCSimpleAnimator>();
             _eldranAgent      = _eldranTransform.GetComponent<NavMeshAgent>();
+            _eldranBehaviour  = _eldranTransform.GetComponent<NPCBehaviourManagerV2>();
         }
         if (_estelaTransform != null)
         {
@@ -230,6 +234,7 @@ public class TabernaSequencer : CinematicSequencerBase
             _estelaSimpleAnim = _estelaTransform.GetComponentInChildren<NPCSimpleAnimator>();
             _estelaAnimator   = _estelaTransform.GetComponentInChildren<Animator>();
             _estelaAgent      = _estelaTransform.GetComponent<NavMeshAgent>();
+            _estelaBehaviour  = _estelaTransform.GetComponent<NPCBehaviourManagerV2>();
         }
         if (_liamTransform != null)
         {
@@ -311,8 +316,8 @@ public class TabernaSequencer : CinematicSequencerBase
 
             // Snap a idle durante el blackout: sin animación de levantarse, sincrónico para no bloquear locomoción
             _willActivityHandler?.ForceStopActivityImmediate();
-            UnseatNPCSnap(_eldranTransform, _eldranSeat, _eldranAgent, _eldranSimpleAnim);
-            UnseatNPCSnap(_estelaTransform, _estelaSeat, _estelaAgent, _estelaSimpleAnim);
+            UnseatNPCSnap(_eldranTransform, _eldranSeat, _eldranAgent, _eldranSimpleAnim, _eldranBehaviour);
+            UnseatNPCSnap(_estelaTransform, _estelaSeat, _estelaAgent, _estelaSimpleAnim, _estelaBehaviour);
             if (_liamAgent != null && _liamAgent.isOnNavMesh)
             {
                 _liamAgent.nextPosition   = _liamTransform.position;
@@ -671,8 +676,8 @@ public class TabernaSequencer : CinematicSequencerBase
     private void SeatAll()
     {
         SeatPlayer(_willSeat);
-        SeatNPC(_eldranTransform, _eldranSeat, _eldranSimpleAnim, _eldranAgent);
-        SeatNPC(_estelaTransform, _estelaSeat, _estelaSimpleAnim, _estelaAgent);
+        SeatNPC(_eldranTransform, _eldranSeat, _eldranSimpleAnim, _eldranAgent, _eldranBehaviour);
+        SeatNPC(_estelaTransform, _estelaSeat, _estelaSimpleAnim, _estelaAgent, _estelaBehaviour);
     }
 
     private void SeatPlayer(NPCWorldPoint seat)
@@ -682,10 +687,26 @@ public class TabernaSequencer : CinematicSequencerBase
             _willActivityHandler.StartActivity(seat);
     }
 
-    private void SeatNPC(Transform npc, NPCWorldPoint seat, NPCSimpleAnimator simAnim, NavMeshAgent agent)
+    private void SeatNPC(Transform npc, NPCWorldPoint seat, NPCSimpleAnimator simAnim, NavMeshAgent agent, NPCBehaviourManagerV2 behaviour)
     {
         if (seat == null || npc == null) return;
         if (!seat.TryOccupy(npc)) return;
+
+        // ✅ FIX: Pausar la FSM (NPCBehaviourManagerV2) ANTES de fijar la posición de asiento.
+        // Eldran/Estela están en el party y su brain sigue en FollowPlayerState mientras
+        // dura toda la secuencia de la taberna. Ese estado detecta cada frame que la
+        // distancia a Will supera "distanciaParaPararse * 1.2" (normal en una mesa con
+        // sillas separadas), reactiva agent.updatePosition y fija un nuevo destino hacia
+        // el jugador — deshaciendo el "sentado" casi de inmediato (el NPC no llega a
+        // sentarse o se levanta solo). ForceIdle() antes de deshabilitar garantiza una
+        // salida limpia de FollowPlayerState (su OnExit ya restaura updatePosition=true
+        // correctamente); deshabilitar el componente evita que la FSM vuelva a tomar el
+        // control del NavMeshAgent mientras el NPC esté sentado.
+        if (behaviour != null && behaviour.enabled)
+        {
+            behaviour.ForceIdle();
+            behaviour.enabled = false;
+        }
 
         npc.position = seat.InteractionPosition;
         if (seat.overrideFacing)
@@ -707,7 +728,7 @@ public class TabernaSequencer : CinematicSequencerBase
 
     // Libera el asiento con snap instantáneo a idle, sin animación de levantarse.
     // Se usa en el blackout de salida para que el jugador no vea a los personajes levantándose.
-    private void UnseatNPCSnap(Transform npc, NPCWorldPoint seat, NavMeshAgent agent, NPCSimpleAnimator simAnim)
+    private void UnseatNPCSnap(Transform npc, NPCWorldPoint seat, NavMeshAgent agent, NPCSimpleAnimator simAnim, NPCBehaviourManagerV2 behaviour)
     {
         if (seat == null || npc == null) return;
         seat.DetachProp();
@@ -721,6 +742,16 @@ public class TabernaSequencer : CinematicSequencerBase
             agent.nextPosition   = npc.position;
             agent.updatePosition = true;
             agent.updateRotation = true;
+        }
+
+        // ✅ FIX: Rehabilitar la FSM que se pausó en SeatNPC. ForceIdle() lo deja en un
+        // estado Idle limpio; NPCPartyMember.Update() (chequeo cada 0.5s) detectará que
+        // está en Idle, en party y sin combate/cinemática activos, y llamará a
+        // StartFollowing() automáticamente para que retome el seguimiento normal.
+        if (behaviour != null && !behaviour.enabled)
+        {
+            behaviour.enabled = true;
+            behaviour.ForceIdle();
         }
     }
 

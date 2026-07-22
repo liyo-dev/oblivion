@@ -327,6 +327,26 @@
         {
             "id": "EVT_WILL_MADREMIA",
             "text": "Good grief..."
+        },
+        {
+            "id": "EVT_REINOEXIT_LIAM_01",
+            "text": "Will... what's wrong?"
+        },
+        {
+            "id": "EVT_REINOEXIT_WILL_01",
+            "text": "It's the first time I've ever left home.\nMy whole life has been back there.\nI'm scared, Liam. What if I can't control this?\nWhat if out there, what I am just isn't enough... and it all goes wrong?"
+        },
+        {
+            "id": "EVT_REINOEXIT_ESTELA_01",
+            "text": "The first time I cast a spell, I nearly singed my own eyebrows off.\nAnd look at me now... an actual prodigy.\nFear isn't the problem, kiddo.\nThe problem would be if you stopped trying. And I'm not letting that happen."
+        },
+        {
+            "id": "EVT_REINOEXIT_LIAM_02",
+            "text": "You won't be facing this alone.\nWhatever happens."
+        },
+        {
+            "id": "EVT_REINOEXIT_WILL_02",
+            "text": "...Thank you. Okay. Let's go."
         }
     ]
 }

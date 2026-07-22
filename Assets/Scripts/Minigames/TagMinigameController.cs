@@ -2262,15 +2262,26 @@ public class TagMinigameController : MonoBehaviour
     private void DisableNPCBehaviour()
     {
         if (chaserNPC == null) return;
-        
+
         // Guardar el estado actual
         _npcBehaviourWasEnabled = chaserNPC.enabled;
-        
+
         // ✅ Deshabilitar el NPCBehaviourManagerV2 para que no interfiera con ChaserAI
         if (chaserNPC.enabled)
         {
+            // ✅ FIX: Forzar una salida limpia del estado actual ANTES de deshabilitar.
+            // Si se deja el componente activo hasta este punto, puede seguir en
+            // FollowPlayerState (u otro estado) que dejó el NavMeshAgent con
+            // updatePosition=false (p.ej. Estela parada junto al jugador). Al hacer
+            // "enabled = false" directamente, Unity NO llama a OnExit() del estado
+            // actual, y ese flag queda congelado: ChaserAI.StartChasing() cree que
+            // persigue (isChasing=true, destino fijado) pero el Transform nunca se
+            // actualiza → el NPC se queda "pillado" sin moverse visualmente.
+            // ForceIdle() pasa por NPCBrain.ChangeState(), que sí invoca OnExit()
+            // del estado saliente y deja el agente en un estado limpio y conocido.
+            chaserNPC.ForceIdle();
             chaserNPC.enabled = false;
-            Debug.Log($"[TagMinigame] 🔧 NPCBehaviourManagerV2 de '{chaserNPC.name}' deshabilitado para el minijuego");
+            Debug.Log($"[TagMinigame] 🔧 NPCBehaviourManagerV2 de '{chaserNPC.name}' deshabilitado para el minijuego (tras ForceIdle)");
         }
         
         // ✅ También pausar el NPCSimpleAnimator si existe, para que ChaserAI controle las animaciones

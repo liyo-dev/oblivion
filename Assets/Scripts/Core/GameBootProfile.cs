@@ -112,6 +112,7 @@ public class GameBootProfile : ScriptableObject
                     npcId = npc.npcId,
                     position = npc.position,
                     rotation = npc.rotation,
+                    hasRotation = npc.hasRotation,
                     hasActiveState = npc.hasActiveState,
                     isActive = npc.isActive
                 });
@@ -223,6 +224,7 @@ public class GameBootProfile : ScriptableObject
                     npcId = e.npcId,
                     position = e.position,
                     rotation = e.rotation,
+                    hasRotation = e.hasRotation,
                     hasActiveState = e.hasActiveState,
                     isActive = e.isActive
                 });
@@ -370,6 +372,7 @@ public class GameBootProfile : ScriptableObject
                     npcId = e.npcId,
                     position = e.position,
                     rotation = e.rotation,
+                    hasRotation = e.hasRotation,
                     hasActiveState = e.hasActiveState,
                     isActive = e.isActive
                 });
@@ -419,6 +422,7 @@ public class GameBootProfile : ScriptableObject
                         npcId = e.npcId,
                         position = e.position,
                         rotation = e.rotation,
+                        hasRotation = e.hasRotation,
                         hasActiveState = e.hasActiveState,
                         isActive = e.isActive
                     });
@@ -782,6 +786,7 @@ public class GameBootProfile : ScriptableObject
                     }
                     // Siempre actualizar la rotación para capturar turnAroundOnArrival y otros giros
                     existing.rotation = npc.transform.rotation;
+                    existing.hasRotation = true; // FIX INC-028
                     preset.npcPositions[existingIndex] = existing;
                 }
                 // Si la posición sigue siendo default, mantener la entrada del preset sin cambios
@@ -802,6 +807,7 @@ public class GameBootProfile : ScriptableObject
                 npcId = npcId,
                 position = npcPosition,
                 rotation = npc.transform.rotation,
+                hasRotation = true, // FIX INC-028
                 hasActiveState = false,
                 isActive = true
             };
@@ -879,8 +885,15 @@ public class GameBootProfile : ScriptableObject
                     npc.transform.position = pos;
                 }
 
-                // Restaurar rotación si se guardó (identity indica que no había rotación persistida)
-                if (entry.rotation != Quaternion.identity)
+                // FIX INC-028: usar el flag explícito hasRotation en vez de comparar contra
+                // Quaternion.identity. Identity es una rotación real y válida para algunos NPCs
+                // (p.ej. Eldran en la taberna); con la comparación antigua esos casos se
+                // descartaban como "sin rotación persistida" y el NPC quedaba con la rotación del
+                // prefab (de espaldas) tras cargar la partida.
+                // Compatibilidad con saves antiguos (sin el campo hasRotation, siempre false al
+                // deserializar): si la rotación guardada no es identity, es señal de que sí venía
+                // de una captura real bajo el sistema anterior.
+                if (entry.hasRotation || entry.rotation != Quaternion.identity)
                 {
                     npc.transform.rotation = entry.rotation;
                     if (agent != null && agent.isOnNavMesh)

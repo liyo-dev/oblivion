@@ -125,7 +125,11 @@ public enum InteractableMode
     OpenDialogue,
     OpenDialogueWithOptions,
     HandOffToTarget,
-    UseWorldPoint
+    UseWorldPoint,
+    // FIX INC-048: confirmación Sí/No usando el popup unificado (ConfirmationPopupUI) en lugar
+    // del cuadro de diálogo con opciones. Pensado para casos simples como confirmar el guardado
+    // en un SavePoint, sin diálogo de seguimiento narrativo.
+    ConfirmationPopup
 }
 
 /// <summary>Cómo seleccionar una sesión: por campo, automáticamente por GameObject, o por nombre de tipo.</summary>

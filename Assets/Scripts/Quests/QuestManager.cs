@@ -22,6 +22,13 @@ public class QuestManager : MonoBehaviour
     // índice: conditionId -> lista de (questId, stepIndex) para completar en O(1)
     private readonly Dictionary<string, List<StepRef>> _conditionIndex = new(64, StringComparer.Ordinal);
 
+    // Quests cuyos requiredItems (consumeOnComplete) ya se han consumido del inventario.
+    // Evita volver a consumir un item (p.ej. una poción comprada) cuando una misión ya
+    // completada se re-procesa como "auto-completar" al restaurar flags de un save
+    // (INC-020: la poción desaparecía tras recargar/completar por una re-consumición
+    // no idempotente de ConsumeRequiredItems).
+    private readonly HashSet<string> _itemsConsumedForQuest = new(StringComparer.Ordinal);
+
     // Referencia al inventario para detectar items añadidos
     private Inventory _cachedInventory;
     private bool _isSubscribedToInventory;
@@ -225,7 +232,19 @@ public class QuestManager : MonoBehaviour
     private void ConsumeRequiredItems(string questId)
     {
         Debug.Log($"[QuestManager.ConsumeRequiredItems] 🔍 Iniciando para quest '{questId}'");
-        
+
+        // Idempotencia: si esta quest ya consumió sus items requeridos anteriormente
+        // (p.ej. en una sesión previa), no volver a hacerlo. Sin este guard, una quest
+        // que se re-completa por el flujo de auto-completado al restaurar un save
+        // (ver RestoreFromProfileFlags, paso 5) vuelve a llamar a ConsumeRequiredItems
+        // y consume de nuevo el item del inventario actual, aunque no tenga nada que
+        // ver con la partida que se está restaurando (INC-020).
+        if (_itemsConsumedForQuest.Contains(questId))
+        {
+            Debug.Log($"[QuestManager.ConsumeRequiredItems] ⏭️ Quest '{questId}' ya había consumido sus items requeridos anteriormente, no se repite.");
+            return;
+        }
+
         var questEntry = FindQuestChainEntry(questId);
         if (questEntry == null)
         {
@@ -288,7 +307,11 @@ public class QuestManager : MonoBehaviour
                 Debug.LogWarning($"[QuestManager.ConsumeRequiredItems] ❌ Falló al consumir {itemReq.amount}x '{itemReq.item.itemId}'");
             }
         }
-        
+
+        // Marcar como procesada para que no vuelva a consumir estos items si la quest
+        // se re-completa (auto-completado al restaurar un save, dobles disparos, etc.).
+        _itemsConsumedForQuest.Add(questId);
+
         Debug.Log($"[QuestManager.ConsumeRequiredItems] ✅ Proceso completado para quest '{questId}'");
     }
 
@@ -478,6 +501,7 @@ public class QuestManager : MonoBehaviour
     private const string Q_ARCHIVED  = "QUEST_ARCHIVED:";
     private const string Q_FOLLOWED  = "QUEST_FOLLOWED:"; // legacy alias
     private const string Q_TRACKED   = "QUEST_TRACKED:";
+    private const string Q_ITEMS_CONSUMED = "QUEST_ITEMS_CONSUMED:";
 
     /// <summary>Reconstruye el estado a partir de flags del perfil.</summary>
     public void RestoreFromProfileFlags(IReadOnlyList<string> flags)
@@ -536,6 +560,15 @@ public class QuestManager : MonoBehaviour
                 if (string.IsNullOrEmpty(qid)) continue;
                 EnsureRuntimeQuest(qid, out _);
                 toFollowed.Add(qid);
+            }
+            else if (f.StartsWith(Q_ITEMS_CONSUMED, StringComparison.Ordinal))
+            {
+                var qid = f.Substring(Q_ITEMS_CONSUMED.Length);
+                if (string.IsNullOrEmpty(qid)) continue;
+                // Restaurar el marcador de "items ya consumidos" ANTES del paso 5
+                // (auto-completado de quests con todos los pasos hechos) para que
+                // ConsumeRequiredItems no vuelva a quitar el item del inventario (INC-020).
+                _itemsConsumedForQuest.Add(qid);
             }
         }
 
@@ -649,6 +682,8 @@ public class QuestManager : MonoBehaviour
             if (state == QuestState.Completed)
             {
                 outFlags.Add(Q_COMPLETED + rq.Id);
+                if (_itemsConsumedForQuest.Contains(rq.Id))
+                    outFlags.Add(Q_ITEMS_CONSUMED + rq.Id);
             }
             else if (state == QuestState.Active)
             {
@@ -953,6 +988,7 @@ public class QuestManager : MonoBehaviour
         _conditionIndex.Clear();
         _visibility.Clear();
         _followed.Clear();
+        _itemsConsumedForQuest.Clear();
         OnQuestsChanged?.Invoke();
     }
     

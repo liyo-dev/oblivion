@@ -9,6 +9,14 @@ public interface IActionValidator
     bool CanAttack();
     bool CanCastMagic();
     bool CanInteract();
+
+    /// <summary>
+    /// FIX INC-012: indica si el jugador está actualmente en modo Vuelo.
+    /// Usado por vThirdPersonController para no exigir "isGrounded" al lanzar magia
+    /// mientras se vuela (de lo contrario CanAttack() del controlador base siempre
+    /// devuelve false en el aire y el hechizo nunca sale).
+    /// </summary>
+    bool IsFlying();
 }
 
 /// <summary>

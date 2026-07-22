@@ -35,6 +35,7 @@ public class MinimapController : MonoBehaviour
     bool _hiddenByInterior;
     bool _hiddenByBattle;
     bool _hiddenByMenu;
+    bool _hiddenByCinematic;
 
     // ── API para MinimapUIController ─────────────────────────────────────────
     public Vector3 PlayerPosition => _playerTransform != null ? _playerTransform.position : Vector3.zero;
@@ -171,9 +172,19 @@ public class MinimapController : MonoBehaviour
         RefreshMinimapVisibility();
     }
 
+    /// <summary>
+    /// Oculta/muestra el minimapa durante cinemáticas que no pasan por interior/batalla/menú
+    /// (p. ej. KingdomExitTransitionNode al revelar el título del juego).
+    /// </summary>
+    public void SetHiddenByCinematic(bool hidden)
+    {
+        _hiddenByCinematic = hidden;
+        RefreshMinimapVisibility();
+    }
+
     void RefreshMinimapVisibility()
     {
         if (minimapRoot != null)
-            minimapRoot.SetActive(!_hiddenByInterior && !_hiddenByBattle && !_hiddenByMenu);
+            minimapRoot.SetActive(!_hiddenByInterior && !_hiddenByBattle && !_hiddenByMenu && !_hiddenByCinematic);
     }
 }

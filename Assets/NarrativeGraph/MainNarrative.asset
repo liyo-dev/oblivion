@@ -86,8 +86,10 @@ MonoBehaviour:
   - rid: 5290829503207047169
   - rid: 5290829507170140161
   - rid: 5290829507170140162
-  - rid: 5290829545210380694
-  - rid: 5290829545210380695
+  - rid: 5290829545210380756
+  - rid: 5290829545210380757
+  - rid: 5290829545210380758
+  - rid: 5290829545210380759
   applicableSceneNames:
   - MainWorld
   references:
@@ -737,9 +739,9 @@ MonoBehaviour:
         guid: 683b23e6-c1ac-40d0-91eb-1dde84f1526d
         position: {x: 4670, y: 4386}
         outputs:
-        - fcfea66e-ac34-4cd3-a935-2b5b29ede241
+        - 18293a97-824e-4a42-b35b-a28365fd1601
         questId: ELDRAN_MISSION13
-        debugLogs: 0
+        debugLogs: 1
     - rid: 4910062183143178473
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
@@ -751,9 +753,9 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 18293a97-824e-4a42-b35b-a28365fd1601
-        position: {x: 4173, y: 4378}
+        position: {x: 4123, y: 4386}
         outputs:
-        - 5174be77-fb15-4c62-a78f-628406a93537
+        - 9ea2d2e7-363d-46aa-8f18-ba93cca2b5d7
         questId: ELDRAN_MISSION14
     - rid: 5290829092219519135
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
@@ -766,7 +768,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 5174be77-fb15-4c62-a78f-628406a93537
-        position: {x: 3606, y: 4378}
+        position: {x: 2081, y: 4386}
         outputs:
         - 48ab005c-2705-439a-a06f-c14d558d9700
         eventKey: EVT_WILL_LIAM
@@ -781,7 +783,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 48ab005c-2705-439a-a06f-c14d558d9700
-        position: {x: 3068, y: 4376}
+        position: {x: 1566, y: 4383}
         outputs:
         - eb2ae8e6-c475-41f9-920f-d86ac850f82a
         config: {fileID: 11400000, guid: ff88c3c7406cf83459916cd5472cc9ad, type: 2}
@@ -796,7 +798,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: eb2ae8e6-c475-41f9-920f-d86ac850f82a
-        position: {x: 2541, y: 4378}
+        position: {x: 1014, y: 4386}
         outputs: []
         questId: 
         stepConditionIds:
@@ -1076,19 +1078,35 @@ MonoBehaviour:
         outputs:
         - be4fba54-f747-49cd-b3b9-aa309948d700
         eventKey: MOUNTAIN_START
-    - rid: 5290829545210380694
-      type: {class: KingdomExitTransitionNode, ns: , asm: Assembly-CSharp}
+    - rid: 5290829545210380756
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: 
+        displayTitle: Salimos del Reino al pueblo
         chapter: Cap. 6
-        blockSaving: 1
+        blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: df22acf4-8d6f-49f3-874f-bb5e18c301a2
-        position: {x: 3942, y: 4694}
-        outputs: []
+        guid: 9ea2d2e7-363d-46aa-8f18-ba93cca2b5d7
+        position: {x: 3683, y: 4384}
+        outputs:
+        - c8b7cb2f-7629-42db-94e7-273fb9d32b2c
+        eventKey: EVT_REINO_EXIT_BOUNDARY
+    - rid: 5290829545210380757
+      type: {class: KingdomExitTransitionNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 6
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 7b8d3392-e124-4510-a26b-3180ee1c378e
+        position: {x: 2633, y: 4386}
+        outputs:
+        - 5174be77-fb15-4c62-a78f-628406a93537
         landscapeFocusId: ReinoExit_LandscapeShot
         ambienceFadeOutSeconds: 0.4
         silenceDuration: 0.75
@@ -1100,7 +1118,24 @@ MonoBehaviour:
         logoFadeInSeconds: 1.75
         logoHoldSeconds: 3.5
         logoFadeOutSeconds: 1.25
-    - rid: 5290829545210380695
+        cameraReturnFadeSeconds: 0.3
+        cameraReturnHoldSeconds: 0.2
+    - rid: 5290829545210380758
+      type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 6
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: c8b7cb2f-7629-42db-94e7-273fb9d32b2c
+        position: {x: 3335, y: 4384}
+        outputs:
+        - 3b9cb25d-ad9d-4d7a-b8fb-04bc049f95ca
+        eventKey: EVT_REINO_EXIT_BOUNDARY
+    - rid: 5290829545210380759
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: 
@@ -1110,11 +1145,11 @@ MonoBehaviour:
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: fcfea66e-ac34-4cd3-a935-2b5b29ede241
-        position: {x: 4355, y: 4694}
+        guid: 3b9cb25d-ad9d-4d7a-b8fb-04bc049f95ca
+        position: {x: 2959, y: 4384}
         outputs:
-        - df22acf4-8d6f-49f3-874f-bb5e18c301a2
-        eventKey: EVT_REINO_EXIT_BOUNDARY
+        - 7b8d3392-e124-4510-a26b-3180ee1c378e
+        eventKey: EVT_REINOEXIT_BANTER_DONE
     - rid: 5623891259268006347
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:

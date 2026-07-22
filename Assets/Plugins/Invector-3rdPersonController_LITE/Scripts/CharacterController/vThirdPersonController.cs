@@ -268,7 +268,15 @@ namespace Invector.vCharacterController
         {
             // Verificar permiso del ActionValidator
             if (_actionValidator != null && !_actionValidator.CanCastMagic()) return;
-            if (!CanAttack()) return;
+
+            // FIX INC-012: CanAttack() exige isGrounded (ver más abajo), lo cual es correcto en
+            // tierra pero impedía SIEMPRE lanzar magia mientras se vuela (isGrounded es false, y
+            // además queda "congelado" porque este controlador se deshabilita durante el vuelo,
+            // así que ni siquiera se refresca). El vuelo ya tiene su propia validación de permisos
+            // vía _actionValidator.CanCastMagic(), así que solo pedimos CanAttack() cuando NO
+            // se está volando.
+            bool isFlying = _actionValidator != null && _actionValidator.IsFlying();
+            if (!isFlying && !CanAttack()) return;
 
             // Si es un hechizo de levitación, no procesarlo aquí (lo maneja PlayerLevitationController)
             if (_magicCasterInterface != null && _magicCasterInterface.IsLevitationSpell(slotId))

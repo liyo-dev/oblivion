@@ -327,6 +327,26 @@
         {
             "id": "EVT_WILL_MADREMIA",
             "text": "Madre mía..."
+        },
+        {
+            "id": "EVT_REINOEXIT_LIAM_01",
+            "text": "Will... ¿qué ocurre?"
+        },
+        {
+            "id": "EVT_REINOEXIT_WILL_01",
+            "text": "Es la primera vez que salgo de aquí.\nToda mi vida ha estado ahí detrás.\nTengo miedo, Liam. ¿Y si no soy capaz de controlar esto?\n¿Y si allá fuera no basta con lo que soy... y todo sale mal?"
+        },
+        {
+            "id": "EVT_REINOEXIT_ESTELA_01",
+            "text": "La primera vez que lancé un hechizo, casi me quedo sin cejas.\nY aquí sigo... hecha una auténtica prodigio.\nEl miedo no es el problema, pequeñín.\nEl problema sería que dejaras de intentarlo. Y eso no te lo permito."
+        },
+        {
+            "id": "EVT_REINOEXIT_LIAM_02",
+            "text": "No vas a estar solo en esto.\nPase lo que pase."
+        },
+        {
+            "id": "EVT_REINOEXIT_WILL_02",
+            "text": "...Gracias. Vale. Vamos."
         }
     ]
 }

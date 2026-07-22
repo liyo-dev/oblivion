@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using Sendero.Core.Feedback;
+using Sendero.UI;
 
 /// <summary>
 /// Orquesta la transición cinemática de salida del Reino (escena 13 → mundo abierto):
@@ -43,6 +45,13 @@ public sealed class KingdomExitTransitionNode : NarrativeNode
     [Min(0f)]    public float logoHoldSeconds = 3.5f;
     [Min(0.01f)] public float logoFadeOutSeconds = 1.25f;
 
+    [Header("Retorno a gameplay")]
+    [Tooltip("Duración del fundido a negro (entrada y salida) que oculta el reencuadre automático de vThirdPersonCamera al desbloquear la cámara. Sin esto se ve un 'salto' de cámara ya en modo gameplay.")]
+    [Min(0.05f)] public float cameraReturnFadeSeconds = 0.3f;
+
+    [Tooltip("Margen en negro (tras el fundido de entrada) para dar tiempo a que la cámara termine su reencuadre automático antes de volver a mostrar la escena.")]
+    [Min(0f)] public float cameraReturnHoldSeconds = 0.2f;
+
     public override void Enter(NarrativeContext ctx, Action onReadyToAdvance)
     {
         ctx.Runner.StartCoroutine(Run(onReadyToAdvance));
@@ -57,6 +66,11 @@ public sealed class KingdomExitTransitionNode : NarrativeNode
             pam = playerGo.GetComponent<PlayerActionManager>();
             pam?.PushMode(ActionMode.Cinematic);
         }
+
+        // --- Ocultar toda la UI de gameplay para la revelación del título ---
+        PlayerHUDV2.Instance?.HideHUD();
+        TimeOfDayIndicator.Instance?.Hide();
+        MinimapController.Instance?.SetHiddenByCinematic(true);
 
         // --- Corte de cámara al plano general fijo ---
         var cam = Camera.main;
@@ -78,19 +92,32 @@ public sealed class KingdomExitTransitionNode : NarrativeNode
 
         yield return null; // dejar que el nuevo transform de cámara se procese antes de continuar
 
-        // --- Apagar ambiente de pueblo antes del silencio ---
+        // --- Apagar ambiente de pueblo y música de gameplay antes del silencio ---
+        // Sin esto el silencio no es tal: la música de fondo (pueblo, banter previo, etc.)
+        // sigue sonando durante ambienceFadeOutSeconds + silenceDuration y solo se corta
+        // de golpe (con crossfade de 6s) al arrancar mainThemeClip, dando la sensación de
+        // que "la música original nunca se cortó".
         var audio = AudioService.Instance;
         float previousSfxVolume = audio != null ? audio.GetVolume(AudioBus.Sfx) : 1f;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[KingdomExitTransitionNode] AudioService.Instance={(audio != null)}, " +
+                  $"CurrentMusicClip antes de StopMusic='{(audio != null ? audio.CurrentMusicClip?.name : "N/A")}'");
+#endif
+        audio?.StopMusic(ambienceFadeOutSeconds);
         if (audio != null && ambienceFadeOutSeconds > 0f)
             yield return FadeSfxVolume(audio, previousSfxVolume, 0f, ambienceFadeOutSeconds);
         else
             audio?.SetVolume(AudioBus.Sfx, 0f);
 
-        // --- Silencio breve antes del tema principal ---
+        // --- Silencio breve antes del tema principal (ahora sí, sin música de fondo) ---
         if (silenceDuration > 0f)
             yield return new WaitForSecondsRealtime(silenceDuration);
 
         // --- Entrada del tema principal (crossfade de volumen; el crescendo lo aporta el propio clip) ---
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[KingdomExitTransitionNode] CurrentMusicClip justo antes de PlayMusic(mainThemeClip)=" +
+                  $"'{(audio != null ? audio.CurrentMusicClip?.name : "N/A")}' (debería ser null/ninguno si StopMusic funcionó)");
+#endif
         if (mainThemeClip != null)
             audio?.PlayMusic(mainThemeClip, musicFadeInSeconds);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -105,13 +132,31 @@ public sealed class KingdomExitTransitionNode : NarrativeNode
         var logoController = TitleLogoController.EnsureInstance();
         yield return logoController.ShowLogo(logoSprite, subtitle, logoFadeInSeconds, logoHoldSeconds, logoFadeOutSeconds);
 
-        // --- Restaurar ambiente y devolver control al jugador ---
+        // --- Fundido a negro breve: oculta el reencuadre automático de vThirdPersonCamera ---
+        // Al poner lockCameraForCinematic = false, vThirdPersonCamera hace un smooth-snap (~0.15s,
+        // ver SnapSmoothTime) desde el plano general de vuelta a la posición normal tras el jugador.
+        // Sin este fundido, ese salto se ve a pantalla completa justo cuando el jugador ya tiene
+        // el control (PopMode ya aplicado), lo que se percibe como una transición fuera de lugar.
+        yield return FeedbackService.ScreenFadeAsync(Color.black, cameraReturnFadeSeconds, fadeIn: true);
+
+        // --- Restaurar ambiente y devolver control al jugador (oculto tras el negro) ---
         audio?.SetVolume(AudioBus.Sfx, previousSfxVolume);
 
         if (cameraCut)
             vThirdPersonCamera.lockCameraForCinematic = false;
 
         pam?.PopMode(ActionMode.Cinematic);
+
+        // --- Restaurar la UI de gameplay (oculta tras el negro, junto con la cámara) ---
+        PlayerHUDV2.Instance?.ShowHUD();
+        TimeOfDayIndicator.Instance?.Show();
+        MinimapController.Instance?.SetHiddenByCinematic(false);
+
+        // Margen para que el smooth-snap de la cámara termine mientras la pantalla sigue en negro
+        if (cameraReturnHoldSeconds > 0f)
+            yield return new WaitForSecondsRealtime(cameraReturnHoldSeconds);
+
+        yield return FeedbackService.ScreenFadeAsync(Color.black, cameraReturnFadeSeconds, fadeIn: false);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log("[KingdomExitTransitionNode] Transición completada, control devuelto al jugador.");
