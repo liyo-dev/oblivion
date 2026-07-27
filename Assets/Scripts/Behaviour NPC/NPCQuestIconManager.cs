@@ -156,14 +156,19 @@ namespace Game.NPC
             // Verificar si el jugador está demasiado lejos
             bool isTooFar = IsPlayerTooFar();
 
-            if (isExecuting || _isInDialogue || isInCombat || isTooFar)
+            // FIX INC-059: durante una cinemática (ej: Liam invocando al gólem), cualquier NPC
+            // que sea destino de una quest y quede visible en plano debe ocultar su icono también,
+            // no solo el NPC directamente involucrado en la propia cinemática.
+            bool isCinematicSequence = CinematicSequencerBase.AnySequenceActive;
+
+            if (isExecuting || _isInDialogue || isInCombat || isTooFar || isCinematicSequence)
             {
                 // Forzar ocultar SOLO el icono de cabeza. El minimapa es independiente de la distancia.
                 if (!_iconForcedHidden)
                 {
                     _iconForcedHidden = true;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    Debug.Log($"[NPCQuestIconManager:{name}] Forzando ocultar cabeza — executing={isExecuting}, diálogo={_isInDialogue}, combate={isInCombat}, lejano={isTooFar}");
+                    Debug.Log($"[NPCQuestIconManager:{name}] Forzando ocultar cabeza — executing={isExecuting}, diálogo={_isInDialogue}, combate={isInCombat}, lejano={isTooFar}, cinemática={isCinematicSequence}");
 #endif
                     if (_iconController != null && _iconController.HasPersistentIcon)
                         _iconController.HideAlertIcon();

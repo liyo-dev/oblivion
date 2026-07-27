@@ -225,8 +225,28 @@
             "text": "So take this!"
         },
         {
+            "id": "EVT_REINOEXIT_ESTELA_01",
+            "text": "The first time I cast a spell, I nearly singed my own eyebrows off.\nAnd look at me now... an actual prodigy.\nFear isn't the problem, kiddo.\nThe problem would be if you stopped trying. And I'm not letting that happen."
+        },
+        {
+            "id": "EVT_REINOEXIT_LIAM_01",
+            "text": "Will... what's wrong?"
+        },
+        {
+            "id": "EVT_REINOEXIT_LIAM_02",
+            "text": "You won't be facing this alone.\nWhatever happens."
+        },
+        {
+            "id": "EVT_REINOEXIT_WILL_01",
+            "text": "It's the first time I've ever left home.\nMy whole life has been back there.\nI'm scared, Liam. What if I can't control this?\nWhat if out there, what I am just isn't enough... and it all goes wrong?"
+        },
+        {
+            "id": "EVT_REINOEXIT_WILL_02",
+            "text": "...Thank you. Okay. Let's go."
+        },
+        {
             "id": "EVT_TAB_ELDRAN_01",
-            "text": "We need to find out who summoned that demon and why they're after you."
+            "text": "We need to find out who summoned that demon, and now a golem too, and why they're after you."
         },
         {
             "id": "EVT_TAB_ELDRAN_02",
@@ -329,24 +349,8 @@
             "text": "Good grief..."
         },
         {
-            "id": "EVT_REINOEXIT_LIAM_01",
-            "text": "Will... what's wrong?"
-        },
-        {
-            "id": "EVT_REINOEXIT_WILL_01",
-            "text": "It's the first time I've ever left home.\nMy whole life has been back there.\nI'm scared, Liam. What if I can't control this?\nWhat if out there, what I am just isn't enough... and it all goes wrong?"
-        },
-        {
-            "id": "EVT_REINOEXIT_ESTELA_01",
-            "text": "The first time I cast a spell, I nearly singed my own eyebrows off.\nAnd look at me now... an actual prodigy.\nFear isn't the problem, kiddo.\nThe problem would be if you stopped trying. And I'm not letting that happen."
-        },
-        {
-            "id": "EVT_REINOEXIT_LIAM_02",
-            "text": "You won't be facing this alone.\nWhatever happens."
-        },
-        {
-            "id": "EVT_REINOEXIT_WILL_02",
-            "text": "...Thank you. Okay. Let's go."
+            "id": "EVT_WILL_POST_GOLEM",
+            "text": "Did you see that, Estela? Now a golem! This has never happened before... Run, let's get back to Eldran!"
         }
     ]
 }

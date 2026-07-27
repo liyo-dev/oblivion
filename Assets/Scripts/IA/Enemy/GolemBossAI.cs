@@ -60,7 +60,11 @@ public class GolemBossAI : MonoBehaviour
     [SerializeField] private float rockRainAoeDamage = 15f;
     [Tooltip("VFX de advertencia en el suelo antes de que caiga la roca")]
     [SerializeField] private GameObject rockWarningVFX;
-    
+    [Tooltip("Altura del saltito que da el Golem al lanzar cada roca de la lluvia (más alto = más pronunciado)")]
+    [SerializeField] private float rockRainHopHeight = 1.1f;
+    [Tooltip("Distancia que camina el Golem en cada saltito de la lluvia de rocas")]
+    [SerializeField] private float rockRainHopStepDistance = 1.2f;
+
     [Header("Fase 3 - Salto y Onda Expansiva")]
     [Tooltip("Porcentaje de vida para activar Fase 3 (0.25 = 25%)")]
     [SerializeField] private float phase3HealthThreshold = 0.25f;
@@ -863,35 +867,54 @@ public class GolemBossAI : MonoBehaviour
         _lastAttackTime = Time.time; // También actualizar cooldown normal
         
         StopAgent();
-        
+
         Log("🌧️ [Fase 2] ¡LLUVIA DE ROCAS!");
         Debug.Log($"[GolemBossAI] 🌧️ [Fase 2] ¡LLUVIA DE ROCAS! - {rockRainCount} rocas");
-        
-        // Animación de invocar (usar Attack02 para la mano izquierda alzada)
-        PlayAnim(ANIM_ATTACK02);
-        
-        // Esperar a que levante la mano
-        yield return new WaitForSeconds(0.5f);
-        
+
         if (!player)
         {
             _isAttacking = false;
             yield break;
         }
-        
+
         // Centro de la lluvia = posición del jugador
         Vector3 rainCenter = player.position;
-        
+
+        // FIX INC-053 / INC-055: antes el Golem se quedaba con la pose estática de Attack02
+        // durante TODA la lluvia de rocas, lo que además provocaba que el modelo se viera
+        // "tumbado" al mover el transform en Y mientras esa animación no cíclica seguía activa.
+        // Ahora camina (ANIM_WALK) y da saltitos pronunciados en la dirección de avance,
+        // sincronizados con cada roca, como si cada roca cayera por el propio impacto del salto.
+        // Desactivamos el NavMeshAgent mientras dura para poder mover el transform libremente
+        // sin que el agent lo devuelva a su posición del NavMesh.
+        bool agentWasEnabled = agent != null && agent.enabled;
+        if (agentWasEnabled) agent.enabled = false;
+
+        PlayAnim(ANIM_WALK);
+
+        // Dirección de paseo elegida una vez al inicio (camina "en alguna dirección" mientras dura la lluvia)
+        Vector3 hopWalkDir = new Vector3(Random.Range(-1f, 1f), 0f, Random.Range(-1f, 1f));
+        if (hopWalkDir.sqrMagnitude < 0.01f) hopWalkDir = transform.forward;
+        hopWalkDir.Normalize();
+
         // Generar las rocas con delay entre cada una
         for (int i = 0; i < rockRainCount; i++)
         {
-            if (_isDead) yield break;
-            
+            if (_isDead)
+            {
+                if (agentWasEnabled && agent != null)
+                {
+                    agent.enabled = true;
+                    if (agent.isOnNavMesh) agent.Warp(transform.position);
+                }
+                yield break;
+            }
+
             // Posición aleatoria en círculo alrededor del jugador
             Vector2 randomCircle = Random.insideUnitCircle * rockRainRadius;
             Vector3 targetPos = rainCenter + new Vector3(randomCircle.x, 0f, randomCircle.y);
             Vector3 spawnPos = targetPos + Vector3.up * rockRainHeight;
-            
+
             // VFX de advertencia en el suelo
             if (rockWarningVFX)
             {
@@ -899,20 +922,70 @@ public class GolemBossAI : MonoBehaviour
                 GameObject warning = Instantiate(rockWarningVFX, targetPos + Vector3.up * 0.1f, Quaternion.Euler(90f, 0f, 0f));
                 Destroy(warning, 1.5f);
             }
-            
-            // Pequeño delay antes de que caiga la roca
-            yield return new WaitForSeconds(rockRainInterval);
-            
+
+            // No dejar que el paseo saque al Golem demasiado lejos de su posición de origen:
+            // si se acerca al límite del leash, invertimos la dirección de avance.
+            if (Vector3.Distance(transform.position + hopWalkDir * rockRainHopStepDistance, _homePosition) > maxLeashDistance * 0.8f)
+            {
+                hopWalkDir = -hopWalkDir;
+            }
+
+            // Saltito pronunciado caminando hacia hopWalkDir, en vez de una simple espera estática
+            yield return StartCoroutine(Co_RockRainHop(rockRainInterval, hopWalkDir));
+
             // Crear y lanzar la roca
             SpawnFallingRock(spawnPos, targetPos);
         }
-        
+
+        if (agentWasEnabled && agent != null)
+        {
+            agent.enabled = true;
+            if (agent.isOnNavMesh) agent.Warp(transform.position);
+        }
+
         // Esperar a que terminen de caer
         yield return new WaitForSeconds(1.5f);
-        
+
         _isAttacking = false;
-        
+
         Log("🌧️ Lluvia de rocas finalizada");
+    }
+
+    /// <summary>
+    /// FIX INC-053 / INC-055: saltito pronunciado (arco senoidal en Y) mientras el Golem avanza
+    /// caminando en <paramref name="walkDir"/>. Sustituye la pose estática que antes se mantenía
+    /// congelada durante toda la lluvia de rocas (causaba que el modelo se viera "tumbado").
+    /// Se anima directamente el transform, igual que el salto de Fase 3 (JumpAttack), pero con
+    /// desplazamiento horizontal real para que se vea como pasos caminando, no un rebote en el sitio.
+    /// </summary>
+    private IEnumerator Co_RockRainHop(float duration, Vector3 walkDir)
+    {
+        Vector3 startPos = transform.position;
+        Vector3 stepEnd = startPos + walkDir * rockRainHopStepDistance;
+        float elapsed = 0f;
+
+        // Orientar al Golem hacia la dirección en la que va a caminar/saltar
+        if (walkDir.sqrMagnitude > 0.01f)
+        {
+            Quaternion targetRot = Quaternion.LookRotation(walkDir);
+            if (modelRotationOffset != 0f) targetRot *= Quaternion.Euler(0f, modelRotationOffset, 0f);
+            transform.rotation = targetRot;
+        }
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = duration > 0f ? Mathf.Clamp01(elapsed / duration) : 1f;
+
+            Vector3 groundPos = Vector3.Lerp(startPos, stepEnd, t);
+            float offset = Mathf.Sin(t * Mathf.PI) * rockRainHopHeight;
+            transform.position = new Vector3(groundPos.x, startPos.y + offset, groundPos.z);
+            yield return null;
+        }
+
+        Vector3 finalPos = stepEnd;
+        finalPos.y = startPos.y;
+        transform.position = finalPos;
     }
     
     /// <summary>
@@ -1028,28 +1101,26 @@ public class GolemBossAI : MonoBehaviour
         // Perseguir al jugador hasta estar cerca
         float chargeTimeout = 5f; // Máximo tiempo de persecución
         float elapsed = 0f;
-        
-        // ✅ NUEVO: Variables para saltitos durante embestida
-        float hopInterval = 0.35f; // Intervalo entre saltos
-        float lastHopTime = 0f;
-        float hopHeight = 0.3f; // Altura del mini-salto
-        float hopDuration = 0.15f; // Duración de cada salto
-        bool isHopping = false;
-        float hopStartTime = 0f;
         float originalY = transform.position.y;
-        
+
+        // Un único golpe de cámara al arrancar la embestida transmite el impacto inicial sin
+        // el temblor repetido y los saltitos verticales artificiales de antes (que el jugador
+        // percibía durante toda la fase de lluvia de rocas). El peso de la embestida ahora lo
+        // da la animación de correr acelerada (chargeAnimationSpeedMultiplier), no un rebote.
+        Sendero.Core.Feedback.FeedbackService.CameraShake(0.2f, 0.15f);
+
         while (elapsed < chargeTimeout)
         {
             if (_isDead) yield break;
-            
+
             elapsed += Time.deltaTime;
-            
+
             // Actualizar destino hacia el jugador
             if (player && agent && agent.isOnNavMesh)
             {
                 targetPos = player.position;
                 agent.SetDestination(targetPos);
-                
+
                 // Debug: Verificar que la rotación se está aplicando correctamente
                 if (debugMode)
                 {
@@ -1057,45 +1128,7 @@ public class GolemBossAI : MonoBehaviour
                     Debug.DrawRay(transform.position + Vector3.up * 2f, agent.velocity.normalized * 5f, Color.blue, 0.1f);
                 }
             }
-            
-            // ✅ NUEVO: Aplicar saltitos para dar sensación de peso
-            if (agent != null && agent.velocity.sqrMagnitude > 0.5f)
-            {
-                // Iniciar un nuevo salto si ha pasado el intervalo
-                if (!isHopping && elapsed - lastHopTime >= hopInterval)
-                {
-                    isHopping = true;
-                    hopStartTime = elapsed;
-                    lastHopTime = elapsed;
-                    originalY = transform.position.y;
-                    
-                    // Mini camera shake con cada paso
-                    Sendero.Core.Feedback.FeedbackService.CameraShake(0.15f, 0.1f);
-                }
-                
-                // Aplicar el salto parabólico
-                if (isHopping)
-                {
-                    float hopProgress = (elapsed - hopStartTime) / hopDuration;
-                    if (hopProgress >= 1f)
-                    {
-                        // Fin del salto
-                        isHopping = false;
-                        Vector3 pos = transform.position;
-                        pos.y = originalY;
-                        transform.position = pos;
-                    }
-                    else
-                    {
-                        // Curva parabólica para el salto
-                        float height = Mathf.Sin(hopProgress * Mathf.PI) * hopHeight;
-                        Vector3 pos = transform.position;
-                        pos.y = originalY + height;
-                        transform.position = pos;
-                    }
-                }
-            }
-            
+
             // Verificar si llegamos al jugador
             float distToPlayer = Vector3.Distance(transform.position, targetPos);
             if (distToPlayer <= 2.5f)

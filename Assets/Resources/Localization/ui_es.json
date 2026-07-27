@@ -17,12 +17,12 @@
             "value": "¿Salir al menú principal? El progreso no guardado se perderá."
         },
         {
-            "key": "CONFIRM_NEW_GAME",
-            "value": "Se borrarán los datos de la partida actual. ¿Quieres continuar?"
-        },
-        {
             "key": "CONFIRM_MINIGAME_ABORT",
             "value": "¿Salir del minijuego? El nivel se reiniciará."
+        },
+        {
+            "key": "CONFIRM_NEW_GAME",
+            "value": "Se borrarán los datos de la partida actual. ¿Quieres continuar?"
         },
         {
             "key": "Dialogue_Continue",
@@ -167,6 +167,90 @@
         {
             "key": "System_Saving",
             "value": "Guardando..."
+        },
+        {
+            "key": "TELEPORT_POINT_BEDROOM",
+            "value": "Dormitorio"
+        },
+        {
+            "key": "TELEPORT_POINT_CASTLEINTERIOR1",
+            "value": "Interior del Castillo"
+        },
+        {
+            "key": "TELEPORT_POINT_CASTLEINTERIOR2",
+            "value": "Interior del Castillo"
+        },
+        {
+            "key": "TELEPORT_POINT_CASTLEINTERIOR2_JAIL",
+            "value": "Calabozo del Castillo"
+        },
+        {
+            "key": "TELEPORT_POINT_CASTLEINTERIOR2_TO_CASTLEINTERIOR1",
+            "value": "Pasillo del Castillo"
+        },
+        {
+            "key": "TELEPORT_POINT_CASTLEOUT",
+            "value": "Exterior del Castillo"
+        },
+        {
+            "key": "TELEPORT_POINT_CASTLEOUTGUARD",
+            "value": "Guardia del Castillo"
+        },
+        {
+            "key": "TELEPORT_POINT_HOUSE_FRONTDOOR",
+            "value": "Puerta de la Casa"
+        },
+        {
+            "key": "TELEPORT_POINT_HOUSE_FRONTDOOR_TUTORIAL",
+            "value": "Puerta de la Casa"
+        },
+        {
+            "key": "TELEPORT_POINT_HOUSE1",
+            "value": "Casa"
+        },
+        {
+            "key": "TELEPORT_POINT_HOUSE1_FRONTDOOR",
+            "value": "Puerta de la Casa"
+        },
+        {
+            "key": "TELEPORT_POINT_OUTSIDEKINGDOM",
+            "value": "Afueras del Reino"
+        },
+        {
+            "key": "TELEPORT_POINT_RESTAURANT",
+            "value": "Restaurante"
+        },
+        {
+            "key": "TELEPORT_POINT_RESTAURANT_FRONTDOOR",
+            "value": "Puerta del Restaurante"
+        },
+        {
+            "key": "TELEPORT_POINT_RESTAURANTELDRAN",
+            "value": "Restaurante de Eldran"
+        },
+        {
+            "key": "TELEPORT_POINT_ROCKS",
+            "value": "Las Rocas"
+        },
+        {
+            "key": "TELEPORT_POINT_RUINAS",
+            "value": "Las Ruinas"
+        },
+        {
+            "key": "TELEPORT_POINT_SENDERO",
+            "value": "El Sendero"
+        },
+        {
+            "key": "TELEPORT_POINT_TOWN",
+            "value": "Pueblo"
+        },
+        {
+            "key": "TELEPORT_POINT_WOODS_ENTRANCE_SAVEPOINT",
+            "value": "Entrada al Bosque"
+        },
+        {
+            "key": "TELEPORT_POINT_WOODS_SAVEPOINT",
+            "value": "Punto de Guardado del Bosque"
         },
         {
             "key": "UI_ARCHIVADAS",

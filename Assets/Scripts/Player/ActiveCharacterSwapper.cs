@@ -98,7 +98,20 @@ public class ActiveCharacterSwapper : MonoBehaviour
 
         var brain = _willNpcInstance.NPCManager?.Brain;
         if (brain == null) return;
-        if (_willNpcInstance.NPCManager.Context.IsInCombat || _willNpcInstance.NPCManager.Context.IsInCinematic) return;
+        if (_willNpcInstance.NPCManager.Context.IsInCinematic) return;
+
+        // Red de seguridad: si hay un enemigo activo (ej. el Golem) pero el Will NPC instanciado
+        // no está en combate, forzarlo a entrar. Cubre el caso en que ApplyFollowModeToWillNpc
+        // comprobó el combate antes de que el Brain estuviera listo (o el enemigo se registró un
+        // frame más tarde) y Will se quedaba parado en vez de atacar tras cambiar a otro personaje.
+        var activeEnemy = GetActiveCombatEnemy();
+        if (activeEnemy != null && !_willNpcInstance.NPCManager.Context.IsInCombat)
+        {
+            _willNpcInstance.OnPlayerEnteredCombat(activeEnemy);
+            return;
+        }
+
+        if (_willNpcInstance.NPCManager.Context.IsInCombat) return;
         if (!(PartyControlManager.Instance?.IsPartyFollowing ?? true)) return;
 
         // Si cayó en Idle y NO está anclado, reiniciar seguimiento
@@ -320,6 +333,14 @@ public class ActiveCharacterSwapper : MonoBehaviour
             }
         }
 
+        // FIX INC-050: mismo problema de carrera que documenta SetNpcVisible() más abajo —
+        // ModularAutoBuilder (o ActivateWillPartsByName como fallback) puede tocar los Renderer
+        // hijos un frame después de aplicarse, dejando al Will NPC recién instanciado invisible.
+        // Ahí sí se reafirmaba la visibilidad para Liam/Estela (ReassertVisibilityNextFrames),
+        // pero no para Will, así que al cambiar de personaje Will podía "desaparecer".
+        if (_willNpcInstance != null)
+            StartCoroutine(ReassertWillVisibilityNextFrames(_willNpcInstance));
+
         // Aplicar modo de seguimiento actual una vez que el NPC esté inicializado.
         // Capturar si había combate AL SPAWNEAR; el corrutina puede correr frames después,
         // momento en que el registro ya puede haberse vaciado por timing.
@@ -444,8 +465,17 @@ public class ActiveCharacterSwapper : MonoBehaviour
     {
         if (npc == null) return;
 
-        foreach (var r in npc.GetComponentsInChildren<Renderer>(true))
-            r.enabled = visible;
+        ApplyRendererVisibility(npc, visible);
+
+        // Reafirmar un frame (y de nuevo un poco más tarde) después del swap. Algunos sistemas
+        // (reconstrucción de apariencia con ModularAutoBuilder, spawners de partes, etc.) pueden
+        // tocar los Renderer hijos justo después de este cambio y dejar al NPC invisible aunque
+        // ya esté "visible" a efectos de lógica — el interactuable seguía funcionando (por eso se
+        // veía la "A" sin el modelo) y el NPC solo reaparecía cuando algo más volvía a tocar sus
+        // renderers (p.ej. al acercarse el jugador). Forzamos el estado correcto un par de veces
+        // más para blindarnos de esa condición de carrera.
+        if (visible)
+            StartCoroutine(ReassertVisibilityNextFrames(npc));
 
         // Cuando el NPC está oculto, desactivar sus colliders para que los proyectiles enemigos
         // no choquen físicamente con el NPC y puedan alcanzar el CharacterController del jugador.
@@ -487,6 +517,43 @@ public class ActiveCharacterSwapper : MonoBehaviour
                 }
             }
         }
+    }
+
+    private static void ApplyRendererVisibility(NPCPartyMember npc, bool visible)
+    {
+        if (npc == null) return;
+        foreach (var r in npc.GetComponentsInChildren<Renderer>(true))
+            r.enabled = visible;
+    }
+
+    private System.Collections.IEnumerator ReassertVisibilityNextFrames(NPCPartyMember npc)
+    {
+        yield return null;
+        // Si mientras tanto el jugador volvió a cambiar de personaje y este NPC pasó a ser
+        // el controlado (oculto), no lo reactivemos: respetar el estado más reciente.
+        if (npc == null || npc == _hiddenNpc) yield break;
+        ApplyRendererVisibility(npc, true);
+
+        yield return new WaitForSeconds(0.25f);
+        if (npc == null || npc == _hiddenNpc) yield break;
+        ApplyRendererVisibility(npc, true);
+    }
+
+    /// <summary>
+    /// FIX INC-050: reafirma la visibilidad del Will NPC recién spawneado, igual que
+    /// ReassertVisibilityNextFrames hace para Liam/Estela. Necesario porque ModularAutoBuilder
+    /// (o su fallback ActivateWillPartsByName) puede tocar los Renderer hijos un frame después
+    /// de SpawnWillNpc(), dejando a Will invisible tras cambiar de personaje.
+    /// </summary>
+    private System.Collections.IEnumerator ReassertWillVisibilityNextFrames(NPCPartyMember willNpc)
+    {
+        yield return null;
+        if (willNpc == null || willNpc != _willNpcInstance) yield break;
+        ApplyRendererVisibility(willNpc, true);
+
+        yield return new WaitForSeconds(0.25f);
+        if (willNpc == null || willNpc != _willNpcInstance) yield break;
+        ApplyRendererVisibility(willNpc, true);
     }
 
     /// Fallback para cuando el willNpcPrefab no tiene ModularAutoBuilder:

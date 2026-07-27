@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.UI;
 using Sendero.Core.Feedback;
 
@@ -98,6 +99,11 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
     // ── Cache ─────────────────────────────────────────────────────────────────
 
     private NPCEmotionController _liamEmotion;
+    private Game.NPC.NPCBehaviourManagerV2 _liamNpc;
+    private NavMeshAgent _liamAgent;
+    private ObstacleAvoidanceType _liamOriginalAvoidance;
+    private Vector3 _liamDesignPosition;
+    private Quaternion _liamDesignRotation;
     private Image _evilOverlayImg;
     private MaterialPropertyBlock _mpb;
     private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
@@ -108,10 +114,81 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
         base.Awake();
 
         if (liamTransform != null)
+        {
             _liamEmotion = liamTransform.GetComponentInChildren<NPCEmotionController>();
+            _liamNpc     = liamTransform.GetComponent<Game.NPC.NPCBehaviourManagerV2>();
+            _liamAgent   = liamTransform.GetComponent<NavMeshAgent>();
+
+            // FIX: capturar la posición/rotación colocadas a mano en el editor ANTES de que el
+            // NavMeshAgent de Liam pueda corregirlas él solo al activarse. Si el punto exacto donde
+            // está colocado (pegado a la mesa/alfombra de esta habitación) no cae sobre el NavMesh
+            // baked, Unity lo desplaza al punto válido más cercano en cuanto el agente se activa —
+            // esto ocurre a nivel de motor, nada más arrancar la partida, sin pasar por ningún
+            // script nuestro. Ver Co_RestoreLiamDesignPosition().
+            _liamDesignPosition = liamTransform.position;
+            _liamDesignRotation = liamTransform.rotation;
+        }
 
         if (crystalBallRenderer != null)
             _mpb = new MaterialPropertyBlock();
+    }
+
+    private void Start()
+    {
+        if (liamTransform != null)
+            StartCoroutine(Co_RestoreLiamDesignPosition());
+    }
+
+    /// Un frame después de Awake, el NavMeshAgent de Liam ya habrá aplicado (si iba a hacerlo) su
+    /// corrección automática al activarse. Si su posición se alejó de donde lo colocamos a mano,
+    /// lo devolvemos ahí con Warp (evita que NavMesh/física generen un nuevo path).
+    private IEnumerator Co_RestoreLiamDesignPosition()
+    {
+        yield return null;
+        if (liamTransform == null) yield break;
+
+        if ((liamTransform.position - _liamDesignPosition).sqrMagnitude > 0.0001f)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning($"[LiamCrystalBallSequencer] Liam se había desplazado de su posición diseñada " +
+                $"({liamTransform.position} → objetivo {_liamDesignPosition}), probablemente por corrección " +
+                $"automática del NavMeshAgent al activarse. Restaurando.");
+#endif
+            if (_liamAgent != null && _liamAgent.isOnNavMesh)
+                _liamAgent.Warp(_liamDesignPosition);
+            else
+                liamTransform.position = _liamDesignPosition;
+        }
+
+        liamTransform.rotation = _liamDesignRotation;
+    }
+
+    // FIX: HardStop (isStopped=true) no evita que un NavMeshAgent con obstacle avoidance activo
+    // (aquí HighQuality) siga siendo empujado por la avoidance del jugador u otros agentes cercanos
+    // — es el mismo motivo por el que CinematicState.MoveToPositionSequence desactiva la avoidance
+    // durante el movimiento cinemático (ver su comentario "para que Player y Party Members no
+    // bloqueen al NPC"). Sin esto Liam podía seguir desplazándose ligeramente aunque su FSM
+    // estuviera desactivada y el agente "detenido".
+    private void FreezeLiamNavigation()
+    {
+        _liamNpc?.ForceIdle();
+        if (_liamAgent != null)
+        {
+            _liamOriginalAvoidance = _liamAgent.obstacleAvoidanceType;
+            _liamAgent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
+        }
+        if (_liamNpc != null) _liamNpc.enabled = false;
+    }
+
+    private void UnfreezeLiamNavigation()
+    {
+        if (_liamNpc != null)
+        {
+            _liamNpc.enabled = true;
+            _liamNpc.ForceIdle();
+        }
+        if (_liamAgent != null)
+            _liamAgent.obstacleAvoidanceType = _liamOriginalAvoidance;
     }
 
     protected override void OnDestroy()
@@ -129,7 +206,9 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
 
     protected override IEnumerator Co_Sequence()
     {
-        yield return Co_BeginCinematicWithTransition(camShotCrystalBall);
+        // Congelar FSM + navegación de Liam en el cut point (pantalla cubierta), igual que
+        // hacen TabernaSequencer/EstelaAppearsSequencer con sus NPCs. Ver FreezeLiamNavigation().
+        yield return Co_BeginCinematicWithTransition(camShotCrystalBall, FreezeLiamNavigation);
         PlaySequenceMusic();
 
         // ── Fase 1: Bola de cristal — imagen de Will brillando dentro ─────────
@@ -187,7 +266,11 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
         StartCoroutine(Co_HideCrystalVision());
         DestroyEvilOverlay();
 
-        yield return Co_EndCinematicWithTransition(RestoreMusic);
+        yield return Co_EndCinematicWithTransition(() =>
+        {
+            RestoreMusic();
+            UnfreezeLiamNavigation();
+        });
 
         RaiseSignalOut();
     }

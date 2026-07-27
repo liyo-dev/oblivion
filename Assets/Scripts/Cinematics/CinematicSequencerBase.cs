@@ -52,12 +52,51 @@ public abstract class CinematicSequencerBase : MonoBehaviour
 
     private Action _signalInHandler;
 
+    // FIX INC-059: contador estático de cinemáticas activas (puede haber más de un sequencer
+    // encadenado). Otros sistemas (ej: NPCQuestIconManager) lo consultan para ocultar iconos de
+    // quest sobre la cabeza de NPCs ajenos a la propia cinemática mientras esta se reproduce.
+    private static int s_activeSequenceCount;
+    public static bool AnySequenceActive => s_activeSequenceCount > 0;
+
+#if UNITY_EDITOR
+    [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticsBase() => s_activeSequenceCount = 0;
+#endif
+
+    // FIX INC-052: si Co_Sequence() lanza una excepción o el objeto se destruye a mitad de la
+    // cinemática (ej: cambio de escena, referencia nula puntual de un prefab concreto), el HUD y
+    // el minimapa se quedaban ocultos para siempre y el ActionMode.Cinematic nunca se hacía Pop.
+    // Como la cinemática de Liam invocando al gólem se ejecuta justo antes de la batalla, un fallo
+    // aislado aquí dejaba el HUD desaparecido durante todo el combate. Mismo patrón de fix que
+    // BossIntroPresentation.PlayIntroduction() (try/finally que garantiza la restauración).
+    private bool _cinematicLocked;
+
     // ── Ciclo de vida Unity ───────────────────────────────────────────────────
 
     protected virtual void Awake()
     {
-        _signalInHandler = () => StartCoroutine(Co_Sequence());
+        _signalInHandler = () => StartCoroutine(Co_SequenceGuarded());
         DefaultNarrativeSignals.EnsureInstance().OnCustom(_signalIn, _signalInHandler);
+    }
+
+    /// Envuelve Co_Sequence() para garantizar que el HUD/minimapa/modo Cinematic se restauran
+    /// aunque la subclase termine de forma anómala (excepción o destrucción del objeto).
+    private IEnumerator Co_SequenceGuarded()
+    {
+        try
+        {
+            yield return Co_Sequence();
+        }
+        finally
+        {
+            if (_cinematicLocked)
+            {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.LogWarning($"[CinematicSequencerBase] {GetType().Name} terminó de forma anómala con la cinemática aún bloqueada (HUD oculto). Restaurando estado.");
+#endif
+                EndCinematic();
+            }
+        }
     }
 
     protected virtual void OnDestroy()
@@ -72,11 +111,16 @@ public abstract class CinematicSequencerBase : MonoBehaviour
 
     // ── Ciclo de vida de la cinemática ────────────────────────────────────────
 
-    /// Bloquea el input del jugador y oculta el HUD. Debe llamarse ANTES de la transición de entrada.
+    /// Bloquea el input del jugador y oculta el HUD y el minimapa. Debe llamarse ANTES de la transición de entrada.
     private void LockCinematic()
     {
+        _cinematicLocked = true;
+        s_activeSequenceCount++;
         _actionManager.PushMode(ActionMode.Cinematic);
         PlayerHUDV2.Instance?.HideHUD();
+        MinimapController.Instance?.SetHiddenByCinematic(true);
+        // FIX INC-058: el icono del período del día (HUD) también debe ocultarse durante secuencias.
+        TimeOfDayIndicator.Instance?.Hide();
     }
 
     /// Activa la cámara cinemática y prepara la regla de música. Se llama en el cut point de la transición.
@@ -87,12 +131,19 @@ public abstract class CinematicSequencerBase : MonoBehaviour
         _cinematicCamera.Activate();
     }
 
-    /// Restaura el estado de gameplay: cancela shakes, desactiva la cámara, muestra el HUD y desbloquea input.
+    /// Restaura el estado de gameplay: cancela shakes, desactiva la cámara, muestra el HUD/minimapa y desbloquea input.
     protected void EndCinematic()
     {
+        if (!_cinematicLocked) return; // Ya restaurado (evita Pop/ShowHUD duplicados si se llama dos veces)
+        _cinematicLocked = false;
+        s_activeSequenceCount = Mathf.Max(0, s_activeSequenceCount - 1);
+
         FeedbackService.CancelAllShakes();
         _cinematicCamera.Deactivate();
         PlayerHUDV2.Instance?.ShowHUD();
+        MinimapController.Instance?.SetHiddenByCinematic(false);
+        // FIX INC-058: restaurar el icono del período del día al terminar la secuencia.
+        TimeOfDayIndicator.Instance?.Show();
         _actionManager.PopMode(ActionMode.Cinematic);
         if (_interiorAnchor != null) EnvironmentController.Instance?.EndCinematicOverride();
     }

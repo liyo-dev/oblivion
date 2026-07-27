@@ -160,12 +160,51 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
     private NPCSimpleAnimator    _warrior2SimpleAnim;
     private NavMeshAgent         _warrior1Agent;
     private NavMeshAgent         _warrior2Agent;
+    private Game.NPC.NPCBehaviourManagerV2 _warrior1Npc;
+    private Game.NPC.NPCBehaviourManagerV2 _warrior2Npc;
     private int _enemyHitLayers;
     private int _enemyCollisionLayers;
+
+    // ── Persistencia de "ya jugada" ──────────────────────────────────────────
+    // Flag para saber si esta secuencia ya se reprodujo en esta partida. Sin esto, al cargar
+    // una partida guardada cerca de este punto (p.ej. tras morir después de la secuencia),
+    // las arañas y los dos guerreros volvían a aparecer: la secuencia solo los desactiva en
+    // memoria (SetActive/gameObject.SetActive), y ese estado no se guarda ni se re-aplica al
+    // recargar la escena. Al marcar el flag al terminar y comprobarlo en Awake, si la escena se
+    // recarga tras haber visto la secuencia, estos GameObjects se ocultan inmediatamente.
+    private const string SeenFlag = "CINEMATIC_SEEN:ESTELA_APPEARS";
+
+    private static bool HasSequencePlayed()
+    {
+        var preset = GameBootService.Profile != null ? GameBootService.Profile.GetActivePresetResolved() : null;
+        return preset != null && preset.flags != null && preset.flags.Contains(SeenFlag);
+    }
+
+    private static void MarkSequencePlayed()
+    {
+        var preset = GameBootService.Profile != null ? GameBootService.Profile.GetActivePresetResolved() : null;
+        if (preset == null) return;
+        if (preset.flags == null) preset.flags = new System.Collections.Generic.List<string>();
+        if (!preset.flags.Contains(SeenFlag)) preset.flags.Add(SeenFlag);
+    }
 
     protected override void Awake()
     {
         base.Awake();
+
+        // Si la secuencia ya se reprodujo antes en esta partida, aplicar de inmediato el estado
+        // final (arañas y guerreros ocultos) por si la escena se acaba de recargar desde un
+        // punto de guardado posterior a la secuencia.
+        if (HasSequencePlayed())
+        {
+            if (_spiderObjects != null)
+            {
+                foreach (var spider in _spiderObjects)
+                    if (spider != null) spider.SetActive(false);
+            }
+            if (_warrior1Transform != null) _warrior1Transform.gameObject.SetActive(false);
+            if (_warrior2Transform != null) _warrior2Transform.gameObject.SetActive(false);
+        }
 
         if (_estelaTransform != null)
         {
@@ -178,12 +217,14 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
             _warrior1Emotion    = _warrior1Transform.GetComponentInChildren<NPCEmotionController>();
             _warrior1SimpleAnim = _warrior1Transform.GetComponentInChildren<NPCSimpleAnimator>();
             _warrior1Agent      = _warrior1Transform.GetComponent<NavMeshAgent>();
+            _warrior1Npc        = _warrior1Transform.GetComponent<Game.NPC.NPCBehaviourManagerV2>();
         }
         if (_warrior2Transform != null)
         {
             _warrior2Emotion    = _warrior2Transform.GetComponentInChildren<NPCEmotionController>();
             _warrior2SimpleAnim = _warrior2Transform.GetComponentInChildren<NPCSimpleAnimator>();
             _warrior2Agent      = _warrior2Transform.GetComponent<NavMeshAgent>();
+            _warrior2Npc        = _warrior2Transform.GetComponent<Game.NPC.NPCBehaviourManagerV2>();
         }
 
         _enemyHitLayers       = LayerMask.GetMask("Enemy", "Boss");
@@ -254,6 +295,7 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
 
         yield return Co_EndCinematicWithTransition(RestoreMusic);
 
+        MarkSequencePlayed();
         RaiseSignalOut();
     }
 
@@ -343,6 +385,22 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
 
         FaceAway(_warrior1Transform, _estelaTransform);
         FaceAway(_warrior2Transform, _estelaTransform);
+
+        // FIX INC-060 (corregido): marcar solo Context.IsInCinematic no basta. IdleState.CheckTransitions
+        // sí reacciona y pasa a CinematicState, pero como aquí nunca se llama CinematicState.StartSequence(),
+        // ese estado no tiene _currentSequence asignada → se completa en el mismo OnEnter() y el siguiente
+        // Update() vuelve a IdleState de inmediato. Una vez de vuelta en IdleState, su OnUpdate() (y el
+        // safety-check de NPCBehaviourManagerV2.LateUpdate) fuerzan `agent.isStopped = true` +
+        // `agent.ResetPath()` cada frame, peleando contra el SetDestination() de Co_FleeWarrior. El
+        // resultado seguía siendo el mismo bug: el guerrero se desplazaba (o se atascaba) sin reproducir
+        // nunca la animación de andar, porque NPCSimpleAnimator.SyncWithNavMeshAgent() ve el agente
+        // detenido y fuerza la velocidad de animación a 0 cada frame.
+        // Fix real: desactivar el propio NPCBehaviourManagerV2 (igual que TabernaSequencer.SeatNPC hace
+        // con los NPCs sentados) para que ni Update() ni LateUpdate() de la FSM se ejecuten mientras esta
+        // corrutina controla el NavMeshAgent directamente. No hace falta reactivarlo: el guerrero termina
+        // con SetActive(false) al final de Co_FleeWarrior.
+        if (_warrior1Npc != null) _warrior1Npc.enabled = false;
+        if (_warrior2Npc != null) _warrior2Npc.enabled = false;
 
         // Activar animación de carrera antes de mover el agente
         if (_warrior1SimpleAnim != null) { _warrior1SimpleAnim.SetBattleMode(false); _warrior1SimpleAnim.TransitionToLocomotion(); _warrior1SimpleAnim.SetMovementSpeed(1f, 0f); }

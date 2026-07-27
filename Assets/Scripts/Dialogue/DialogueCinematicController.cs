@@ -1617,6 +1617,26 @@ public class DialogueCinematicController : MonoBehaviour
                     break;
             }
 
+            // ── Evitar obstrucciones (modo 1:1) ──
+            // Si hay geometría (muro, árbol, roca...) entre el personaje y la posición calculada
+            // de cámara, acercamos la cámara hasta justo delante del obstáculo. Sin esto, la cámara
+            // podía terminar detrás de un objeto y dejar al personaje cortado a medias en pantalla.
+            Vector3 headPos = target.position + Vector3.up * Mathf.Max(shot.Height, 1.2f);
+            Vector3 toCam = camPos - headPos;
+            float camposDist = toCam.magnitude;
+            if (camposDist > 0.05f)
+            {
+                Vector3 dir = toCam / camposDist;
+                if (Physics.SphereCast(headPos, groupCameraProbeRadius, dir, out RaycastHit obstructionHit,
+                    camposDist, _camObstructionMask, QueryTriggerInteraction.Ignore))
+                {
+                    float clearDist = Mathf.Max(obstructionHit.distance - 0.3f, 0.6f);
+                    camPos = headPos + dir * clearDist;
+                    if (showDebugInfo)
+                        Debug.Log($"[DialogueCinematicController] 📷 Obstrucción detectada ({obstructionHit.collider.name}) - cámara reubicada a {clearDist:F2}m");
+                }
+            }
+
             if (showDebugInfo)
             {
                 Debug.Log($"[DialogueCinematicController] Shot {shot.shotType}: Target={target.name}, CamPos={camPos}, TargetPos={basePos}");

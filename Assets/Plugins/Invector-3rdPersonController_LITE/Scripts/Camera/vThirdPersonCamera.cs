@@ -259,10 +259,18 @@ public class vThirdPersonCamera : MonoBehaviour
         lookPoint += (targetLookAt.right * Vector3.Dot(finalCamDir * (distance), targetLookAt.right));
         transform.rotation = Quaternion.LookRotation((lookPoint) - transform.position);
 
-        // Oclusión
+        // Oclusión (desactivada en interiores: las paredes no deben desaparecer)
         if (_occlusionFader != null)
         {
-            _occlusionFader.Process(transform.position, targetPos + new Vector3(0, currentHeight, 0));
+            // No se puede referenciar EnvironmentController/EnvironmentMode aquí: viven en
+            // Assets/Scripts (Assembly-CSharp), que compila DESPUÉS que Assets/Plugins.
+            // EnvironmentQuery.IsInterior es el puente que mantiene actualizado ese estado.
+            bool isInterior = EnvironmentQuery.IsInterior;
+
+            if (isInterior)
+                _occlusionFader.RestoreAll();
+            else
+                _occlusionFader.Process(transform.position, targetPos + new Vector3(0, currentHeight, 0));
         }
     }
 }

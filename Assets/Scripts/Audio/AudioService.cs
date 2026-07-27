@@ -73,6 +73,10 @@ public sealed class AudioService : MonoBehaviour
     // Coroutines de música rastreadas individualmente para no matar el pool SFX
     Coroutine _crossfadeRoutine;
     Coroutine _fadeOutRoutine;
+    // FIX INC-056: durante un crossfade ambas fuentes (_musicA y _musicB) pueden estar sonando a
+    // la vez. _fadeOutRoutine solo cubría una; esta segunda referencia permite parar la otra
+    // también (ver StopMusic).
+    Coroutine _fadeOutRoutineB;
     Coroutine _setVolumeRoutine;
 
     // Recuerdo qué clip pidió la última escena base (no aditiva)
@@ -490,6 +494,7 @@ public sealed class AudioService : MonoBehaviour
     {
         if (_crossfadeRoutine != null) { StopCoroutine(_crossfadeRoutine); _crossfadeRoutine = null; }
         if (_fadeOutRoutine   != null) { StopCoroutine(_fadeOutRoutine);   _fadeOutRoutine   = null; }
+        if (_fadeOutRoutineB  != null) { StopCoroutine(_fadeOutRoutineB);  _fadeOutRoutineB  = null; }
         if (_setVolumeRoutine != null) { StopCoroutine(_setVolumeRoutine); _setVolumeRoutine = null; }
     }
 
@@ -822,11 +827,20 @@ public sealed class AudioService : MonoBehaviour
     public void StopMusic(float fadeOut = -1f)
     {
         if (fadeOut < 0f) fadeOut = defaultFade;
-        var current = _musicATurn ? _musicB : _musicA;
-        if (!current.isPlaying) return;
+
+        // FIX INC-056: antes solo se paraba la fuente "current" según el flag _musicATurn. Si
+        // había un crossfade en curso (ej: música de batalla del Golem empezando a sonar mientras
+        // la anterior aún no había terminado de apagarse) las DOS fuentes (_musicA y _musicB)
+        // podían estar sonando a la vez, y esta función dejaba la otra sonando de fondo — al
+        // morir, la música principal seguía escuchándose mezclada con la de Game Over. Ahora se
+        // paran ambas fuentes si están sonando, en vez de asumir que solo una lo está.
+        if (!_musicA.isPlaying && !_musicB.isPlaying) return;
+
         StopMusicCoroutines();
         _duckRoutine = null;
-        _fadeOutRoutine = StartCoroutine(FadeOutAndStop(current, fadeOut));
+
+        if (_musicA.isPlaying) _fadeOutRoutine  = StartCoroutine(FadeOutAndStop(_musicA, fadeOut, isSecondary: false));
+        if (_musicB.isPlaying) _fadeOutRoutineB = StartCoroutine(FadeOutAndStop(_musicB, fadeOut, isSecondary: true));
     }
 
     IEnumerator Crossfade(AudioSource from, AudioSource to, float seconds)
@@ -848,9 +862,14 @@ public sealed class AudioService : MonoBehaviour
         _crossfadeRoutine = null;
     }
 
-    IEnumerator FadeOutAndStop(AudioSource src, float seconds)
+    IEnumerator FadeOutAndStop(AudioSource src, float seconds, bool isSecondary = false)
     {
-        if (seconds <= 0f) { src.Stop(); _fadeOutRoutine = null; yield break; }
+        if (seconds <= 0f)
+        {
+            src.Stop();
+            if (isSecondary) _fadeOutRoutineB = null; else _fadeOutRoutine = null;
+            yield break;
+        }
         float start = src.volume, t = 0f;
         while (t < seconds)
         {
@@ -860,7 +879,7 @@ public sealed class AudioService : MonoBehaviour
         }
         src.Stop();
         src.volume = GetDuckedVolume(1f);
-        _fadeOutRoutine = null;
+        if (isSecondary) _fadeOutRoutineB = null; else _fadeOutRoutine = null;
     }
 
     // Ducking simple (para cinemáticas aditivas duckInsteadOfReplace)

@@ -150,7 +150,8 @@
       "Bash(python3 *)",
       "Bash(jq --version)",
       "Bash(node *)",
-      "Bash(xargs -I {} cat \"{}\")"
+      "Bash(xargs -I {} cat \"{}\")",
+      "Bash(Remove-Item *)"
     ]
   }
 }

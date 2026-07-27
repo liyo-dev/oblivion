@@ -29,11 +29,47 @@ public class MagicProjectileSpawner : MonoBehaviour
     [SerializeField] private bool ignoreCasterColliders = true;
     [SerializeField] private GameObject instigatorOverride;
 
+    [Header("Velocidad dinámica (INC-049)")]
+    [Tooltip("Multiplicador de velocidad del proyectil mientras el jugador está volando.")]
+    [SerializeField] private float flyingSpeedMultiplier = 1.5f;
+    [Tooltip("Multiplicador de velocidad del proyectil mientras el jugador está esprintando (en tierra).")]
+    [SerializeField] private float sprintSpeedMultiplier = 1.3f;
+
+    // Referencias para detectar vuelo/sprint (mismo criterio que SprintVFXController)
+    private Animator _animator;
+    private PlayerFlyingController _flyingController;
+    private static readonly int HashInputMagnitude = Animator.StringToHash("InputMagnitude");
+    private static readonly int HashIsGrounded = Animator.StringToHash("IsGrounded");
+
     void Awake()
     {
         if (!controller) controller = GetComponentInParent<vThirdPersonController>();
         if (!targeting)  targeting  = GetComponentInParent<PlayerTargeting>();
         if (!instigatorOverride) instigatorOverride = gameObject;
+
+        if (!_animator) _animator = GetComponentInParent<Animator>();
+        if (!_flyingController) _flyingController = GetComponentInParent<PlayerFlyingController>();
+    }
+
+    /// <summary>
+    /// FIX INC-049: los hechizos deben ir más rápido que el player mientras vuela, y también
+    /// más rápido mientras esprinta. Usa el mismo criterio que SprintVFXController (parámetros
+    /// del Animator de Invector) para detectar sprint, y PlayerFlyingController para el vuelo.
+    /// </summary>
+    private float GetSpeedMultiplier()
+    {
+        if (_flyingController != null && _flyingController.IsFlying)
+            return flyingSpeedMultiplier;
+
+        if (_animator != null)
+        {
+            bool isGrounded = _animator.GetBool(HashIsGrounded);
+            float inputMag  = _animator.GetFloat(HashInputMagnitude);
+            if (isGrounded && inputMag > 1.05f) // InputMagnitude > 1.0 = sprint en Invector
+                return sprintSpeedMultiplier;
+        }
+
+        return 1f;
     }
 
     // ClearSpawnPosition eliminado: ya no se ajusta el spawn dinámicamente
@@ -178,6 +214,9 @@ public class MagicProjectileSpawner : MonoBehaviour
     {
         if (!spell || !spell.prefab) yield break;
 
+        // FIX INC-049: velocidad efectiva ajustada si el player vuela o esprinta.
+        float effectiveSpeed = spell.initialSpeed * GetSpeedMultiplier();
+
         Transform origin = originOverride ? originOverride : transform;
 
         // Dirección y rotación inicial
@@ -267,7 +306,7 @@ public class MagicProjectileSpawner : MonoBehaviour
                 destroyOnHit   = spell.destroyOnHit,
                 lifeTime       = spell.lifeTime,
                 maxRange       = spell.maxRange,
-                initialSpeed   = spell.initialSpeed,
+                initialSpeed   = effectiveSpeed,
                 useGravity     = spell.useGravity,
                 impactVFX      = spell.impactVFX,
                 despawnVFX     = spell.despawnVFX,
@@ -293,14 +332,14 @@ public class MagicProjectileSpawner : MonoBehaviour
         if (mp != null)
         {
             mp.SetKinematic(false);
-            mp.Launch(dir, spell.initialSpeed, spell.useGravity);
+            mp.Launch(dir, effectiveSpeed, spell.useGravity);
         }
         else if (go != null && go.TryGetComponent<Rigidbody>(out var rb))
         {
             rb.isKinematic = false;
             rb.useGravity = spell.useGravity;
             rb.angularVelocity = Vector3.zero;
-            rb.linearVelocity = dir * Mathf.Max(0f, spell.initialSpeed);
+            rb.linearVelocity = dir * Mathf.Max(0f, effectiveSpeed);
         }
         else if (cachedRb != null)
         {
@@ -310,7 +349,7 @@ public class MagicProjectileSpawner : MonoBehaviour
             if (!cachedRb.isKinematic)
             {
                 cachedRb.angularVelocity = Vector3.zero;
-                cachedRb.linearVelocity = dir * Mathf.Max(0f, spell.initialSpeed);
+                cachedRb.linearVelocity = dir * Mathf.Max(0f, effectiveSpeed);
             }
         }
     }
@@ -318,6 +357,9 @@ public class MagicProjectileSpawner : MonoBehaviour
     private GameObject LaunchProjectile(MagicSpellSO spell, Transform origin, Vector3? directionOverride)
     {
         if (!spell || !spell.prefab) return null;
+
+        // FIX INC-049: velocidad efectiva ajustada si el player vuela o esprinta.
+        float effectiveSpeed = spell.initialSpeed * GetSpeedMultiplier();
 
         // === Dirección: si hay targeting activo, usa la dirección de APUNTADO ===
         Vector3 baseForward = transform.forward;
@@ -388,7 +430,7 @@ public class MagicProjectileSpawner : MonoBehaviour
                 destroyOnHit   = spell.destroyOnHit,
                 lifeTime       = spell.lifeTime,
                 maxRange       = spell.maxRange,
-                initialSpeed   = spell.initialSpeed,
+                initialSpeed   = effectiveSpeed,
                 useGravity     = spell.useGravity,
                 impactVFX      = spell.impactVFX,
                 despawnVFX     = spell.despawnVFX,
@@ -407,7 +449,7 @@ public class MagicProjectileSpawner : MonoBehaviour
             rb.interpolation = RigidbodyInterpolation.Interpolate;
             rb.constraints = RigidbodyConstraints.FreezeRotation;
             rb.angularVelocity = Vector3.zero;
-            rb.linearVelocity = dir * Mathf.Max(0f, spell.initialSpeed);
+            rb.linearVelocity = dir * Mathf.Max(0f, effectiveSpeed);
         }
 
         return go;

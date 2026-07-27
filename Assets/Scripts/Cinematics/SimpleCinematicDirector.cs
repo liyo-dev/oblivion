@@ -330,6 +330,9 @@ namespace Game.Cinematics
                     // Fallback a Singleton si ServiceLocator falla
                     Sendero.UI.PlayerHUDV2.Instance.HideHUD();
                 }
+
+                // Ocultar también el minimapa durante la secuencia
+                MinimapController.Instance?.SetHiddenByCinematic(true);
             }
             
             // --- GESTIÓN DE CÁMARAS ---
@@ -755,6 +758,9 @@ namespace Game.Cinematics
                     // Fallback a Singleton
                     Sendero.UI.PlayerHUDV2.Instance.ShowHUD();
                 }
+
+                // Restaurar visibilidad del minimapa
+                MinimapController.Instance?.SetHiddenByCinematic(false);
             }
             
             // Restaurar cámaras

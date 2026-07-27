@@ -34,8 +34,10 @@ public class BattleOrb : MonoBehaviour
     [SerializeField] private float minBounceSpeed  = 0.8f;
 
     [Header("Hover")]
-    [SerializeField] private float hoverHeight    = 0.35f;
-    [SerializeField] private float hoverAmplitude = 0.08f;
+    [Tooltip("Altura sobre el suelo detectado. Se mantiene baja para que el orbe parezca apoyado en el suelo, no flotando.")]
+    [SerializeField] private float hoverHeight    = 0.12f;
+    [Tooltip("Amplitud del bamboleo vertical. 0 = el orbe queda quieto sobre el suelo (sin flotar).")]
+    [SerializeField] private float hoverAmplitude = 0f;
     [SerializeField] private float hoverFrequency = 3f;
     [SerializeField] private float minHoverTime   = 0.25f;
 
@@ -53,8 +55,8 @@ public class BattleOrb : MonoBehaviour
     [SerializeField] private float pulseFrequency = 4f;
 
     [Header("Glow (Light procedural)")]
-    [Tooltip("Activar point light procedural")]
-    [SerializeField] private bool  enableGlow     = true;
+    [Tooltip("Activar point light procedural. Desactivado por defecto: los orbes no deben emitir luz.")]
+    [SerializeField] private bool  enableGlow     = false;
     [SerializeField] private float glowRange      = 1.5f;
     [SerializeField] private float glowIntensity  = 1.2f;
     [SerializeField] private float glowPulseSpeed = 3f;
@@ -369,9 +371,17 @@ public class BattleOrb : MonoBehaviour
             _rb.isKinematic     = true;
         }
 
-        float safeY = Mathf.Max(_groundY + hoverHeight, _spawnY - 0.2f);
+        // FIX INC-051: antes se usaba Mathf.Max(_groundY + hoverHeight, _spawnY - 0.2f). El orbe
+        // aparece 1.5-2.3m por encima del enemigo (spawnCenterOffset + altura aleatoria), así que
+        // "_spawnY - 0.2f" casi siempre era MAYOR que la altura real del suelo y ganaba el Max():
+        // el orbe se teletransportaba de vuelta cerca de su altura de aparición justo al empezar a
+        // flotar, aunque ya hubiera rebotado correctamente hasta el suelo. Resultado: las bolitas
+        // se quedaban flotando en el aire en vez de posarse. Recalculamos el suelo real aquí mismo
+        // (con fallback al último _groundY conocido si el raycast no encuentra nada) en vez de
+        // usar la altura de aparición como referencia.
+        _groundY = RaycastGroundY();
+        float safeY = _groundY + hoverHeight;
         transform.position = new Vector3(transform.position.x, safeY, transform.position.z);
-        _groundY = safeY - hoverHeight;
     }
 
     void UpdateHovering()

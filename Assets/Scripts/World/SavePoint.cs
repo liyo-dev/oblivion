@@ -183,7 +183,10 @@ public class SavePoint : MonoBehaviour
                     Debug.Log("[SavePoint] Partida guardada correctamente");
                 }
                 OnSaveCompleted?.Invoke();
-                ShowSaveSuccessFeedback();
+                // El mensaje de éxito ya lo muestra el Dialogue Manager a través del
+                // confirmFollowUp (DG_PARTIDA_GUARDADA) configurado en el Interactable tras
+                // pulsar "Sí". Mostrarlo también aquí con ConfirmationPopupUI duplicaba el
+                // aviso (un cuadro de diálogo de fondo + el popup encima).
             }
             else
             {
@@ -218,15 +221,6 @@ public class SavePoint : MonoBehaviour
     // Evento opcional para notificar cuando la partida se guarda correctamente
     public event System.Action OnSaveCompleted;
 
-    void ShowSaveSuccessFeedback()
-    {
-        string message = saveSuccessFallback;
-        if (LocalizationManager.Instance != null && !string.IsNullOrEmpty(saveSuccessLocalizationKey))
-            message = LocalizationManager.Instance.Get(saveSuccessLocalizationKey, saveSuccessFallback);
-
-        StartCoroutine(ShowSaveFeedbackNextFrame(message));
-    }
-
     /// <summary>Muestra feedback cuando el guardado está bloqueado</summary>
     void ShowBlockedSaveFeedback()
     {
@@ -244,21 +238,12 @@ public class SavePoint : MonoBehaviour
         // Esperar un frame para permitir que los follow-ups de diálogo se activen primero
         yield return null;
 
-        // Evitar apilar mensajes si ya hay un diálogo activo mostrando el seguimiento del guardado
-        if (DialogueManager.Instance != null && !DialogueManager.Instance.IsOpen)
+        // Feedback de guardado bloqueado: usa el popup de confirmación reutilizable.
+        // (El mensaje de éxito NO pasa por aquí: lo muestra el Dialogue Manager vía el
+        // confirmFollowUp del Interactable). Evitamos abrirlo si ya hay uno abierto.
+        if (ConfirmationPopupUI.Instance != null)
         {
-            var temp = ScriptableObject.CreateInstance<DialogueAsset>();
-            temp.lines = new[]
-            {
-                new DialogueLine
-                {
-                    speakerNameId = string.Empty,
-                    textId = null,
-                    text = message,
-                    portrait = null
-                }
-            };
-            DialogueManager.Instance.StartDialogue(temp, () => Destroy(temp));
+            ConfirmationPopupUI.Instance.Show(message, onConfirm: null);
         }
         else
         {

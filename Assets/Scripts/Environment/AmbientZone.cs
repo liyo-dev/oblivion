@@ -71,6 +71,12 @@ public class AmbientZone : MonoBehaviour
 
     private Transform _playerTransform;
     private Transform _mistOriginalParent;
+    private Transform _footFogOriginalParent;
+
+    // FIX INC-057: rotación de mundo original del plano de niebla de pies, fijada cada frame
+    // mientras está parentado al jugador (ver PlayFootFog/LateUpdate).
+    private Quaternion _footFogLockedRotation = Quaternion.identity;
+    private bool _footFogRotationLocked;
 
 #if UNITY_EDITOR
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -299,6 +305,29 @@ public class AmbientZone : MonoBehaviour
     private void PlayFootFog()
     {
         if (footFogObject == null) return;
+
+        // Igual que con groundMistPS: si el plano de niebla de pies queda fijo en el mundo,
+        // su borde se ve como un "corte" en cuanto el jugador mira hacia el límite de la zona.
+        // Al engancharlo al jugador, el plano viaja con él y ese borde nunca queda a la vista
+        // dentro del área de la zona.
+        if (_playerTransform != null)
+        {
+            _footFogOriginalParent = footFogObject.transform.parent;
+
+            // FIX INC-057: SetParent(..., false) también hereda la ROTACIÓN del jugador, no solo
+            // la posición. Como el plano no es cuadrado (ej: 70x30), al girar el jugador el borde
+            // corto podía acercarse mucho a la cámara y hacerse visible como un "corte" — el
+            // motivo por el que esta niebla se había desactivado en vez de arreglarse. Guardamos
+            // la rotación de mundo original (plano, alineada al suelo) para re-fijarla cada frame
+            // en LateUpdate: el plano sigue la POSICIÓN del jugador pero nunca gira con él.
+            _footFogLockedRotation = footFogObject.transform.rotation;
+            _footFogRotationLocked = true;
+
+            footFogObject.transform.SetParent(_playerTransform, false);
+            footFogObject.transform.localPosition = Vector3.zero;
+            footFogObject.transform.rotation = _footFogLockedRotation;
+        }
+
         if (!footFogObject.activeSelf)
             footFogObject.SetActive(true);
     }
@@ -306,8 +335,25 @@ public class AmbientZone : MonoBehaviour
     private void StopFootFog()
     {
         if (footFogObject == null) return;
+
+        _footFogRotationLocked = false;
+
+        var restoreParent = _footFogOriginalParent != null ? _footFogOriginalParent : transform;
+        footFogObject.transform.SetParent(restoreParent, true);
+        _footFogOriginalParent = null;
+
         if (footFogObject.activeSelf)
             footFogObject.SetActive(false);
+    }
+
+    private void LateUpdate()
+    {
+        // FIX INC-057: reafirmar la rotación del plano de niebla de pies cada frame. Al estar
+        // parentado al jugador (para seguir su posición sin exponer el borde de la zona), Unity
+        // recalcula su rotación de mundo a partir del padre en cuanto éste gira; sin este re-fijado
+        // el plano giraría con el jugador/cámara y volvería a mostrar el "corte" del borde.
+        if (_footFogRotationLocked && footFogObject != null)
+            footFogObject.transform.rotation = _footFogLockedRotation;
     }
 
     // -------------------------------------------------------------------------

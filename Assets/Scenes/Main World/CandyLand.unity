@@ -77317,7 +77317,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b687a38d9c603ef4ea2c981103c66173, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  mode: 1
+  mode: 4
   hint: {fileID: 1976148356}
   hideHintAtStart: 1
   hintAnimDuration: 0.25

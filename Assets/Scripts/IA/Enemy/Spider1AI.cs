@@ -69,11 +69,22 @@ public class Spider1AI : MonoBehaviour
     [SerializeField, Min(0f)] private float hitKnockback = 0f;
     [SerializeField, Min(0f)] private float hitKnockbackDamp = 8f;
 
+    private Targetable _targetable;
+
     void Awake()
     {
         if (!animator) animator = GetComponent<Animator>();
         if (!damageable) damageable = GetComponent<Damageable>();
         if (!agent) agent = GetComponent<NavMeshAgent>();
+
+        // Targetable y EnemyMarker: Spider1AI no pasa por CombatState (que es quien normalmente
+        // los añade), así que hay que asegurarlos aquí. Sin Targetable, PlayerTargeting nunca
+        // muestra el marker de objetivo sobre la araña; sin EnemyMarker, los sistemas de
+        // puertas/gates no se enteran de cuándo muere.
+        _targetable = GetComponent<Targetable>();
+        if (_targetable == null) _targetable = gameObject.AddComponent<Targetable>();
+
+        if (GetComponent<EnemyMarker>() == null) gameObject.AddComponent<EnemyMarker>();
 
         // Guardar posición inicial
         spawnPosition = transform.position;
@@ -246,12 +257,15 @@ public class Spider1AI : MonoBehaviour
     private void EnterChaseMode()
     {
         currentState = SpiderState.Chasing;
-        
+
         if (agent)
         {
             agent.speed = originalSpeed * chaseSpeedMultiplier;
             agent.isStopped = false;
         }
+
+        // Activar el marker de objetivo del jugador (ver PlayerTargeting.Scan)
+        if (_targetable != null) _targetable.isInActiveCombat = true;
     }
 
     private void ExitChaseMode()
@@ -271,6 +285,8 @@ public class Spider1AI : MonoBehaviour
             idleTimer = idleTime;
             if (agent && agent.isOnNavMesh) agent.isStopped = true;
         }
+
+        if (_targetable != null) _targetable.isInActiveCombat = false;
     }
 
     private void ChasePlayer()
@@ -469,6 +485,8 @@ public class Spider1AI : MonoBehaviour
 
         isDead = true;
         currentState = SpiderState.Dead;
+
+        if (_targetable != null) _targetable.isInActiveCombat = false;
 
         if (agent && agent.isOnNavMesh)
         {

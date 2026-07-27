@@ -410,11 +410,28 @@ public class MagicProjectile : MonoBehaviour
         // Daño simple
         if (col)
         {
-            // Buscar Damageable en el propio collider o en sus padres (enemigos con colisionadores hijos)
+            // Buscar Damageable en el propio collider, en sus padres (enemigos con colisionadores hijos)
+            // o, como último recurso, en cualquier parte de la jerarquía raíz. Sin este último fallback,
+            // algunos enemigos con hitboxes en una rama distinta a la del Damageable (ej. sub-objetos de
+            // colisión que no son ancestros directos) recibían el impacto visual (VFX/SFX) pero no
+            // perdían vida, porque GetComponentInParent no encontraba el componente.
             if (!col.TryGetComponent<Damageable>(out var d))
                 d = col.GetComponentInParent<Damageable>();
+            if (d == null)
+                d = col.GetComponentInChildren<Damageable>(true);
+            if (d == null && col.transform.root != null)
+                d = col.transform.root.GetComponentInChildren<Damageable>(true);
+
             if (d != null)
+            {
                 d.TakeDamage(_cfg.damage, _instigator);
+            }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            else
+            {
+                Debug.LogWarning($"[MagicProjectile] ⚠️ Impacto en '{col.gameObject.name}' pero no se encontró Damageable en su jerarquía - no se aplicó daño.");
+            }
+#endif
         }
 
         // Knockback simple (si hay RB dinámico)

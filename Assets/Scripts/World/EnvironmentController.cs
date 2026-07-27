@@ -24,7 +24,20 @@ public class EnvironmentController : MonoBehaviour
     public Material exteriorSkyboxOverride;   // si lo pones, se usará al volver a exterior
     public Camera targetCamera;               // si lo dejas vacío, se resuelve solo
 
-    EnvironmentMode _mode = EnvironmentMode.Unknown;
+    EnvironmentMode _modeValue = EnvironmentMode.Unknown;
+    // Cada asignación a _mode también sincroniza EnvironmentQuery.IsInterior (definido en
+    // Assets/Plugins, ensamblado "first pass"). Es el único modo en que vThirdPersonCamera
+    // (Invector, en Plugins) puede saber si estamos en interior sin poder referenciar
+    // EnvironmentController directamente (Plugins compila antes que Assembly-CSharp).
+    EnvironmentMode _mode
+    {
+        get => _modeValue;
+        set
+        {
+            _modeValue = value;
+            EnvironmentQuery.IsInterior = value == EnvironmentMode.Interior;
+        }
+    }
 
     // snapshot del “exterior” (para restaurar al salir)
     Material _savedRenderSettingsSkybox;

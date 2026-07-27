@@ -44,6 +44,7 @@ namespace Game.NPC
         public bool CanShowFollowPrompt()
         {
             if (_partyMember == null) return false;
+            if (CinematicSequencerBase.AnySequenceActive) return false;
             if (_npcManager?.Context != null &&
                 (_npcManager.Context.IsInCinematic || _npcManager.Context.IsInCombat))
                 return false;
@@ -155,9 +156,16 @@ namespace Game.NPC
 
             if (_partyMember == null) return;
 
-            // Suprimir durante cinemática o combate
-            if (_npcManager?.Context != null &&
-                (_npcManager.Context.IsInCinematic || _npcManager.Context.IsInCombat))
+            // Suprimir durante cinemática o combate.
+            // FIX (mismo patrón que NPCQuestIconManager, INC-059): Context.IsInCinematic solo se
+            // activa vía CinematicState de la FSM. Los CinematicSequencerBase (ej: TabernaSequencer)
+            // sientan a los NPCs desactivando su NPCBehaviourManagerV2 directamente, sin pasar por
+            // esa FSM, por lo que Context.IsInCinematic nunca llega a true durante la secuencia y
+            // el icono "Sígueme"/"Dejar de seguir" podía quedar visible sobre la cabeza del NPC.
+            // Comprobar también CinematicSequencerBase.AnySequenceActive cubre ese caso.
+            if (CinematicSequencerBase.AnySequenceActive ||
+                (_npcManager?.Context != null &&
+                (_npcManager.Context.IsInCinematic || _npcManager.Context.IsInCombat)))
             {
                 HidePrompt();
                 return;

@@ -74,85 +74,94 @@ public class BossIntroPresentation : MonoBehaviour
         // Ocultar toda la UI persistente (SceneBoundUI) con fade
         SceneBoundUI.BeginBossIntro(0.25f);
 
-        // 1. Fade a negro (se salta si la pantalla ya está cubierta, ej: venimos de una cinemática)
-        if (!FeedbackService.IsScreenFaded)
+        // IMPORTANTE: todo lo que sigue va envuelto en try/finally. Si cualquier boss concreto
+        // lanza una excepción a mitad de la presentación (p.ej. referencia nula específica de
+        // ese prefab), el finally garantiza que el HUD/UI se restaure igualmente. Sin esto, un
+        // fallo aislado en un boss dejaba el HUD oculto para siempre durante toda la batalla.
+        try
+        {
+            // 1. Fade a negro (se salta si la pantalla ya está cubierta, ej: venimos de una cinemática)
+            if (!FeedbackService.IsScreenFaded)
+                yield return FeedbackService.ScreenFadeAsync(fadeColor, cameraFadeDuration, fadeIn: true);
+
+            // 2. Cambiar a cámara del boss
+            if (isIndoor)
+            {
+                bossCamera.clearFlags      = CameraClearFlags.SolidColor;
+                bossCamera.backgroundColor = Color.black;
+            }
+            _mainCamera.gameObject.SetActive(false);
+            bossCamera.gameObject.SetActive(true);
+
+            // 3. Revelar cámara del boss
+            yield return FeedbackService.ScreenFadeAsync(fadeColor, cameraFadeDuration, fadeIn: false);
+
+            // 4. Nombre del boss con animación KingdomHearts + degradado (fire-and-forget)
+            float nameDuration    = Mathf.Max(introDuration - cameraFadeDuration - 0.5f, 0.5f);
+            bool  usedDramaticText = false;
+
+            if (DramaticTextOverlayUI.Instance != null)
+            {
+                DramaticTextOverlayUI.Instance.PlayBossName(
+                    bossName, bossNameGradientLeft, bossNameGradientRight, nameDuration, null);
+                usedDramaticText = true;
+            }
+            else if (bossNameCanvas != null && bossNameText != null)
+            {
+                bossNameText.text = bossName;
+                bossNameCanvas.SetActive(true);
+            }
+
+            // 5. Roar y efectos de cámara
+            if (bossRoarClip != null)
+            {
+                if (audioSource != null) audioSource.PlayOneShot(bossRoarClip);
+                else AudioSource.PlayClipAtPoint(bossRoarClip,
+                    bossTransform != null ? bossTransform.position : transform.position);
+            }
+
+            float elapsed  = 0f;
+            bool  shakeDone = false;
+
+            while (elapsed < introDuration)
+            {
+                elapsed += Time.deltaTime;
+                if (!shakeDone && elapsed >= shakeDelay)
+                {
+                    shakeDone = true;
+                    FeedbackService.CameraShake(bossCamera, shakeIntensity, shakeDuration);
+                    FeedbackService.ScreenFlash(Color.white, 0.1f);
+                }
+                yield return null;
+            }
+
+            // Detener texto si aún estuviera reproduciendo (introDuration muy corto)
+            if (usedDramaticText && DramaticTextOverlayUI.Instance != null
+                && DramaticTextOverlayUI.Instance.IsPlaying)
+            {
+                DramaticTextOverlayUI.Instance.ForceStop();
+            }
+
+            // 6. Fade a negro antes de restaurar cámara
             yield return FeedbackService.ScreenFadeAsync(fadeColor, cameraFadeDuration, fadeIn: true);
 
-        // 2. Cambiar a cámara del boss
-        if (isIndoor)
-        {
-            bossCamera.clearFlags      = CameraClearFlags.SolidColor;
-            bossCamera.backgroundColor = Color.black;
+            // 7. Restaurar cámara principal
+            bossCamera.gameObject.SetActive(false);
+            _mainCamera.gameObject.SetActive(true);
+
+            if (bossNameCanvas != null) bossNameCanvas.SetActive(false);
+
+            // 8. Revelar cámara principal
+            yield return FeedbackService.ScreenFadeAsync(fadeColor, cameraFadeDuration, fadeIn: false);
         }
-        _mainCamera.gameObject.SetActive(false);
-        bossCamera.gameObject.SetActive(true);
-
-        // 3. Revelar cámara del boss
-        yield return FeedbackService.ScreenFadeAsync(fadeColor, cameraFadeDuration, fadeIn: false);
-
-        // 4. Nombre del boss con animación KingdomHearts + degradado (fire-and-forget)
-        float nameDuration    = Mathf.Max(introDuration - cameraFadeDuration - 0.5f, 0.5f);
-        bool  usedDramaticText = false;
-
-        if (DramaticTextOverlayUI.Instance != null)
+        finally
         {
-            DramaticTextOverlayUI.Instance.PlayBossName(
-                bossName, bossNameGradientLeft, bossNameGradientRight, nameDuration, null);
-            usedDramaticText = true;
+            // Restaurar toda la UI persistente con fade, pase lo que pase durante la presentación.
+            SceneBoundUI.EndBossIntro(0.35f);
+
+            if (PlayerLockService.HasInstance) PlayerLockService.Instance.Release(this);
+
+            _isPlaying = false;
         }
-        else if (bossNameCanvas != null && bossNameText != null)
-        {
-            bossNameText.text = bossName;
-            bossNameCanvas.SetActive(true);
-        }
-
-        // 5. Roar y efectos de cámara
-        if (bossRoarClip != null)
-        {
-            if (audioSource != null) audioSource.PlayOneShot(bossRoarClip);
-            else AudioSource.PlayClipAtPoint(bossRoarClip,
-                bossTransform != null ? bossTransform.position : transform.position);
-        }
-
-        float elapsed  = 0f;
-        bool  shakeDone = false;
-
-        while (elapsed < introDuration)
-        {
-            elapsed += Time.deltaTime;
-            if (!shakeDone && elapsed >= shakeDelay)
-            {
-                shakeDone = true;
-                FeedbackService.CameraShake(bossCamera, shakeIntensity, shakeDuration);
-                FeedbackService.ScreenFlash(Color.white, 0.1f);
-            }
-            yield return null;
-        }
-
-        // Detener texto si aún estuviera reproduciendo (introDuration muy corto)
-        if (usedDramaticText && DramaticTextOverlayUI.Instance != null
-            && DramaticTextOverlayUI.Instance.IsPlaying)
-        {
-            DramaticTextOverlayUI.Instance.ForceStop();
-        }
-
-        // 6. Fade a negro antes de restaurar cámara
-        yield return FeedbackService.ScreenFadeAsync(fadeColor, cameraFadeDuration, fadeIn: true);
-
-        // 7. Restaurar cámara principal
-        bossCamera.gameObject.SetActive(false);
-        _mainCamera.gameObject.SetActive(true);
-
-        if (bossNameCanvas != null) bossNameCanvas.SetActive(false);
-
-        // 8. Revelar cámara principal
-        yield return FeedbackService.ScreenFadeAsync(fadeColor, cameraFadeDuration, fadeIn: false);
-
-        // Restaurar toda la UI persistente con fade
-        SceneBoundUI.EndBossIntro(0.35f);
-
-        if (PlayerLockService.HasInstance) PlayerLockService.Instance.Release(this);
-
-        _isPlaying = false;
     }
 }

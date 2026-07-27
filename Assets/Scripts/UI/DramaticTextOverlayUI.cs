@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
+using Sendero.UI;
 
 [Serializable]
 public struct DramaticStylePreset
@@ -88,6 +89,12 @@ public class DramaticTextOverlayUI : MonoBehaviour
     Coroutine _playRoutine;
     Tween     _bgPulseTween;
 
+    // FIX: el overlay solo tapaba visualmente el HUD/minimapa/icono de tiempo con el fondo negro;
+    // no los ocultaba de verdad. Dependía de que el Canvas de este overlay se dibujara por encima
+    // del Canvas del HUD, algo no garantizado cuando ambos comparten Sorting Order (ver Start.unity) —
+    // funcionaba por casualidad en el editor y fallaba en build. Ahora se ocultan explícitamente.
+    bool      _gameplayUiHidden;
+
     // ── Lifecycle ─────────────────────────────────────────────────────────
 
     void Awake()
@@ -140,7 +147,13 @@ public class DramaticTextOverlayUI : MonoBehaviour
         }
 
         gameObject.SetActive(true); // debe estar activo antes de StartCoroutine
-        if (_playRoutine != null) StopCoroutine(_playRoutine);
+        if (_playRoutine != null)
+        {
+            StopCoroutine(_playRoutine);
+            // StopCoroutine no ejecuta el finally de RunSequence: restaurar por si la secuencia
+            // anterior se cortó a mitad y dejó el HUD/minimapa/icono ocultos.
+            ShowGameplayUI();
+        }
         if (config.dreamMode) _dreamSparkles?.StartSparkles();
         _playRoutine = StartCoroutine(RunSequence(config, onComplete));
     }
@@ -164,6 +177,27 @@ public class DramaticTextOverlayUI : MonoBehaviour
         _rootGroup.blocksRaycasts = false;
         _isPlaying = false;
         gameObject.SetActive(false);
+        ShowGameplayUI();
+    }
+
+    /// <summary>Oculta el HUD, el minimapa y el icono del período del día mientras dura la secuencia.</summary>
+    void HideGameplayUI()
+    {
+        if (_gameplayUiHidden) return;
+        _gameplayUiHidden = true;
+        PlayerHUDV2.Instance?.HideHUD();
+        MinimapController.Instance?.SetHiddenByCinematic(true);
+        TimeOfDayIndicator.Instance?.Hide();
+    }
+
+    /// <summary>Restaura el HUD, el minimapa y el icono del período del día al terminar la secuencia.</summary>
+    void ShowGameplayUI()
+    {
+        if (!_gameplayUiHidden) return;
+        _gameplayUiHidden = false;
+        PlayerHUDV2.Instance?.ShowHUD();
+        MinimapController.Instance?.SetHiddenByCinematic(false);
+        TimeOfDayIndicator.Instance?.Show();
     }
 
     // ── Secuencia ─────────────────────────────────────────────────────────
@@ -173,35 +207,43 @@ public class DramaticTextOverlayUI : MonoBehaviour
         _isPlaying = true;
         _dreamModeActive = config.dreamMode;
         if (config.dreamMode) _dreamBackground?.StartDream();
+        HideGameplayUI();
 
-        for (int i = 0; i < config.phrases.Length; i++)
+        try
         {
-            var current = config.phrases[i];
-            bool prevFullBlack = i > 0 && config.phrases[i - 1].background == DramaticTextBackground.FullBlack;
-            bool nextFullBlack = i < config.phrases.Length - 1 && config.phrases[i + 1].background == DramaticTextBackground.FullBlack;
-            bool currentFullBlack = current.background == DramaticTextBackground.FullBlack;
+            for (int i = 0; i < config.phrases.Length; i++)
+            {
+                var current = config.phrases[i];
+                bool prevFullBlack = i > 0 && config.phrases[i - 1].background == DramaticTextBackground.FullBlack;
+                bool nextFullBlack = i < config.phrases.Length - 1 && config.phrases[i + 1].background == DramaticTextBackground.FullBlack;
+                bool currentFullBlack = current.background == DramaticTextBackground.FullBlack;
 
-            // Si venimos de FullBlack y la actual también lo es, no hacer fade de entrada.
-            // KingdomHearts tiene su propia gestión de visibilidad (vértices en alpha=0),
-            // por eso nunca salta aunque la pantalla ya esté en negro.
-            bool skipEntry = prevFullBlack && currentFullBlack
-                             && current.entryAnim != DramaticEntryAnimation.KingdomHearts;
-            bool skipExit  = currentFullBlack && nextFullBlack;
+                // Si venimos de FullBlack y la actual también lo es, no hacer fade de entrada.
+                // KingdomHearts tiene su propia gestión de visibilidad (vértices en alpha=0),
+                // por eso nunca salta aunque la pantalla ya esté en negro.
+                bool skipEntry = prevFullBlack && currentFullBlack
+                                 && current.entryAnim != DramaticEntryAnimation.KingdomHearts;
+                bool skipExit  = currentFullBlack && nextFullBlack;
 
-            yield return ShowPhrase(current, skipEntry, skipExit);
+                yield return ShowPhrase(current, skipEntry, skipExit);
 
-            if (i < config.phrases.Length - 1 && config.pauseBetween > 0f)
-                yield return new WaitForSecondsRealtime(config.pauseBetween);
+                if (i < config.phrases.Length - 1 && config.pauseBetween > 0f)
+                    yield return new WaitForSecondsRealtime(config.pauseBetween);
+            }
+        }
+        finally
+        {
+            _dreamModeActive = false;
+            _dreamSparkles?.StopSparkles();
+            _dreamBackground?.StopDream();
+            _bgPulseTween?.Kill();
+            _bgPulseTween = null;
+            gameObject.SetActive(false);
+            _isPlaying = false;
+            _playRoutine = null;
+            ShowGameplayUI();
         }
 
-        _dreamModeActive = false;
-        _dreamSparkles?.StopSparkles();
-        _dreamBackground?.StopDream();
-        _bgPulseTween?.Kill();
-        _bgPulseTween = null;
-        gameObject.SetActive(false);
-        _isPlaying = false;
-        _playRoutine = null;
         onComplete?.Invoke();
     }
 

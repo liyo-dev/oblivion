@@ -33,7 +33,7 @@ public class ConfirmationPopupUI : MonoBehaviour
     private Action _onCancel;
     private bool _isShown;
     private float _savedTimeScale;
-    private bool _confirmSelected = true;
+    private bool _confirmSelected = false;
     private Coroutine _blinkRoutine;
     private float _shownAt;
     private GameObject _previousSelected;
@@ -76,7 +76,7 @@ public class ConfirmationPopupUI : MonoBehaviour
         if (cancelButton)  { cancelButton.onClick.RemoveAllListeners();  cancelButton.onClick.AddListener(Cancel);  }
 
         _isShown = true;
-        _confirmSelected = true;
+        _confirmSelected = false;
         _shownAt = Time.unscaledTime;
         if (panel) panel.SetActive(true);
 

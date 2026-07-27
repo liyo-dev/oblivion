@@ -19,6 +19,12 @@ namespace Director
         [Tooltip("Si se asigna, el trigger solo se activa cuando esta misión esté en curso o completada.")]
         [SerializeField] private QuestData requiredQuest;
 
+        [Tooltip("Índice del paso (0-based) en el que debe estar la misión para que el trigger se active.\n" +
+                 "-1 = sin requisito de paso (comportamiento original: basta con que la misión no esté Inactive).\n" +
+                 "N >= 0 = la misión debe estar Active, con el paso N sin completar y el paso N-1 (si existe) completado.\n" +
+                 "Ejemplo: 1 = solo durante el step 01 (una vez completado el step 00, antes de completar el step 01).")]
+        [SerializeField] private int requiredStepIndex = -1;
+
         private void Start()
         {
             isEnabled = true;
@@ -28,7 +34,21 @@ namespace Director
         {
             if (requiredQuest == null) return true;
             if (QuestManager.Instance == null) return false;
-            return QuestManager.Instance.GetState(requiredQuest.questId) != QuestState.Inactive;
+
+            var state = QuestManager.Instance.GetState(requiredQuest.questId);
+
+            // Sin requisito de paso: comportamiento original (misión iniciada o completada).
+            if (requiredStepIndex < 0)
+                return state != QuestState.Inactive;
+
+            // Con requisito de paso: la misión debe estar activa y encontrarse EXACTAMENTE en ese paso.
+            if (state != QuestState.Active) return false;
+            if (QuestManager.Instance.IsStepCompleted(requiredQuest.questId, requiredStepIndex)) return false;
+            if (requiredStepIndex > 0 &&
+                !QuestManager.Instance.IsStepCompleted(requiredQuest.questId, requiredStepIndex - 1))
+                return false;
+
+            return true;
         }
 
         private void OnTriggerEnter(Collider collision)

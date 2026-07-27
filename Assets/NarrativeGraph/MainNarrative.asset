@@ -922,9 +922,9 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 9958f726-fded-4988-b74e-a7675ae1429d
-        position: {x: 2064, y: -370}
+        position: {x: 1502.0001, y: -823.49994}
         outputs:
-        - 0c0af6c1-722a-426a-9528-0565bba2ca06
+        - 14dab578-84ac-40c4-8874-1f724ff76437
         eventKey: AWAKEN_FAILED
     - rid: 5290829413007229288
       type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}

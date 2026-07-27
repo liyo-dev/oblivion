@@ -198,6 +198,13 @@ public class GameOverManager : MonoBehaviour
             Debug.Log("[GameOverManager] 🔴 Flash de muerte activado");
         }
 
+        // 1b. Limpiar el estado de cambio de personaje (destruye el NPC instanciado de Will si
+        // lo hubiera). Sin esto, si el jugador moría mientras controlaba a Liam/Estela, el NPC de
+        // Will quedaba instanciado y sobrevivía al Game Over; al recargar la partida y volver a
+        // cambiar de personaje, ActiveCharacterSwapper podía terminar creando un segundo Will
+        // (INC: "de pronto hay dos Will" tras un Game Over).
+        ActiveCharacterSwapper.Instance?.ResetState();
+
         // 2. Reproducir música/SFX de Game Over
         PlayGameOverAudio();
 
@@ -230,10 +237,18 @@ public class GameOverManager : MonoBehaviour
 
     private void PlayGameOverAudio()
     {
-        if (AudioService.Instance != null && !string.IsNullOrEmpty(gameOverAudioEvent))
+        if (AudioService.Instance != null)
         {
-            AudioService.Instance.PlaySFX(gameOverAudioEvent);
-            Debug.Log($"[GameOverManager] 🔊 Audio '{gameOverAudioEvent}' reproducido");
+            // Detener la música de gameplay/batalla: antes solo se reproducía el SFX de Game Over
+            // encima de la música que ya estuviera sonando (ej. la del Golem), quedando las dos
+            // mezcladas. Un fade corto evita un corte seco.
+            AudioService.Instance.StopMusic(0.3f);
+
+            if (!string.IsNullOrEmpty(gameOverAudioEvent))
+            {
+                AudioService.Instance.PlaySFX(gameOverAudioEvent);
+                Debug.Log($"[GameOverManager] 🔊 Audio '{gameOverAudioEvent}' reproducido");
+            }
         }
     }
 
