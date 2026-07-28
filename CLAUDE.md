@@ -30,6 +30,8 @@ Toda la documentación técnica detallada está en **`TDD.md`** (fuente de verda
 - `StartCoroutine(...)` sin comprobar si ya hay una corriendo — acumula corrutinas
 - `SetActive(...)` sin guard de estado previo — dispara layout rebuilds
 
+**VFX de un solo uso (impacto, explosión, despawn):** nunca `Instantiate(...); Destroy(fx, t)` directo — usar `VfxPoolService.Instance.Play(prefab, pos, rot, lifetime)` (`Core/Pooling/VfxPoolService.cs`). Ver TDD.md § 12 "Instancias y pools" para el patrón completo y la lista de sitios aún pendientes de migrar.
+
 **Physics:**
 ```csharp
 // NUNCA:
@@ -116,20 +118,20 @@ El `Advance()` ya maneja fork detection. El `WaitCustomEventNode` ya tiene su me
 
 Estos bugs están documentados en **TDD.md § 13**. No introducir más instancias del mismo patrón y no asumir que son accidentales.
 
-### Críticos (pendientes de corrección)
+### Críticos (todos resueltos — verificado Julio 2026)
 
-| # | Archivo | Descripción breve |
-|---|---------|-------------------|
-| C1 | `Audio/AudioService.cs` | `StopAllCoroutines()` en `PlayMusic` destruye corrutinas del pool SFX → leak de AudioSource |
-| C2 | `Core/SaveSystem.cs:28` | `File.WriteAllText` no atómico → save corrupto si hay crash |
-| C3 | `Quests/QuestManager.cs:921` | `FindObjectsByType` en cada evento de inventario → O(n×m) |
-| C4 | `Player/MagicCaster.cs:53` | `new List<MagicSlot>(_slotCooldowns.Keys)` en `Update` → GC cada frame |
-| C5 | `Player/PlayerBattleModeController.cs:278` | 3× `GetComponentInChildren` en `Update` por collider |
-| C6 | `Attacks/MagicProjectil.cs:229` | `OverlapSphereNonAlloc` en `Update` por cada proyectil en vuelo |
+El catálogo de Mayo 2026 quedó desactualizado; una pasada de optimización posterior ("Fase 2") corrigió C1-C6 sin volcarlo de vuelta a esta tabla. Antes de "arreglar" algo de aquí, comprobar primero el archivo actual.
+
+- **C1** `Audio/AudioService.cs` — ya no usa `StopAllCoroutines()` en `PlayMusic`. Existe `StopMusicCoroutines()` dedicado que solo detiene las corrutinas de música por referencia explícita, sin tocar el pool SFX (comentario explícito en el código sobre por qué).
+- **C2** `Core/SaveSystem.cs` — escritura atómica: escribe a `.tmp` y hace `File.Move` al path final. Un crash a mitad de escritura deja el save anterior intacto.
+- **C3** `Quests/QuestManager.cs` — `OnInventoryItemAdded` usa `FindQuestChainEntry`, que consulta un índice cacheado (`_questChainIndex`) reconstruido solo cuando está `dirty` (cambio de escena), no en cada evento de inventario.
+- **C4** `Attacks/MagicCaster.cs` — `Update()` itera el array estático `AllSlots` sin allocar.
+- **C5** `Player/PlayerBattleModeController.cs` — `DetectEnemiesNearby()` usa `ActiveCombatRegistry.Count`, O(1).
+- **C6** `Attacks/MagicProjectil.cs` — el `OverlapSphereNonAlloc` solo se llama al resolver un impacto, no en `Update`.
 
 ### Importantes (I1–I17)
 
-Ver tabla completa en TDD.md § 13. Incluyen: grace period de diálogos (I1), GetComponent por línea de diálogo (I2), corrutinas acumuladas en MagicSlotsUI (I3), listeners duplicados en PlayerHealthUI (I4), locks innecesarios en CollectiblePopupQueue (I5), HashSet allocation en MenuManager.AnyOpenExcept (I6), Reflection en ShopUI/PlayerActionManager/PlayerLevitationController (I7–I9), corrutina sin timeout en GameBootService (I10), FogZone variables estáticas (I12), SimpleCinematicDirector timeScale (I14), Invoke no cancelado en PlayerCarrySystem (I15), doble daño en MagicProjectil (I16), Resources.LoadAll en Inventory fallback (I17).
+Ver tabla completa en TDD.md § 13. **La mayoría ya está resuelta** (verificado Julio 2026): I2, I3, I4, I6, I7, I8, I11, I15, I16, I17. Genuinamente pendientes o sin verificar: I1 (grace period diálogos, UX), I5 (locks residuales en paths de error, impacto ≈0), I9 (reflection cacheada en `PlayerFlyingController`, solo 2 llamadas por vuelo, impacto ≈0), I10 (corrutina sin timeout en GameBootService), I12 (`FogZone.cs` ya no existe, confirmar dónde quedó esa lógica), I13 (`AdditiveSceneCinematic.PlayAndBlock`, correctness), I14 (`Time.timeScale` en SimpleCinematicDirector, probablemente mitigado pero no confirmado al 100%).
 
 ---
 

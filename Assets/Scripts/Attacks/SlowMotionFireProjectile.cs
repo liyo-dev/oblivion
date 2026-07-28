@@ -127,7 +127,7 @@ public class SlowMotionFireProjectile : MonoBehaviour
         _ended = true;
 
         if (collisionVFX != null)
-            Destroy(Instantiate(collisionVFX, point, Quaternion.identity), 3f);
+            VfxPoolService.Instance.Play(collisionVFX, point, Quaternion.identity, 3f);
 
         OnHitByPlayerFireball?.Invoke();
         Destroy(gameObject);

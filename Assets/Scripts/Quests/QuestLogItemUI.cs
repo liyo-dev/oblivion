@@ -21,7 +21,7 @@ public class QuestLogItemUI : MonoBehaviour
     [SerializeField] private Color colorInactive = new Color(0.6f,0.6f,0.6f);
     [SerializeField] private Color colorActive = new Color(0.2f,0.6f,1f);
     [SerializeField] private Color colorCompleted = new Color(0.3f,0.8f,0.4f);
-    
+
     [Header("Estilos - Sprites State Pill")]
     [Tooltip("Sprite del state pill cuando la quest está activa (azul)")]
     [SerializeField] private Sprite statePillSpriteActive;
@@ -29,8 +29,51 @@ public class QuestLogItemUI : MonoBehaviour
     [SerializeField] private Sprite statePillSpriteCompleted;
 
     private bool _isExpanded = false;
-    
+
+    // Cache para poder deshacer la animación de "completado" (QuestLogListUI.AnimateQuestCompletion:
+    // flash de color + punch scale + fade) cuando este GameObject se reutiliza como pool en vez de
+    // Destroy+Instantiate en QuestLogListUI.Rebuild().
+    private RectTransform _rootRect;
+    private Image _rootImage;
+    private CanvasGroup _canvasGroup;
+    private Vector3 _defaultScale;
+    private Color _defaultColor;
+    private bool _defaultsCached;
+
     public string QuestId { get; private set; }
+
+    void Awake()
+    {
+        CacheDefaults();
+    }
+
+    private void CacheDefaults()
+    {
+        if (_defaultsCached) return;
+        _rootRect = GetComponent<RectTransform>();
+        _rootImage = GetComponent<Image>();
+        _canvasGroup = GetComponent<CanvasGroup>();
+        _defaultScale = _rootRect != null ? _rootRect.localScale : Vector3.one;
+        _defaultColor = _rootImage != null ? _rootImage.color : Color.white;
+        _defaultsCached = true;
+    }
+
+    /// <summary>
+    /// Revierte el estado visual dejado por la animación de completado (color, escala, alpha)
+    /// antes de reutilizar este item para otra quest. Ver QuestLogListUI.Rebuild().
+    /// </summary>
+    public void ResetVisualState()
+    {
+        CacheDefaults();
+        if (_rootRect != null) _rootRect.localScale = _defaultScale;
+        if (_rootImage != null) _rootImage.color = _defaultColor;
+        if (_canvasGroup != null)
+        {
+            _canvasGroup.alpha = 1f;
+            _canvasGroup.interactable = true;
+            _canvasGroup.blocksRaycasts = true;
+        }
+    }
 
     public void Bind(QuestManager.RuntimeQuest data)
     {

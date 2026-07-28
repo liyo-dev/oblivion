@@ -514,7 +514,7 @@ public class StarAwakeningSequencer : CinematicSequencerBase
             : (willCastOrigin != null ? willCastOrigin.position + willTransform.forward * 3f : Vector3.zero);
 
         if (explosionVFX != null)
-            Destroy(Instantiate(explosionVFX, pos, Quaternion.identity), 3f);
+            VfxPoolService.Instance.Play(explosionVFX, pos, Quaternion.identity, 3f);
 
         if (_activeProjectile != null)
         {

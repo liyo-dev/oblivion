@@ -195,6 +195,17 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
         _pending.Remove(key);
     }
 
+    /// <summary>
+    /// True si hay algún oyente suscrito AHORA MISMO a esta clave (vía OnCustom).
+    /// Pensado para eventos "en vivo" ligados a un estado físico/transitorio (p.ej. el
+    /// jugador cruzando un trigger de zona), donde NO queremos el comportamiento sticky
+    /// de RaiseCustom (que banca el evento en _pending/_raised para cuando aparezca un
+    /// oyente). Si el emisor solo debe contar como válido mientras alguien lo está
+    /// esperando de verdad, debe comprobar esto antes de llamar a RaiseCustom.
+    /// </summary>
+    public bool HasCustomListener(string key)
+        => !string.IsNullOrWhiteSpace(key) && _custom.ContainsKey(key);
+
     public void ResetState()
     {
         ResetState(preservePending: false);

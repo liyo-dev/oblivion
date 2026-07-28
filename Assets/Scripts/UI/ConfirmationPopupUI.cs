@@ -60,6 +60,13 @@ public class ConfirmationPopupUI : MonoBehaviour
         _savedTimeScale = Time.timeScale;
         Time.timeScale = 0f;
 
+        // Sin esto, el mapa de acciones GamePlay seguía activo mientras el popup estaba
+        // abierto: el D-Pad usado para navegar Sí/No también cambiaba de personaje
+        // (PartyControlManager) y el botón Sur usado para confirmar también hacía saltar
+        // al jugador (GamepadInputReader.JumpPressed no está suprimido). Mismo patrón que
+        // usan DialogueManager, QuestMenuManager, TeleportUI, etc.
+        Core.PlayerInputManager.Instance?.PushUIMode();
+
         // Guardamos qué botón tenía el foco antes de abrir el popup para poder
         // restaurar la selección al cerrarlo. Sin esto, el EventSystem se queda
         // sin objeto seleccionado y el menú deja de responder a mando/teclado
@@ -97,7 +104,7 @@ public class ConfirmationPopupUI : MonoBehaviour
         var gp = Gamepad.current;
         if (gp != null)
         {
-            if (gp.buttonSouth.wasPressedThisFrame)  { Confirm(); return; }
+            if (gp.buttonSouth.wasPressedThisFrame)  { ActivateSelected(); return; }
             if (gp.buttonEast.wasPressedThisFrame)   { Cancel();  return; }
             if (gp.dpad.left.wasPressedThisFrame || gp.leftStick.left.wasPressedThisFrame)
                 ToggleSelection();
@@ -107,17 +114,26 @@ public class ConfirmationPopupUI : MonoBehaviour
         var kb = Keyboard.current;
         if (kb != null)
         {
-            if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame) { Confirm(); return; }
+            if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame) { ActivateSelected(); return; }
             if (kb.escapeKey.wasPressedThisFrame) { Cancel(); return; }
             if (kb.leftArrowKey.wasPressedThisFrame || kb.rightArrowKey.wasPressedThisFrame || kb.tabKey.wasPressedThisFrame)
                 ToggleSelection();
         }
 #else
-        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) { Confirm(); return; }
+        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) { ActivateSelected(); return; }
         if (Input.GetKeyDown(KeyCode.Escape)) { Cancel(); return; }
         if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.Tab))
             ToggleSelection();
 #endif
+    }
+
+    // FIX: el botón Sur/Enter confirmaba siempre, incluso con "No" resaltado (el jugador
+    // navegaba hasta "No" con el D-Pad y al pulsar Sur igualmente se ejecutaba Confirm()).
+    // Ahora respeta cuál de los dos botones está seleccionado en ese momento.
+    void ActivateSelected()
+    {
+        if (_confirmSelected) Confirm();
+        else Cancel();
     }
 
     void ToggleSelection()
@@ -189,6 +205,17 @@ public class ConfirmationPopupUI : MonoBehaviour
         _isShown = false;
         StopBlink();
         Time.timeScale = _savedTimeScale;
+        Core.PlayerInputManager.Instance?.PopUIMode();
+
+        // El botón Sur (confirmar) es el mismo botón que Jump/Interact, y el botón Este
+        // (cancelar) es el mismo botón que la magia derecha/levitación. PopUIMode() reactiva
+        // el mapa GamePlay de forma síncrona, así que si el jugador todavía tiene el botón
+        // físicamente pulsado en este frame, el gameplay lo interpreta como una pulsación
+        // nueva (p.ej. "No" hacía levitar al personaje). Mismo patrón que ShopUI/TeleportUI/
+        // PlayerEquipmentMenuController al cerrar con Cancel.
+        Core.GamepadInputReader.IgnoreCancelButton(0.3f);
+        Core.GamepadInputReader.IgnoreJumpButton(0.3f);
+
         if (panel) panel.SetActive(false);
         if (confirmButton) confirmButton.onClick.RemoveAllListeners();
         if (cancelButton)  cancelButton.onClick.RemoveAllListeners();

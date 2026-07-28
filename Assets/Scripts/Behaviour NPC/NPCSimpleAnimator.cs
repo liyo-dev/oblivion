@@ -195,11 +195,27 @@ public class NPCSimpleAnimator : MonoBehaviour
     {
         if (animator == null || string.IsNullOrEmpty(dizzyState))
             return false;
-        
+
         AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
         return stateInfo.IsName(dizzyState);
     }
-    
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    /// <summary>
+    /// Solo para diagnóstico en Editor/Development Build: valor actual del InputMagnitude
+    /// que este NPCSimpleAnimator está aplicando al Animator.
+    /// </summary>
+    public float DebugCurrentMovementSpeed => _currentMovementSpeed;
+
+    /// <summary>
+    /// Solo para diagnóstico: el NavMeshAgent que este NPCSimpleAnimator está usando
+    /// para sincronizar la animación de locomoción (SyncWithNavMeshAgent). Si no coincide
+    /// con el agente que un sistema externo está moviendo (p.ej. un sequencer cinemático),
+    /// la animación nunca reflejará el movimiento real.
+    /// </summary>
+    public NavMeshAgent DebugSyncedAgent => navAgent;
+#endif
+
     #endregion
     
     #region Enums

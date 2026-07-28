@@ -383,12 +383,11 @@ public class MagicProjectile : MonoBehaviour
     /// </summary>
     void SpawnImpactEffects(Vector3 hitPoint)
     {
-        // VFX de impacto
+        // VFX de impacto (pooled — evita GC spikes en combate con muchos proyectiles)
         if (_cfg.impactVFX)
         {
-            var fx = Instantiate(_cfg.impactVFX, hitPoint, Quaternion.identity);
-            float destroyTime = _cfg.vfxLifetime > 0f ? _cfg.vfxLifetime : 3f;
-            Destroy(fx, destroyTime);
+            float lifetime = _cfg.vfxLifetime > 0f ? _cfg.vfxLifetime : 3f;
+            VfxPoolService.Instance.Play(_cfg.impactVFX, hitPoint, Quaternion.identity, lifetime);
         }
         
         // SFX de impacto
@@ -457,13 +456,11 @@ public class MagicProjectile : MonoBehaviour
         _ended = true;
 
 
-        // Si muere sin impactar (TTL o rango), dispara VFX de despawn
+        // Si muere sin impactar (TTL o rango), dispara VFX de despawn (pooled)
         if (!byImpact && _cfg.despawnVFX)
         {
-            var fx = Instantiate(_cfg.despawnVFX, transform.position, Quaternion.identity);
-            // 🔥 CORRECCIÓN: Siempre destruir el VFX después de un tiempo
-            float destroyTime = _cfg.vfxLifetime > 0f ? _cfg.vfxLifetime : 3f; // 3s por defecto
-            Destroy(fx, destroyTime);
+            float lifetime = _cfg.vfxLifetime > 0f ? _cfg.vfxLifetime : 3f; // 3s por defecto
+            VfxPoolService.Instance.Play(_cfg.despawnVFX, transform.position, Quaternion.identity, lifetime);
         }
 
         // Si usas pooling, reemplaza por Despawn

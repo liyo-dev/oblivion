@@ -753,7 +753,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 18293a97-824e-4a42-b35b-a28365fd1601
-        position: {x: 4123, y: 4386}
+        position: {x: 4147, y: 4386}
         outputs:
         - 9ea2d2e7-363d-46aa-8f18-ba93cca2b5d7
         questId: ELDRAN_MISSION14
@@ -922,7 +922,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 9958f726-fded-4988-b74e-a7675ae1429d
-        position: {x: 1502.0001, y: -823.49994}
+        position: {x: 1502, y: -823}
         outputs:
         - 14dab578-84ac-40c4-8874-1f724ff76437
         eventKey: AWAKEN_FAILED
@@ -1104,7 +1104,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 7b8d3392-e124-4510-a26b-3180ee1c378e
-        position: {x: 2633, y: 4386}
+        position: {x: 2596, y: 4383}
         outputs:
         - 5174be77-fb15-4c62-a78f-628406a93537
         landscapeFocusId: ReinoExit_LandscapeShot
@@ -1134,7 +1134,7 @@ MonoBehaviour:
         position: {x: 3335, y: 4384}
         outputs:
         - 3b9cb25d-ad9d-4d7a-b8fb-04bc049f95ca
-        eventKey: EVT_REINO_EXIT_BOUNDARY
+        eventKey: EVT_REINOEXIT_BANTER_START
     - rid: 5290829545210380759
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:

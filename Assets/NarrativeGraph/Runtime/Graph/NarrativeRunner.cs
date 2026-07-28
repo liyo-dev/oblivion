@@ -313,16 +313,37 @@ public class NarrativeRunner : MonoBehaviour
                 var nestedForkKey = $"__forked_{node.guid}";
                 if (Blackboard.Get<bool>(nestedForkKey, false))
                 {
+                    // "node == start" solo es cierto en la primera vuelta del while: significa que
+                    // esta corrutina ARRANCA en este fork porque se está reanudando desde el
+                    // blackboard (recarga/guardado). Ahí sí toca reanudar subramas persistidas.
+                    //
+                    // Si en cambio llegamos a este mismo nodo por avance EN VIVO dentro de esta
+                    // misma sesión (p. ej. un bucle de reintento cuya salida de fallo vuelve a
+                    // apuntar a este fork), no se puede tratar como resume: RelaunchForkBranches
+                    // volvería a resolver esta rama al mismo nodo sin ningún yield de por medio,
+                    // entrando en recursión síncrona infinita (StackOverflowException — bug
+                    // reproducido con el reintento de StarAwakening). En ese caso hay que
+                    // re-forkear limpio en vez de "resumir".
+                    if (node == start)
+                    {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    Debug.Log($"[NarrativeRunner] Fork anidado '{node.guid}' en rama {branchIndex} — reanudando subramas sin re-ejecutar nodo.");
+                        Debug.Log($"[NarrativeRunner] Fork anidado '{node.guid}' en rama {branchIndex} — reanudando subramas sin re-ejecutar nodo.");
 #endif
-                    if (track)
-                        Blackboard.Set($"__fork_{forkGuid}_{branchIndex}_node", node.guid);
-                    RelaunchForkBranches(node.guid, node.outputs);
-                    // Si todas las subramas del fork anidado ya estaban completas, marcar esta rama como completa
-                    if (track && AreAllBranchesDone(node.guid, node.outputs))
-                        Blackboard.Set($"__fork_{forkGuid}_{branchIndex}_node", "__DONE__");
-                    yield break;
+                        if (track)
+                            Blackboard.Set($"__fork_{forkGuid}_{branchIndex}_node", node.guid);
+                        RelaunchForkBranches(node.guid, node.outputs);
+                        // Si todas las subramas del fork anidado ya estaban completas, marcar esta rama como completa
+                        if (track && AreAllBranchesDone(node.guid, node.outputs))
+                            Blackboard.Set($"__fork_{forkGuid}_{branchIndex}_node", "__DONE__");
+                        yield break;
+                    }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    Debug.LogWarning($"[NarrativeRunner] Fork '{node.guid}' revisitado en vivo (rama {branchIndex}) — re-forkeando en vez de reanudar, para evitar recursión infinita.");
+#endif
+                    Blackboard.Set(nestedForkKey, false);
+                    // No hacemos yield break: cae al Enter normal de abajo, que volverá a marcar
+                    // el fork como activo y relanzará sus ramas desde cero.
                 }
             }
 

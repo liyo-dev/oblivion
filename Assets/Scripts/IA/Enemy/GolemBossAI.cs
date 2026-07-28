@@ -1205,10 +1205,8 @@ public class GolemBossAI : MonoBehaviour
         // VFX de impacto
         if (punchImpactVFX)
         {
-            // TODO: Usar un sistema de pooling
             Vector3 impactPos = transform.position + transform.forward * 2f;
-            GameObject vfx = Instantiate(punchImpactVFX, impactPos, Quaternion.identity);
-            Destroy(vfx, 2f);
+            VfxPoolService.Instance.Play(punchImpactVFX, impactPos, Quaternion.identity, 2f);
         }
         
         // Esperar fin de animación
@@ -1440,24 +1438,20 @@ public class GolemBossAI : MonoBehaviour
         // VFX de onda expansiva
         if (shockwaveVFX)
         {
-            // TODO: Usar un sistema de pooling
-            GameObject vfx = Instantiate(shockwaveVFX, impactPos, Quaternion.identity);
-            vfx.transform.localScale = Vector3.one * (shockwaveRadius / 5f); // Escalar según radio
-            Destroy(vfx, 3f);
+            Transform vfx = VfxPoolService.Instance.Play(shockwaveVFX, impactPos, Quaternion.identity, 3f);
+            if (vfx != null) vfx.localScale = Vector3.one * (shockwaveRadius / 5f); // Escalar según radio
             Debug.Log($"[GolemBossAI] 💥 VFX de onda expansiva creado");
         }
         else
         {
             Debug.LogWarning($"[GolemBossAI] 💥 ⚠️ No hay VFX de onda expansiva configurado!");
         }
-        
+
         // VFX de polvo al aterrizar
         if (landingDustVFX)
         {
-            // TODO: Usar un sistema de pooling
-            GameObject dust = Instantiate(landingDustVFX, impactPos, Quaternion.identity);
-            dust.transform.localScale = Vector3.one * 2f;
-            Destroy(dust, 3f);
+            Transform dust = VfxPoolService.Instance.Play(landingDustVFX, impactPos, Quaternion.identity, 3f);
+            if (dust != null) dust.localScale = Vector3.one * 2f;
             Debug.Log($"[GolemBossAI] 💥 VFX de polvo creado");
         }
         

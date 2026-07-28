@@ -49,6 +49,7 @@ public class PlayerShieldController : MonoBehaviour
         CacheBlockedLayers();
         _magicCaster = GetComponentInParent<MagicCaster>();
         _manaPool = GetComponentInParent<ManaPool>();
+        CreateShieldInstance();
     }
 
     void OnEnable()
@@ -152,33 +153,36 @@ public class PlayerShieldController : MonoBehaviour
         PlayAnimation(locomotionAnimation);
     }
 
-    private void ActivateShield()
+    /// <summary>
+    /// Instancia el escudo una única vez (en Awake) en lugar de crearlo/destruirlo
+    /// en cada activación — el jugador puede alternar el escudo muy seguido en combate.
+    /// </summary>
+    private void CreateShieldInstance()
     {
-        if (_shieldInstance == null)
+        if (shieldPrefab == null)
         {
-            if (shieldPrefab == null)
-            {
-                Debug.LogWarning("[PlayerShieldController] shieldPrefab no asignado, no se puede instanciar el escudo.");
-                return;
-            }
-
-            Transform parent = transform;
-            _shieldInstance = Instantiate(shieldPrefab, parent);
-            _shieldInstance.transform.localPosition = shieldOffset;
-            _shieldInstance.transform.localRotation = Quaternion.identity;
-
-            ConfigureShieldDetector(_shieldInstance);
+            Debug.LogWarning("[PlayerShieldController] shieldPrefab no asignado, no se puede instanciar el escudo.");
+            return;
         }
 
+        _shieldInstance = Instantiate(shieldPrefab, transform);
+        _shieldInstance.transform.localPosition = shieldOffset;
+        _shieldInstance.transform.localRotation = Quaternion.identity;
+
+        ConfigureShieldDetector(_shieldInstance);
+        _shieldInstance.SetActive(false);
+    }
+
+    private void ActivateShield()
+    {
+        if (_shieldInstance != null)
+            _shieldInstance.SetActive(true);
     }
 
     private void DeactivateShield()
     {
         if (_shieldInstance != null)
-        {
-            Destroy(_shieldInstance);
-            _shieldInstance = null;
-        }
+            _shieldInstance.SetActive(false);
     }
 
     private void PlayAnimation(string animationName)

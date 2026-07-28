@@ -606,7 +606,16 @@ void Awake() { _enemyBossLayer = LayerMask.GetMask("Enemy", "Boss"); }
 
 ### Instancias y pools
 
-- Los proyectiles deberían usar un pool (`ObjectPool<T>`). Actualmente usan `Instantiate/Destroy`. El GolemBossAI tiene 9 TODOs al respecto.
+- **`VfxPoolService`** (`Core/Pooling/VfxPoolService.cs`, Julio 2026): servicio global auto-creado (mismo patrón que `HudToastService`) para poolear VFX de un solo uso (impactos, explosiones, despawns). Sustituye el patrón `Instantiate(...); Destroy(fx, t)` repetido por todo el proyecto. Un pool por prefab (`ObjectPool<Transform>` internamente), devolución centralizada en un único `Update` (sin coroutines por instancia). Uso:
+  ```csharp
+  VfxPoolService.Instance.Play(prefab, position, rotation, lifetime);
+  // Devuelve el Transform si hace falta ajustar escala u otros parámetros puntuales:
+  Transform vfx = VfxPoolService.Instance.Play(prefab, pos, rot, 3f);
+  if (vfx != null) vfx.localScale = Vector3.one * radio;
+  ```
+  Migrado ya en: `MagicProjectil.cs` (impactVFX/despawnVFX), `GolemBossAI.cs` (punchImpactVFX/shockwaveVFX/landingDustVFX — resueltos los 3 TODOs de pooling en la fase 3), `SlowMotionFireProjectile.cs`, `BattleOrb.cs`, `StarAwakeningSequencer.cs`, `DuoSpecialAttackSystem.cs` (vfxPrefab del ataque especial dúo).
+  **Pendiente de migrar** (mismo patrón `Instantiate`+`Destroy` o `Instantiate` suelto, candidatos directos): VFX de impacto/muerte en `NPCCombatLifecycleHandler.cs`, `ImpDemonAI.cs`, `EnemyProjectile.cs`, `LevitationTarget.cs`, `Damageable.cs`, `Burnable.cs`, `ChestInteractable.cs`, `WorldPickup.cs`, `PressurePlate.cs`, `UnlockTrigger.cs`. Migrar con el mismo patrón de arriba cuando se toquen esos archivos.
+- Los proyectiles en sí (el `GameObject` que vuela, no solo su VFX de impacto) todavía usan `Instantiate/Destroy` directo (`MagicProjectileSpawner`, `ImpDemonAI`, `NPCCombatBrain`, `AllyCombatState`, `GolemBossAI` rocas). Pendiente: requiere pool con reset de estado (velocidad, target, `_ended`, buffers) — más delicado que un VFX y no migrado todavía.
 - UI lists (ShopUI, QuestLogListUI, PlayerAbilitiesUI) que hacen Destroy+Instantiate en cada refresh deben migrar a pattern de reutilización: actualizar los elementos existentes, ocultar los sobrantes.
 - Prefabs de escudo en `PlayerShieldController`: pre-instanciar en `Awake` y usar `SetActive` en lugar de `Instantiate/Destroy`.
 
@@ -628,40 +637,50 @@ O mediante un flag de instancia: `[SerializeField] private bool debugMode;`
 ## 13. Bugs Conocidos Pendientes
 
 Lista de issues identificados en la revisión de código de Mayo 2026, ordenados por severidad.
+**Todos los críticos (C1-C6) están resueltos** (verificado Julio 2026) — el catálogo original quedó desactualizado tras una pasada de optimización posterior. Se dejan documentados abajo por referencia histórica y porque describen patrones a no reintroducir.
 
-### Críticos
+### Críticos — todos resueltos
+
+| # | Sistema | Archivo | Descripción original | Estado |
+|---|---------|---------|-----------------------|--------|
+| ~~C1~~ | Audio | `AudioService.cs` | `StopAllCoroutines()` al cambiar música destruía corrutinas del pool SFX. Los AudioSource nunca se devolvían al pool. | **Resuelto.** Existe `StopMusicCoroutines()` dedicado que detiene solo las corrutinas de música por referencia explícita (`_crossfadeRoutine`, `_fadeOutRoutine`, etc.), nunca `StopAllCoroutines()`. Comentario explícito en el código sobre por qué. |
+| ~~C2~~ | Save | `SaveSystem.cs` | Escritura no atómica: crash durante save corrompe el archivo. | **Resuelto.** `Save()` escribe a `SavePath + ".tmp"` y hace `File.Move` al path final tras borrar el anterior. Un crash a mitad de escritura deja el save previo intacto. |
+| ~~C3~~ | Quests | `QuestManager.cs` | `FindObjectsByType` llamado en cada evento de inventario. O(n×m) por recogida de item. | **Resuelto.** `OnInventoryItemAdded` → `FindQuestChainEntry` consulta el índice cacheado `_questChainIndex` (`RebuildQuestChainIndex` solo corre cuando `_questChainIndexDirty`, es decir al cambiar de escena). |
+| ~~C4~~ | Player | `MagicCaster.cs` | `new List<MagicSlot>(_slotCooldowns.Keys)` en `Update()` cada frame. | **Resuelto.** `Update()` ya itera el array estático `AllSlots` con `TryGetValue`, sin allocar. No queda ningún `new List<MagicSlot>(...)` en el archivo. |
+| ~~C5~~ | Player | `PlayerBattleModeController.cs` | 3× `GetComponentInChildren` en `Update` por cada collider detectado. | **Resuelto.** `DetectEnemiesNearby()` ahora es `ActiveCombatRegistry.Count > 0` — O(1), sin `GetComponentInChildren` ni physics queries en `Update`. |
+| ~~C6~~ | Player | `MagicProjectil.cs` | `Physics.OverlapSphereNonAlloc` en `Update` por cada proyectil en vuelo como fallback de colisión. | **Resuelto.** El `OverlapSphereNonAlloc` (comentado "OPTIMIZACIÓN FASE 2: NonAlloc") solo se ejecuta al resolver un impacto real (`ApplyDamageAndKnockback`), no en `Update()`. `Update()` solo mueve el proyectil y comprueba rango. |
+
+> **Nota:** todo C1-C6 se dio por corregido en una pasada de optimización ("Fase 2") posterior al catálogo de Mayo 2026 que nunca se reflejó en esta tabla. Antes de asumir que un bug de esta lista sigue vivo, verificar el archivo actual — el catálogo puede estar desactualizado.
+
+### Otros (no son bugs activos, documentados por contexto)
 
 | # | Sistema | Archivo | Descripción |
 |---|---------|---------|-------------|
-| C1 | Audio | `AudioService.cs` | `StopAllCoroutines()` al cambiar música destruye corrutinas del pool SFX. Los AudioSource nunca se devuelven al pool. Ver sección 6. |
-| C2 | Save | `SaveSystem.cs` | Escritura no atómica: crash durante save corrompe el archivo. Ver sección 9. |
-| C3 | Quests | `QuestManager.cs:921` | `FindObjectsByType` llamado en cada evento de inventario. O(n×m) por recogida de item. |
-| C4 | Player | `MagicCaster.cs:53` | `new List<MagicSlot>(_slotCooldowns.Keys)` en `Update()` cada frame. |
-| C5 | Player | `PlayerBattleModeController.cs:278` | 3× `GetComponentInChildren` en `Update` por cada collider detectado. |
-| C6 | Player | `MagicProjectil.cs:229` | `Physics.OverlapSphereNonAlloc` en `Update` por cada proyectil en vuelo como fallback de colisión. |
 | C7 | Save/Narrativa | `SavePoint.cs` + `NarrativeRunner.cs` | Condición de carrera: si el SavePoint se activa mientras un nodo narrativo está en progreso (ej: durante una cinemática), el blackboard puede guardarse antes de que `WaitCustomEventNode` escriba su flag `_received`. Al recargar, el runner reanuda desde `__currentNodeGuid` correctamente, pero si ese nodo ya fue procesado en la sesión anterior y el grafo avanzó, la cinemática no se repite — el runner continúa desde el nodo guardado. No es necesario ningún parche externo. |
 
 ### Importantes
 
-| # | Sistema | Archivo | Descripción |
-|---|---------|---------|-------------|
-| I1 | Diálogo | `DialogueManager.cs` | Grace period (0.3s) reseteado en cada línea. Input parece no responder. |
-| I2 | Diálogo | `DialogueManager.cs:906` | `GetComponent` múltiple por cada línea. Cachear en `StartDialogue`. |
-| I3 | UI | `MagicSlotsUI.cs` | `StartCoroutine(FlashSlotReady)` lanzado en Update cada frame que la condición es verdadera. Acumula corrutinas. |
-| I4 | UI | `PlayerHealthUI.cs` | `AddListener` sin `RemoveListener` previo en `OnEnable`. Listeners duplicados tras Enable/Disable. |
-| I5 | UI | `CollectiblePopupQueue.cs` | Locks innecesarios en código single-thread. `Canvas.ForceUpdateCanvases()` bloquea todos los canvases. |
-| I6 | UI | `MenuManager.cs:71` | `new HashSet<MenuKind>(allowed)` en `AnyOpenExcept()` llamado desde Update. |
-| I7 | Shop | `ShopUI.cs:361` | Reflection para acceder a `currencyItem`. Exponer propiedad pública en ShopController. |
-| I8 | Player | `PlayerActionManager.cs:66` | Reflection para leer `abilities.magic` (bool). Acceso directo. |
-| I9 | Player | `PlayerLevitationController.cs:629` | Reflection + boxing en `Update` para leer propiedades estáticas. |
-| I10 | Core | `GameBootService.cs` | Corrutina `while (QuestManager.Instance == null) yield return null` sin timeout. |
-| I11 | Core | `SaveSystem.cs` | Escritura no atómica. Save puede corromperse. |
-| I12 | Environment | `FogZone.cs` | Variables estáticas sin reset entre escenas. Referencia stale al objeto de escena anterior. |
-| I13 | Cinematics | `AdditiveSceneCinematic.cs:596` | `PlayAndBlock()` puede bloquearse indefinidamente si `Play()` retorna early. |
-| I14 | Cinematics | `SimpleCinematicDirector.cs` | `Time.timeScale` no se restaura si se para la cinemática con `StopCoroutine` sin destruir el objeto. |
-| I15 | Player | `PlayerCarrySystem.cs:99` | `Invoke` no cancelado en `OnDisable`. NullReferenceException si el GO se destruye durante el delay. |
-| I16 | Proyectiles | `MagicProjectil.cs:285` | Daño puede aplicarse dos veces por frame (OnTriggerEnter + CheckEnemyProximity en el mismo frame). |
-| I17 | Inventory | `Inventory.cs:328` | `Resources.LoadAll<ItemData>("")` como fallback — carga todos los assets de Resources. Cachear resultado. |
+Igual que con los críticos: verificado Julio 2026, la mayoría ya estaba resuelta (Fase 2). Se marcan con ~~tachado~~ los confirmados resueltos.
+
+| # | Sistema | Archivo | Descripción | Estado (Jul 2026) |
+|---|---------|---------|-------------|--------------------|
+| I1 | Diálogo | `DialogueManager.cs` | Grace period (0.3s) reseteado en cada línea. Input parece no responder. | No verificado — es UX/correctness, no rendimiento. Revisar si se reporta. |
+| ~~I2~~ | Diálogo | `DialogueManager.cs` | `GetComponent` múltiple por cada línea. Cachear en `StartDialogue`. | **Resuelto.** `_playerDialogueAnimator` cacheado y reutilizado por línea (comentario explícito en el código). |
+| ~~I3~~ | UI | `MagicSlotsUI.cs` | `StartCoroutine(FlashSlotReady)` lanzado en Update cada frame que la condición es verdadera. Acumula corrutinas. | **Resuelto.** Guard `!slot.isFlashing` antes de lanzar la corrutina (comentario "guard against per-frame launch"). |
+| ~~I4~~ | UI | `PlayerHealthUI.cs` | `AddListener` sin `RemoveListener` previo en `OnEnable`. Listeners duplicados tras Enable/Disable. | **Resuelto.** `OnDisable()` hace `RemoveListener` de ambos eventos antes de que `OnEnable()` vuelva a suscribir. |
+| I5 | UI | `CollectiblePopupQueue.cs` | Locks innecesarios en código single-thread. `Canvas.ForceUpdateCanvases()` bloquea todos los canvases. | **Parcial.** El `ForceUpdateCanvases()` ya no está. Quedan 2 `lock()` pero solo en paths de error raros (prefab null / Instantiate falla) — impacto real ≈ 0. |
+| ~~I6~~ | UI | `MenuManager.cs` | `new HashSet<MenuKind>(allowed)` en `AnyOpenExcept()` llamado desde Update. | **Resuelto.** Ahora es un `foreach` sobre `s_open` sin allocar. |
+| ~~I7~~ | Shop | `ShopUI.cs` | Reflection para acceder a `currencyItem`. Exponer propiedad pública en ShopController. | **Resuelto.** Sin ninguna referencia a `System.Reflection`/`BindingFlags` en el archivo. |
+| ~~I8~~ | Player | `PlayerActionManager.cs` | Reflection para leer `abilities.magic` (bool). Acceso directo. | **Resuelto.** Sin reflection en el archivo. |
+| I9 | Player | `PlayerLevitationController.cs` | Reflection + boxing en `Update` para leer propiedades estáticas. | **Resuelto en ese archivo** (sin reflection). Existe reflection similar en `PlayerFlyingController.cs` (`CacheControllerLockFields`/`SetControllerLocks`, acceso a campos privados de Invector) pero cacheada y llamada solo 2×/vuelo (inicio/fin), no en `Update` — impacto real ≈ 0. |
+| I10 | Core | `GameBootService.cs` | Corrutina `while (QuestManager.Instance == null) yield return null` sin timeout. | No verificado esta pasada. |
+| ~~I11~~ | Core | `SaveSystem.cs` | Escritura no atómica. Save puede corromperse. | **Resuelto** (duplicado de C2, ver arriba). |
+| I12 | Environment | `FogZone.cs` | Variables estáticas sin reset entre escenas. | El archivo `FogZone.cs` ya no existe en el proyecto (renombrado o eliminado) — pendiente confirmar dónde quedó esa lógica. |
+| I13 | Cinematics | `AdditiveSceneCinematic.cs` | `PlayAndBlock()` puede bloquearse indefinidamente si `Play()` retorna early. | No verificado — es correctness, no rendimiento. |
+| I14 | Cinematics | `SimpleCinematicDirector.cs` | `Time.timeScale` no se restaura si se para la cinemática con `StopCoroutine` sin destruir el objeto. | Probablemente mitigado: hay 5 puntos distintos que restauran `Time.timeScale = 1f` (incluida una ruta de cleanup con comentario "Restaurar tiempo"), pero no confirmado al 100% para todos los caminos de cancelación. |
+| ~~I15~~ | Player | `PlayerCarrySystem.cs` | `Invoke` no cancelado en `OnDisable`. NullReferenceException si el GO se destruye durante el delay. | **Resuelto.** `OnDisable()` hace `CancelInvoke` de ambos invokes pendientes. |
+| ~~I16~~ | Proyectiles | `MagicProjectil.cs` | Daño puede aplicarse dos veces por frame (OnTriggerEnter + CheckEnemyProximity en el mismo frame). | **Resuelto.** Guard explícito: `if (_lastDamagedCollider == col && _lastDamagedFrame == Time.frameCount) return;`. |
+| ~~I17~~ | Inventory | `Inventory.cs` | `Resources.LoadAll<ItemData>("")` como fallback — carga todos los assets de Resources. Cachear resultado. | **Resuelto.** `_allItemsCache` solo se puebla una vez (lazy, `if (_allItemsCache == null)`) y se reutiliza después. |
 
 ---
 

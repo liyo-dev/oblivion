@@ -439,6 +439,15 @@ namespace Game.NPC
             {
                 if (member == null || !member.IsActiveInParty || member.PartyConfig == null) continue;
                 if (member == hiddenNpc) continue;
+                // FIX: en modo Libre (IsPinnedByParty) el miembro está disuelto y no debe
+                // teletransportarse para posicionarse en un diálogo — antes esto se saltaba
+                // y un simple mensaje de "bloqueado" (p.ej. RoomExitBlocker en el agua) reagrupaba
+                // al equipo entero aunque el jugador hubiera ido por libre.
+                if (member.NPCManager?.Context?.IsPinnedByParty == true)
+                {
+                    Log($"  ↳ {member.DisplayName}: anclado (modo Libre), no se reposiciona para diálogo");
+                    continue;
+                }
                 if (!member.PartyConfig.posicionarseDuranteDialogos)
                 {
                     Log($"  ↳ {member.DisplayName}: posicionamiento desactivado");

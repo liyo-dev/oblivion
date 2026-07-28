@@ -9,12 +9,19 @@ using Game.NPC;
 ///   3. Estela lo anima a su manera.
 ///   4. Liam le recuerda que no está solo.
 ///   5. Will da las gracias y el grupo retoma la marcha → señal de salida.
-/// Señal de entrada: la misma que emite KingdomBoundaryTrigger al cruzar el límite del Reino
-/// (por defecto "EVT_REINO_EXIT_BOUNDARY", heredada de CinematicSequencerBase._signalIn).
-/// Señal de salida: heredada de CinematicSequencerBase._signalOut (por defecto vacía: rellenar
-/// en el Inspector con "EVT_REINOEXIT_BANTER_DONE"). En el grafo, el WaitCustomEventNode que hoy
-/// espera "EVT_REINO_EXIT_BOUNDARY" antes de KingdomExitTransitionNode debe pasar a esperar esta
-/// señal de salida, para que el corte de cámara + logo llegue después del banter y no en paralelo.
+/// Señal de entrada: "EVT_REINOEXIT_BANTER_START" (heredada de CinematicSequencerBase._signalIn).
+/// OJO: NO es la misma que "EVT_REINO_EXIT_BOUNDARY" que emite KingdomBoundaryTrigger al cruzar
+/// el límite físico del Reino. Ese evento crudo lo consume primero el WaitCustomEventNode del
+/// grafo (solo llega a él tras iniciar ELDRAN_MISSION14); el propio grafo re-emite entonces
+/// "EVT_REINOEXIT_BANTER_START" mediante un RaiseCustomEventNode. Si este sequencer escuchara
+/// directamente "EVT_REINO_EXIT_BOUNDARY" (como ocurría antes), reaccionaría al cruce físico
+/// crudo aunque el grafo aún no hubiera llegado a ese punto (p.ej. cruzando el límite antes de
+/// tiempo en testeo), porque CinematicSequencerBase.Awake() se suscribe sin comprobar el estado
+/// narrativo. Mantener esta separación de claves es lo que garantiza que el banter solo se
+/// dispare cuando el grafo realmente está en ese punto.
+/// Señal de salida: heredada de CinematicSequencerBase._signalOut ("EVT_REINOEXIT_BANTER_DONE").
+/// El WaitCustomEventNode antes de KingdomExitTransitionNode espera esta señal de salida, para
+/// que el corte de cámara + logo llegue después del banter y no en paralelo.
 [DisallowMultipleComponent]
 public class ReinoExitBanterSequencer : CinematicSequencerBase
 {

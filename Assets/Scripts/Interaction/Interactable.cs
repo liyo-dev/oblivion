@@ -355,11 +355,18 @@ public class Interactable : MonoBehaviour
             Debug.Log($"[Interactable:{name}] ✅ Iniciando diálogo: {dialogue.name}");
             OnStarted?.Invoke();
             GameState.Push(GamePhase.Dialogue);
-            
+
+            // ✅ FIX: bloquear Wander/Idle mientras dura el diálogo por defecto.
+            // Sin esto, un NPC con enableWander sigue caminando durante todo el diálogo
+            // porque este flujo (a diferencia de NPCInteractiveNarrativeExecutor) nunca
+            // pasaba por el Brain ni tocaba Context.IsInteracting.
+            SetNpcInteracting(true);
+
             // ✅ NPCSimpleAnimator maneja la rotación del NPC (suscrito a eventos de DialogueManager)
             dm.StartDialogue(dialogue, transform, () =>
             {
                 Debug.Log($"[Interactable:{name}] 🔚 Diálogo terminado");
+                SetNpcInteracting(false);
                 OnFinished?.Invoke();
                 if (GameState.Is(GamePhase.Dialogue)) GameState.Pop(GamePhase.Dialogue);
                 AfterUse();
@@ -415,9 +422,13 @@ public class Interactable : MonoBehaviour
         SetHintVisible(false);
         // Bloquear otros menús mientras se muestran las opciones
         GameState.Push(GamePhase.SavePrompt);
-        
+
+        // ✅ FIX: mismo motivo que StartDialogue() - evitar que el NPC siga vagando
+        // mientras se muestra el diálogo con opciones. Se libera en HandleChoiceResult().
+        SetNpcInteracting(true);
+
         // NPCSimpleAnimator maneja la rotación del NPC (suscrito a eventos de DialogueManager)
-        
+
         try
         {
             dm.ShowWithChoices(prompt, yes, no,
@@ -433,6 +444,7 @@ public class Interactable : MonoBehaviour
         {
             Debug.LogError($"[Interactable] ShowWithChoices failed: {ex.Message}\n{ex.StackTrace}");
             if (GameState.Is(GamePhase.SavePrompt)) GameState.Pop(GamePhase.SavePrompt);
+            SetNpcInteracting(false);
         }
     }
 
@@ -465,6 +477,9 @@ public class Interactable : MonoBehaviour
         OnStarted?.Invoke();
         SetHintVisible(false);
         GameState.Push(GamePhase.SavePrompt);
+
+        // ✅ FIX: mismo motivo que StartDialogue() - ver comentario allí.
+        SetNpcInteracting(true);
 
         popup.Show(prompt,
             onConfirm: () => HandleChoiceResult(confirmFollowUp, invokeConfirm: true),
@@ -513,8 +528,10 @@ public class Interactable : MonoBehaviour
         var dm = DialogueManager.Instance;
         if (followUp != null && dm != null)
         {
+            // Sigue habiendo diálogo (follow-up): mantener IsInteracting hasta que también termine.
             dm.StartDialogue(followUp, transform, () =>
             {
+                SetNpcInteracting(false);
                 OnFinished?.Invoke();
                 AfterUse();
             });
@@ -523,9 +540,21 @@ public class Interactable : MonoBehaviour
         {
             if (dm != null)
                 dm.FinalizeChoiceNoFollowUp();
+            SetNpcInteracting(false);
             OnFinished?.Invoke();
             AfterUse();
         }
+    }
+
+    /// <summary>
+    /// Bloquea/libera el movimiento ambiental (Wander/Idle) del NPC mientras dura un diálogo
+    /// que no pasa por NPCBrain (StartDialogue, StartDialogueWithOptions, StartConfirmationPopup).
+    /// Sin esto, un NPC con enableWander sigue caminando durante el diálogo.
+    /// </summary>
+    void SetNpcInteracting(bool interacting)
+    {
+        if (_npcManager?.Context != null)
+            _npcManager.Context.IsInteracting = interacting;
     }
 
     void StartWorldPointActivity(GameObject interactor)

@@ -109,24 +109,52 @@ public class PlayerAbilitiesUI : MonoBehaviour
         RefreshStats(preset);
     }
     
+    /// <summary>
+    /// Devuelve el slot pooled en "index" (reactivándolo) o instancia uno nuevo si el pool es
+    /// más corto. Se llama desde RefreshAbilities/RefreshSpells, que corren cada segundo vía
+    /// InvokeRepeating — reutilizar evita Destroy+Instantiate continuo mientras la UI está abierta.
+    /// </summary>
+    private static GameObject GetOrCreateSlot(List<GameObject> pool, GameObject prefab, Transform container, int index)
+    {
+        if (index < pool.Count)
+        {
+            var existing = pool[index];
+            if (existing != null)
+            {
+                existing.SetActive(true);
+                return existing;
+            }
+        }
+
+        var uiObject = Instantiate(prefab, container);
+        if (index < pool.Count)
+            pool[index] = uiObject;
+        else
+            pool.Add(uiObject);
+        return uiObject;
+    }
+
+    private static void HideExtraSlots(List<GameObject> pool, int usedCount)
+    {
+        for (int i = usedCount; i < pool.Count; i++)
+        {
+            if (pool[i] != null) pool[i].SetActive(false);
+        }
+    }
+
     private void RefreshAbilities(PlayerPresetSO preset)
     {
         if (abilitiesContainer == null || abilityUIPrefab == null) return;
-        
-        // Limpiar UI existente
-        foreach (var obj in _abilityUIObjects)
-        {
-            if (obj != null) Destroy(obj);
-        }
-        _abilityUIObjects.Clear();
-        
+
+        int used = 0;
+
         // Crear UI para habilidades desbloqueadas.
         // Compatibilidad: si el preset tiene una lista `unlockedAbilities` (enum-based), la usamos.
         if (preset.unlockedAbilities != null && preset.unlockedAbilities.Count > 0)
         {
             foreach (var abilityId in preset.unlockedAbilities)
             {
-                var uiObject = Instantiate(abilityUIPrefab, abilitiesContainer);
+                var uiObject = GetOrCreateSlot(_abilityUIObjects, abilityUIPrefab, abilitiesContainer, used);
 
                 // Resolver presentación (título, descripción, icono)
                 var pres = AbilityPresentationLookup.Resolve(abilityId, abilityPresentations);
@@ -145,7 +173,7 @@ public class PlayerAbilitiesUI : MonoBehaviour
                     img.enabled = pres.icon != null;
                 }
 
-                _abilityUIObjects.Add(uiObject);
+                used++;
             }
         }
         else
@@ -161,7 +189,7 @@ public class PlayerAbilitiesUI : MonoBehaviour
 
             foreach (var key in keys)
             {
-                var uiObject = Instantiate(abilityUIPrefab, abilitiesContainer);
+                var uiObject = GetOrCreateSlot(_abilityUIObjects, abilityUIPrefab, abilitiesContainer, used);
                 var pres = AbilityPresentationKeyLookup.Resolve(key, null);
 
                 var text = uiObject.GetComponentInChildren<TextMeshProUGUI>();
@@ -174,45 +202,44 @@ public class PlayerAbilitiesUI : MonoBehaviour
                     img.enabled = pres.icon != null;
                 }
 
-                _abilityUIObjects.Add(uiObject);
+                used++;
             }
         }
-        
+
+        HideExtraSlots(_abilityUIObjects, used);
+
         if (showDebugInfo)
         {
             Debug.Log($"[PlayerAbilitiesUI] Abilities refreshed: {preset.unlockedAbilities?.Count ?? 0} abilities");
         }
     }
-    
+
     private void RefreshSpells(PlayerPresetSO preset)
     {
         if (spellsContainer == null || spellUIPrefab == null) return;
-        
-        // Limpiar UI existente
-        foreach (var obj in _spellUIObjects)
-        {
-            if (obj != null) Destroy(obj);
-        }
-        _spellUIObjects.Clear();
-        
+
+        int used = 0;
+
         // Crear UI para hechizos desbloqueados
         if (preset.unlockedSpells != null)
         {
             foreach (var spellId in preset.unlockedSpells)
             {
-                var uiObject = Instantiate(spellUIPrefab, spellsContainer);
-                
+                var uiObject = GetOrCreateSlot(_spellUIObjects, spellUIPrefab, spellsContainer, used);
+
                 // Configurar el objeto UI
                 var text = uiObject.GetComponentInChildren<TextMeshProUGUI>();
                 if (text != null)
                 {
                     text.text = spellId.ToString();
                 }
-                
-                _spellUIObjects.Add(uiObject);
+
+                used++;
             }
         }
-        
+
+        HideExtraSlots(_spellUIObjects, used);
+
         if (showDebugInfo)
         {
             Debug.Log($"[PlayerAbilitiesUI] Spells refreshed: {preset.unlockedSpells?.Count ?? 0} spells");

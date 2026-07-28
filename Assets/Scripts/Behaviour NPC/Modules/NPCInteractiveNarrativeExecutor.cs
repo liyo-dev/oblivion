@@ -27,6 +27,10 @@ namespace Game.NPC.Modules
 
         [Header("Debug")]
         [SerializeField] private bool verboseLogging = false;
+
+        [Header("Icono persistente")]
+        [Tooltip("Distancia máxima (unidades de mundo) a la que se muestra el icono persistente sobre la cabeza del NPC. 0 = sin límite. Mismo criterio que NPCQuestIconManager.questIconMaxDistance.")]
+        [SerializeField] private float persistentIconMaxDistance = 30f;
         
         #region 📊 State
         private bool _isExecuting;
@@ -519,7 +523,7 @@ namespace Game.NPC.Modules
                 var activeNarrative = GetCachedActiveNarrative();
                 if (activeNarrative != null)
                 {
-                    if (activeNarrative.showPersistentIcon) ShowPersistentIconIfNeeded(activeNarrative);
+                    if (activeNarrative.showPersistentIcon && !IsPlayerTooFarForPersistentIcon()) ShowPersistentIconIfNeeded(activeNarrative);
                     else HidePersistentIconIfActive();
                 }
                 else
@@ -533,6 +537,17 @@ namespace Game.NPC.Modules
             }
         }
         
+        // Igual criterio que NPCQuestIconManager.IsPlayerTooFar(): el icono de cabeza no tiene
+        // sentido si el jugador está lejos (para eso está el minimapa).
+        private bool IsPlayerTooFarForPersistentIcon()
+        {
+            if (persistentIconMaxDistance <= 0f) return false;
+            var player = _npcManager != null ? _npcManager.Player : null;
+            if (player == null) return false;
+            float sqrDist = (player.position - transform.position).sqrMagnitude;
+            return sqrDist > persistentIconMaxDistance * persistentIconMaxDistance;
+        }
+
         private void ShowPersistentIconIfNeeded(ConditionalNarrative narrative)
         {
             if (_alertIconController == null) InitializeAlertIconController();

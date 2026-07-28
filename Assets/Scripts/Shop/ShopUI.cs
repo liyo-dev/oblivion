@@ -394,37 +394,36 @@ public class ShopUI : MonoBehaviour
             PlayerService.TryGetComponent(out _playerInventory, includeInactive: true, allowSceneLookup: true);
     }
 
+    /// <summary>
+    /// Reconstruye la lista lógica de cards reutilizando los GameObjects existentes como pool
+    /// (hijos de itemListContainer) en vez de Destroy+Instantiate en cada refresh — se llama
+    /// tras cada compra/venta, no solo al abrir la tienda.
+    /// </summary>
     void RebuildItemList()
     {
-        // Limpiar cards existentes
-        foreach (var card in _itemCards)
-        {
-            if (card != null && card.gameObject != null)
-                Destroy(card.gameObject);
-        }
-        _itemCards.Clear();
-        
         if (shopController == null)
         {
             Debug.LogError("[ShopUI] RebuildItemList: shopController es NULL");
             return;
         }
-        
+
         if (itemCardPrefab == null)
         {
             Debug.LogError("[ShopUI] RebuildItemList: itemCardPrefab es NULL");
             return;
         }
-        
+
         if (itemListContainer == null)
         {
             Debug.LogError("[ShopUI] RebuildItemList: itemListContainer es NULL");
             return;
         }
-        
+
         Debug.Log($"[ShopUI] RebuildItemList: Stock tiene {shopController.Stock.Count} items");
-        
-        // Crear cards para cada item en stock
+
+        _itemCards.Clear();
+        int usedChildren = 0;
+
         for (int i = 0; i < shopController.Stock.Count; i++)
         {
             var entry = shopController.Stock[i];
@@ -433,11 +432,20 @@ public class ShopUI : MonoBehaviour
                 Debug.LogWarning($"[ShopUI] Item en índice {i} es null o no tiene ItemData");
                 continue;
             }
-            
-            Debug.Log($"[ShopUI] Creando card para item: {entry.item.displayName}");
-            var cardObj = Instantiate(itemCardPrefab, itemListContainer);
+
+            GameObject cardObj;
+            if (usedChildren < itemListContainer.childCount)
+            {
+                cardObj = itemListContainer.GetChild(usedChildren).gameObject;
+                cardObj.SetActive(true);
+            }
+            else
+            {
+                cardObj = Instantiate(itemCardPrefab, itemListContainer);
+            }
+            usedChildren++;
+
             var card = cardObj.GetComponent<ShopItemCard>();
-            
             if (card != null)
             {
                 int index = i;
@@ -449,8 +457,12 @@ public class ShopUI : MonoBehaviour
                 Debug.LogError($"[ShopUI] itemCardPrefab no tiene componente ShopItemCard");
             }
         }
-        
-        Debug.Log($"[ShopUI] Se crearon {_itemCards.Count} cards en total");
+
+        // Ocultar (no destruir) las cards sobrantes de un refresh anterior con más stock.
+        for (int i = usedChildren; i < itemListContainer.childCount; i++)
+            itemListContainer.GetChild(i).gameObject.SetActive(false);
+
+        Debug.Log($"[ShopUI] {_itemCards.Count} cards activas (pool total: {itemListContainer.childCount})");
     }
 
     void SelectItem(int index)

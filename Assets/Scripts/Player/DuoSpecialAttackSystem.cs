@@ -150,10 +150,11 @@ public class DuoSpecialAttackSystem : MonoBehaviour
         Transform origin = attackOrigin ? attackOrigin : transform;
         if (attack.vfxPrefab != null)
         {
-            var vfx = Instantiate(attack.vfxPrefab,
-                                  origin.position + origin.forward * 1.5f,
-                                  Quaternion.LookRotation(origin.forward));
-            Destroy(vfx, Mathf.Max(0.5f, attack.vfxLifetime));
+            VfxPoolService.Instance.Play(
+                attack.vfxPrefab,
+                origin.position + origin.forward * 1.5f,
+                Quaternion.LookRotation(origin.forward),
+                Mathf.Max(0.5f, attack.vfxLifetime));
         }
 
         if (attack.damageDelay > 0f)

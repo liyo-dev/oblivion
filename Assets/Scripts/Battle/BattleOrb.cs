@@ -464,7 +464,7 @@ public class BattleOrb : MonoBehaviour
         }
 
         if (pickupVFX)
-            Destroy(Instantiate(pickupVFX, transform.position, Quaternion.identity), 2f);
+            VfxPoolService.Instance.Play(pickupVFX, transform.position, Quaternion.identity, 2f);
 
         if (!string.IsNullOrEmpty(pickupSFXKey) && AudioService.Instance != null)
             AudioService.Instance.PlaySFX(pickupSFXKey);

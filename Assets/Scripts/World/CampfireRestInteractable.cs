@@ -8,9 +8,8 @@ using UnityEngine;
 /// - OnConfirm:  fundido a negro → cambia la hora → fundido de vuelta.
 ///
 /// Setup en Inspector:
-///   Interactable → Mode: OpenDialogueWithOptions
+///   Interactable → Mode: ConfirmationPopup (igual que en los puntos de guardado; el script lo fuerza en Awake)
 ///   Interactable → Dialogue: (dejar vacío; este script lo asigna dinámicamente)
-///   Interactable → YesOption / NoOption: assets con "Sí" / "No" (o dejar vacíos para el default)
 ///   Interactable → OnConfirm → CampfireRestInteractable.DoTimeSkip
 ///   CampfireRestInteractable → asignar waitForNightDialogue y waitForDayDialogue
 /// </summary>
@@ -49,7 +48,9 @@ public class CampfireRestInteractable : MonoBehaviour
     void Awake()
     {
         _interactable = GetComponent<Interactable>();
-        _interactable.SetMode(InteractableMode.OpenDialogueWithOptions);
+        // Mismo popup de confirmación reutilizable que usan los puntos de guardado (ConfirmationPopupUI),
+        // en vez del cuadro de diálogo con opciones (INC-048 aplicado también a la hoguera).
+        _interactable.SetMode(InteractableMode.ConfirmationPopup);
         _interactable.OnInteract.AddListener(OnInteractStarted);
         _interactable.OnConfirm.AddListener(DoTimeSkip);
 

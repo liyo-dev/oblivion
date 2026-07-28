@@ -934,6 +934,12 @@ namespace Core
             if (IsGameplaySuppressed())
                 return false;
 
+            // buttonEast es el mismo botón que Cancel (B). Si estamos en el período de ignorar
+            // el botón de cancelar (p.ej. justo al cerrar un popup de confirmación con "No"),
+            // no iniciar levitación con el botón que todavía está físicamente pulsado.
+            if (Time.unscaledTime < _ignoreCancelUntil)
+                return false;
+
 #if ENABLE_INPUT_SYSTEM
             var gp = GetGamepad();
             if (gp != null && gp.buttonEast.isPressed)
@@ -961,6 +967,11 @@ namespace Core
         get
         {
             if (IsGameplaySuppressed())
+                return false;
+
+            // Mismo motivo que en AttackMagicRightHeld: evitar que el release del botón
+            // Cancel se lea como el release de la levitación derecha.
+            if (Time.unscaledTime < _ignoreCancelUntil)
                 return false;
 
 #if ENABLE_INPUT_SYSTEM

@@ -113,6 +113,12 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
     [SerializeField] private int _rageShots = 6;
     [SerializeField] private float _rageShotInterval = 0.2f;
 
+    [Tooltip("Prefab de VFX de escudo/protección que aparece sobre el guerrero al recibir cada disparo de la ráfaga")]
+    [SerializeField] private GameObject _warriorShieldVFX;
+    [SerializeField] private float _warriorShieldVfxLifetime = 0.6f;
+    [Tooltip("Offset del VFX de escudo respecto a la posición del guerrero (altura aprox. del pecho)")]
+    [SerializeField] private Vector3 _warriorShieldVfxOffset = new Vector3(0f, 0.4f, 0f);
+
     // ── Fase 5: Will aplaude + reverencia de Estela ───────────────────────────
 
     [Header("Fase 5 — Will aplaude y Estela hace la reverencia")]
@@ -154,6 +160,7 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
 
     private NPCEmotionController _estelaEmotion;
     private NPCSimpleAnimator    _estelaSimpleAnim;
+    private NavMeshAgent         _estelaAgent;
     private NPCEmotionController _warrior1Emotion;
     private NPCEmotionController _warrior2Emotion;
     private NPCSimpleAnimator    _warrior1SimpleAnim;
@@ -162,8 +169,27 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
     private NavMeshAgent         _warrior2Agent;
     private Game.NPC.NPCBehaviourManagerV2 _warrior1Npc;
     private Game.NPC.NPCBehaviourManagerV2 _warrior2Npc;
+    private ObstacleAvoidanceType _warrior1OriginalAvoidance;
+    private ObstacleAvoidanceType _warrior2OriginalAvoidance;
     private int _enemyHitLayers;
     private int _enemyCollisionLayers;
+
+    // ── Posiciones/rotaciones "de diseño" (las colocadas a mano en el editor) ──
+    // Igual que en LiamCrystalBallSequencer._liamDesignPosition: si Estela o los guerreros
+    // tienen NavMeshAgent y el punto exacto donde están colocados no cae sobre el NavMesh
+    // baked, Unity los desplaza al punto válido más cercano en cuanto el agente se activa —
+    // a nivel de motor, sin pasar por ningún script nuestro. Los planos de cámara de esta
+    // secuencia (_shotEstela sobre todo, son primeros planos/medios muy ajustados) están
+    // aimados a mano contra la posición exacta que se ve en el editor; si el NPC se corrige
+    // aunque sea unos centímetros al arrancar la partida, el encuadre deja de coincidir con
+    // lo que se ve en el editor (el "Live Preview" de CinematicShot sí engaña, porque samplea
+    // en Editor antes de que el agente llegue a corregir nada). Ver Co_RestoreDesignTransforms().
+    private Vector3    _estelaDesignPosition;
+    private Quaternion _estelaDesignRotation;
+    private Vector3    _warrior1DesignPosition;
+    private Quaternion _warrior1DesignRotation;
+    private Vector3    _warrior2DesignPosition;
+    private Quaternion _warrior2DesignRotation;
 
     // ── Persistencia de "ya jugada" ──────────────────────────────────────────
     // Flag para saber si esta secuencia ya se reprodujo en esta partida. Sin esto, al cargar
@@ -210,6 +236,12 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
         {
             _estelaEmotion    = _estelaTransform.GetComponentInChildren<NPCEmotionController>();
             _estelaSimpleAnim = _estelaTransform.GetComponentInChildren<NPCSimpleAnimator>();
+            _estelaAgent      = _estelaTransform.GetComponent<NavMeshAgent>();
+
+            // Capturar YA, en Awake, antes de que el NavMeshAgent de Estela pueda corregir su
+            // posición por su cuenta al activarse (ver comentario en la declaración de campos).
+            _estelaDesignPosition = _estelaTransform.position;
+            _estelaDesignRotation = _estelaTransform.rotation;
         }
 
         if (_warrior1Transform != null)
@@ -218,6 +250,8 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
             _warrior1SimpleAnim = _warrior1Transform.GetComponentInChildren<NPCSimpleAnimator>();
             _warrior1Agent      = _warrior1Transform.GetComponent<NavMeshAgent>();
             _warrior1Npc        = _warrior1Transform.GetComponent<Game.NPC.NPCBehaviourManagerV2>();
+            _warrior1DesignPosition = _warrior1Transform.position;
+            _warrior1DesignRotation = _warrior1Transform.rotation;
         }
         if (_warrior2Transform != null)
         {
@@ -225,10 +259,56 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
             _warrior2SimpleAnim = _warrior2Transform.GetComponentInChildren<NPCSimpleAnimator>();
             _warrior2Agent      = _warrior2Transform.GetComponent<NavMeshAgent>();
             _warrior2Npc        = _warrior2Transform.GetComponent<Game.NPC.NPCBehaviourManagerV2>();
+            _warrior2DesignPosition = _warrior2Transform.position;
+            _warrior2DesignRotation = _warrior2Transform.rotation;
         }
 
         _enemyHitLayers       = LayerMask.GetMask("Enemy", "Boss");
         _enemyCollisionLayers = LayerMask.GetMask("Enemy", "Boss", "Default");
+    }
+
+    private void Start()
+    {
+        StartCoroutine(Co_RestoreDesignTransforms());
+    }
+
+    /// Un frame después de Awake, cualquier NavMeshAgent (Estela, guerreros) ya habrá aplicado
+    /// (si iba a hacerlo) su corrección automática al activarse. Si alguno se alejó de la
+    /// posición/rotación colocada a mano, lo devolvemos ahí — con Warp si tiene agente (evita que
+    /// NavMesh/física generen un nuevo path), o directamente por Transform si no. Mismo patrón que
+    /// LiamCrystalBallSequencer.Co_RestoreLiamDesignPosition; aquí se aplica a los tres actores
+    /// porque todos los shots de esta secuencia (sobre todo _shotEstela, muy ajustados) dependen
+    /// de que estén exactamente donde se ven en el editor.
+    private IEnumerator Co_RestoreDesignTransforms()
+    {
+        yield return null;
+
+        RestoreDesignTransform(_estelaTransform, _estelaAgent, _estelaDesignPosition, _estelaDesignRotation, "Estela");
+        RestoreDesignTransform(_warrior1Transform, _warrior1Agent, _warrior1DesignPosition, _warrior1DesignRotation, "Guerrero1");
+        RestoreDesignTransform(_warrior2Transform, _warrior2Agent, _warrior2DesignPosition, _warrior2DesignRotation, "Guerrero2");
+    }
+
+    private void RestoreDesignTransform(Transform t, NavMeshAgent agent, Vector3 designPosition, Quaternion designRotation, string label)
+    {
+        if (t == null) return;
+        if ((t.position - designPosition).sqrMagnitude <= 0.0001f)
+        {
+            t.rotation = designRotation;
+            return;
+        }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.LogWarning($"[EstelaAppearsSequencer] {label} se había desplazado de su posición diseñada " +
+            $"({t.position} → objetivo {designPosition}), probablemente por corrección automática del " +
+            $"NavMeshAgent al activarse. Restaurando (esto es lo que desencuadraba los planos de cámara).");
+#endif
+
+        if (agent != null && agent.isOnNavMesh)
+            agent.Warp(designPosition);
+        else
+            t.position = designPosition;
+
+        t.rotation = designRotation;
     }
 
     protected override void OnDestroy()
@@ -335,6 +415,11 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
     {
         _cinematicCamera.Cut(_shotEstela);
         _estelaEmotion?.SetEmotion(_dramaticEmotion);
+
+        // Los guerreros siguen mirando a Estela durante todo el numerito.
+        FaceTarget(_warrior1Transform, _estelaTransform);
+        FaceTarget(_warrior2Transform, _estelaTransform);
+
         yield return ShowBubblePaged(_estelaTransform, Loc(_dramaticLineKey), _dramaticLineDuration, _dramaticAnim, loopAnim: true);
     }
 
@@ -348,6 +433,10 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
         _cinematicCamera.Cut(_shotWarriors);
         _warrior1Emotion?.SetEmotion(_insultEmotion);
         _warrior2Emotion?.SetEmotion(_insultEmotion);
+
+        // Siguen mirando a Estela mientras se burlan de ella.
+        FaceTarget(_warrior1Transform, _estelaTransform);
+        FaceTarget(_warrior2Transform, _estelaTransform);
 
         bool insultDone = false;
         SpeechBubbleUI.Instance.Show(_warrior1Transform, Loc(_insultLineKey),
@@ -366,16 +455,24 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
             yield return new WaitForSeconds(0.4f);
         }
 
-        // Ráfaga alternando entre los dos guerreros
+        // Ráfaga alternando entre los dos guerreros: cada uno se protege (animación +
+        // VFX de escudo) justo cuando recibe su disparo, sin dejar de mirar a Estela
+        // (de donde vienen los proyectiles).
         for (int i = 0; i < _rageShots; i++)
         {
             // A mitad de la ráfaga cortamos a los guerreros para ver cómo reciben los disparos
             if (i == _rageShots / 2 && _shotWarriors != null)
                 _cinematicCamera.Cut(_shotWarriors);
 
-            Transform rageTarget = (i % 2 == 0) ? _warrior1Transform : _warrior2Transform;
+            bool targetIsWarrior1 = (i % 2 == 0);
+            Transform rageTarget = targetIsWarrior1 ? _warrior1Transform : _warrior2Transform;
+            NPCSimpleAnimator rageTargetAnim = targetIsWarrior1 ? _warrior1SimpleAnim : _warrior2SimpleAnim;
+
             if (rageTarget != null)
+            {
                 FireAtTarget(rageTarget);
+                PlayWarriorBlockReaction(rageTarget, rageTargetAnim);
+            }
 
             yield return new WaitForSeconds(_rageShotInterval);
         }
@@ -402,17 +499,68 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
         if (_warrior1Npc != null) _warrior1Npc.enabled = false;
         if (_warrior2Npc != null) _warrior2Npc.enabled = false;
 
+        // FIX: como en LiamCrystalBallSequencer.FreezeLiamNavigation / CinematicState.MoveToPositionSequence,
+        // desactivar la obstacle avoidance (RVO) de ambos guerreros antes de moverlos. Con avoidance
+        // activo, los dos guerreros (que salen desde posiciones muy cercanas, uno junto al otro) se
+        // bloquean mutuamente el paso: el NavMeshAgent va corrigiendo la trayectoria para esquivarse y
+        // NavMeshAgent.velocity se queda casi a 0 la mayor parte del tiempo aunque desiredVelocity no lo
+        // esté. SyncWithNavMeshAgent (NPCSimpleAnimator) nunca ve velocidad suficiente y no dispara la
+        // animación de andar, mientras el agente sigue arrastrándose muy despacio hacia el destino. Al
+        // llegar _fleeTimeout, Co_FleeWarrior igualmente los desactiva con SetActive(false): el efecto
+        // visual es que los guerreros "se van" de golpe al final sin haber caminado nunca.
+        if (_warrior1Agent != null)
+        {
+            _warrior1OriginalAvoidance = _warrior1Agent.obstacleAvoidanceType;
+            _warrior1Agent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
+        }
+        if (_warrior2Agent != null)
+        {
+            _warrior2OriginalAvoidance = _warrior2Agent.obstacleAvoidanceType;
+            _warrior2Agent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
+        }
+
         // Activar animación de carrera antes de mover el agente
         if (_warrior1SimpleAnim != null) { _warrior1SimpleAnim.SetBattleMode(false); _warrior1SimpleAnim.TransitionToLocomotion(); _warrior1SimpleAnim.SetMovementSpeed(1f, 0f); }
         if (_warrior2SimpleAnim != null) { _warrior2SimpleAnim.SetBattleMode(false); _warrior2SimpleAnim.TransitionToLocomotion(); _warrior2SimpleAnim.SetMovementSpeed(1f, 0f); }
 
-        StartCoroutine(Co_FleeWarrior(_warrior1Transform, _warrior1Agent, _warrior1FleeTarget));
-        StartCoroutine(Co_FleeWarrior(_warrior2Transform, _warrior2Agent, _warrior2FleeTarget));
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // ⚠️ DIAGNÓSTICO: en la escena actual _warrior1FleeTarget y _warrior2FleeTarget apuntan
+        // ambos al mismo Transform ("RunPoint"). Esto no debería impedir la animación por sí solo,
+        // pero hace que los dos guerreros converjan al mismo punto exacto (se superponen al llegar
+        // y pueden bloquearse mutuamente el resto del camino). Falta asignar un segundo punto de
+        // huida distinto a _warrior2FleeTarget en el Inspector.
+        if (_warrior1FleeTarget != null && _warrior1FleeTarget == _warrior2FleeTarget)
+        {
+            Debug.LogWarning("[EstelaAppearsSequencer] _warrior1FleeTarget y _warrior2FleeTarget " +
+                "apuntan al MISMO Transform. Asigna un punto de huida distinto para cada guerrero.");
+        }
+#endif
+
+        StartCoroutine(Co_FleeWarrior(_warrior1Transform, _warrior1Agent, _warrior1FleeTarget, _warrior1SimpleAnim, _warrior1OriginalAvoidance, "W1"));
+        StartCoroutine(Co_FleeWarrior(_warrior2Transform, _warrior2Agent, _warrior2FleeTarget, _warrior2SimpleAnim, _warrior2OriginalAvoidance, "W2"));
 
         yield return new WaitForSeconds(_fleeTimeout);
     }
 
-    private IEnumerator Co_FleeWarrior(Transform warrior, NavMeshAgent agent, Transform fleeTarget)
+    /// Reacción de un guerrero al recibir un disparo de la ráfaga de rabia: se protege
+    /// (animación de bloqueo, reutilizando NPCSimpleAnimator.PlayDefendHit) y aparece el VFX
+    /// de escudo sobre él, sin dejar de mirar hacia Estela (origen del ataque).
+    private void PlayWarriorBlockReaction(Transform warrior, NPCSimpleAnimator warriorAnim)
+    {
+        if (warrior == null) return;
+
+        FaceTarget(warrior, _estelaTransform);
+        warriorAnim?.PlayDefendHit();
+
+        if (_warriorShieldVFX != null)
+        {
+            Vector3 vfxPos = warrior.position + _warriorShieldVfxOffset;
+            VfxPoolService.Instance?.Play(_warriorShieldVFX, vfxPos, warrior.rotation, _warriorShieldVfxLifetime, warrior);
+        }
+    }
+
+    private IEnumerator Co_FleeWarrior(Transform warrior, NavMeshAgent agent, Transform fleeTarget,
+        NPCSimpleAnimator simpleAnim, ObstacleAvoidanceType originalAvoidance, string debugTag)
     {
         if (warrior == null || fleeTarget == null) yield break;
 
@@ -420,10 +568,26 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
         {
             agent.isStopped = false;
             agent.speed = _fleeSpeed;
-            agent.SetDestination(fleeTarget.position);
+            bool pathOk = agent.SetDestination(fleeTarget.position);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log($"[EstelaFlee:{debugTag}] SetDestination → {fleeTarget.position} | " +
+                $"aceptado={pathOk} isOnNavMesh={agent.isOnNavMesh} isStopped={agent.isStopped} " +
+                $"speed={agent.speed} avoidance={agent.obstacleAvoidanceType} " +
+                $"syncedAgentCoincide={(simpleAnim != null && simpleAnim.DebugSyncedAgent == agent)}");
+#endif
         }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        else
+        {
+            Debug.LogWarning($"[EstelaFlee:{debugTag}] Sin NavMeshAgent válido (agent null={agent == null}, " +
+                $"isOnNavMesh={(agent != null ? agent.isOnNavMesh.ToString() : "N/A")}). Se moverá el transform a mano.");
+        }
+#endif
 
         float elapsed = 0f;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        float debugLogTimer = 0f;
+#endif
         while (elapsed < _fleeTimeout && warrior != null &&
                Vector3.Distance(warrior.position, fleeTarget.position) > 1f)
         {
@@ -437,11 +601,46 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
                     warrior.rotation = Quaternion.LookRotation(dir);
                     warrior.position = Vector3.MoveTowards(
                         warrior.position, fleeTarget.position, _fleeSpeed * Time.deltaTime);
+
+                    // Sin NavMeshAgent no hay SyncWithNavMeshAgent que anime el movimiento:
+                    // forzar aquí la animación de carrera mientras el transform avanza a mano.
+                    simpleAnim?.SetMovementSpeed(1f, 0f);
                 }
             }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            debugLogTimer += Time.deltaTime;
+            if (debugLogTimer >= 0.3f)
+            {
+                debugLogTimer = 0f;
+                if (agent != null && agent.isOnNavMesh)
+                {
+                    Debug.Log($"[EstelaFlee:{debugTag}] t={elapsed:F1}s pos={warrior.position} " +
+                        $"vel={agent.velocity.magnitude:F2} desiredVel={agent.desiredVelocity.magnitude:F2} " +
+                        $"hasPath={agent.hasPath} pathPending={agent.pathPending} pathStatus={agent.pathStatus} " +
+                        $"remaining={agent.remainingDistance:F2} isStopped={agent.isStopped} " +
+                        $"animSpeed={(simpleAnim != null ? simpleAnim.DebugCurrentMovementSpeed.ToString("F2") : "N/A")}");
+                }
+                else
+                {
+                    Debug.Log($"[EstelaFlee:{debugTag}] t={elapsed:F1}s (sin agente) pos={warrior.position} " +
+                        $"animSpeed={(simpleAnim != null ? simpleAnim.DebugCurrentMovementSpeed.ToString("F2") : "N/A")}");
+                }
+            }
+#endif
+
             elapsed += Time.deltaTime;
             yield return null;
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[EstelaFlee:{debugTag}] Fin del bucle en t={elapsed:F1}s, pos={warrior?.position}, " +
+            $"distanciaAlDestino={(warrior != null ? Vector3.Distance(warrior.position, fleeTarget.position).ToString("F2") : "N/A")}");
+#endif
+
+        // Restaurar la obstacle avoidance original por si el NPC se reactiva más adelante.
+        if (agent != null)
+            agent.obstacleAvoidanceType = originalAvoidance;
 
         if (warrior != null && warrior.gameObject != null)
             warrior.gameObject.SetActive(false);
