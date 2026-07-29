@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using Game.NPC.Common;
@@ -57,10 +58,22 @@ namespace Game.NPC.States
         private GameObject _footVfxInstance;
         private ParticleSystem _footVfxPs;
 
+        // Parámetros del Animator del NPC cacheados una vez por entrada al estado (no en Update).
+        // Animator.SetBool/SetFloat loguean un error nativo si el hash no existe en el controller,
+        // incluso dentro de try/catch (no lanzan excepción C#), así que hay que filtrar antes de llamar.
+        private HashSet<int> _animatorParams;
+
+        // Posición "lógica" durante el seguimiento especial (sin el offset visual de bobbing de vuelo).
+        // Se usa para los cálculos de formación/distancia; el bobbing se aplica solo al Transform final.
+        private Vector3 _specialFollowPosition;
+        private float _bobPhase;
+
         private const float SPECIAL_FOLLOW_SPEED    = 8f;
         private const float SPECIAL_FOLLOW_STOP_DIST = 1.5f;
         private const float OFF_NAVMESH_THRESHOLD   = 1.5f;
         private const float WARP_SEARCH_RADIUS      = 12f;
+        private const float DEFAULT_FLIGHT_BOB_AMPLITUDE = 0.8f;
+        private const float DEFAULT_FLIGHT_BOB_FREQUENCY = 1.8f;
 
         // Hashes de estados y parámetros (compartidos con el animator del jugador)
         private static readonly int HashFlyIdle    = Animator.StringToHash("fly_idle");
@@ -104,6 +117,8 @@ namespace Game.NPC.States
             _gravityStored       = false;
             _animSpeedStored     = false;
             _npcFlightLayerIndex = DetectFlightLayer(context.UnityAnimator);
+            _animatorParams      = BuildAnimatorParamSet(context.UnityAnimator);
+            _bobPhase            = (_partyMember?.PartyIndex ?? 0) * 0.7f;
             _footVfxInstance     = null;
             _footVfxPs           = null;
 
@@ -286,6 +301,7 @@ namespace Game.NPC.States
                     _inSpecialFollow = true;
                     _pathUpdateTimer = 0f;
                     _isWanderingNearPlayer = false;
+                    _specialFollowPosition = context.Transform.position;
 
                     if (context.Agent != null && context.Agent.isActiveAndEnabled)
                     {
@@ -336,7 +352,10 @@ namespace Game.NPC.States
             {
                 targetPos  = GetFormationTarget3D(context);
             }
-            Vector3 currentPos = context.Transform.position;
+            // _specialFollowPosition es la posición "lógica" (sin bobbing) usada para toda la
+            // navegación/formación. El offset visual de vuelo se aplica solo al final, sobre
+            // el Transform real, para no contaminar los cálculos de distancia/destino.
+            Vector3 currentPos = _specialFollowPosition;
             Vector3 delta      = targetPos - currentPos;
             float   dist       = delta.magnitude;
             bool    isMoving   = dist > SPECIAL_FOLLOW_STOP_DIST * 0.5f;
@@ -346,7 +365,7 @@ namespace Game.NPC.States
                 float speed = dist > SPECIAL_FOLLOW_STOP_DIST * 3f
                     ? SPECIAL_FOLLOW_SPEED * 1.5f : SPECIAL_FOLLOW_SPEED;
 
-                context.Transform.position = currentPos + delta.normalized * Mathf.Min(speed * Time.deltaTime, dist);
+                _specialFollowPosition = currentPos + delta.normalized * Mathf.Min(speed * Time.deltaTime, dist);
 
                 if (context.Rigidbody != null && !context.Rigidbody.isKinematic)
                     context.Rigidbody.linearVelocity = Vector3.zero;
@@ -361,6 +380,19 @@ namespace Game.NPC.States
                     context.Rigidbody.linearVelocity = Vector3.zero;
                 RotateTowardsPlayer(context);
             }
+
+            // Bobbing visual de vuelo: replica el movimiento arriba/abajo que PlayerFlyingController
+            // aplica al jugador (Mathf.Sin sobre Time.time), para que los compañeros que vuelan
+            // también parezcan flotar en el aire. Solo afecta al Transform final, no a la lógica.
+            float bobOffset = 0f;
+            if (playerMode == ActionMode.Flying)
+            {
+                float amp  = _config?.flightBobAmplitude ?? DEFAULT_FLIGHT_BOB_AMPLITUDE;
+                float freq = _config?.flightBobFrequency ?? DEFAULT_FLIGHT_BOB_FREQUENCY;
+                if (Mathf.Abs(amp) > 0.0001f && Mathf.Abs(freq) > 0.0001f)
+                    bobOffset = Mathf.Sin(Time.time * (2f * Mathf.PI * freq) + _bobPhase) * amp;
+            }
+            context.Transform.position = _specialFollowPosition + Vector3.up * bobOffset;
 
             UpdateSpecialModeAnimation(context, playerMode, delta, isMoving);
         }
@@ -483,6 +515,9 @@ namespace Game.NPC.States
         {
             Animator anim         = context.UnityAnimator;
             ActionMode exitingMode = _exitMode;   // último modo significativo (Flying/Swimming/Climbing/Default)
+
+            // Quitar cualquier offset visual de bobbing residual antes de restaurar física/navmesh
+            context.Transform.position = _specialFollowPosition;
 
             _inSpecialFollow = false;
             _lastSpecialMode = ActionMode.Default;
@@ -650,15 +685,35 @@ namespace Game.NPC.States
             return false;
         }
 
-        private static void TrySetBool(Animator anim, int paramHash, bool value)
+        /// <summary>
+        /// Snapshot de los hashes de parámetros del Animator, tomado una sola vez al entrar al estado.
+        /// No apto para llamar en Update: recorre anim.parameters, que es costoso.
+        /// </summary>
+        private static HashSet<int> BuildAnimatorParamSet(Animator anim)
+        {
+            var set = new HashSet<int>();
+            if (anim == null) return set;
+            try
+            {
+                var parameters = anim.parameters;
+                for (int i = 0; i < parameters.Length; i++)
+                    set.Add(parameters[i].nameHash);
+            }
+            catch { }
+            return set;
+        }
+
+        private void TrySetBool(Animator anim, int paramHash, bool value)
         {
             if (anim == null) return;
+            if (_animatorParams != null && !_animatorParams.Contains(paramHash)) return;
             try { anim.SetBool(paramHash, value); } catch { }
         }
 
-        private static void TrySetFloat(Animator anim, int paramHash, float value)
+        private void TrySetFloat(Animator anim, int paramHash, float value)
         {
             if (anim == null) return;
+            if (_animatorParams != null && !_animatorParams.Contains(paramHash)) return;
             try { anim.SetFloat(paramHash, value); } catch { }
         }
 
@@ -726,6 +781,9 @@ namespace Game.NPC.States
             if (_inSpecialFollow)
             {
                 _inSpecialFollow = false;
+
+                // Quitar cualquier offset visual de bobbing residual
+                context.Transform.position = _specialFollowPosition;
 
                 if (_animSpeedStored && context.UnityAnimator != null)
                 {

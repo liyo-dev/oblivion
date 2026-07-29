@@ -167,6 +167,16 @@ namespace Game.NPC.Modules
         [Range(0.5f, 4f)]
         public float flightFormationSpread = 1.5f;
 
+        [Tooltip("Amplitud (metros) del movimiento vertical oscilante mientras el compañero vuela. " +
+                 "Debe imitar flightBobAmplitude de PlayerFlyingController.")]
+        [Range(0f, 2f)]
+        public float flightBobAmplitude = 0.8f;
+
+        [Tooltip("Frecuencia (Hz) del movimiento oscilante mientras el compañero vuela. " +
+                 "Debe imitar flightBobFrequency de PlayerFlyingController.")]
+        [Range(0f, 5f)]
+        public float flightBobFrequency = 1.8f;
+
         // ============ PROPIEDADES DE COMPATIBILIDAD (para que el código existente siga funcionando) ============
         
         // Seguimiento
