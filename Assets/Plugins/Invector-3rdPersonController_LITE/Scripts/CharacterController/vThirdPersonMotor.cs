@@ -183,6 +183,24 @@ namespace Invector.vCharacterController
             AirControl();
         }
 
+        /// <summary>
+        /// FIX: inputSmooth/moveDirection son 'internal' y lockMovement=true NO los resetea
+        /// ("lock the movement of the controller, not the animation" — comentario original de
+        /// Invector arriba). Si se bloquea el movimiento mientras el jugador está sprintando,
+        /// estos valores quedan congelados con magnitud de sprint y ControlAnimatorRootMotion()
+        /// (OnAnimatorMove, que NO comprueba lockMovement) sigue dejando que animator.rootPosition
+        /// se desincronice de transform.position mientras dure el bloqueo. Al desbloquear, ese
+        /// desfase se vuelca de golpe en un único frame (el player "salta" y la cámara tiene que
+        /// perseguirlo). Llamar a este método justo al activar el lock evita que el desfase se
+        /// acumule. Público porque otros ensamblados (Scripts, NarrativeGraph) no pueden acceder
+        /// a los campos 'internal' de este assembly (Plugins compila en Assembly-CSharp-firstpass).
+        /// </summary>
+        public void ResetInputSmoothing()
+        {
+            inputSmooth = Vector3.zero;
+            moveDirection = Vector3.zero;
+        }
+
         #region Locomotion
 
         public virtual void SetControllerMoveSpeed(vMovementSpeed speed)

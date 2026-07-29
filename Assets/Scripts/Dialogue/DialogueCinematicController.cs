@@ -67,6 +67,10 @@ public class DialogueCinematicController : MonoBehaviour
     [SerializeField] private float groupMinClearance = 2.5f;
     [Tooltip("Radio de la esfera usada para detectar obstrucciones cerca de la cámara")]
     [SerializeField] private float groupCameraProbeRadius = 0.4f;
+    [Tooltip("Modo 1:1: margen inicial del SphereCast de obstrucción respecto a la cabeza del personaje, para no detectar sus propios colliders/props como obstáculo (metros)")]
+    [SerializeField] private float dialogueCameraSelfClearance = 0.5f;
+    [Tooltip("Modo 1:1: distancia mínima a la que se permite acercar la cámara al esquivar una obstrucción. Los planos normales están entre 3 y 5m; bajarla demasiado produce un primerísimo plano roto (metros)")]
+    [SerializeField] private float dialogueCameraMinDistance = 2.4f;
 
     // Interpolación suave del lookAt en modo grupal
     private Vector3 _groupLookAtTarget;
@@ -1621,16 +1625,29 @@ public class DialogueCinematicController : MonoBehaviour
             // Si hay geometría (muro, árbol, roca...) entre el personaje y la posición calculada
             // de cámara, acercamos la cámara hasta justo delante del obstáculo. Sin esto, la cámara
             // podía terminar detrás de un objeto y dejar al personaje cortado a medias en pantalla.
+            //
+            // FIX: el SphereCast arrancaba exactamente en headPos (la cabeza del propio target).
+            // Cualquier collider del propio personaje (armas, props, pelo) o una pared a pocos
+            // centímetros se detectaba como "obstrucción" a distancia ~0, y el clamp mínimo
+            // (antes 0.6m) dejaba la cámara pegada a la barbilla mirando hacia arriba (bug
+            // visible en cualquier diálogo 1:1, no solo interiores concretos). Arreglo en dos
+            // pasos: (1) el cast arranca ya desplazado fuera del propio volumen del personaje
+            // (dialogueCameraSelfClearance), y (2) el mínimo de seguridad (dialogueCameraMinDistance)
+            // sube a una distancia acorde a los planos normales (3-5m) en vez de un
+            // primerísimo plano roto. Ambos valores son ajustables desde el Inspector.
             Vector3 headPos = target.position + Vector3.up * Mathf.Max(shot.Height, 1.2f);
             Vector3 toCam = camPos - headPos;
             float camposDist = toCam.magnitude;
-            if (camposDist > 0.05f)
+            if (camposDist > dialogueCameraSelfClearance + 0.05f)
             {
                 Vector3 dir = toCam / camposDist;
-                if (Physics.SphereCast(headPos, groupCameraProbeRadius, dir, out RaycastHit obstructionHit,
-                    camposDist, _camObstructionMask, QueryTriggerInteraction.Ignore))
+                Vector3 probeOrigin = headPos + dir * dialogueCameraSelfClearance;
+                float probeDist = camposDist - dialogueCameraSelfClearance;
+
+                if (Physics.SphereCast(probeOrigin, groupCameraProbeRadius, dir, out RaycastHit obstructionHit,
+                    probeDist, _camObstructionMask, QueryTriggerInteraction.Ignore))
                 {
-                    float clearDist = Mathf.Max(obstructionHit.distance - 0.3f, 0.6f);
+                    float clearDist = Mathf.Max(dialogueCameraSelfClearance + obstructionHit.distance - 0.3f, dialogueCameraMinDistance);
                     camPos = headPos + dir * clearDist;
                     if (showDebugInfo)
                         Debug.Log($"[DialogueCinematicController] 📷 Obstrucción detectada ({obstructionHit.collider.name}) - cámara reubicada a {clearDist:F2}m");

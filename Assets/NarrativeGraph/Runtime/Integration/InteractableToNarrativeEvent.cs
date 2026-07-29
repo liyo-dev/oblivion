@@ -58,6 +58,21 @@ public class InteractableToNarrativeEvent : MonoBehaviour
             return;
         }
 
+        // Este componente representa un hecho físico/interactivo instantáneo ("el jugador
+        // está aquí AHORA"), no un flag narrativo que deba recordarse para siempre. Si
+        // todavía no hay nadie esperando esta key (p. ej. el grafo sigue bloqueado en un
+        // WaitQuestCompleteNode previo), NO lo emitimos: RaiseCustom lo bancaría en
+        // _pending/_raised y, cuando el grafo llegase más tarde a ese WaitCustomEventNode,
+        // lo consumiría de inmediato como si el trigger acabara de dispararse — aunque en
+        // realidad ocurrió antes de tiempo. Mismo patrón que KingdomBoundaryTrigger.
+        if (!_signals.HasCustomListener(eventKey))
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log($"[InteractableToNarrativeEvent] Ignorado: nadie espera '{eventKey}' todavía (el grafo no ha llegado a ese punto).");
+#endif
+            return;
+        }
+
         _signals.RaiseCustom(eventKey, name);
         Debug.Log($"[InteractableToNarrativeEvent] Emite '{eventKey}' → signals #{_signals.GetEntityId()}");
     }

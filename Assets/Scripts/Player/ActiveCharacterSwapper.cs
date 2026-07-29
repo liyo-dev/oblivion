@@ -207,20 +207,36 @@ public class ActiveCharacterSwapper : MonoBehaviour
             // Will ya estaba instanciado (cambio Liam↔Estela): colocar a Will donde estaba
             // el personaje que se abandona. En combate activo se respeta la posición actual
             // para no interrumpir la IA de combate.
-            var activeCombatEnemy = GetActiveCombatEnemy();
-            if (activeCombatEnemy == null)
+            //
+            // FIX: si Will está anclado (IsPinnedByParty, modo Libre) o en cinemática, NO debe
+            // teletransportarse aquí. Antes este warp era incondicional y arrancaba a Will de
+            // donde el jugador lo hubiera colocado a propósito (p.ej. sobre una placa de presión
+            // para un puzle), moviéndolo junto al otro personaje sin aviso — para el jugador
+            // esto se percibía como que "Will desaparecía" justo en momentos críticos de puzles.
+            var willContext = _willNpcInstance.NPCManager?.Context;
+            bool willPinnedOrInCinematic = (willContext?.IsPinnedByParty ?? false) || (willContext?.IsInCinematic ?? false);
+
+            if (willPinnedOrInCinematic)
             {
-                // Buscar posición válida en NavMesh (radio amplio para cubrir vuelo/natación)
-                Vector3 willPos = fromPos;
-                if (NavMesh.SamplePosition(fromPos, out NavMeshHit willHit, 30f, NavMesh.AllAreas))
-                    willPos = willHit.position;
-                WarpNpcToPosition(_willNpcInstance, willPos, fromRot);
+                Debug.Log("[ActiveCharacterSwapper] Will NPC anclado (modo Libre) o en cinemática — no se reposiciona al cambiar de personaje.");
             }
-            else if (!(_willNpcInstance.NPCManager?.Context?.IsInCombat ?? false))
+            else
             {
-                // Hay combate activo pero Will no está participando (perdió el target, etc.)
-                // Re-notificarle para que entre en AllyCombatState.
-                _willNpcInstance.OnPlayerEnteredCombat(activeCombatEnemy);
+                var activeCombatEnemy = GetActiveCombatEnemy();
+                if (activeCombatEnemy == null)
+                {
+                    // Buscar posición válida en NavMesh (radio amplio para cubrir vuelo/natación)
+                    Vector3 willPos = fromPos;
+                    if (NavMesh.SamplePosition(fromPos, out NavMeshHit willHit, 30f, NavMesh.AllAreas))
+                        willPos = willHit.position;
+                    WarpNpcToPosition(_willNpcInstance, willPos, fromRot);
+                }
+                else if (!(_willNpcInstance.NPCManager?.Context?.IsInCombat ?? false))
+                {
+                    // Hay combate activo pero Will no está participando (perdió el target, etc.)
+                    // Re-notificarle para que entre en AllyCombatState.
+                    _willNpcInstance.OnPlayerEnteredCombat(activeCombatEnemy);
+                }
             }
         }
     }

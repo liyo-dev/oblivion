@@ -670,14 +670,19 @@ public sealed class AudioService : MonoBehaviour
             {
                 Debug.Log($"[AudioService] RestoreAfterBattle: restaurando música de AmbientZone '{activeAmbientZone.MusicZoneId}'");
                 PlayMusic(zoneRule.music, fade);
-                if (_musicStack.Count > 0) _musicStack.Pop();
+                // BUGFIX: solo tocar la pila si ESTE combate llegó a apilar algo. Los enemigos
+                // sin battleMusicId nunca pasan por BeginBattleMusic (no cambian de música al
+                // empezar), así que _battleActive sigue en false aquí; hacer Pop() igualmente
+                // robaba la entrada de otro sistema (cinemática aditiva, minijuego) que sí la
+                // había apilado legítimamente y aún no le tocaba restaurarse.
+                if (_battleActive && _musicStack.Count > 0) _musicStack.Pop();
                 _battleActive = false;
                 return;
             }
         }
 
-        if (_musicStack.Count > 0) _musicStack.Pop();
-        if (!RestoreSceneMusic(fade))
+        if (_battleActive && _musicStack.Count > 0) _musicStack.Pop();
+        if (_battleActive && !RestoreSceneMusic(fade))
             StopMusic(fade);
         _battleActive = false;
     }
@@ -717,12 +722,18 @@ public sealed class AudioService : MonoBehaviour
         if (victoryRule != null && victoryRule.music != null)
         {
             Debug.Log($"[AudioService] ✅ Reproduciendo música de victoria: {victoryRule.music.name}");
-            
-            // ✅ CRÍTICO: Desactivar loop para música de victoria
-            // La música de victoria debe reproducirse UNA SOLA VEZ
-            _musicA.loop = false;
-            _musicB.loop = false;
-            
+
+            // BUGFIX: si holdSeconds <= 0 la restauración es MANUAL (la hace el lifecycle
+            // handler del NPC, normalmente al cerrar el diálogo post-derrota). Si en ese caso
+            // desactivamos el loop, el AudioSource termina el clip por su cuenta y se para SOLO
+            // en cuanto acaba el jingle — si el diálogo tarda más que el clip (caso muy común),
+            // se queda un silencio real hasta que la restauración manual llega. Con holdSeconds
+            // > 0 sí queremos que suene una sola vez, porque la propia corrutina de restauración
+            // ya está temporizada para llegar a tiempo.
+            bool holdUntilManualRestore = holdSeconds <= 0f;
+            _musicA.loop = holdUntilManualRestore;
+            _musicB.loop = holdUntilManualRestore;
+
             PlayMusic(victoryRule.music, victoryRule.fade);
         }
         else
@@ -785,6 +796,18 @@ public sealed class AudioService : MonoBehaviour
             // llevar al volumen objetivo suavemente (sin cambiar de fuente)
             StopMusicCoroutines();
             _duckRoutine = null;
+
+            // BUGFIX: StopMusicCoroutines() solo mata la corrutina de crossfade/fade-out en
+            // curso, no la fuente en sí. Si 'other' venía de un crossfade interrumpido a medias
+            // se queda sonando su clip anterior indefinidamente, mezclado con 'current' (esto es
+            // lo que producía "suena la música de gameplay Y la de la zona a la vez"). Si 'other'
+            // no comparte el clip que queremos, hay que silenciarla explícitamente aquí.
+            if (other.isPlaying && other.clip != clip)
+            {
+                other.Stop();
+                other.volume = 0f;
+            }
+
             _setVolumeRoutine = StartCoroutine(SetMusicVolumeTo(target, fadeSeconds));
             return;
         }
@@ -796,6 +819,19 @@ public sealed class AudioService : MonoBehaviour
             float target = GetDuckedVolume(1f);
             StopMusicCoroutines();
             _duckRoutine = null;
+
+            // BUGFIX: 'other' es la fuente que de verdad queremos activa a partir de ahora.
+            // Antes no se actualizaba _musicATurn, así que SetMusicVolumeTo seguía tratando a
+            // 'current' (el clip viejo) como la fuente "actual" y la subía al volumen objetivo
+            // en vez de pararla — dejando el clip viejo y el nuevo sonando a la vez. Alineamos
+            // el turno con la realidad y silenciamos 'current' si quedó con un clip distinto.
+            if (current.isPlaying && current.clip != clip)
+            {
+                current.Stop();
+                current.volume = 0f;
+            }
+            _musicATurn = !_musicATurn;
+
             _setVolumeRoutine = StartCoroutine(SetMusicVolumeTo(target, fadeSeconds));
             return;
         }
@@ -910,17 +946,26 @@ public sealed class AudioService : MonoBehaviour
         float b0 = other.volume;
         if (fade <= 0f) fade = 0.0001f;
 
+        // BUGFIX: antes 'other' se interpolaba desde a0 (volumen de 'current') hacia el mismo
+        // target que 'current', sin usar b0 nunca. Si 'other' tenía un clip distinto sonando
+        // (p.ej. un crossfade interrumpido) esto la subía al mismo volumen que la música actual
+        // en vez de apagarla — dos pistas distintas sonando a la vez indefinidamente. Ahora
+        // 'other' solo comparte el target si de verdad es el mismo clip (ducking normal);
+        // si no, se apaga hacia 0 desde su propio volumen real (b0) y se para al terminar.
+        bool sameClip = other.clip == current.clip;
+        float otherTarget = sameClip ? target : 0f;
+
         while (t < fade)
         {
             t += Time.unscaledDeltaTime;
             float k = Mathf.Clamp01(t / fade);
-            float v = Mathf.Lerp(a0, target, k);
-            current.volume = v;
-            other.volume   = v;
+            current.volume = Mathf.Lerp(a0, target, k);
+            other.volume   = Mathf.Lerp(b0, otherTarget, k);
             yield return null;
         }
         current.volume = target;
-        other.volume   = target;
+        other.volume   = otherTarget;
+        if (!sameClip && other.isPlaying) other.Stop();
         _duckRoutine = null;
         _setVolumeRoutine = null;
     }

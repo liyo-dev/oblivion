@@ -274,7 +274,13 @@ namespace Game.NPC.Modules
         
         [Tooltip("Índice del step de la quest que corresponde a este miembro. Si es >= 0, se usa directamente sin necesidad de Condition Id.")]
         public int stepIndex = -1;
-        
+
+        [Tooltip("Si está activado, el step SOLO se marca al hablar con el NPC dueño de esta cadena (vía HandleQuestState), " +
+                 "nunca de forma inmediata cuando el miembro se une al party (OnPartyMemberJoined). " +
+                 "Usar esto para pasos tipo 'vuelve a hablarme con fulano en el equipo', donde la unión al party " +
+                 "puede ocurrir mucho antes de que el jugador regrese con el NPC.")]
+        public bool completeOnlyOnNpcTalk = false;
+
         /// <summary>
         /// Obtiene el stepConditionId, auto-generándolo si está vacío Y stepIndex no es válido
         /// </summary>

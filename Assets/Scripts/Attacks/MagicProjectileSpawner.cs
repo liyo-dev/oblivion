@@ -329,6 +329,12 @@ public class MagicProjectileSpawner : MonoBehaviour
         if (go != null && spell.followOriginDuringCharge && origin != null)
             go.transform.SetParent(previousParent, worldPositionStays: true);
 
+        // FIX INC-049: recalcular la velocidad justo antes de soltar el proyectil, no al
+        // empezar la carga. Con hechizos con chargeTime > 0 el jugador puede empezar a volar
+        // o esprintar (o dejar de hacerlo) DURANTE la carga; usar el valor capturado al inicio
+        // dejaba el proyectil con la velocidad "de a pie" aunque se soltara volando/esprintando.
+        effectiveSpeed = spell.initialSpeed * GetSpeedMultiplier();
+
         if (mp != null)
         {
             mp.SetKinematic(false);

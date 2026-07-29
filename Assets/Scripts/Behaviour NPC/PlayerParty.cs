@@ -242,7 +242,13 @@ namespace Game.NPC
         /// Añade un NPC al equipo del jugador.
         /// </summary>
         /// <returns>True si se añadió exitosamente</returns>
-        public bool AddMember(NPCPartyMember member)
+        /// <param name="isRestore">
+        /// True cuando el miembro se está reincorporando al restaurar una partida/preset guardado
+        /// (ya estaba en el equipo antes de guardar). En ese caso se omite OnMemberJoined para no
+        /// re-disparar efectos "de unión en vivo" (p.ej. QuestManager auto-completando pasos por
+        /// requiredPartyMembers) sobre un estado que el guardado ya capturó como no completado.
+        /// </param>
+        public bool AddMember(NPCPartyMember member, bool isRestore = false)
         {
             if (member == null)
             {
@@ -269,8 +275,17 @@ namespace Game.NPC
             
             // Sincronizar con el preset para persistencia
             SyncPartyToPreset();
-            
-            OnMemberJoined?.Invoke(member);
+
+            if (!isRestore)
+            {
+                OnMemberJoined?.Invoke(member);
+            }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            else
+            {
+                Debug.Log($"[PlayerParty] ℹ️ {member.DisplayName} restaurado al equipo (isRestore=true) — OnMemberJoined omitido, sin efectos de unión en vivo.");
+            }
+#endif
             OnPartyChanged?.Invoke(_members);
             
             return true;
@@ -851,7 +866,7 @@ namespace Game.NPC
                             Log($"  ✅ Encontrado en escena: '{pm.gameObject.name}'");
                             if (!HasMember(pm))
                             {
-                                pm.JoinParty();
+                                pm.JoinParty(isRestore: true);
                             }
                             npcManager = pm.NPCManager; // Marca como encontrado
                             break;
@@ -864,7 +879,7 @@ namespace Game.NPC
                     var partyMember = npcManager.GetComponent<NPCPartyMember>();
                     if (partyMember != null && !HasMember(partyMember))
                     {
-                        bool joined = partyMember.JoinParty();
+                        bool joined = partyMember.JoinParty(isRestore: true);
                         if (joined)
                             Log($"✅ Reintento exitoso: {partyMember.DisplayName} unido al party");
                         else
@@ -1500,7 +1515,7 @@ namespace Game.NPC
                 if (partyMember != null && !HasMember(partyMember))
                 {
                     Log($"Uniendo {partyMember.DisplayName} al party...");
-                    bool joined = partyMember.JoinParty();
+                    bool joined = partyMember.JoinParty(isRestore: true);
                     if (!joined)
                     {
                         // JoinParty falla si NavMesh no está listo o party lleno; marcar pendiente para retry

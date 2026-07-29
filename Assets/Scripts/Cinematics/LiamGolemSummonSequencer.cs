@@ -246,7 +246,14 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
 
         yield return Co_EndCinematicStayBlack(() =>
         {
-            RestoreMusic();
+            // FIX: NO restaurar aquí la música de mundo. En cuanto esta cinemática levanta
+            // LIAM_GOLEM_SUMMON_DONE, el grafo encadena sin bifurcación al StartBattleNode del
+            // Gólem, y AudioService.BeginBattleMusic ya hace su propio crossfade a la música de
+            // batalla. Si restaurábamos aquí la música de mundo (con su propio fade, ~0.8s),
+            // sonaba audiblemente durante ese instante antes de cortar a la del boss — el
+            // parpadeo que queríamos evitar ("que salte directamente a la del boss"). Al ganar la
+            // batalla, AudioService.OnBattleWonRestoreMusic recupera la música correcta
+            // (AmbientZone o regla de escena) por su cuenta, sin depender de lo que sonara aquí.
             // Reactivar navegación de Liam mientras la pantalla sigue cubierta (el sistema
             // siguiente, ej. la intro del gólem, se encarga de revelar), igual que se congeló
             // al entrar.

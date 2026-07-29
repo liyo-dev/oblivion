@@ -1265,12 +1265,21 @@ public class QuestManager : MonoBehaviour
                 
                 if (matches)
                 {
+                    // Si este requisito está marcado como "solo al hablar con el NPC", no lo completamos
+                    // aquí (join global e inmediato). Se completará desde NPCQuestConfig.HandleQuestState
+                    // cuando el jugador efectivamente hable con el NPC dueño de la cadena.
+                    if (memberReq.completeOnlyOnNpcTalk)
+                    {
+                        Debug.Log($"[QuestManager] 👥 ⏭️ '{memberReq.memberId}' tiene completeOnlyOnNpcTalk=true, se difiere a la interacción con el NPC");
+                        continue;
+                    }
+
                     string conditionId = memberReq.GetStepConditionId();
                     Debug.Log($"[QuestManager] 👥 Buscando step con conditionId='{conditionId}', stepIndex={memberReq.stepIndex}");
-                    
+
                     int stepIdx = FindStepIndex(rq, conditionId, memberReq.stepIndex);
                     Debug.Log($"[QuestManager] 👥 FindStepIndex devolvió: {stepIdx}");
-                    
+
                     if (stepIdx >= 0)
                     {
                         Debug.Log($"[QuestManager] 👥 Step encontrado en índice {stepIdx}, completed={rq.Steps[stepIdx].completed}");

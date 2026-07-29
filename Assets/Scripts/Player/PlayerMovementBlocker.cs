@@ -91,6 +91,14 @@ public sealed class PlayerMovementBlocker : MonoBehaviour
             _animator.SetBool(vAnimatorParameters.IsSprinting, false);
         }
 
+        // FIX: además de los parámetros del Animator, resetear inputSmooth/moveDirection
+        // (internal en vThirdPersonMotor). Si no se hace, ControlAnimatorRootMotion() puede
+        // seguir considerando que hay input residual de sprint mientras el movimiento está
+        // bloqueado, retrasando el snap-sync con animator.rootPosition y provocando un salto
+        // del player (y la cámara persiguiéndolo) al restaurar el movimiento.
+        if (_thirdPersonController != null)
+            _thirdPersonController.ResetInputSmoothing();
+
         if (disableThirdPersonInput && _thirdPersonInput != null)
             _thirdPersonInput.enabled = false;
 
@@ -137,6 +145,12 @@ public sealed class PlayerMovementBlocker : MonoBehaviour
             _animator.SetFloat(vAnimatorParameters.InputVertical, 0f);
             _animator.SetBool(vAnimatorParameters.IsSprinting, false);
         }
+
+        // FIX: ver comentario equivalente en BlockMovement() — resetear inputSmooth/moveDirection
+        // evita que el root motion residual de un sprint se acumule en animator.rootPosition
+        // mientras el movimiento está bloqueado.
+        if (_thirdPersonController != null)
+            _thirdPersonController.ResetInputSmoothing();
 
         // Suprimir movimiento en el input handler (vThirdPersonInput sigue activo → cámara funciona)
         if (_thirdPersonInput != null)

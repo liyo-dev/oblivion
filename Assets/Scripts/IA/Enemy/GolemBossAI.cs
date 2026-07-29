@@ -60,10 +60,6 @@ public class GolemBossAI : MonoBehaviour
     [SerializeField] private float rockRainAoeDamage = 15f;
     [Tooltip("VFX de advertencia en el suelo antes de que caiga la roca")]
     [SerializeField] private GameObject rockWarningVFX;
-    [Tooltip("Altura del saltito que da el Golem al lanzar cada roca de la lluvia (más alto = más pronunciado)")]
-    [SerializeField] private float rockRainHopHeight = 1.1f;
-    [Tooltip("Distancia que camina el Golem en cada saltito de la lluvia de rocas")]
-    [SerializeField] private float rockRainHopStepDistance = 1.2f;
 
     [Header("Fase 3 - Salto y Onda Expansiva")]
     [Tooltip("Porcentaje de vida para activar Fase 3 (0.25 = 25%)")]
@@ -880,35 +876,18 @@ public class GolemBossAI : MonoBehaviour
         // Centro de la lluvia = posición del jugador
         Vector3 rainCenter = player.position;
 
-        // FIX INC-053 / INC-055: antes el Golem se quedaba con la pose estática de Attack02
-        // durante TODA la lluvia de rocas, lo que además provocaba que el modelo se viera
-        // "tumbado" al mover el transform en Y mientras esa animación no cíclica seguía activa.
-        // Ahora camina (ANIM_WALK) y da saltitos pronunciados en la dirección de avance,
-        // sincronizados con cada roca, como si cada roca cayera por el propio impacto del salto.
-        // Desactivamos el NavMeshAgent mientras dura para poder mover el transform libremente
-        // sin que el agent lo devuelva a su posición del NavMesh.
-        bool agentWasEnabled = agent != null && agent.enabled;
-        if (agentWasEnabled) agent.enabled = false;
-
-        PlayAnim(ANIM_WALK);
-
-        // Dirección de paseo elegida una vez al inicio (camina "en alguna dirección" mientras dura la lluvia)
-        Vector3 hopWalkDir = new Vector3(Random.Range(-1f, 1f), 0f, Random.Range(-1f, 1f));
-        if (hopWalkDir.sqrMagnitude < 0.01f) hopWalkDir = transform.forward;
-        hopWalkDir.Normalize();
+        // FIX INC-053 / INC-055 (revisión): la versión anterior hacía que el Golem caminara y
+        // diera "saltitos" pronunciados durante toda la lluvia, como si cada paso hiciera caer una
+        // roca. Se quita por decisión de diseño (no leía bien / distraía). En su lugar el Golem se
+        // planta en el sitio, mirando siempre al jugador, y alterna gestos de invocación con cada
+        // mano (reutilizando ANIM_ATTACK01/02) sincronizados con la aparición de cada roca — el
+        // propio gesto "hacia el cielo" es la señal de que está invocándola, y se apoya en el VFX
+        // de advertencia en el suelo (rockWarningVFX) que ya marca dónde va a caer.
 
         // Generar las rocas con delay entre cada una
         for (int i = 0; i < rockRainCount; i++)
         {
-            if (_isDead)
-            {
-                if (agentWasEnabled && agent != null)
-                {
-                    agent.enabled = true;
-                    if (agent.isOnNavMesh) agent.Warp(transform.position);
-                }
-                yield break;
-            }
+            if (_isDead) yield break;
 
             // Posición aleatoria en círculo alrededor del jugador
             Vector2 randomCircle = Random.insideUnitCircle * rockRainRadius;
@@ -923,24 +902,11 @@ public class GolemBossAI : MonoBehaviour
                 Destroy(warning, 1.5f);
             }
 
-            // No dejar que el paseo saque al Golem demasiado lejos de su posición de origen:
-            // si se acerca al límite del leash, invertimos la dirección de avance.
-            if (Vector3.Distance(transform.position + hopWalkDir * rockRainHopStepDistance, _homePosition) > maxLeashDistance * 0.8f)
-            {
-                hopWalkDir = -hopWalkDir;
-            }
-
-            // Saltito pronunciado caminando hacia hopWalkDir, en vez de una simple espera estática
-            yield return StartCoroutine(Co_RockRainHop(rockRainInterval, hopWalkDir));
+            // Gesto de invocación (planta los pies, alterna mano) en vez del saltito de antes
+            yield return StartCoroutine(Co_RockRainCastGesture(rockRainInterval));
 
             // Crear y lanzar la roca
             SpawnFallingRock(spawnPos, targetPos);
-        }
-
-        if (agentWasEnabled && agent != null)
-        {
-            agent.enabled = true;
-            if (agent.isOnNavMesh) agent.Warp(transform.position);
         }
 
         // Esperar a que terminen de caer
@@ -952,42 +918,35 @@ public class GolemBossAI : MonoBehaviour
     }
 
     /// <summary>
-    /// FIX INC-053 / INC-055: saltito pronunciado (arco senoidal en Y) mientras el Golem avanza
-    /// caminando en <paramref name="walkDir"/>. Sustituye la pose estática que antes se mantenía
-    /// congelada durante toda la lluvia de rocas (causaba que el modelo se viera "tumbado").
-    /// Se anima directamente el transform, igual que el salto de Fase 3 (JumpAttack), pero con
-    /// desplazamiento horizontal real para que se vea como pasos caminando, no un rebote en el sitio.
+    /// Sustituye al antiguo saltito de la lluvia de rocas: el Golem se queda plantado, mirando al
+    /// jugador, y alterna un gesto de brazo alzado (mano derecha/izquierda) por cada roca de la
+    /// lluvia, como si la estuviera invocando. Refuerza el gesto con el mismo VFX de polvo/energía
+    /// que usa al recoger una roca en mano, en el punto de la mano correspondiente.
     /// </summary>
-    private IEnumerator Co_RockRainHop(float duration, Vector3 walkDir)
+    private IEnumerator Co_RockRainCastGesture(float duration)
     {
-        Vector3 startPos = transform.position;
-        Vector3 stepEnd = startPos + walkDir * rockRainHopStepDistance;
-        float elapsed = 0f;
+        RotateTowardsPlayer();
 
-        // Orientar al Golem hacia la dirección en la que va a caminar/saltar
-        if (walkDir.sqrMagnitude > 0.01f)
+        _useLeftHand = !_useLeftHand;
+        PlayAnim(_useLeftHand ? ANIM_ATTACK02 : ANIM_ATTACK01);
+
+        Transform handPoint = _useLeftHand && rockHandPointLeft ? rockHandPointLeft : rockHandPoint;
+        if (rockPickupVFX && handPoint)
         {
-            Quaternion targetRot = Quaternion.LookRotation(walkDir);
-            if (modelRotationOffset != 0f) targetRot *= Quaternion.Euler(0f, modelRotationOffset, 0f);
-            transform.rotation = targetRot;
+            // TODO: Usar un sistema de pooling
+            GameObject castVFX = Instantiate(rockPickupVFX, handPoint.position, Quaternion.identity);
+            Destroy(castVFX, 1f);
         }
 
+        float elapsed = 0f;
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            float t = duration > 0f ? Mathf.Clamp01(elapsed / duration) : 1f;
-
-            Vector3 groundPos = Vector3.Lerp(startPos, stepEnd, t);
-            float offset = Mathf.Sin(t * Mathf.PI) * rockRainHopHeight;
-            transform.position = new Vector3(groundPos.x, startPos.y + offset, groundPos.z);
+            RotateTowardsPlayer();
             yield return null;
         }
-
-        Vector3 finalPos = stepEnd;
-        finalPos.y = startPos.y;
-        transform.position = finalPos;
     }
-    
+
     /// <summary>
     /// Crea una roca que cae desde arriba hacia un punto objetivo
     /// </summary>

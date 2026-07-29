@@ -3,6 +3,7 @@ using UnityEngine;
 using TMPro;
 using DG.Tweening;
 using Sendero.Core.Feedback;
+using Sendero.UI;
 
 /// <summary>
 /// Presentación cinemática de boss. Muestra el nombre con animación KingdomHearts + degradado,
@@ -73,6 +74,12 @@ public class BossIntroPresentation : MonoBehaviour
 
         // Ocultar toda la UI persistente (SceneBoundUI) con fade
         SceneBoundUI.BeginBossIntro(0.25f);
+        // FIX: el HUD principal (PlayerHUDV2) queda excluido del snapshot genérico de
+        // SceneBoundUI (ver PlayerHUDV2.Awake) porque compite por el mismo CanvasGroup que su
+        // propio HideHUD()/ShowHUD() con fade. Lo ocultamos aquí explícitamente y en el mismo
+        // "par" que el resto de la UI, para que no se quede a medio fade si esta presentación
+        // arranca pegada a una cinemática que todavía estuviera mostrando el HUD.
+        PlayerHUDV2.Instance?.HideHUD(0.25f);
 
         // IMPORTANTE: todo lo que sigue va envuelto en try/finally. Si cualquier boss concreto
         // lanza una excepción a mitad de la presentación (p.ej. referencia nula específica de
@@ -158,6 +165,7 @@ public class BossIntroPresentation : MonoBehaviour
         {
             // Restaurar toda la UI persistente con fade, pase lo que pase durante la presentación.
             SceneBoundUI.EndBossIntro(0.35f);
+            PlayerHUDV2.Instance?.ShowHUD(0.35f);
 
             if (PlayerLockService.HasInstance) PlayerLockService.Instance.Release(this);
 

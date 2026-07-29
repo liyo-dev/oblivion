@@ -988,7 +988,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &109416901
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6859,7 +6859,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &751717854
 Transform:
   m_ObjectHideFlags: 0
@@ -8888,6 +8888,8 @@ MonoBehaviour:
   groupLookAtSmoothTime: 0.6
   groupMinClearance: 2.5
   groupCameraProbeRadius: 0.4
+  dialogueCameraSelfClearance: 0.5
+  dialogueCameraMinDistance: 2.4
   groupPlayerRotationDuration: 0.35
 --- !u!1 &961376697
 GameObject:

@@ -250,7 +250,14 @@ namespace Game.NPC
         /// <summary>
         /// Une este NPC al equipo del jugador.
         /// </summary>
-        public bool JoinParty()
+        /// <param name="isRestore">
+        /// True cuando la unión viene de restaurar una partida/preset guardado (el miembro ya
+        /// formaba parte del equipo antes del guardado). En ese caso NO debe disparar los efectos
+        /// secundarios de una unión "en vivo" (p.ej. auto-completar pasos de misión ligados a
+        /// requiredPartyMembers), porque esos pasos ya reflejan el estado real guardado y no deben
+        /// re-evaluarse solo por reconstruir el equipo al cargar.
+        /// </param>
+        public bool JoinParty(bool isRestore = false)
         {
             if (_isInParty)
             {
@@ -302,7 +309,7 @@ namespace Game.NPC
                 _stateBeforeJoining = _npcManager.Brain.CurrentState;
             }
             
-            bool success = _party.AddMember(this);
+            bool success = _party.AddMember(this, isRestore);
             
             if (!success)
             {

@@ -575,6 +575,12 @@ namespace Game.NPC
 
             Debug.Log($"[NPCQuestActionExecutor:{name}] 🚶 Fase 1: Caminata visible durante {walkTime}s, useTransition={useTransition}");
 
+            // ✅ FIX: Enfocar la cámara en el NPC mientras se aleja. El jugador queda bloqueado
+            // (LockPlayer/PlayerLockService) durante todo el Move, y si la cámara no se ha quedado
+            // mirando por casualidad hacia el NPC, parece que el juego se ha colgado. Mismo patrón
+            // que NPCInteractiveNarrativeExecutor.ExecuteMove.
+            DialogueCameraController.Instance?.FocusOnNPC(transform);
+
             // Crear secuencia de movimiento para la caminata visible
             // ✅ Pasar el SpawnAnchor para que aplique la orientación correcta al llegar
             var moveSequence = new MoveToPositionSequence(
@@ -698,6 +704,10 @@ namespace Game.NPC
             Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 Posición final NPC: {transform.position}");
             Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 Rotación final NPC: {transform.rotation.eulerAngles}");
             Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 Anchor destino era: '{action.targetAnchorName}' en {targetPosition}");
+
+            // ✅ FIX: Liberar el enfoque de cámara ahora que el NPC ha llegado a su destino
+            // (caminando, teletransportado o vía transición de pantalla).
+            DialogueCameraController.Instance?.EndDialogueCamera();
 
             // Persistir la nueva posición del NPC
             if (npcManager != null && npcManager.persistLastPosition)

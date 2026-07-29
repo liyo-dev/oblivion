@@ -140,7 +140,24 @@ public class PlayerLockService : MonoBehaviour
         {
             _motorWasLocked = _lockedMotor.lockMovement;
             _lockedMotor.lockMovement = true;
-            Debug.Log("[PlayerLockService] lockMovement=true en vThirdPersonMotor");
+
+            // FIX: inputSmooth/moveDirection son 'internal' en vThirdPersonMotor y NO se
+            // resetean al activar lockMovement (el comentario del propio Invector lo dice:
+            // "lock the movement of the controller, not the animation"). Si el jugador estaba
+            // sprintando justo cuando se adquiere el lock (abrir menú de equipo/pausa, entrar
+            // en diálogo/tienda), estos valores quedan congelados en su magnitud de sprint.
+            // ControlAnimatorRootMotion() (OnAnimatorMove) NO comprueba lockMovement, así que
+            // mientras el lock esté activo el root motion de la animación de sprint se sigue
+            // acumulando en animator.rootPosition sin reflejarse en transform.position — el
+            // snap-sync ("transform.position = animator.rootPosition") solo ocurre cuando
+            // inputSmooth == Vector3.zero exactamente. Al soltar el lock, inputSmooth tarda
+            // varios frames en decaer a cero, y ese frame vuelca de golpe todo el desfase
+            // acumulado: el player "salta" hacia delante y la cámara (recién reactivada, con
+            // su propio suavizado de reconexión) tiene que perseguirlo, dando el efecto de
+            // quedarse atrás al reanudar el sprint tras pausa/tienda. Resetear aquí evita que
+            // el desfase se acumule mientras el lock está activo.
+            _lockedMotor.ResetInputSmoothing();
+            Debug.Log("[PlayerLockService] lockMovement=true en vThirdPersonMotor (inputSmooth/moveDirection reseteados)");
         }
         else
         {

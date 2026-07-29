@@ -312,15 +312,16 @@ MonoBehaviour:
     completionMode: 2
     autoDetectItemDelivery: 0
     itemDeliveryStepIndex: 1
-    itemTag: 
+    itemTag:
     ignoreFovForItem: 0
     overrideDetectionRadius: 0
     requiredItems: []
     requiredWardrobeItems: []
     requiredPartyMembers:
     - memberId: NPC_InteractiveNarrative_Config_Estela_b17a2d68
-      stepConditionId: QUEST_ELDRAN_MISSION6_DESC_02
+      stepConditionId: QUEST_ELDRAN_MISSION6_STEP_01
       stepIndex: 1
+      completeOnlyOnNpcTalk: 1
     requiredCharacter: -1
     dlgWrongCharacter: {fileID: 0}
     dlgBefore: {fileID: 11400000, guid: 293470d7c449ca044b1ff07897c92f6a, type: 2}

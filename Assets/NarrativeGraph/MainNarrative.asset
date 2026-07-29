@@ -90,6 +90,7 @@ MonoBehaviour:
   - rid: 5290829545210380757
   - rid: 5290829545210380758
   - rid: 5290829545210380759
+  - rid: 5290829713765302404
   applicableSceneNames:
   - MainWorld
   references:
@@ -244,9 +245,9 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 4010d494-e518-45bb-9852-29a412777758
-        position: {x: 1743, y: 573}
+        position: {x: 2261, y: 573}
         outputs:
-        - d2c6cf0b-557c-41ae-9ccc-069ca97bade9
+        - b460f4be-5dcd-4dd6-9e83-0af11e6fc6ae
         questId: ELDRAN_MISSION5_2
     - rid: 1823530463036440737
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
@@ -982,7 +983,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: cc48048a-059f-48ae-86a7-b1e76decc181
-        position: {x: 259, y: 573}
+        position: {x: 258, y: 574}
         outputs:
         - 9b63dbf6-fe76-4863-b369-de60261fa436
         - 1db8d4ab-1b78-48f8-961e-9e0668aacf6e
@@ -1112,7 +1113,7 @@ MonoBehaviour:
         silenceDuration: 0.75
         mainThemeClip: {fileID: 8300000, guid: 785493ca564adeb44bb1c68fa22f00ab, type: 3}
         musicFadeInSeconds: 6
-        logoSprite: {fileID: 21300000, guid: 22f4a42f5e03f5b4e9909e1169840e1b, type: 3}
+        logoSprite: {fileID: 21300000, guid: 632f3b8924a09324db96fa90f3bb47c5, type: 3}
         subtitle: 
         logoDelayAfterMusicStart: 0.5
         logoFadeInSeconds: 1.75
@@ -1150,6 +1151,22 @@ MonoBehaviour:
         outputs:
         - 7b8d3392-e124-4510-a26b-3180ee1c378e
         eventKey: EVT_REINOEXIT_BANTER_DONE
+    - rid: 5290829713765302404
+      type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: ESPERAMOS A COMPLETAR ELDRAN_MISSION5_2
+        chapter: Cap. 2
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: b460f4be-5dcd-4dd6-9e83-0af11e6fc6ae
+        position: {x: 1738, y: 573}
+        outputs:
+        - d2c6cf0b-557c-41ae-9ccc-069ca97bade9
+        questId: ELDRAN_MISSION5_2
+        debugLogs: 1
     - rid: 5623891259268006347
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:

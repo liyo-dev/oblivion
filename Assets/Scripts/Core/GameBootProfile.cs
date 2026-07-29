@@ -891,9 +891,16 @@ public class GameBootProfile : ScriptableObject
                 // descartaban como "sin rotación persistida" y el NPC quedaba con la rotación del
                 // prefab (de espaldas) tras cargar la partida.
                 // Compatibilidad con saves antiguos (sin el campo hasRotation, siempre false al
-                // deserializar): si la rotación guardada no es identity, es señal de que sí venía
-                // de una captura real bajo el sistema anterior.
-                if (entry.hasRotation || entry.rotation != Quaternion.identity)
+                // deserializar): el sentinel correcto de "nunca se capturó rotación" es
+                // default(Quaternion) = (0,0,0,0) — el valor con el que Unity rellena un campo
+                // Quaternion ausente del YAML — NO Quaternion.identity = (0,0,0,1). Comparar
+                // contra identity hacía que entradas realmente sin rotación capturada (como el
+                // _ELDRAN de PlayerPreset_Taberna, que solo tiene position/isActive) se trataran
+                // como "sí tienen rotación real" y se les aplicara ese quaternion degenerado
+                // (0,0,0,0) al transform, produciendo justo el giro "de espaldas" que este fix
+                // pretendía evitar. Ahora solo se aplica la rotación si de verdad fue capturada.
+                bool rotationWasCaptured = entry.hasRotation || entry.rotation != default(Quaternion);
+                if (rotationWasCaptured)
                 {
                     npc.transform.rotation = entry.rotation;
                     if (agent != null && agent.isOnNavMesh)
