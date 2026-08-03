@@ -21,6 +21,12 @@ namespace Sendero.Narrative.Editor
         private ToolbarMenu _chapterMenu;
         private Label _chapterCountLabel;
 
+        // ─── Búsqueda de nodos ───────────────────────────────────────────
+        private ToolbarSearchField _searchField;
+        private Label _searchCountLabel;
+        private readonly List<string> _searchMatches = new();
+        private int _searchMatchIndex = -1;
+
         [MenuItem("El Sendero/Narrativa/Abrir Editor")]
         public static void OpenWindow()
         {
@@ -63,6 +69,28 @@ namespace Sendero.Narrative.Editor
             var sep2 = new VisualElement();
             sep2.AddToClassList("narrative-toolbar__separator");
             toolbar.Add(sep2);
+
+            // Búsqueda de nodos por tipo / etiqueta / capítulo
+            _searchField = new ToolbarSearchField();
+            _searchField.AddToClassList("narrative-toolbar__search");
+            _searchField.tooltip = "Buscar por tipo de nodo, etiqueta o capítulo. Enter = siguiente coincidencia, Shift+Enter = anterior.";
+            _searchField.RegisterValueChangedCallback(evt => UpdateSearchMatches(evt.newValue));
+            _searchField.RegisterCallback<KeyDownEvent>(evt =>
+            {
+                if (evt.keyCode != KeyCode.Return && evt.keyCode != KeyCode.KeypadEnter) return;
+                if (_searchMatches.Count == 0) return;
+                GoToSearchMatch(_searchMatchIndex + (evt.shiftKey ? -1 : 1));
+                evt.StopPropagation();
+            });
+            toolbar.Add(_searchField);
+
+            _searchCountLabel = new Label();
+            _searchCountLabel.AddToClassList("narrative-toolbar__search-count");
+            toolbar.Add(_searchCountLabel);
+
+            var sep3 = new VisualElement();
+            sep3.AddToClassList("narrative-toolbar__separator");
+            toolbar.Add(sep3);
 
             var createMenu = new ToolbarMenu { text = "Añadir Nodo" };
             var nodeTypes = AppDomain.CurrentDomain.GetAssemblies()
@@ -157,6 +185,10 @@ namespace Sendero.Narrative.Editor
             _suppressGraphCallbacks = false;
             RebuildChapterMenu();
             ApplyChapterFilter();
+
+            if (_searchField != null)
+                _searchField.value = "";
+            UpdateSearchMatches("");
         }
 
         private void DrawNode(NarrativeNode model)
@@ -420,6 +452,77 @@ namespace Sendero.Narrative.Editor
                     }
                 }
             });
+        }
+
+        // ─── Búsqueda de nodos ───────────────────────────────────────────
+
+        private bool NodeMatchesSearch(NarrativeNode node, string query)
+        {
+            if (node.GetType().Name.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (!string.IsNullOrEmpty(node.displayTitle) &&
+                node.displayTitle.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (!string.IsNullOrEmpty(node.chapter) &&
+                node.chapter.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            return false;
+        }
+
+        private void UpdateSearchMatches(string query)
+        {
+            _searchMatches.Clear();
+            _searchMatchIndex = -1;
+
+            foreach (var kv in _nodeViews)
+                kv.Value.RemoveFromClassList("narrative-node--search-match");
+
+            query = query?.Trim();
+            if (string.IsNullOrEmpty(query) || _graph == null)
+            {
+                UpdateSearchCountLabel();
+                return;
+            }
+
+            foreach (var node in _graph.nodes)
+            {
+                if (node == null) continue;
+                if (NodeMatchesSearch(node, query))
+                    _searchMatches.Add(node.guid);
+            }
+
+            if (_searchMatches.Count > 0)
+                GoToSearchMatch(0);
+            else
+                UpdateSearchCountLabel();
+        }
+
+        private void GoToSearchMatch(int index)
+        {
+            if (_searchMatches.Count == 0) return;
+            _searchMatchIndex = ((index % _searchMatches.Count) + _searchMatches.Count) % _searchMatches.Count;
+
+            var guid = _searchMatches[_searchMatchIndex];
+            if (!_nodeViews.TryGetValue(guid, out var nv))
+            {
+                UpdateSearchCountLabel();
+                return;
+            }
+
+            foreach (var kv in _nodeViews)
+                kv.Value.RemoveFromClassList("narrative-node--search-match");
+            nv.AddToClassList("narrative-node--search-match");
+
+            _view.ClearSelection();
+            _view.AddToSelection(nv);
+            _view.FrameSelection();
+
+            UpdateSearchCountLabel();
+        }
+
+        private void UpdateSearchCountLabel()
+        {
+            if (_searchCountLabel == null) return;
+            _searchCountLabel.text = _searchMatches.Count == 0
+                ? ""
+                : $"{_searchMatchIndex + 1}/{_searchMatches.Count}";
         }
 
         // ─── Callbacks de aristas y nodos ────────────────────────────────

@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using Game.NPC; // Para NPCBehaviourManagerV2 (PersistenceId)
 using Game.NPC.Modules; // Para acceder a los Executors
 
 namespace Game.NPC.Common
@@ -122,6 +123,19 @@ namespace Game.NPC.Common
         {
             if (_context?.Config == null) return false;
             var config = _context.Config;
+
+            // Señal genérica "el jugador interactuó con este NPC", independiente de qué
+            // prioridad la resuelva más abajo. Puente para poder migrar NPCs individuales al
+            // grafo narrativo (WaitCustomEventNode escuchando "NPC_INTERACT_{persistenceId}")
+            // sin depender de NPCInteractiveNarrativeExecutor. No cambia ningún comportamiento
+            // existente: es un evento adicional, no gatea ni sustituye nada de lo de abajo.
+            var manager = _context.Transform.GetComponent<NPCBehaviourManagerV2>();
+            if (manager != null && !string.IsNullOrEmpty(manager.PersistenceId))
+            {
+                DefaultNarrativeSignals.Instance?.RaiseCustom(
+                    $"NPC_INTERACT_{manager.PersistenceId}",
+                    $"[NPCBrain] Interacción con {_context.Transform.name}");
+            }
 
             // PRIORIDAD 1: COMBATE (Post-Derrota)
             // Si el NPC fue derrotado, tiene prioridad sobre cualquier quest o narrativa normal.

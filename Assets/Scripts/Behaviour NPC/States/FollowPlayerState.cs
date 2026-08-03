@@ -72,8 +72,10 @@ namespace Game.NPC.States
         private const float SPECIAL_FOLLOW_STOP_DIST = 1.5f;
         private const float OFF_NAVMESH_THRESHOLD   = 1.5f;
         private const float WARP_SEARCH_RADIUS      = 12f;
-        private const float DEFAULT_FLIGHT_BOB_AMPLITUDE = 0.8f;
-        private const float DEFAULT_FLIGHT_BOB_FREQUENCY = 1.8f;
+        // Valores reales usados por Will (_WILL.prefab), no los defaults de PlayerFlyingController:
+        // el campo del script vale 0.8/1.8, pero el prefab lo tiene afinado a 0.18/1.2.
+        private const float DEFAULT_FLIGHT_BOB_AMPLITUDE = 0.18f;
+        private const float DEFAULT_FLIGHT_BOB_FREQUENCY = 1.2f;
 
         // Hashes de estados y parámetros (compartidos con el animator del jugador)
         private static readonly int HashFlyIdle    = Animator.StringToHash("fly_idle");

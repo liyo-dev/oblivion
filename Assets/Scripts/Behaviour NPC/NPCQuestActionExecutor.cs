@@ -365,15 +365,10 @@ namespace Game.NPC
                 if (questIndex >= 0 && questIndex < questConfig.questChain.Length)
                 {
                     var entry = questConfig.questChain[questIndex];
-                    // Usar reflexión para acceder al evento (workaround para Unity)
-                    var fieldInfo = entry.GetType().GetField("onPostActionCompleted");
-                    if (fieldInfo != null)
-                    {
-                        var unityEvent = fieldInfo.GetValue(entry) as UnityEngine.Events.UnityEvent;
-                        unityEvent?.Invoke();
-                        if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] 📣 Evento onPostActionCompleted disparado");
-                    }
-                    
+                    // onPostActionCompleted ya es un UnityEvent público en QuestChainEntry — sin reflection.
+                    entry.onPostActionCompleted?.Invoke();
+                    if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] 📣 Evento onPostActionCompleted disparado");
+
                     // ✅ NUEVO: Encadenar siguiente quest si está configurado
                     if (action.chainNextQuestAfterAction)
                     {

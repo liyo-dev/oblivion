@@ -1,0 +1,263 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e12d267b89a9ff841983167bc75c8b77, type: 3}
+  m_Name: MainNarrative_Cap2
+  m_EditorClassIdentifier: Assembly-CSharp::NarrativeGraph
+  startNodeGuid: 4eed0901-c1cb-4e89-9d72-9ab6a6c57307
+  nodes:
+  - rid: 5290829725662445736
+  - rid: 5290829725662445737
+  - rid: 5290829725662445738
+  - rid: 5290829725662445739
+  - rid: 5290829725662445740
+  - rid: 5290829725662445741
+  - rid: 5290829725662445742
+  - rid: 5290829725662445743
+  - rid: 5290829725662445744
+  - rid: 5290829725662445745
+  - rid: 5290829725662445746
+  - rid: 5290829725662445747
+  - rid: 5290829725662445748
+  - rid: 5290829725662445749
+  applicableSceneNames: []
+  references:
+    version: 2
+    RefIds:
+    - rid: 5290829725662445736
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 9.1.- HABLO CON VICTORIA
+        chapter: Cap. 2
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 4eed0901-c1cb-4e89-9d72-9ab6a6c57307
+        position: {x: 2929, y: -159}
+        outputs:
+        - 56879a1a-c46a-4bab-a132-eab0b6cbaead
+        eventKey: ADD_CLOAK
+    - rid: 5290829725662445737
+      type: {class: UnlockWardrobeItemNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: RECIBO CAPA DE MAGO
+        chapter: Cap. 2
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 56879a1a-c46a-4bab-a132-eab0b6cbaead
+        position: {x: 2297, y: -22}
+        outputs:
+        - 254c563a-5c0e-4f68-8b1b-f16c35246e89
+        wardrobeItem: {fileID: 11400000, guid: 7367f9d40af192b45aac491cf7b33acf, type: 2}
+        logWarnings: 1
+    - rid: 5290829725662445738
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: LUCHAMOS CON ERIKA
+        chapter: Cap. 2
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: c235d486-6f5e-4a93-8d96-8721b6dad7d3
+        position: {x: 2947, y: 345}
+        outputs:
+        - f5443754-fa40-4852-8b3d-c33d22d23958
+        eventKey: ERIKA_FIGHT
+    - rid: 5290829725662445739
+      type: {class: UnlockAbilitiesNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: DESBLOQUEAMOS EL HECHIZO BOLA PRISMA
+        chapter: Cap. 2
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: f5443754-fa40-4852-8b3d-c33d22d23958
+        position: {x: 3180, y: 663}
+        outputs:
+        - c9ca7493-60c5-44db-ae66-9b0e232343e3
+        abilityKeysToUnlock: 
+        abilitiesToUnlock: 
+        spellsToUnlock: 02000000
+        assignSpellsToEmptySlot: 1
+        oneShotFlag: 
+        applyPresetAfterUnlock: 1
+        saveAfterUnlock: 1
+    - rid: 5290829725662445740
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: GANAMOS LA BATALLA CON ERIKA
+        chapter: Cap. 2
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: c9ca7493-60c5-44db-ae66-9b0e232343e3
+        position: {x: 3684, y: 663}
+        outputs:
+        - e1be0c12-dbf5-4e8f-9eca-ba9561f56010
+        eventKey: ERIKA_BATTLE_WON
+    - rid: 5290829725662445741
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: SE COMPLETA PASO DE LA MISION 5
+        chapter: Cap. 2
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: e1be0c12-dbf5-4e8f-9eca-ba9561f56010
+        position: {x: 4196, y: 661}
+        outputs: []
+        questId: ELDRAN_MISSION5
+        stepConditionIds:
+        - QUEST_ELDRAN_MISSION5_STEP_02
+        steps: 
+        completeQuest: 0
+        logWarnings: 1
+    - rid: 5290829725662445742
+      type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: ESPERO A QUE WILL HABLE CON ELDRAN
+        chapter: Cap. 2
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 10559b15-8995-40fa-bb17-eb2f5dd42b6d
+        position: {x: 3551, y: 91}
+        outputs:
+        - 4eed0901-c1cb-4e89-9d72-9ab6a6c57307
+        - c235d486-6f5e-4a93-8d96-8721b6dad7d3
+        - 2caf285b-fdb8-4361-8176-192475b9c678
+        questId: ELDRAN_MISSION4
+        debugLogs: 0
+    - rid: 5290829725662445743
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: HAY QUE IR A HABLAR CON ELDRAN
+        chapter: Cap. 2
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: bc692d5b-b0ca-4095-85fc-2380f374f9d3
+        position: {x: 4092, y: 91}
+        outputs:
+        - 10559b15-8995-40fa-bb17-eb2f5dd42b6d
+        questId: ELDRAN_MISSION4
+    - rid: 5290829725662445744
+      type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: SE COMPLETA LA MISION 5
+        chapter: Cap. 2
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 2caf285b-fdb8-4361-8176-192475b9c678
+        position: {x: 2915, y: 73}
+        outputs:
+        - 4010d494-e518-45bb-9852-29a412777758
+        questId: ELDRAN_MISSION5
+        debugLogs: 0
+    - rid: 5290829725662445745
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 'HAY QUE HABLAR CON ELDRAN '
+        chapter: Cap. 2
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 4010d494-e518-45bb-9852-29a412777758
+        position: {x: 2418, y: 573}
+        outputs:
+        - b460f4be-5dcd-4dd6-9e83-0af11e6fc6ae
+        questId: ELDRAN_MISSION5_2
+    - rid: 5290829725662445746
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: COMPLETO LA MISION 5
+        chapter: Cap. 2
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 254c563a-5c0e-4f68-8b1b-f16c35246e89
+        position: {x: 1782, y: -22}
+        outputs: []
+        questId: ELDRAN_MISSION5
+        stepConditionIds:
+        - QUEST_ELDRAN_MISSION5_STEP_00
+        steps: 
+        completeQuest: 0
+        logWarnings: 1
+    - rid: 5290829725662445747
+      type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: ESPERAMOS A COMPLETAR ELDRAN_MISSION5_2
+        chapter: Cap. 2
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: b460f4be-5dcd-4dd6-9e83-0af11e6fc6ae
+        position: {x: 1407, y: 573}
+        outputs:
+        - 7622a274-377f-4b78-8301-542a27eae209
+        questId: ELDRAN_MISSION5_2
+        debugLogs: 1
+    - rid: 5290829725662445748
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 2
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 681ae466-5e7e-46d5-bc78-7960c9d97b2a
+        position: {x: -260, y: 40}
+        outputs:
+        - bc692d5b-b0ca-4095-85fc-2380f374f9d3
+        eventKey: CH_Cap1_BACK_1
+    - rid: 5290829725662445749
+      type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 2
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 7622a274-377f-4b78-8301-542a27eae209
+        position: {x: 1998, y: 573}
+        outputs: []
+        eventKey: CH_Cap2_BACK_1

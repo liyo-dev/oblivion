@@ -1,0 +1,197 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e12d267b89a9ff841983167bc75c8b77, type: 3}
+  m_Name: MainNarrative_Cap6
+  m_EditorClassIdentifier: Assembly-CSharp::NarrativeGraph
+  startNodeGuid: 683b23e6-c1ac-40d0-91eb-1dde84f1526d
+  nodes:
+  - rid: 5290829725662445797
+  - rid: 5290829725662445798
+  - rid: 5290829725662445799
+  - rid: 5290829725662445800
+  - rid: 5290829725662445801
+  - rid: 5290829725662445802
+  - rid: 5290829725662445803
+  - rid: 5290829725662445804
+  - rid: 5290829725662445805
+  - rid: 5290829725662445806
+  applicableSceneNames: []
+  references:
+    version: 2
+    RefIds:
+    - rid: 5290829725662445797
+      type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Espero a completar la mision 13
+        chapter: Cap. 6
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 683b23e6-c1ac-40d0-91eb-1dde84f1526d
+        position: {x: 4670, y: 4386}
+        outputs:
+        - 18293a97-824e-4a42-b35b-a28365fd1601
+        questId: ELDRAN_MISSION13
+        debugLogs: 1
+    - rid: 5290829725662445798
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 'Mision  14: Buscar al amigo de Eldran'
+        chapter: Cap. 6
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 18293a97-824e-4a42-b35b-a28365fd1601
+        position: {x: 4147, y: 4386}
+        outputs:
+        - 9ea2d2e7-363d-46aa-8f18-ba93cca2b5d7
+        questId: ELDRAN_MISSION14
+    - rid: 5290829725662445799
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Espero a que entren en la zona a inspeccionar
+        chapter: Cap. 6
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 5174be77-fb15-4c62-a78f-628406a93537
+        position: {x: 2081, y: 4386}
+        outputs:
+        - 48ab005c-2705-439a-a06f-c14d558d9700
+        eventKey: EVT_WILL_LIAM
+    - rid: 5290829725662445800
+      type: {class: ShowLorePopupNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Will y Liam hablan sobre el pasado de Will
+        chapter: Cap. 6
+        blockSaving: 1
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 48ab005c-2705-439a-a06f-c14d558d9700
+        position: {x: 1566, y: 4383}
+        outputs:
+        - eb2ae8e6-c475-41f9-920f-d86ac850f82a
+        config: {fileID: 11400000, guid: ff88c3c7406cf83459916cd5472cc9ad, type: 2}
+    - rid: 5290829725662445801
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: "Completo el paso de la misi\xF3n de inspeccionar"
+        chapter: Cap. 6
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: eb2ae8e6-c475-41f9-920f-d86ac850f82a
+        position: {x: 1014, y: 4386}
+        outputs: []
+        questId: 
+        stepConditionIds:
+        - FUEGOFATUO_DESC_02
+        steps: 
+        completeQuest: 0
+        logWarnings: 1
+    - rid: 5290829725662445802
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Salimos del Reino al pueblo
+        chapter: Cap. 6
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 9ea2d2e7-363d-46aa-8f18-ba93cca2b5d7
+        position: {x: 3683, y: 4384}
+        outputs:
+        - c8b7cb2f-7629-42db-94e7-273fb9d32b2c
+        eventKey: EVT_REINO_EXIT_BOUNDARY
+    - rid: 5290829725662445803
+      type: {class: KingdomExitTransitionNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 6
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 7b8d3392-e124-4510-a26b-3180ee1c378e
+        position: {x: 2596, y: 4383}
+        outputs:
+        - 5174be77-fb15-4c62-a78f-628406a93537
+        landscapeFocusId: ReinoExit_LandscapeShot
+        ambienceFadeOutSeconds: 0.4
+        silenceDuration: 0.75
+        mainThemeClip: {fileID: 8300000, guid: 785493ca564adeb44bb1c68fa22f00ab, type: 3}
+        musicFadeInSeconds: 6
+        logoSprite: {fileID: 21300000, guid: 632f3b8924a09324db96fa90f3bb47c5, type: 3}
+        subtitle: 
+        logoDelayAfterMusicStart: 0.5
+        logoFadeInSeconds: 1.75
+        logoHoldSeconds: 3.5
+        logoFadeOutSeconds: 1.25
+        cameraReturnFadeSeconds: 0.3
+        cameraReturnHoldSeconds: 0.2
+    - rid: 5290829725662445804
+      type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 6
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: c8b7cb2f-7629-42db-94e7-273fb9d32b2c
+        position: {x: 3335, y: 4384}
+        outputs:
+        - 3b9cb25d-ad9d-4d7a-b8fb-04bc049f95ca
+        eventKey: EVT_REINOEXIT_BANTER_START
+    - rid: 5290829725662445805
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 6
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 3b9cb25d-ad9d-4d7a-b8fb-04bc049f95ca
+        position: {x: 2959, y: 4384}
+        outputs:
+        - 7b8d3392-e124-4510-a26b-3180ee1c378e
+        eventKey: EVT_REINOEXIT_BANTER_DONE
+    - rid: 5290829725662445806
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 6
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 57ab9771-43c3-4b3a-8295-360bcf58c639
+        position: {x: -260, y: 40}
+        outputs:
+        - 683b23e6-c1ac-40d0-91eb-1dde84f1526d
+        eventKey: CH_Cap5_BACK_1

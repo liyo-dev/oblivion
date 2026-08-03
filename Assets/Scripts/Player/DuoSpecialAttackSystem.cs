@@ -37,6 +37,10 @@ public class DuoSpecialAttackSystem : MonoBehaviour
 
     private const float TriggerThreshold = 0.5f;
 
+    // Buffer reutilizable + LayerMask cacheada para ApplyAoeDamage (evita alloc por ataque especial).
+    private readonly Collider[] _aoeHitsBuffer = new Collider[32];
+    private int _enemyBossLayerMask;
+
     // ── Propiedades para la UI ──────────────────────────────────────────────
 
     public SpecialChargeMeter EstelaChargeMeter => estelaChargeMeter;
@@ -48,6 +52,7 @@ public class DuoSpecialAttackSystem : MonoBehaviour
     {
         _controls = Core.PlayerInputManager.GetSharedOrNew(out _ownsControls);
         if (!magicCaster) magicCaster = GetComponentInParent<MagicCaster>();
+        _enemyBossLayerMask = LayerMask.GetMask("Enemy", "Boss");
     }
 
     void OnEnable()
@@ -169,12 +174,12 @@ public class DuoSpecialAttackSystem : MonoBehaviour
     {
         if (attack.damage <= 0f && attack.knockbackForce <= 0f) return;
 
-        Vector3 center  = origin.position + origin.forward * 2.5f;
-        int     hitMask = LayerMask.GetMask("Enemy", "Boss");
+        Vector3 center = origin.position + origin.forward * 2.5f;
 
-        var hits = Physics.OverlapSphere(center, attack.aoeRadius, hitMask);
-        foreach (var hit in hits)
+        int count = Physics.OverlapSphereNonAlloc(center, attack.aoeRadius, _aoeHitsBuffer, _enemyBossLayerMask);
+        for (int i = 0; i < count; i++)
         {
+            var hit = _aoeHitsBuffer[i];
             if (hit.TryGetComponent<IDamageable>(out var damageable))
                 damageable.TakeDamage(attack.damage);
 
@@ -186,7 +191,7 @@ public class DuoSpecialAttackSystem : MonoBehaviour
         }
 
         if (showDebugLogs)
-            Debug.Log($"[DuoSpecial] AoE aplicado: {hits.Length} objetivos en radio {attack.aoeRadius}m");
+            Debug.Log($"[DuoSpecial] AoE aplicado: {count} objetivos en radio {attack.aoeRadius}m");
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────

@@ -1,0 +1,358 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e12d267b89a9ff841983167bc75c8b77, type: 3}
+  m_Name: MainNarrative_Cap1
+  m_EditorClassIdentifier: Assembly-CSharp::NarrativeGraph
+  startNodeGuid: 83efb3b4-a261-43b9-b5e2-56c03b1cec4f
+  nodes:
+  - rid: 5290829725662445716
+  - rid: 5290829725662445717
+  - rid: 5290829725662445718
+  - rid: 5290829725662445719
+  - rid: 5290829725662445720
+  - rid: 5290829725662445721
+  - rid: 5290829725662445722
+  - rid: 5290829725662445723
+  - rid: 5290829725662445724
+  - rid: 5290829725662445725
+  - rid: 5290829725662445726
+  - rid: 5290829725662445727
+  - rid: 5290829725662445728
+  - rid: 5290829725662445729
+  - rid: 5290829725662445730
+  - rid: 5290829725662445731
+  - rid: 5290829725662445732
+  - rid: 5290829725662445733
+  - rid: 5290829725662445734
+  applicableSceneNames: []
+  references:
+    version: 2
+    RefIds:
+    - rid: 5290829725662445716
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 1.- CUANDO LEE LA CARTA
+        chapter: Cap. 1
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 78455749-f638-46de-a00c-c00cb1e61e5d
+        position: {x: -249, y: -596}
+        outputs:
+        - 16d41261-7e42-42bb-b91a-1cab8d52164e
+        eventKey: LETTER_START
+    - rid: 5290829725662445717
+      type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 3.-  HAY QUE BUSCAR LA CAJA BAJO UN ARBOL
+        chapter: Cap. 1
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 14dab578-84ac-40c4-8874-1f724ff76437
+        position: {x: 686, y: -596}
+        outputs:
+        - 64ed2870-8561-471f-bb08-803a726be060
+        questId: ELDRAN_MISSION2
+        debugLogs: 0
+    - rid: 5290829725662445718
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 2.- TIENE QUE HABLAR CON ELDRAN
+        chapter: Cap. 1
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 16d41261-7e42-42bb-b91a-1cab8d52164e
+        position: {x: 197, y: -596}
+        outputs:
+        - 14dab578-84ac-40c4-8874-1f724ff76437
+        questId: ELDRAN_MISSION1
+    - rid: 5290829725662445719
+      type: {class: UnlockAbilitiesNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: SE DESBLOQUEA EL AATAQUE MAGICO Y LA BOLA DE FUEGO
+        chapter: Cap. 1
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: d038b916-5571-48b0-a896-7dbc2af3e05c
+        position: {x: 2401, y: -596}
+        outputs:
+        - da331290-6f7e-4aa3-937d-83cb066bbfe7
+        abilityKeysToUnlock: 03000000
+        abilitiesToUnlock: 01000000
+        spellsToUnlock: 01000000
+        assignSpellsToEmptySlot: 1
+        oneShotFlag: 
+        applyPresetAfterUnlock: 1
+        saveAfterUnlock: 0
+    - rid: 5290829725662445720
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 5.- HAY QUE DERROTAR AL DEMONIO
+        chapter: Cap. 1
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: da331290-6f7e-4aa3-937d-83cb066bbfe7
+        position: {x: 2933, y: -596}
+        outputs:
+        - 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
+        questId: ELDRAN_MISSION3
+    - rid: 5290829725662445721
+      type: {class: StartBattleNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: '5.1.- ARENA DE BATALLA: DEMONIO'
+        chapter: Cap. 1
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
+        position: {x: 3410, y: -598}
+        outputs:
+        - 18aa49d4-a672-4844-bac4-2840003a4232
+        battleId: Demon_1
+        bossArena: {fileID: 7011547886733809324, guid: 769f5ac03b30de34483ebc089acc4ef7, type: 3}
+        useBattleById: 1
+        completeMission: 0
+        missionStringId: 
+        missionId: 0
+        arenaContext: 
+    - rid: 5290829725662445722
+      type: {class: StartNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: CAPITULO 1
+        chapter: Cap. 1
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 83efb3b4-a261-43b9-b5e2-56c03b1cec4f
+        position: {x: -950, y: -693}
+        outputs:
+        - 78455749-f638-46de-a00c-c00cb1e61e5d
+        - d85aab6f-a9f2-4fd5-9527-0f710ff20e69
+    - rid: 5290829725662445723
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 7.- ELDRAN SE VA A CASA DE WILL
+        chapter: Cap. 1
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: b9aed13d-e410-467b-a7ec-5c3e949debbf
+        position: {x: 4783, y: -598}
+        outputs:
+        - b9eca9e9-959b-4d6b-8bf1-ebcbefc451a1
+        questId: ELDRAN_MISSION3
+        stepConditionIds: []
+        steps: 
+        completeQuest: 1
+        logWarnings: 0
+    - rid: 5290829725662445724
+      type: {class: GiveInventoryItemNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: "A\xF1ado al inventario"
+        chapter: Cap. 1
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 64ed2870-8561-471f-bb08-803a726be060
+        position: {x: 1273, y: -596}
+        outputs:
+        - 0c0af6c1-722a-426a-9528-0565bba2ca06
+        item: {fileID: 11400000, guid: 25c804f6289cb4945a3a9761b8e94e96, type: 2}
+        amount: 20
+        logWarnings: 0
+        onlyOnce: 1
+    - rid: 5290829725662445725
+      type: {class: DramaticTextNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Recuerdos prologo
+        chapter: Cap. 1
+        blockSaving: 1
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: d85aab6f-a9f2-4fd5-9527-0f710ff20e69
+        position: {x: -249, y: -997}
+        outputs:
+        - 7c58aa94-40ce-449a-826a-ee71e079172d
+        config: {fileID: 11400000, guid: 4f5bc1f242806ed4cb58a981bc5d5b7f, type: 2}
+        waitForCompletion: 1
+        restoreSceneMusicWhenDone: 1
+        restoreMusicFade: 2
+    - rid: 5290829725662445726
+      type: {class: ShowSpeechBubbleNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Pensamiento Will
+        chapter: Cap. 1
+        blockSaving: 1
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 6f0c236c-9cf3-44bc-a968-f5ad724c845a
+        position: {x: 597, y: -997}
+        outputs:
+        - 0decf071-45b8-40e6-8d60-d1fcce1643e4
+        targetTag: Player
+        text: Otra vez esa pesadilla.
+        textId: 
+        duration: 4
+        waitForCompletion: 1
+        animTrigger: HeadShake01
+        emphasis: 0
+    - rid: 5290829725662445727
+      type: {class: TutorialPromptNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Pulsar A para despertar
+        chapter: Cap. 1
+        blockSaving: 1
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 7c58aa94-40ce-449a-826a-ee71e079172d
+        position: {x: 216, y: -997}
+        outputs:
+        - 6f0c236c-9cf3-44bc-a968-f5ad724c845a
+        action: 0
+        text: Pulsa A para despertar a Will
+        textId: 
+        icon: {fileID: 21300000, guid: b1bae50a86e690449a7ba8c03900f80e, type: 3}
+    - rid: 5290829725662445728
+      type: {class: TutorialPromptNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 'Mueve el Joystick '
+        chapter: Cap. 1
+        blockSaving: 1
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 0decf071-45b8-40e6-8d60-d1fcce1643e4
+        position: {x: 986, y: -997}
+        outputs: []
+        action: 0
+        text: "Usa el Joystick para mover a Will. Inspecciona la habitaci\xF3n."
+        textId: 
+        icon: {fileID: 21300000, guid: d8f997a4962ba6043a531732f1e8777a, type: 3}
+    - rid: 5290829725662445729
+      type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 1
+        blockSaving: 1
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 0c0af6c1-722a-426a-9528-0565bba2ca06
+        position: {x: 1700, y: -596}
+        outputs:
+        - c262d6ef-64b3-4bad-8119-d8217b5bee6d
+        - 9958f726-fded-4988-b74e-a7675ae1429d
+        eventKey: AWAKEN_START
+    - rid: 5290829725662445730
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 1
+        blockSaving: 1
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: c262d6ef-64b3-4bad-8119-d8217b5bee6d
+        position: {x: 2064, y: -596}
+        outputs:
+        - d038b916-5571-48b0-a896-7dbc2af3e05c
+        eventKey: AWAKEN_DONE
+    - rid: 5290829725662445731
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 1
+        blockSaving: 1
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 9958f726-fded-4988-b74e-a7675ae1429d
+        position: {x: 1502, y: -823}
+        outputs:
+        - 14dab578-84ac-40c4-8874-1f724ff76437
+        eventKey: AWAKEN_FAILED
+    - rid: 5290829725662445732
+      type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Los planes de Liam
+        chapter: Cap. 1
+        blockSaving: 1
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 18aa49d4-a672-4844-bac4-2840003a4232
+        position: {x: 3909, y: -598}
+        outputs:
+        - 6313acc2-8288-4d53-bc62-770a2a36f1be
+        eventKey: LIAM_CRYSTAL_START
+    - rid: 5290829725662445733
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Esperoa a la secuencia
+        chapter: Cap. 1
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 6313acc2-8288-4d53-bc62-770a2a36f1be
+        position: {x: 4339, y: -598}
+        outputs:
+        - b9aed13d-e410-467b-a7ec-5c3e949debbf
+        eventKey: LIAM_CRYSTAL_DONE
+    - rid: 5290829725662445734
+      type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 1
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: b9eca9e9-959b-4d6b-8bf1-ebcbefc451a1
+        position: {x: 5323, y: -598}
+        outputs: []
+        eventKey: CH_Cap1_BACK_1

@@ -168,14 +168,15 @@ namespace Game.NPC.Modules
         public float flightFormationSpread = 1.5f;
 
         [Tooltip("Amplitud (metros) del movimiento vertical oscilante mientras el compañero vuela. " +
-                 "Debe imitar flightBobAmplitude de PlayerFlyingController.")]
+                 "Por defecto igual al valor real configurado en _WILL.prefab (0.18), no al default " +
+                 "del script PlayerFlyingController (0.8), que es mucho más exagerado.")]
         [Range(0f, 2f)]
-        public float flightBobAmplitude = 0.8f;
+        public float flightBobAmplitude = 0.18f;
 
         [Tooltip("Frecuencia (Hz) del movimiento oscilante mientras el compañero vuela. " +
-                 "Debe imitar flightBobFrequency de PlayerFlyingController.")]
+                 "Por defecto igual al valor real configurado en _WILL.prefab (1.2).")]
         [Range(0f, 5f)]
-        public float flightBobFrequency = 1.8f;
+        public float flightBobFrequency = 1.2f;
 
         // ============ PROPIEDADES DE COMPATIBILIDAD (para que el código existente siga funcionando) ============
         

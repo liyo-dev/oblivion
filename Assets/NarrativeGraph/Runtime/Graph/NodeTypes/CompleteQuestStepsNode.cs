@@ -58,17 +58,18 @@ public sealed class CompleteQuestStepsNode : NarrativeNode
                 if (!processed.Add(conditionId))
                     continue; // evitar repetir llamadas para el mismo ID
 
-                // Usar el Singleton de QuestManager
-                if (QuestManager.Instance != null)
+                // Pasa siempre por ctx.Signals (INarrativeSignals), nunca por QuestManager.Instance
+                // directamente: mantiene el grafo desacoplado de la clase concreta del quest system.
+                if (ctx.Signals != null)
                 {
-                    QuestManager.Instance.CompleteQuestStepByConditionId(questId, conditionId);
+                    ctx.Signals.CompleteQuestStepByConditionId(questId, conditionId);
                     anyAction = true;
                     Debug.Log($"[CompleteQuestStepsNode] ✅ Completando step con conditionId '{conditionId}' en quest '{questId}'");
                 }
                 else
                 {
                     if (logWarnings)
-                        Debug.LogWarning($"[CompleteQuestStepsNode] QuestManager.Instance es null - No se puede completar step '{conditionId}'");
+                        Debug.LogWarning($"[CompleteQuestStepsNode] ctx.Signals es null - No se puede completar step '{conditionId}'");
                 }
             }
         }

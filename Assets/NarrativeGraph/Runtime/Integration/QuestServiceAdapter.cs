@@ -107,34 +107,17 @@ public class QuestServiceAdapter : MonoBehaviour, IQuestService
         }
     }
 
-    // Helper para construir siempre un object[] sin warnings de inferencia/cast
-    static object[] MakeArgs(params object[] args) => args;
-
     // ===== IQuestService =====
     public void Offer(string questId, object npcCtx)
     {
         var qm = QuestManager.Instance;
         if (qm == null || string.IsNullOrWhiteSpace(questId)) return;
 
-        // Si tu QuestManager tiene oferta/diálogo propio, úsalo:
-        var t = qm.GetType();
-        var offerM =
-            t.GetMethod("OfferQuest") ??
-            t.GetMethod("ShowOffer") ??
-            t.GetMethod("ShowQuestOffer");
-
-        if (offerM != null)
-        {
-            // intenta pasar questId y (opcional) npcCtx si el método lo acepta
-            var pars = offerM.GetParameters();
-            if (pars.Length == 2) offerM.Invoke(qm, MakeArgs(questId, npcCtx));
-            else                   offerM.Invoke(qm, MakeArgs(questId));
-        }
-        else
-        {
-            // Fallback: si no hay UI de oferta, inicia directo
-            qm.StartQuest(questId);
-        }
+        // QuestManager no tiene un paso de "oferta"/diálogo propio separado del inicio
+        // (no expone OfferQuest/ShowOffer/ShowQuestOffer) — iniciar directamente es el
+        // comportamiento real, no un fallback. npcCtx queda sin usar hasta que exista
+        // una UI de oferta explícita en QuestManager.
+        qm.StartQuest(questId);
     }
 
     public bool IsCompleted(string questId)
@@ -174,15 +157,9 @@ public class QuestServiceAdapter : MonoBehaviour, IQuestService
 
     public void Complete(string questId)
     {
-        if (Qm == null) return;
-        var t = Qm.GetType();
-        var m = t.GetMethod("CompleteQuest") ?? t.GetMethod("Complete") ?? t.GetMethod("CompleteQuestById");
-        if (m != null)
-        {
-            if (debugLogs) Debug.Log($"[QuestServiceAdapter] Complete → {m.Name}({questId})");
-            try { m.Invoke(Qm, MakeArgs(questId)); } catch (Exception e) { Debug.LogException(e); }
-        }
-        else if (debugLogs) Debug.Log("[QuestServiceAdapter] QuestManager no tiene método de completar (no-op).");
+        if (Qm == null || string.IsNullOrWhiteSpace(questId)) return;
+        if (debugLogs) Debug.Log($"[QuestServiceAdapter] Complete → CompleteQuest({questId})");
+        try { Qm.CompleteQuest(questId); } catch (Exception e) { Debug.LogException(e); }
     }
 
     public void CompleteStep(string questId, int stepIndex)
@@ -198,6 +175,19 @@ public class QuestServiceAdapter : MonoBehaviour, IQuestService
         {
             Debug.LogException(e);
         }
+    }
+
+    public void CompleteStepByConditionId(string questId, string stepConditionId)
+    {
+        if (Qm == null)
+        {
+            Debug.LogWarning($"[QuestServiceAdapter] QuestManager.Instance es null - No se puede completar step '{stepConditionId}'");
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(questId) || string.IsNullOrWhiteSpace(stepConditionId)) return;
+
+        Qm.CompleteQuestStepByConditionId(questId, stepConditionId);
+        if (debugLogs) Debug.Log($"[QuestServiceAdapter] CompleteStepByConditionId {questId} -> {stepConditionId}");
     }
 
     // Disparo diferido cuando QuestManager anuncia completada

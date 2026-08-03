@@ -1,0 +1,289 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e12d267b89a9ff841983167bc75c8b77, type: 3}
+  m_Name: MainNarrative_Cap5
+  m_EditorClassIdentifier: Assembly-CSharp::NarrativeGraph
+  startNodeGuid: b9285f43-9af8-40f2-8674-ef92fbbe0aaa
+  nodes:
+  - rid: 5290829725662445781
+  - rid: 5290829725662445782
+  - rid: 5290829725662445783
+  - rid: 5290829725662445784
+  - rid: 5290829725662445785
+  - rid: 5290829725662445786
+  - rid: 5290829725662445787
+  - rid: 5290829725662445788
+  - rid: 5290829725662445789
+  - rid: 5290829725662445790
+  - rid: 5290829725662445791
+  - rid: 5290829725662445792
+  - rid: 5290829725662445793
+  - rid: 5290829725662445794
+  - rid: 5290829725662445795
+  applicableSceneNames: []
+  references:
+    version: 2
+    RefIds:
+    - rid: 5290829725662445781
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 'MISION 10: Escapar de la mazmorra'
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: b9285f43-9af8-40f2-8674-ef92fbbe0aaa
+        position: {x: -675, y: 3038}
+        outputs:
+        - 401d37bd-2e7e-4122-a1a3-5e3e6b974e2e
+        questId: ELDRAN_MISSION10
+    - rid: 5290829725662445782
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Encuentran la llave y escapan de la mazmorra
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 401d37bd-2e7e-4122-a1a3-5e3e6b974e2e
+        position: {x: -217, y: 3038}
+        outputs:
+        - e655b45f-02a0-4c0b-ab16-50f4a289f48c
+        eventKey: WE_HAVE_ESCAPE
+    - rid: 5290829725662445783
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Completo la mision 10
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: e655b45f-02a0-4c0b-ab16-50f4a289f48c
+        position: {x: 337, y: 3038}
+        outputs:
+        - 34922951-8ef6-4628-b298-f794d4ca2b0d
+        questId: ELDRAN_MISSION10
+        stepConditionIds: []
+        steps: 
+        completeQuest: 1
+        logWarnings: 1
+    - rid: 5290829725662445784
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Hablan con el Rey y empieza la batalla
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 09f8e60c-0bb3-4421-a891-6c105606aa8c
+        position: {x: 1248, y: 3038}
+        outputs:
+        - 2dc20208-7599-4675-8ba1-e31d1ae153c4
+        - 14eb1bae-a7b3-4868-9e05-a4844fc17284
+        - 0b7230e0-a392-41f9-a44e-847de6dbbc05
+        eventKey: Battle_Demon_2
+    - rid: 5290829725662445785
+      type: {class: StartBattleNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 'Batalla contra el demonio2 '
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 14eb1bae-a7b3-4868-9e05-a4844fc17284
+        position: {x: 1948, y: 3041}
+        outputs:
+        - a8ff0363-0484-44ef-bad2-6549230288c8
+        battleId: Demon_2
+        bossArena: {fileID: 0}
+        useBattleById: 1
+        completeMission: 0
+        missionStringId: 
+        missionId: 0
+        arenaContext: 
+    - rid: 5290829725662445786
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 'Mision 11: Salir del castillo'
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 34922951-8ef6-4628-b298-f794d4ca2b0d
+        position: {x: 809, y: 3038}
+        outputs:
+        - 09f8e60c-0bb3-4421-a891-6c105606aa8c
+        questId: ELDRAN_MISSION11
+    - rid: 5290829725662445787
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Completo mision 11
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 2dc20208-7599-4675-8ba1-e31d1ae153c4
+        position: {x: 1933, y: 2577}
+        outputs: []
+        questId: ELDRAN_MISSION11
+        stepConditionIds: []
+        steps: 
+        completeQuest: 1
+        logWarnings: 0
+    - rid: 5290829725662445788
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 'Mision 12: Derrotar al demonio 2'
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 0b7230e0-a392-41f9-a44e-847de6dbbc05
+        position: {x: 1933, y: 3510}
+        outputs: []
+        questId: ELDRAN_MISSION12
+    - rid: 5290829725662445789
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Completo la mision 12 primer paso
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: a8ff0363-0484-44ef-bad2-6549230288c8
+        position: {x: 2396, y: 3044}
+        outputs:
+        - 20c65042-0cec-420d-90da-5d7f9c202fd2
+        questId: ELDRAN_MISSION12
+        stepConditionIds:
+        - QUEST_ELDRAN_MISSION12_STEP_00
+        steps: 
+        completeQuest: 0
+        logWarnings: 0
+    - rid: 5290829725662445790
+      type: {class: UnlockAbilitiesNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: "Aprendo Coraz\xF3n Estelar"
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 147be1ec-b620-47f5-97c4-b883a77e5bbd
+        position: {x: 3424, y: 3034}
+        outputs:
+        - 80334d37-669d-4beb-9529-1c14f1f9ef60
+        abilityKeysToUnlock: 
+        abilitiesToUnlock: 
+        spellsToUnlock: 03000000
+        assignSpellsToEmptySlot: 1
+        oneShotFlag: 
+        applyPresetAfterUnlock: 1
+        saveAfterUnlock: 1
+    - rid: 5290829725662445791
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Recompensa por matar al demonio que nos da el rey
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 20c65042-0cec-420d-90da-5d7f9c202fd2
+        position: {x: 2930, y: 3034}
+        outputs:
+        - 147be1ec-b620-47f5-97c4-b883a77e5bbd
+        eventKey: CORAZON_ESTELAR
+    - rid: 5290829725662445792
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Completo la mision 12 segundo paso
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 80334d37-669d-4beb-9529-1c14f1f9ef60
+        position: {x: 3865, y: 3034}
+        outputs:
+        - ded62503-d1aa-4965-8ee8-28fd375f470d
+        questId: ELDRAN_MISSION12
+        stepConditionIds:
+        - QUEST_ELDRAN_MISSION12_STEP_01
+        steps: 
+        completeQuest: 1
+        logWarnings: 1
+    - rid: 5290829725662445793
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 'Mision  13: Renirse con eldran'
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: ded62503-d1aa-4965-8ee8-28fd375f470d
+        position: {x: 4403, y: 3034}
+        outputs:
+        - 9f21d823-8a98-4f37-9c1e-402548a4f7e5
+        questId: ELDRAN_MISSION13
+    - rid: 5290829725662445794
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 42acd61f-ecd0-4f36-81dd-cfb477504490
+        position: {x: -260, y: 80}
+        outputs:
+        - b9285f43-9af8-40f2-8674-ef92fbbe0aaa
+        eventKey: CH_Cap4_BACK_2
+    - rid: 5290829725662445795
+      type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 9f21d823-8a98-4f37-9c1e-402548a4f7e5
+        position: {x: 4663, y: 3034}
+        outputs: []
+        eventKey: CH_Cap5_BACK_1

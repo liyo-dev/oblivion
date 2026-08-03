@@ -7,4 +7,5 @@ public interface IQuestService
     void Complete(string questId);
     void StartQuest(string questId);
     void CompleteStep(string questId, int stepIndex);
+    void CompleteStepByConditionId(string questId, string stepConditionId);
 }

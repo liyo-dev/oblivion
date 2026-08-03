@@ -69,61 +69,27 @@ public sealed class StartBattleNode : NarrativeNode
             {
                 if (completeMission)
                 {
-                    bool done = false;
-
-                    // 1) step (string, int)
-                    if (!string.IsNullOrEmpty(missionStringId) && missionId >= 0)
+                    // Pasa siempre por ctx.Signals (INarrativeSignals) — nunca reflexión ni tipos
+                    // ajenos al grafo. missionId se interpreta como índice de step (legacy, igual
+                    // que en CompleteQuestStepsNode), no como un ID de misión numérico separado.
+                    var s = ctx?.Signals ?? DefaultNarrativeSignals.Instance;
+                    if (s == null)
                     {
-                        try
-                        {
-                            done = TryCompleteMissionStepByReflection(missionStringId, missionId);
-                            if (done) Debug.Log($"[StartBattleNode] MarkStepDone('{missionStringId}', {missionId}) al ganar.");
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.LogWarning($"[StartBattleNode] Error completando step (reflexión): {e.Message}");
-                        }
+                        Debug.LogWarning($"[StartBattleNode] No hay proveedor de señales - no se pudo completar misión/step (string='{missionStringId}', id={missionId}).");
                     }
-
-                    // 2) quest por string vía señales/reflexión
-                    if (!done && !string.IsNullOrEmpty(missionStringId))
+                    else if (!string.IsNullOrEmpty(missionStringId) && missionId >= 0)
                     {
-                        try
-                        {
-                            var s = ctx?.Signals ?? DefaultNarrativeSignals.Instance;
-                            if (s != null)
-                            {
-                                s.CompleteQuest(missionStringId);
-                                Debug.Log($"[StartBattleNode] CompleteQuest('{missionStringId}') vía Signals al ganar.");
-                                done = true;
-                            }
-                            else
-                            {
-                                done = TryCompleteMissionByReflectionString(missionStringId);
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.LogWarning($"[StartBattleNode] Error completando misión (string): {e.Message}");
-                        }
+                        s.CompleteQuestStep(missionStringId, missionId);
+                        Debug.Log($"[StartBattleNode] CompleteQuestStep('{missionStringId}', {missionId}) vía Signals al ganar.");
                     }
-
-                    // 3) quest por int
-                    if (!done && missionId != 0)
+                    else if (!string.IsNullOrEmpty(missionStringId))
                     {
-                        try
-                        {
-                            done = TryCompleteMissionByReflection(missionId);
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.LogWarning($"[StartBattleNode] Error completando misión por id: {e.Message}");
-                        }
+                        s.CompleteQuest(missionStringId);
+                        Debug.Log($"[StartBattleNode] CompleteQuest('{missionStringId}') vía Signals al ganar.");
                     }
-
-                    if (!done)
+                    else
                     {
-                        Debug.LogWarning($"[StartBattleNode] No se pudo completar misión/step (string='{missionStringId}', id={missionId}).");
+                        Debug.LogWarning($"[StartBattleNode] No se pudo completar misión/step: falta missionStringId (id={missionId}).");
                     }
                 }
             }
@@ -301,157 +267,4 @@ public sealed class StartBattleNode : NarrativeNode
         return null;
     }
 
-    // ===== Utilidades por reflexión (compatibilidad con distintos gestores) =====
-
-    bool TryCompleteMissionByReflection(int id)
-    {
-        try
-        {
-            Type mgrType = Type.GetType("MissionManager");
-            if (mgrType == null)
-            {
-                foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-                {
-                    mgrType = asm.GetType("MissionManager");
-                    if (mgrType != null) break;
-                }
-            }
-            if (mgrType == null) return false;
-
-            object instance = GetSingletonOrSceneInstance(mgrType);
-            if (instance == null) return false;
-
-            string[] methodNames = {
-                "CompleteMission","CompleteMissionById","CompleteQuest","CompleteQuestById",
-                "CompleteMissionStep","AdvanceMissionStep","AdvanceMission","CompleteStep","ActivateMission"
-            };
-
-            foreach (var name in methodNames)
-            {
-                var method = mgrType.GetMethod(name, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static);
-                if (method == null) continue;
-                var pars = method.GetParameters();
-                if (pars.Length == 1 && pars[0].ParameterType == typeof(int))
-                {
-                    method.Invoke(instance, new object[] { id });
-                    Debug.Log($"[StartBattleNode] Invocado {name}({id}) en MissionManager.");
-                    return true;
-                }
-            }
-            return false;
-        }
-        catch (Exception ex)
-        {
-            Debug.LogWarning($"[StartBattleNode] Error completando misión por reflexión: {ex.Message}");
-            return false;
-        }
-    }
-
-    bool TryCompleteMissionByReflectionString(string id)
-    {
-        try
-        {
-            Type mgrType = Type.GetType("MissionManager");
-            if (mgrType == null)
-            {
-                foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-                {
-                    mgrType = asm.GetType("MissionManager");
-                    if (mgrType != null) break;
-                }
-            }
-            if (mgrType == null) return false;
-
-            object instance = GetSingletonOrSceneInstance(mgrType);
-            if (instance == null) return false;
-
-            string[] methodNames = {
-                "CompleteQuest","CompleteQuestById","CompleteMission","CompleteMissionById",
-                "CompleteMissionStep","AdvanceMissionStep","AdvanceMission","CompleteStep","StartMission","ActivateMission"
-            };
-
-            foreach (var name in methodNames)
-            {
-                var method = mgrType.GetMethod(name, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static);
-                if (method == null) continue;
-                var pars = method.GetParameters();
-                if (pars.Length == 1 && pars[0].ParameterType == typeof(string))
-                {
-                    method.Invoke(instance, new object[] { id });
-                    Debug.Log($"[StartBattleNode] Invocado {name}(\"{id}\") en MissionManager.");
-                    return true;
-                }
-            }
-            return false;
-        }
-        catch (Exception ex)
-        {
-            Debug.LogWarning($"[StartBattleNode] Error completando misión por reflexión (string): {ex.Message}");
-            return false;
-        }
-    }
-
-    bool TryCompleteMissionStepByReflection(string questId, int stepIndex)
-    {
-        try
-        {
-            var mgrType = Type.GetType("QuestManager");
-            if (mgrType == null)
-            {
-                foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-                {
-                    mgrType = asm.GetType("QuestManager");
-                    if (mgrType != null) break;
-                }
-            }
-            if (mgrType == null) return false;
-
-            object instance = GetSingletonOrSceneInstance(mgrType);
-            if (instance == null) return false;
-
-            string[] methodNames = { "MarkStepDone","CompleteStep","CompleteMissionStep","AdvanceMissionStep","OnStepCompleted","MarkStep" };
-            foreach (var name in methodNames)
-            {
-                var method = mgrType.GetMethod(name, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static);
-                if (method == null) continue;
-                var pars = method.GetParameters();
-                if (pars.Length == 2 && pars[0].ParameterType == typeof(string) && pars[1].ParameterType == typeof(int))
-                {
-                    method.Invoke(instance, new object[] { questId, stepIndex });
-                    Debug.Log($"[StartBattleNode] Invocado {name}(\"{questId}\", {stepIndex}) en QuestManager.");
-                    return true;
-                }
-            }
-            return false;
-        }
-        catch (Exception ex)
-        {
-            Debug.LogWarning($"[StartBattleNode] Error completando step por reflexión: {ex.Message}");
-            return false;
-        }
-    }
-
-    static object GetSingletonOrSceneInstance(Type mgrType)
-    {
-        object instance = null;
-        var prop = mgrType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-        if (prop != null) instance = prop.GetValue(null);
-        else
-        {
-            var field = mgrType.GetField("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            if (field != null) instance = field.GetValue(null);
-        }
-
-        if (instance != null) return instance;
-
-        // Buscar en escena algún componente de ese tipo (o derivado)
-        var behaviours = ServiceLocator.GetAll<MonoBehaviour>();
-        foreach (var mb in behaviours)
-        {
-            var t = mb.GetType();
-            if (t == mgrType || t.IsSubclassOf(mgrType))
-                return mb;
-        }
-        return null;
-    }
 }

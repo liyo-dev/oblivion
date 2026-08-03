@@ -21,11 +21,16 @@ public class NarrativeQuickTestWindow : EditorWindow
     // Selection
     private NarrativeGraph _targetGraph;
     private string _targetNodeGuid;
-    private string _graphLabel = "Historia Principal";
+    private string _graphLabel = "Historia Principal - Cap 1";
     private PlayerPresetSO _basePreset;
 
-    // Graph label options
-    private static readonly string[] KnownGraphLabels = { "Historia Principal", "Misiones Secundarias" };
+    // Graph label options — deben coincidir con los labels reales del NarrativeGraphHub en Start.unity.
+    // Actualizado tras dividir "Historia Principal" en capítulos (ChapterSplitWindow).
+    private static readonly string[] KnownGraphLabels = {
+        "Historia Principal - Cap 1", "Historia Principal - Cap 2", "Historia Principal - Cap 3",
+        "Historia Principal - Cap 4", "Historia Principal - Cap 5", "Historia Principal - Cap 6",
+        "Misiones Secundarias"
+    };
 
     // State
     private int _selectedNodeIndex;

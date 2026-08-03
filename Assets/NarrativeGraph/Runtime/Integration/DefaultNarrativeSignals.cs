@@ -49,6 +49,15 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
     // Solo se limpia en reset completo (nueva partida).
     readonly HashSet<string> _raised = new();
 
+    // Registro durable de "¿esta key se ha disparado alguna vez en esta partida?", a diferencia
+    // de _pending/_raised (que se vacían al ser consumidos por el primer suscriptor). Pensado para
+    // que código fuera del grafo narrativo (p.ej. NarrativeCondition, que mantiene su propio caché
+    // local por instancia) pueda auto-corregirse sin depender de haber estado suscrito en el
+    // instante exacto del disparo. No sustituye a _raised: no participa en la entrega "sticky" a
+    // OnCustom, solo responde a la pregunta "¿alguna vez?". Sobrevive a ResetState(preservePending:true)
+    // igual que _raised; se limpia solo en reset completo (nueva partida).
+    readonly HashSet<string> _everRaised = new();
+
     /// <summary>
     /// Se dispara justo después de cualquier llamada a ResetState().
     /// Permite que otros sistemas (p.ej. NPCInteractiveNarrativeExecutor) se re-suscriban
@@ -206,6 +215,15 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
     public bool HasCustomListener(string key)
         => !string.IsNullOrWhiteSpace(key) && _custom.ContainsKey(key);
 
+    /// <summary>
+    /// True si esta key se ha disparado (RaiseCustom) alguna vez en la partida actual, con
+    /// independencia de si tuvo oyentes en el momento o de si ya fue consumida por _pending/_raised.
+    /// Fuente de verdad durable para código externo al grafo que necesite preguntar "¿ya pasó esto?"
+    /// sin mantener su propio flag local (p.ej. NarrativeCondition).
+    /// </summary>
+    public bool HasEverRaised(string key)
+        => !string.IsNullOrWhiteSpace(key) && _everRaised.Contains(key);
+
     public void ResetState()
     {
         ResetState(preservePending: false);
@@ -223,6 +241,7 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
             _pending.Clear();
             _battlePending.Clear();
             _raised.Clear();
+            _everRaised.Clear();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Record("__RESET__", SignalStatus.Reset, "ResetState completo — _pending, _raised y _custom limpiados");
 #endif
@@ -287,12 +306,20 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
         QS?.CompleteStep(questId, stepIndex);
     }
 
+    public void CompleteQuestStepByConditionId(string questId, string stepConditionId)
+    {
+        if (string.IsNullOrEmpty(questId) || string.IsNullOrEmpty(stepConditionId)) return;
+        QS?.CompleteStepByConditionId(questId, stepConditionId);
+    }
+
     // ============= CUSTOM (sticky) =============
     public void RaiseCustom(string key) => RaiseCustom(key, null);
 
     public void RaiseCustom(string key, string context)
     {
         if (string.IsNullOrWhiteSpace(key)) return;
+
+        _everRaised.Add(key);
 
         if (_custom.TryGetValue(key, out var a) && a != null)
         {

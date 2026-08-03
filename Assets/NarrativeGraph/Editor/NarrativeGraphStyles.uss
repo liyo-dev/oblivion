@@ -33,6 +33,18 @@
     -unity-font-style: italic;
 }
 
+.narrative-toolbar__search {
+    width: 200px;
+    margin-left: 4px;
+}
+
+.narrative-toolbar__search-count {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.55);
+    margin-left: 6px;
+    min-width: 30px;
+}
+
 .narrative-toolbar__save-btn {
     margin-left: auto;
     background-color: #3a7d44;
@@ -132,6 +144,13 @@
 
 .narrative-node--active-chapter {
     border-color: rgba(92, 160, 242, 0.5);
+}
+
+/* ─── Coincidencia de búsqueda ────────────────────────────────── */
+
+.narrative-node--search-match {
+    border-color: #ffd54a;
+    border-width: 3px;
 }
 
 /* ─── Aristas atenuadas ──────────────────────────────────────── */

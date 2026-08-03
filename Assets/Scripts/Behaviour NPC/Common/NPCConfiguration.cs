@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿using System;
+﻿using System;
 using UnityEngine;
 using Game.NPC.Modules;
 namespace Game.NPC.Common

@@ -353,8 +353,9 @@ namespace Game.NPC.Modules
                             {
                                 if (hasAllRequiredItems)
                                 {
-                                    // Tiene los items -> completar quest y consumirlos
-                                    ConsumeRequiredItems(entry);
+                                    // Completar quest — el consumo de items lo hace QuestManager.CompleteQuest()
+                                    // de forma idempotente (ver ConsumeRequiredItems en QuestManager.cs). No
+                                    // consumir aquí también: duplicaría el consumo (bug INC-020 en este camino).
                                     CompleteAllSteps(qm, entry, questId, context);
                                 }
                                 else
@@ -374,8 +375,7 @@ namespace Game.NPC.Modules
                         case QuestCompletionMode.CompleteOnTalkIfStepsReady:
                             if (allDone && hasAllRequiredItems)
                             {
-                                // ✅ Consumir los items requeridos al completar la quest
-                                ConsumeRequiredItems(entry);
+                                // El consumo de items lo hace QuestManager.CompleteQuest() (idempotente).
                                 FinishQuest(qm, entry, questId, context);
                             }
                             else
@@ -395,7 +395,7 @@ namespace Game.NPC.Modules
                             // desde QuestManager.MarkStepDone cuando todos los steps están listos.
                             if (allDone && hasAllRequiredItems)
                             {
-                                ConsumeRequiredItems(entry);
+                                // El consumo de items lo hace QuestManager.CompleteQuest() (idempotente).
                                 FinishQuest(qm, entry, questId, context);
                             }
                             else
@@ -532,7 +532,7 @@ namespace Game.NPC.Modules
                 }
                 
                 // Verificar si el miembro está en el equipo (comparación robusta con distintos formatos de ID)
-                bool isInParty = party.Members.Any(m => IsPartyMemberMatch(m, memberReq.memberId));
+                bool isInParty = party.Members.Any(m => QuestMatchingUtils.IsPartyMemberMatch(m, memberReq.memberId));
 
                 Debug.Log($"[NPCQuestConfig] Verificando member '{memberReq.memberId}': {(isInParty ? "✅ EN PARTY" : "❌ NO EN PARTY")}");
                 
@@ -577,32 +577,10 @@ namespace Game.NPC.Modules
             }
         }
         
-        /// <summary>
-        /// Consume los items requeridos del inventario del jugador.
-        /// Se llama cuando la quest se completa exitosamente.
-        /// </summary>
-        private void ConsumeRequiredItems(QuestChainEntry entry)
-        {
-            if (entry.requiredItems == null || entry.requiredItems.Length == 0)
-                return;
-            
-            if (!PlayerService.TryGetComponent<Inventory>(out var inventory, includeInactive: true, allowSceneLookup: true) || inventory == null)
-                return;
-            
-            foreach (var req in entry.requiredItems)
-            {
-                if (req?.item == null || !req.consumeOnComplete) continue;
-                
-                if (inventory.TryConsume(req.item, req.amount))
-                {
-                    Debug.Log($"[NPCQuestConfig] 🔥 Consumido item '{req.item.displayName}' x{req.amount} del inventario");
-                }
-                else
-                {
-                    Debug.LogWarning($"[NPCQuestConfig] ⚠️ No se pudo consumir item '{req.item.displayName}' x{req.amount}");
-                }
-            }
-        }
+        // El consumo de items requeridos ya no se reimplementa aquí: lo hace QuestManager.CompleteQuest()
+        // de forma idempotente (guardia _itemsConsumedForQuest, ver QuestManager.cs). La versión que
+        // existía en este archivo consumía sin esa guardia y se ejecutaba ANTES de FinishQuest() →
+        // qm.CompleteQuest(), duplicando el consumo del mismo item (variante de INC-020 en este camino).
 
         private void CompleteAllSteps(QuestManager qm, QuestChainEntry entry, string questId, Common.NPCStateContext context)
         {
@@ -834,60 +812,9 @@ namespace Game.NPC.Modules
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // Utilidades de comparación de IDs de party member
+        // Comparación de IDs de party member: ver QuestMatchingUtils (Assets/Scripts/Quests/
+        // QuestMatchingUtils.cs). Antes había una copia literal de esta lógica aquí y en
+        // QuestManager.cs; ambas delegan ahora en la misma utilidad compartida.
         // ─────────────────────────────────────────────────────────────────────
-
-        private const string NarrativeIdPrefix = "NPC_InteractiveNarrative_Config_";
-
-        /// <summary>
-        /// Extrae el nombre base de un ID con formato "NPC_InteractiveNarrative_Config_&lt;Nombre&gt;_&lt;hash&gt;".
-        /// Devuelve null si el ID no sigue ese patrón.
-        /// </summary>
-        private static string ExtractNarrativeBaseName(string id)
-        {
-            if (string.IsNullOrEmpty(id) || !id.StartsWith(NarrativeIdPrefix, System.StringComparison.Ordinal))
-                return null;
-            string withoutPrefix = id.Substring(NarrativeIdPrefix.Length);
-            int lastUnderscore   = withoutPrefix.LastIndexOf('_');
-            return lastUnderscore > 0 ? withoutPrefix.Substring(0, lastUnderscore) : withoutPrefix;
-        }
-
-        /// <summary>
-        /// Compara un miembro del party con un memberId tolerando los distintos formatos de ID:
-        ///   - PersistenceId completo ("NPC_InteractiveNarrative_Config_Estela_b17a2d68")
-        ///   - Nombre del GameObject ("Estela")
-        ///   - DisplayName del partyMember ("Estela")
-        ///   - Nombre base extraído del ID largo cuando el GO usa el nombre corto (o viceversa)
-        /// </summary>
-        private static bool IsPartyMemberMatch(Game.NPC.NPCPartyMember member, string memberId)
-        {
-            if (member == null || string.IsNullOrEmpty(memberId)) return false;
-
-            string persistenceId = member.NPCManager?.PersistenceId ?? "";
-            string goName        = member.gameObject.name;
-            string displayName   = member.DisplayName ?? "";
-
-            // 1. Coincidencia exacta con persistenceId o nombre del GO
-            if (persistenceId == memberId || goName == memberId) return true;
-
-            // 2. Coincidencia con DisplayName
-            if (!string.IsNullOrEmpty(displayName) && displayName == memberId) return true;
-
-            // 3. El memberId sigue el patrón largo: extraer nombre base y comparar
-            string memberIdBase = ExtractNarrativeBaseName(memberId);
-            if (memberIdBase != null)
-            {
-                if (string.Equals(goName, memberIdBase, System.StringComparison.OrdinalIgnoreCase)) return true;
-                if (string.Equals(displayName, memberIdBase, System.StringComparison.OrdinalIgnoreCase)) return true;
-            }
-
-            // 4. El persistenceId sigue el patrón largo y el memberId es el nombre corto
-            string persistenceBase = ExtractNarrativeBaseName(persistenceId);
-            if (persistenceBase != null &&
-                string.Equals(memberId, persistenceBase, System.StringComparison.OrdinalIgnoreCase))
-                return true;
-
-            return false;
-        }
     }
 }

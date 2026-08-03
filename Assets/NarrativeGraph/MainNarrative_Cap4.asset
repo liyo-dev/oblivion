@@ -1,0 +1,231 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e12d267b89a9ff841983167bc75c8b77, type: 3}
+  m_Name: MainNarrative_Cap4
+  m_EditorClassIdentifier: Assembly-CSharp::NarrativeGraph
+  startNodeGuid: aa10c6f6-970b-4255-a240-04d57e61d596
+  nodes:
+  - rid: 5290829725662445767
+  - rid: 5290829725662445768
+  - rid: 5290829725662445769
+  - rid: 5290829725662445770
+  - rid: 5290829725662445771
+  - rid: 5290829725662445772
+  - rid: 5290829725662445773
+  - rid: 5290829725662445774
+  - rid: 5290829725662445775
+  - rid: 5290829725662445776
+  - rid: 5290829725662445777
+  - rid: 5290829725662445778
+  applicableSceneNames: []
+  references:
+    version: 2
+    RefIds:
+    - rid: 5290829725662445767
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: COMPLETO LA MISION 8
+        chapter: Cap. 4
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 5d259d98-0364-4a7b-93b7-a36bdabcd27f
+        position: {x: 2461, y: 1790}
+        outputs:
+        - 76cc647a-0938-4a59-bb15-896836a33946
+        questId: ELDRAN_MISSION8
+        stepConditionIds: []
+        steps: 
+        completeQuest: 1
+        logWarnings: 1
+    - rid: 5290829725662445768
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Termina el dialogo con el guardia. Este evento lo lanza el
+        chapter: Cap. 4
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 76cc647a-0938-4a59-bb15-896836a33946
+        position: {x: 1945, y: 1790}
+        outputs:
+        - 0aa8ee51-a44a-44af-9252-2f0b79fb8abf
+        - 3e012768-5c1f-458f-aaf4-6c713eb76562
+        - 1ef1c852-77f4-43f9-accd-6efcfbe2c608
+        eventKey: EVT_ARRESTADOS
+    - rid: 5290829725662445769
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Sigue al guardia
+        chapter: Cap. 4
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 0aa8ee51-a44a-44af-9252-2f0b79fb8abf
+        position: {x: 1386, y: 1821}
+        outputs:
+        - bc4c26f2-2721-4852-b55f-632f2042e7fd
+        questId: ELDRAN_MISSION9
+    - rid: 5290829725662445770
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Se abren las puertas. Evento que se lanza por trigger
+        chapter: Cap. 4
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: bc4c26f2-2721-4852-b55f-632f2042e7fd
+        position: {x: 872, y: 1821}
+        outputs:
+        - f796b6ba-da9e-4ef6-aee9-1507c8effbb9
+        eventKey: EVT_ARRESTADOS_OK
+    - rid: 5290829725662445771
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 4
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: f796b6ba-da9e-4ef6-aee9-1507c8effbb9
+        position: {x: 494, y: 1819}
+        outputs:
+        - a67736f3-a25d-46e1-9f0e-79fb4102b07f
+        questId: ELDRAN_MISSION9
+        stepConditionIds:
+        - QUEST_ELDRAN_MISSION9_STEP_00
+        steps: 
+        completeQuest: 0
+        logWarnings: 0
+    - rid: 5290829725662445772
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 'Hay que escapar de la prision. Evento que lanza Estela '
+        chapter: Cap. 4
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 002ddca5-949f-4b0e-8a1a-581b4b85290f
+        position: {x: -950, y: 1821}
+        outputs:
+        - 3d13ad7a-d700-40d6-9a20-3259f50445eb
+        eventKey: WE_HAVE_TO_SCAPE
+    - rid: 5290829725662445773
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Hablamos con el Rey. Evento que lanza el Rey
+        chapter: Cap. 4
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: a67736f3-a25d-46e1-9f0e-79fb4102b07f
+        position: {x: -41, y: 1821}
+        outputs:
+        - 8159a7ce-ad83-4f49-ad41-dc270ad3abe2
+        eventKey: TALK_KING
+    - rid: 5290829725662445774
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 4
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 8159a7ce-ad83-4f49-ad41-dc270ad3abe2
+        position: {x: -404, y: 1821}
+        outputs:
+        - 002ddca5-949f-4b0e-8a1a-581b4b85290f
+        questId: ELDRAN_MISSION9
+        stepConditionIds:
+        - QUEST_ELDRAN_MISSION9_STEP_01
+        steps: 
+        completeQuest: 1
+        logWarnings: 0
+    - rid: 5290829725662445775
+      type: {class: FocusCameraNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: "LA CAMARA ENFOCA A LA MONTA\xD1A"
+        chapter: Cap. 4
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: ed4f13e9-032c-41a0-b47c-b21af5e5bb2a
+        position: {x: 2944, y: 1790}
+        outputs:
+        - 5d259d98-0364-4a7b-93b7-a36bdabcd27f
+        focusId: MOUNTAIN_EXPLOSION_EVENT
+        holdDuration: 3
+        waitForCompletion: 1
+        zoomFactor: 1
+        zoomInDuration: 0.3
+        zoomOutDuration: 0.3
+    - rid: 5290829725662445776
+      type: {class: ShowLorePopupNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: CONVERSACION MIENTRAS SIGO AL GUARDIA
+        chapter: Cap. 4
+        blockSaving: 1
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 1ef1c852-77f4-43f9-accd-6efcfbe2c608
+        position: {x: 1359, y: 1564}
+        outputs: []
+        config: {fileID: 11400000, guid: e11cff8978d10a940b04f36faede6c91, type: 2}
+    - rid: 5290829725662445777
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 4
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: aa10c6f6-970b-4255-a240-04d57e61d596
+        position: {x: -260, y: 40}
+        outputs:
+        - ed4f13e9-032c-41a0-b47c-b21af5e5bb2a
+        eventKey: CH_Cap4_1
+    - rid: 5290829725662445778
+      type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 4
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 3d13ad7a-d700-40d6-9a20-3259f50445eb
+        position: {x: -690, y: 1821}
+        outputs: []
+        eventKey: CH_Cap4_BACK_2

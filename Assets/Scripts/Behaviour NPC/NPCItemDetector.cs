@@ -405,39 +405,13 @@ namespace Game.NPC
         }
         
         /// <summary>
-        /// Fuerza la limpieza del estado de carrying sin soltar físicamente el objeto
+        /// Fuerza la limpieza del estado de carrying sin soltar físicamente el objeto.
+        /// Delega en la API pública de PlayerCarrySystem (sin reflection).
         /// </summary>
         private void ForceStopCarrying(PlayerCarrySystem carrySystem, GameObject carriedObject)
         {
-            // Usar reflexión para limpiar el estado interno del PlayerCarrySystem
-            var type = carrySystem.GetType();
-            
-            // Cancelar el Invoke de PhysicallyDropObject si existe
-            carrySystem.CancelInvoke("PhysicallyDropObject");
-            
-            // Limpiar las variables privadas usando reflexión
-            var carriedObjectField = type.GetField("_carriedObject", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var carriedRigidbodyField = type.GetField("_carriedRigidbody", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var carriedPickupObjectField = type.GetField("_carriedPickupObject", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var isCarryingField = type.GetField("_isCarrying", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            
-            if (carriedObjectField != null) carriedObjectField.SetValue(carrySystem, null);
-            if (carriedRigidbodyField != null) carriedRigidbodyField.SetValue(carrySystem, null);
-            if (carriedPickupObjectField != null) carriedPickupObjectField.SetValue(carrySystem, null);
-            if (isCarryingField != null) isCarryingField.SetValue(carrySystem, false);
-            
-            // Restaurar el peso de la capa del animator
-            if (PlayerService.TryGetComponent(out Animator animator))
-            {
-                animator.SetLayerWeight(1, 0f);
-            }
-            
-            // Restaurar el ActionMode
-            if (PlayerService.TryGetComponent(out PlayerActionManager actionManager))
-            {
-                actionManager.PopMode(ActionMode.Carrying);
-            }
-            
+            carrySystem.CancelCarrySilently();
+
             if (debugMode)
                 Debug.Log($"[NPCItemDetector:{name}] Estado de carrying limpiado");
         }

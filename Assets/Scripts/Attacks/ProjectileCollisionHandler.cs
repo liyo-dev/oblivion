@@ -377,31 +377,16 @@ public static class ProjectileCollisionHandler
     
     private static void ApplyKnockbackToNPC(GameObject enemyProjectile, Vector3 direction, float force)
     {
-        // El proyectil del enemigo debería tener referencia a su instigador
-        // Intentar encontrar el NPC que disparó el proyectil
-        
-        // Opción 1: Buscar en el tag del proyectil o en su nombre
-        // Opción 2: Los proyectiles deberían tener una referencia al instigador
-        
-        // Por ahora, buscar NPCs cercanos al proyectil
-        Collider[] nearbyColliders = Physics.OverlapSphere(
-            enemyProjectile.transform.position, 
-            30f, 
-            LayerMask.GetMask("Enemy", "Boss"));
-        
-        GameObject closestNPC = null;
-        float closestDistance = float.MaxValue;
-        
-        foreach (var col in nearbyColliders)
-        {
-            float dist = Vector3.Distance(col.transform.position, enemyProjectile.transform.position);
-            if (dist < closestDistance)
-            {
-                closestDistance = dist;
-                closestNPC = col.gameObject;
-            }
-        }
-        
+        // El proyectil del enemigo debería tener referencia real a su instigador (pendiente:
+        // requeriría añadir el campo en EnemyProjectile y setearlo en cada AI que lo spawnea).
+        // Mientras tanto, usamos el registro de combate activo (mismo patrón que el resto del
+        // proyecto, ver ActiveCombatRegistry.GetClosestCombatNPC) en vez de Physics.OverlapSphere:
+        // evita la allocation y limita la búsqueda a NPCs realmente en combate, no a cualquier
+        // collider en la layer Enemy/Boss en 30m a la redonda.
+        GameObject closestNPC = ActiveCombatRegistry.GetClosestCombatNPC(
+            enemyProjectile.transform.position,
+            maxDistance: 30f);
+
         if (closestNPC != null)
         {
             var rb = closestNPC.GetComponent<Rigidbody>();

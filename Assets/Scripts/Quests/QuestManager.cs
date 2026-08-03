@@ -888,7 +888,7 @@ public class QuestManager : MonoBehaviour
             }
 
             // Verificar si el miembro está en el equipo
-            bool isInParty = party.Members.Any(m => IsPartyMemberMatch(m, memberReq.memberId));
+            bool isInParty = party.Members.Any(m => QuestMatchingUtils.IsPartyMemberMatch(m, memberReq.memberId));
             
             Debug.Log($"[QuestManager] Buscando miembro '{memberReq.memberId}': {(isInParty ? "✅ ENCONTRADO" : "❌ NO ENCONTRADO")}");
             
@@ -1157,61 +1157,9 @@ public class QuestManager : MonoBehaviour
 
     #region Party Member Detection
 
-    private const string NarrativeIdPrefix = "NPC_InteractiveNarrative_Config_";
-
-    /// <summary>
-    /// Extrae el nombre base de un ID con formato "NPC_InteractiveNarrative_Config_&lt;Nombre&gt;_&lt;hash&gt;".
-    /// Si el ID no sigue ese patrón devuelve null.
-    /// </summary>
-    private static string ExtractNarrativeBaseName(string id)
-    {
-        if (string.IsNullOrEmpty(id) || !id.StartsWith(NarrativeIdPrefix, System.StringComparison.Ordinal))
-            return null;
-        string withoutPrefix = id.Substring(NarrativeIdPrefix.Length);
-        int lastUnderscore   = withoutPrefix.LastIndexOf('_');
-        return lastUnderscore > 0 ? withoutPrefix.Substring(0, lastUnderscore) : withoutPrefix;
-    }
-
-    /// <summary>
-    /// Compara un miembro del party con un memberId tolerando los distintos formatos de ID.
-    /// Los IDs pueden ser:
-    ///   - El PersistenceId completo del NPCBehaviourManagerV2 en el GO ("NPC_InteractiveNarrative_Config_Estela_b17a2d68")
-    ///   - El nombre del GameObject ("Estela")
-    ///   - El DisplayName del partyMember ("Estela")
-    ///
-    /// Cuando el memberId sigue el formato "NPC_InteractiveNarrative_Config_&lt;Nombre&gt;_&lt;hash&gt;",
-    /// también se extrae el nombre base y se compara con el nombre del GO y el DisplayName.
-    /// </summary>
-    private static bool IsPartyMemberMatch(Game.NPC.NPCPartyMember member, string memberId)
-    {
-        if (member == null || string.IsNullOrEmpty(memberId)) return false;
-
-        string persistenceId = member.NPCManager?.PersistenceId ?? "";
-        string goName        = member.gameObject.name;
-        string displayName   = member.DisplayName ?? "";
-
-        // 1. Coincidencia exacta con persistenceId o nombre del GO
-        if (persistenceId == memberId || goName == memberId) return true;
-
-        // 2. Coincidencia con DisplayName (ej: "Estela")
-        if (!string.IsNullOrEmpty(displayName) && displayName == memberId) return true;
-
-        // 3. El memberId sigue el patrón largo: extraer nombre base y comparar con goName/displayName
-        string memberIdBase = ExtractNarrativeBaseName(memberId);
-        if (memberIdBase != null)
-        {
-            if (string.Equals(goName, memberIdBase, System.StringComparison.OrdinalIgnoreCase)) return true;
-            if (string.Equals(displayName, memberIdBase, System.StringComparison.OrdinalIgnoreCase)) return true;
-        }
-
-        // 4. El persistenceId sigue el patrón largo y el memberId es el nombre corto
-        string persistenceBase = ExtractNarrativeBaseName(persistenceId);
-        if (persistenceBase != null &&
-            string.Equals(memberId, persistenceBase, System.StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        return false;
-    }
+    // La comparación de IDs de party member vive en QuestMatchingUtils (Assets/Scripts/Quests/
+    // QuestMatchingUtils.cs) — antes estaba duplicada aquí y en NPCQuestConfig.cs de forma
+    // literal, con riesgo de que las dos copias divergieran silenciosamente.
 
     private void OnPartyMemberJoined(Game.NPC.NPCPartyMember member)
     {
@@ -1253,7 +1201,7 @@ public class QuestManager : MonoBehaviour
                 Debug.Log($"[QuestManager] 👥 [{i}] Requisito memberId='{memberReq.memberId}', stepIndex={memberReq.stepIndex}, stepConditionId='{memberReq.stepConditionId}'");
                 
                 // Comparar con distintos formatos posibles del ID
-                bool matches = IsPartyMemberMatch(member, memberReq.memberId);
+                bool matches = QuestMatchingUtils.IsPartyMemberMatch(member, memberReq.memberId);
                 if (matches)
                 {
                     Debug.Log($"[QuestManager] 👥 ✅ Match encontrado para '{memberReq.memberId}' (persistenceId='{persistenceId}' / gameObject='{gameObjectName}')");

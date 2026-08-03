@@ -131,7 +131,7 @@ El catálogo de Mayo 2026 quedó desactualizado; una pasada de optimización pos
 
 ### Importantes (I1–I17)
 
-Ver tabla completa en TDD.md § 13. **La mayoría ya está resuelta** (verificado Julio 2026): I2, I3, I4, I6, I7, I8, I11, I15, I16, I17. Genuinamente pendientes o sin verificar: I1 (grace period diálogos, UX), I5 (locks residuales en paths de error, impacto ≈0), I9 (reflection cacheada en `PlayerFlyingController`, solo 2 llamadas por vuelo, impacto ≈0), I10 (corrutina sin timeout en GameBootService), I12 (`FogZone.cs` ya no existe, confirmar dónde quedó esa lógica), I13 (`AdditiveSceneCinematic.PlayAndBlock`, correctness), I14 (`Time.timeScale` en SimpleCinematicDirector, probablemente mitigado pero no confirmado al 100%).
+Ver tabla completa en TDD.md § 13. **La mayoría ya está resuelta** (verificado Julio 2026, más I10/I12/I13 verificados Agosto 2026): I2, I3, I4, I6, I7, I8, I10, I11, I13, I15, I16, I17. I12 no era un bug (renombrado a `AmbientZone`, solo quedaba un tooltip desactualizado, ya corregido). Genuinamente pendientes o sin verificar: I1 (grace period diálogos, UX), I5 (locks residuales en paths de error, impacto ≈0), I9 (reflection cacheada en `PlayerFlyingController`, solo 2 llamadas por vuelo, impacto ≈0), I14 (`Time.timeScale` en SimpleCinematicDirector, probablemente mitigado pero no confirmado al 100%).
 
 ---
 
@@ -149,3 +149,14 @@ Ver tabla completa en TDD.md § 13. **La mayoría ya está resuelta** (verificad
 | Escenas de test | `Assets/Scenes/Test/` |
 | Presets de testing | `Assets/_BootProfile/` |
 | Debug visual en runtime | F3 (NPCs), F4 (panel general) |
+
+---
+
+## 7. Convivencia Interactive ↔ Grafo narrativo — política formal
+
+El proyecto tiene **dos motores narrativos en paralelo**: `NarrativeGraph`/`NarrativeRunner` y el sistema legacy "Interactive" (`NPCInteractiveNarrativeExecutor` + `NPCInteractiveNarrativeConfig`/`ConditionalNarrative`/`NarrativeCondition`), más `NPCQuestConfig` para diálogo-por-estado-de-quest fuera del grafo. Un intento de unificarlos en un único sistema rompió el juego (Agosto 2026); con el proyecto tan avanzado, **no se intenta fusionarlos**. En su lugar:
+
+- **`NPCInteractiveNarrativeExecutor` queda congelado.** No añadir `NarrativeActionType` nuevos ni NPCs nuevos a su catálogo (`ConditionalNarrative`/`NPCInteractiveNarrativeConfig`).
+- **Todo NPC o quest nueva se construye en `NarrativeGraph`.** Usa los nodos ya existentes (`StartQuestNode`, `CompleteQuestStepsNode`, `PlayDialogueNode`, `WaitCustomEventNode`, etc.). El puente `NPCBrain.HandleInteraction()` ya emite `NPC_INTERACT_{persistenceId}` por `DefaultNarrativeSignals` en cada interacción, así que un grafo puede reaccionar a "hablar con NPC X" sin tocar el executor legacy.
+- **Antes de dar por buena una entrega**, correr `El Sendero/Narrativa/Validar Interactive vs Grafo (proyecto completo)` (`Assets/NarrativeGraph/Editor/Validation/CrossSystemNarrativeValidator.cs`). Avisa si la misma quest o el mismo evento custom está referenciado a la vez por el grafo y por el sistema Interactive sin estar enlazado — el mismo patrón que causó INC-020 (consumo duplicado de ítems de quest en dos sitios que no se conocían entre sí).
+- Los NPCs existentes que ya funcionan con `NPCQuestConfig`/`NPCInteractiveNarrativeConfig` **no se migran** salvo que se toquen por otro motivo. No es deuda urgente, es una decisión de arquitectura aceptada.

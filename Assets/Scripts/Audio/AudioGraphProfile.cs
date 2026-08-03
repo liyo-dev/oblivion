@@ -34,7 +34,7 @@ public class AudioGraphProfile : ScriptableObject
     [Serializable]
     public class AmbientZoneRule
     {
-        [Tooltip("ID de la zona (debe coincidir con el zoneId del FogZone)")]
+        [Tooltip("ID de la zona (debe coincidir con el musicZoneId del AmbientPreset asignado al AmbientZone)")]
         public string zoneId;
         [Tooltip("Música a reproducir en esta zona")]
         public AudioClip music;

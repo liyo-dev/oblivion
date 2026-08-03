@@ -101,10 +101,14 @@ namespace Game.NPC.Modules
                     break;
 
                 case NarrativeConditionType.Custom:
-                    // Para custom, verificamos si el evento fue recibido
-                    result = _customEventReceived;
+                    // Caché local (poblada por MarkCustomEventReceived cuando ESTA condición estaba
+                    // suscrita en el momento del disparo) con fallback a DefaultNarrativeSignals como
+                    // fuente de verdad durable (HasEverRaised) para el caso en que la suscripción
+                    // llegó tarde y se perdió el callback. Evita depender de un único flag local que
+                    // puede desincronizarse del resto del sistema de eventos.
+                    result = _customEventReceived || CustomEventReceivedGlobally;
                     if (debugMode)
-                        Debug.Log($"[NarrativeCondition] Custom('{customEventKey}') = {result} (eventReceived={_customEventReceived})");
+                        Debug.Log($"[NarrativeCondition] Custom('{customEventKey}') = {result} (local={_customEventReceived}, global={CustomEventReceivedGlobally})");
                     break;
                 
                 default:
@@ -335,9 +339,21 @@ namespace Game.NPC.Modules
             conditionType == NarrativeConditionType.Custom && !string.IsNullOrEmpty(customEventKey);
         
         /// <summary>
-        /// Indica si el evento custom ya fue recibido
+        /// Indica si el evento custom ya fue recibido (caché local de esta instancia, sin
+        /// consultar la fuente durable). Mantenido por compatibilidad; para evaluar la condición
+        /// usar Evaluate(), que ya combina este flag con CustomEventReceivedGlobally.
         /// </summary>
         public bool CustomEventReceived => _customEventReceived;
+
+        /// <summary>
+        /// Consulta directamente a DefaultNarrativeSignals si customEventKey se disparó alguna vez
+        /// en la partida actual, sin depender del caché local (_customEventReceived). Es la fuente
+        /// de verdad durable: sobrevive a suscripciones tardías que se perdieron el callback.
+        /// </summary>
+        public bool CustomEventReceivedGlobally =>
+            !string.IsNullOrEmpty(customEventKey)
+            && DefaultNarrativeSignals.Instance != null
+            && DefaultNarrativeSignals.Instance.HasEverRaised(customEventKey);
     }
 }
 

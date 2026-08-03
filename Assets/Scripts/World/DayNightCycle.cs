@@ -132,6 +132,17 @@ public class DayNightCycle : MonoBehaviour
     [Tooltip("Segundos que tardan en desaparecer las partículas al detener la lluvia.")]
     [SerializeField] private float rainFadeOutTime = 3f;
 
+    [Header("Clima - Oscurecimiento por lluvia")]
+    [Tooltip("Multiplicador de la intensidad de la luz direccional mientras llueve a tope (1 = sin cambio).")]
+    [SerializeField, Range(0f, 1f)] private float rainLightIntensityMultiplier = 0.55f;
+    [Tooltip("Multiplicador de la densidad de niebla mientras llueve a tope (1 = sin cambio, más alto = más densa).")]
+    [SerializeField, Range(1f, 6f)] private float rainFogDensityMultiplier = 2.5f;
+    [Tooltip("Color hacia el que se tiñe la niebla mientras llueve (mezclado según rainFogColorBlend).")]
+    [SerializeField] private Color rainFogColorTint = new Color(0.45f, 0.47f, 0.5f);
+    [Range(0f, 1f)] [SerializeField] private float rainFogColorBlend = 0.5f;
+    [Tooltip("Segundos que tarda en oscurecer al empezar a llover / en aclarar de nuevo al parar.")]
+    [SerializeField] private float rainDarkenTransitionDuration = 4f;
+
     [Header("Ciclo")]
     [Tooltip("Si es falso, no avanza automáticamente el ciclo.")]
     [SerializeField] private bool autoAdvance = true;
@@ -159,6 +170,8 @@ public class DayNightCycle : MonoBehaviour
     private Coroutine _rainCoroutine;
     private Coroutine _transitionCoroutine;
     private Coroutine _rainFadeCoroutine;
+    private Coroutine _rainDarkenCoroutine;
+    private float _rainDarkenAmount;
 
     // Suprime la lluvia VISUALMENTE mientras el jugador está en un interior (AnchorEnvironment.isInterior),
     // sin tocar el ciclo lógico (IsRaining, temporizadores) para que al salir se reanude si sigue lloviendo.
@@ -202,10 +215,31 @@ public class DayNightCycle : MonoBehaviour
 
         StopAllCoroutines();
         IsRaining = false;
+        _rainDarkenAmount = 0f;
+        _rainDarkenCoroutine = null;
         if (_activeRainInstance != null)
         {
             Destroy(_activeRainInstance);
             _activeRainInstance = null;
+        }
+    }
+
+    /// <summary>
+    /// Aplica el oscurecimiento por lluvia DESPUÉS de que Update haya fijado los valores del
+    /// periodo del día actual, para no pelearse con la lógica de transición existente: primero se
+    /// pone el "look" base del periodo, y aquí se atenúa por encima si está lloviendo.
+    /// </summary>
+    void LateUpdate()
+    {
+        if (_rainDarkenAmount <= 0f) return;
+
+        if (directionalLight != null)
+            directionalLight.intensity *= Mathf.Lerp(1f, rainLightIntensityMultiplier, _rainDarkenAmount);
+
+        if (controlFog)
+        {
+            RenderSettings.fogDensity *= Mathf.Lerp(1f, rainFogDensityMultiplier, _rainDarkenAmount);
+            RenderSettings.fogColor = Color.Lerp(RenderSettings.fogColor, rainFogColorTint, _rainDarkenAmount * rainFogColorBlend);
         }
     }
 
@@ -475,6 +509,7 @@ public class DayNightCycle : MonoBehaviour
         IsRaining = true;
         onRainStarted?.Invoke();
         RainStarted?.Invoke();
+        StartRainDarken(1f);
     }
 
     void BeginRainFadeOut()
@@ -484,12 +519,37 @@ public class DayNightCycle : MonoBehaviour
         IsRaining = false;
         onRainStopped?.Invoke();
         RainStopped?.Invoke();
+        StartRainDarken(0f);
 
         if (_rainFadeCoroutine != null)
             StopCoroutine(_rainFadeCoroutine);
 
         if (_activeRainInstance != null)
             _rainFadeCoroutine = StartCoroutine(RainFadeOutRoutine(_activeRainInstance));
+    }
+
+    void StartRainDarken(float target)
+    {
+        if (_rainDarkenCoroutine != null)
+            StopCoroutine(_rainDarkenCoroutine);
+        _rainDarkenCoroutine = StartCoroutine(RainDarkenRoutine(target));
+    }
+
+    IEnumerator RainDarkenRoutine(float target)
+    {
+        float start = _rainDarkenAmount;
+        float elapsed = 0f;
+        float duration = Mathf.Max(0.01f, rainDarkenTransitionDuration);
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            _rainDarkenAmount = Mathf.Lerp(start, target, elapsed / duration);
+            yield return null;
+        }
+
+        _rainDarkenAmount = target;
+        _rainDarkenCoroutine = null;
     }
 
     IEnumerator RainFadeOutRoutine(GameObject rainInstance)

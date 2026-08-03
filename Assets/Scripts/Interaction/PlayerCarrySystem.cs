@@ -222,6 +222,30 @@ public class PlayerCarrySystem : MonoBehaviour
     public bool IsPickingUp => _isPickingUp;
     public GameObject CarriedObject => _carriedObject;
 
+    /// <summary>
+    /// Limpia el estado interno de "cargando objeto" sin reproducir la animación de lanzar
+    /// ni soltar físicamente el objeto, y sin disparar <see cref="OnObjectDropped"/>.
+    /// Pensado para cuando otro sistema (p.ej. <c>NPCItemDetector</c>) ya gestionó la
+    /// entrega/destrucción del objeto por su cuenta y solo necesita que el estado de
+    /// "carrying" del jugador quede coherente (ActionMode, peso de animator, referencias).
+    /// </summary>
+    public void CancelCarrySilently()
+    {
+        CancelInvoke(nameof(PhysicallyDropObject));
+
+        _carriedObject = null;
+        _carriedRigidbody = null;
+        _carriedPickupObject = null;
+        _carriedColliders = null;
+        _isCarrying = false;
+
+        if (_animator != null && animatorLayer > 0)
+            _animator.SetLayerWeight(animatorLayer, 0f);
+
+        if (_actionManager != null)
+            _actionManager.PopMode(ActionMode.Carrying);
+    }
+
     void OnDisable()
     {
         // Cancelar invokes pendientes para no dejar el ActionManager en un estado sucio
