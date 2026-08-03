@@ -74,7 +74,6 @@ public class NarrativeTimelineWindow : EditorWindow
         { "WaitCustomEventNode",      NodeCategory.EventWait },
         { "RaiseCustomEventNode",     NodeCategory.EventRaise },
         { "PlayCinematicNode",        NodeCategory.Cinematic },
-        { "AdditiveSceneCinematicNode", NodeCategory.Cinematic },
         { "PlayTimelineNode",         NodeCategory.Cinematic },
         { "FocusCameraNode",          NodeCategory.Cinematic },
         { "StartBattleNode",          NodeCategory.Battle },
