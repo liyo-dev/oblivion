@@ -584,7 +584,7 @@ public class NarrativeFactBrowserWindow : EditorWindow
 
     private void ScanPartyRuntime()
     {
-        var partyObj = UnityEngine.Object.FindObjectOfType<Game.NPC.PlayerParty>();
+        var partyObj = UnityEngine.Object.FindAnyObjectByType<Game.NPC.PlayerParty>();
         if (partyObj == null) return;
 
         var members = partyObj.Members;

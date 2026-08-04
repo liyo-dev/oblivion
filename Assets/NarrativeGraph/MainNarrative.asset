@@ -1121,6 +1121,9 @@ MonoBehaviour:
         logoFadeOutSeconds: 1.25
         cameraReturnFadeSeconds: 0.3
         cameraReturnHoldSeconds: 0.2
+        closeDemoAfterLogo: 1
+        closeDemoTargetScene: Credits
+        closeDemoLoadingOverlayScene: 
     - rid: 5290829545210380758
       type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
       data:

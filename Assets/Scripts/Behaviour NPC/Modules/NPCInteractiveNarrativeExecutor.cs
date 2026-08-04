@@ -48,7 +48,6 @@ namespace Game.NPC.Modules
         private int _lastNarrativeCheckFrame = -1;
         private const int NARRATIVE_CHECK_INTERVAL = 10;
         
-        private bool _profileReady = false;
         private bool _detectPlayerRoutineStarted = false;
         private bool _playerFrozenByDetection = false;
         private bool _wasTriggeredByDetection = false;
@@ -400,7 +399,6 @@ namespace Game.NPC.Modules
         
         private void HandleProfileReady()
         {
-            _profileReady = true;
             GameBootService.OnProfileReady -= HandleProfileReady;
             
             // Solo iniciar DetectPlayerRoutine si aún no se ha iniciado

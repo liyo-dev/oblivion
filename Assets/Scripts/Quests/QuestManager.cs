@@ -6,7 +6,6 @@ using System.Collections.Generic;
 public class QuestManager : MonoBehaviour
 {
     public static QuestManager Instance { get; private set; }
-    private static bool _applicationQuitting;
 
     [Tooltip("Catálogo opcional para arrancar quests por ID aunque no se hayan añadido antes.")]
     [SerializeField] private List<QuestData> questCatalog = new();
@@ -58,11 +57,6 @@ public class QuestManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
-    void OnApplicationQuit()
-    {
-        _applicationQuitting = true;
-    }
-
     void OnDestroy()
     {
         if (Instance == this)
@@ -76,7 +70,6 @@ public class QuestManager : MonoBehaviour
     static void ResetStatics()
     {
         Instance = null;
-        _applicationQuitting = false;
     }
 #endif
     
@@ -954,7 +947,7 @@ public class QuestManager : MonoBehaviour
     private void RebuildQuestChainIndex()
     {
         _questChainIndex.Clear();
-        var allNpcManagers = FindObjectsByType<Game.NPC.NPCBehaviourManagerV2>(FindObjectsSortMode.None);
+        var allNpcManagers = FindObjectsByType<Game.NPC.NPCBehaviourManagerV2>();
         if (allNpcManagers == null) { _questChainIndexDirty = false; return; }
 
         foreach (var npcManager in allNpcManagers)

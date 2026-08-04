@@ -533,7 +533,7 @@ public class GameBootProfile : ScriptableObject
         }
 
         // Obtener datos del PlayerHealthSystem si existe
-        var playerHealthSystem = FindFirstObjectByType<PlayerHealthSystem>();
+        var playerHealthSystem = FindAnyObjectByType<PlayerHealthSystem>();
         if (playerHealthSystem != null)
         {
             p.maxHP = playerHealthSystem.MaxHealth;
@@ -542,7 +542,7 @@ public class GameBootProfile : ScriptableObject
         }
 
         // Obtener datos del sistema de man si existe
-        var manaPool = FindFirstObjectByType<ManaPool>();
+        var manaPool = FindAnyObjectByType<ManaPool>();
         if (manaPool != null)
         {
             p.maxMP = manaPool.Max;
@@ -580,7 +580,7 @@ public class GameBootProfile : ScriptableObject
         }
 
         // === NUEVO: sincronizar abilities desde el PlayerActionManager (estado runtime actual) ===
-         var actionManager = FindFirstObjectByType<PlayerActionManager>();
+         var actionManager = FindAnyObjectByType<PlayerActionManager>();
          if (actionManager != null)
          {
             if (p.abilities == null) p.abilities = new PlayerAbilities();

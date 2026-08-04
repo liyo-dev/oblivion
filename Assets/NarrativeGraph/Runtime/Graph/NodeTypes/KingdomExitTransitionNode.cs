@@ -10,6 +10,9 @@ using Sendero.UI;
 /// con crescendo, aparición y retención del logo del juego, y devolución de control
 /// al jugador en el instante en que el logo se disuelve.
 ///
+/// Si closeDemoAfterLogo está activo, en vez de devolver el control se cierra la demo:
+/// fundido a negro y cambio a closeDemoTargetScene (flujo: Logo → Créditos → Título).
+///
 /// Es un nodo único y autocontenido (mismo criterio que FocusCameraNode) para no
 /// depender de sincronizar varios nodos en paralelo dentro del grafo. Colocar después
 /// de un WaitCustomEventNode que espere el evento emitido por KingdomBoundaryTrigger
@@ -51,6 +54,16 @@ public sealed class KingdomExitTransitionNode : NarrativeNode
 
     [Tooltip("Margen en negro (tras el fundido de entrada) para dar tiempo a que la cámara termine su reencuadre automático antes de volver a mostrar la escena.")]
     [Min(0f)] public float cameraReturnHoldSeconds = 0.2f;
+
+    [Header("Cierre de demo")]
+    [Tooltip("Si está activo, tras el logo NO se devuelve el control al jugador: se hace un fundido a negro y se cambia de escena. Pensado para el final de la demo (flujo: Logo → Créditos → Título).")]
+    public bool closeDemoAfterLogo = false;
+
+    [Tooltip("Escena a cargar al cerrar la demo (normalmente 'Credits'; Credits.unity ya encadena a la pantalla de título por su cuenta). Ver EditorBuildSettings.")]
+    public string closeDemoTargetScene = "Credits";
+
+    [Tooltip("Escena overlay de carga a usar al cerrar la demo. Vacío = sin overlay, solo el fundido a negro de cameraReturnFadeSeconds.")]
+    public string closeDemoLoadingOverlayScene = "";
 
     public override void Enter(NarrativeContext ctx, Action onReadyToAdvance)
     {
@@ -132,6 +145,13 @@ public sealed class KingdomExitTransitionNode : NarrativeNode
         var logoController = TitleLogoController.EnsureInstance();
         yield return logoController.ShowLogo(logoSprite, subtitle, logoFadeInSeconds, logoHoldSeconds, logoFadeOutSeconds);
 
+        // --- Fin de la demo: cambiar a la pantalla de títulos en vez de devolver el control ---
+        if (closeDemoAfterLogo)
+        {
+            yield return CloseDemo(audio, previousSfxVolume);
+            yield break;
+        }
+
         // --- Fundido a negro breve: oculta el reencuadre automático de vThirdPersonCamera ---
         // Al poner lockCameraForCinematic = false, vThirdPersonCamera hace un smooth-snap (~0.15s,
         // ver SnapSmoothTime) desde el plano general de vuelta a la posición normal tras el jugador.
@@ -165,9 +185,50 @@ public sealed class KingdomExitTransitionNode : NarrativeNode
         onReadyToAdvance?.Invoke();
     }
 
+    /// <summary>
+    /// Cierra la demo: funde a negro y carga la pantalla de títulos, sin devolver nunca el
+    /// control ni la cámara al modo gameplay.
+    ///
+    /// A propósito NO se hace <c>vThirdPersonCamera.lockCameraForCinematic = false</c> ni
+    /// <c>pam.PopMode(ActionMode.Cinematic)</c> aquí: hacerlo desbloqueaba la cámara y el modo
+    /// ANTES del fundido a negro (el fundido empieza después), así que durante ese instante
+    /// se veía el snap de vThirdPersonCamera de vuelta a la vista de juego y cualquier sistema
+    /// que reaccione a "ya no estamos en Cinematic" (p. ej. música de mundo) se reactivaba,
+    /// todo con la pantalla aún visible. El GameObject del jugador se destruye con el cambio
+    /// de escena (SceneTransitionLoader.Load), así que ese Push de Cinematic nunca queda
+    /// "colgado" en un stack que sobreviva — es la única excepción deliberada a la regla de
+    /// "siempre Pop para cada Push" de CLAUDE.md, y es intencional: no tocar.
+    /// No llama a onReadyToAdvance: la demo termina aquí, no hay más nodos que avanzar.
+    /// </summary>
+    IEnumerator CloseDemo(AudioService audio, float previousSfxVolume)
+    {
+        // Restaurar volumen SFX para que la pantalla de títulos no herede el silencio de la cinemática.
+        audio?.SetVolume(AudioBus.Sfx, previousSfxVolume);
+
+        // El tema principal (mainThemeClip) hereda loop=true por defecto (música de ambiente/gameplay).
+        // Para los créditos necesitamos que termine de verdad: CreditsSceneController usa
+        // AudioService.GetMusicRemainingSeconds() para mantener "Gracias por jugar la demo" en
+        // pantalla hasta que el tema acabe, lo cual no tiene sentido si está en loop.
+        audio?.SetMusicLooping(false);
+
+        yield return FeedbackService.ScreenFadeAsync(Color.black, cameraReturnFadeSeconds, fadeIn: true);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[KingdomExitTransitionNode] Fin de la demo → cargando '{closeDemoTargetScene}'.");
+#endif
+
+        if (string.IsNullOrEmpty(closeDemoLoadingOverlayScene))
+            SceneTransitionLoader.Load(closeDemoTargetScene);
+        else
+            SceneTransitionLoader.LoadWithOverlay(closeDemoTargetScene, closeDemoLoadingOverlayScene);
+
+        // SceneTransitionLoader detecta FeedbackService.IsScreenFaded == true y hace el
+        // fundido de salida (revela la escena de créditos) automáticamente al terminar de cargar.
+    }
+
     static CameraFocusPoint FindFocusPoint(string focusId)
     {
-        var all = UnityEngine.Object.FindObjectsByType<CameraFocusPoint>(FindObjectsSortMode.None);
+        var all = UnityEngine.Object.FindObjectsByType<CameraFocusPoint>();
         foreach (var p in all)
             if (p.focusId == focusId) return p;
         return null;

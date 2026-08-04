@@ -12,7 +12,6 @@ public class EnemyProjectile : MonoBehaviour
     [SerializeField] private float speed = 15f;
     [SerializeField] private float lifetime = 5f;
     [SerializeField] private GameObject hitEffectPrefab;
-    [SerializeField] private bool usePhysicsMovement = true; // Usar Rigidbody para movimiento suave
 
     [Header("Daño")]
     [Tooltip("Daño usado cuando Initialize() recibe un valor negativo (ej: -1). Permite que el prefab defina su propio daño por defecto.")]

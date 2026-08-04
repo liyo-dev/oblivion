@@ -108,7 +108,7 @@ public class PanicInputUI : MonoBehaviour
     /// Devuelve la instancia existente o crea el panel sobre el canvas del juego.
     public static PanicInputUI GetOrCreate(Sprite buttonSprite = null)
     {
-        var existing = FindFirstObjectByType<PanicInputUI>();
+        var existing = FindAnyObjectByType<PanicInputUI>();
         if (existing != null) return existing;
 
         // Preferir el canvas del TutorialPromptUI (garantizado DontDestroyOnLoad)
@@ -116,7 +116,7 @@ public class PanicInputUI : MonoBehaviour
             ? TutorialPromptUI.Instance.GetComponentInParent<Canvas>()
             : null;
         if (canvas == null)
-            canvas = FindFirstObjectByType<Canvas>();
+            canvas = FindAnyObjectByType<Canvas>();
         if (canvas == null)
             return null;
 

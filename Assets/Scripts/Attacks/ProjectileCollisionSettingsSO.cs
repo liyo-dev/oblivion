@@ -36,7 +36,20 @@ public class ProjectileCollisionSettingsSO : ScriptableObject
     [Header("Audio")]
     [Tooltip("Clave del SFX para la colisión de proyectiles")]
     public string collisionSFXKey = "ProjectileClash";
-    
+
+    [Header("Lanzamiento Aéreo del Jugador (estilo Kingdom Hearts)")]
+    [Tooltip("Distancia horizontal hacia atrás del lanzamiento aéreo del jugador")]
+    [Min(0f)]
+    public float playerAerialKnockbackDistance = 3.5f;
+
+    [Tooltip("Altura máxima del arco del lanzamiento aéreo del jugador")]
+    [Min(0f)]
+    public float playerAerialKnockbackHeight = 2.2f;
+
+    [Tooltip("Duración total del lanzamiento aéreo del jugador (subida + caída)")]
+    [Min(0.05f)]
+    public float playerAerialKnockbackDuration = 0.6f;
+
     /// <summary>
     /// Convierte este ScriptableObject en la configuración para el handler
     /// </summary>
@@ -53,7 +66,10 @@ public class ProjectileCollisionSettingsSO : ScriptableObject
             collisionSFXKey = collisionSFXKey,
             // Animación solo para el player
             playerCollisionAnimation = "RollBWD_Battle_RM_NoWeapon",
-            enableCollisionAnimations = true
+            enableCollisionAnimations = true,
+            playerAerialKnockbackDistance = playerAerialKnockbackDistance,
+            playerAerialKnockbackHeight = playerAerialKnockbackHeight,
+            playerAerialKnockbackDuration = playerAerialKnockbackDuration
         };
     }
 }

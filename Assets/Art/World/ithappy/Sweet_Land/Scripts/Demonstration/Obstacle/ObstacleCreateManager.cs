@@ -14,6 +14,9 @@ namespace ithappy
         public int PointsPlaced() => _pointsPlaced;
         public Vector3 FirstPoint() => _firstPoint;
 
+        // NOTA: se mantiene OffMeshLink (obsoleto en Unity 6) en vez de NavMeshLink porque
+        // ObstaclePath/ObstacleGroup siguen leyendo un componente OffMeshLink (ver nota en esos archivos).
+#pragma warning disable 618
         public void StartPathCreation()
         {
             _isCreatingPath = true;
@@ -56,6 +59,7 @@ namespace ithappy
             offMeshLink.startTransform = startObj.transform;
             offMeshLink.endTransform = endObj.transform;
         }
+#pragma warning restore 618
 
         public void CancelCreation()
         {

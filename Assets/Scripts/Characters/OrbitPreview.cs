@@ -16,7 +16,6 @@ public class OrbitPreview : MonoBehaviour
     public Vector3 focusOffset = new Vector3(0, 1.1f, 0);
 
     Camera cam;
-    float idleTimer;
 
     void Awake() => cam = GetComponent<Camera>();
 
@@ -40,7 +39,6 @@ public class OrbitPreview : MonoBehaviour
 
         // Auto-spin si no hay input
         if (!anyInput) yaw += autoSpinSpeed * Time.deltaTime;
-        else idleTimer = 0f;
 
         // Colocación de cámara
         var center = GetFocusPoint();

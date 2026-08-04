@@ -258,7 +258,7 @@ public class HoldToSkipUI : MonoBehaviour
         else
         {
             // Intentar encontrar el PlayableDirector en la escena
-            var director = FindFirstObjectByType<PlayableDirector>();
+            var director = FindAnyObjectByType<PlayableDirector>();
             if (director != null)
             {
                 director.Stop();

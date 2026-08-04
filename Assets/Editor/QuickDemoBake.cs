@@ -9,8 +9,7 @@ using UnityEditor.SceneManagement;
 public class QuickDemoBake : EditorWindow
 {
     private static LightingSettings originalSettings;
-    private static bool settingsModified = false;
-    
+
     [MenuItem("El Sendero/Lighting/🚀 Quick Demo Bake (5-15 min)")]
     public static void StartQuickBake()
     {
@@ -247,9 +246,9 @@ public class QuickDemoBake : EditorWindow
         settings.minBounces = 2;
         settings.lightmapResolution = 25f;
         
-        settings.denoiserTypeDirect = LightingSettings.DenoiserType.Optix;
-        settings.denoiserTypeIndirect = LightingSettings.DenoiserType.Optix;
-        settings.denoiserTypeAO = LightingSettings.DenoiserType.Optix;
+        settings.denoiserTypeDirect = LightingSettings.DenoiserType.OpenImage;
+        settings.denoiserTypeIndirect = LightingSettings.DenoiserType.OpenImage;
+        settings.denoiserTypeAO = LightingSettings.DenoiserType.OpenImage;
         
         settings.ao = true;
         settings.aoMaxDistance = 1f;

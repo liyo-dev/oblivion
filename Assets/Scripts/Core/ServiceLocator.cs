@@ -93,7 +93,7 @@ public static class ServiceLocator
         // Solo buscar y cachear servicios globales una vez. Evitar FindObjectOfType para mejorar el rendimiento.
         // Solo buscar servicios globales en Unity 2022.3 o superior. Para versiones anteriores, se debe registrar explícitamente.
     #if UNITY_2022_3_OR_NEWER
-        T found = UnityEngine.Object.FindFirstObjectByType<T>(FindObjectsInactive.Include);
+        T found = UnityEngine.Object.FindAnyObjectByType<T>(FindObjectsInactive.Include);
     #else
         T found = null;
     #endif
@@ -108,10 +108,10 @@ public static class ServiceLocator
     /// <summary>
     /// Devuelve todas las instancias del tipo indicado usando una única consulta centralizada.
     /// </summary>
-    public static IReadOnlyList<T> GetAll<T>(bool includeInactive = true, FindObjectsSortMode sortMode = FindObjectsSortMode.None) where T : UnityEngine.Object
+    public static IReadOnlyList<T> GetAll<T>(bool includeInactive = true) where T : UnityEngine.Object
     {
 #if UNITY_2022_3_OR_NEWER
-        var results = UnityEngine.Object.FindObjectsByType<T>(includeInactive ? FindObjectsInactive.Include : FindObjectsInactive.Exclude, sortMode);
+        var results = UnityEngine.Object.FindObjectsByType<T>(includeInactive ? FindObjectsInactive.Include : FindObjectsInactive.Exclude);
 #else
 #pragma warning disable 618
         var results = UnityEngine.Object.FindObjectsOfType<T>(includeInactive);

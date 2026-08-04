@@ -9611,7 +9611,7 @@ MonoBehaviour:
   letterSoundKey: UI_DialogueLetter
   letterSoundFrequency: 1
   pauseGameWhileOpen: 0
-  resolveWithLocalizationManager: 0
+  resolveWithLocalizationManager: 1
   useCinematicCamera: 1
   cinematicProfile: {fileID: 11400000, guid: a01a7488dbaffc543a28a51182ad67b9, type: 2}
   useDialogueCameraLegacy: 0

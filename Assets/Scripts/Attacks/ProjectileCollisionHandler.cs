@@ -14,7 +14,7 @@ public static class ProjectileCollisionHandler
     public class CollisionConfig
     {
         [Header("Fuerzas de Empuje")]
-        [Tooltip("Fuerza aplicada al jugador cuando su proyectil colisiona")]
+        [Tooltip("OBSOLETO: ya no se usa para el jugador (ver 'Lanzamiento Aéreo' más abajo). Se mantiene solo por compatibilidad con assets ya serializados.")]
         public float playerKnockbackForce = 8f;
         
         [Tooltip("Fuerza aplicada al NPC cuando su proyectil colisiona")]
@@ -41,9 +41,19 @@ public static class ProjectileCollisionHandler
         [Header("Animaciones")]
         [Tooltip("Nombre de la animación que se reproduce en el jugador al colisionar")]
         public string playerCollisionAnimation = "RollBWD_Battle_RM_NoWeapon";
-        
+
         [Tooltip("Habilitar reproducción de animaciones al colisionar")]
         public bool enableCollisionAnimations = true;
+
+        [Header("Lanzamiento Aéreo del Jugador (estilo Kingdom Hearts)")]
+        [Tooltip("Distancia horizontal hacia atrás del lanzamiento aéreo del jugador")]
+        public float playerAerialKnockbackDistance = 3.5f;
+
+        [Tooltip("Altura máxima del arco del lanzamiento aéreo del jugador")]
+        public float playerAerialKnockbackHeight = 2.2f;
+
+        [Tooltip("Duración total del lanzamiento aéreo del jugador (subida + caída)")]
+        public float playerAerialKnockbackDuration = 0.6f;
     }
     
     private static CollisionConfig _config;
@@ -73,7 +83,10 @@ public static class ProjectileCollisionHandler
                 cameraShakeDuration = 0.3f,
                 collisionSFXKey = "ProjectileClash",
                 playerCollisionAnimation = "RollBWD_Battle_RM_NoWeapon",
-                enableCollisionAnimations = true
+                enableCollisionAnimations = true,
+                playerAerialKnockbackDistance = 3.5f,
+                playerAerialKnockbackHeight = 2.2f,
+                playerAerialKnockbackDuration = 0.6f
             };
         }
         return _config;
@@ -167,7 +180,7 @@ public static class ProjectileCollisionHandler
         if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
         {
             Debug.Log($"[ProjectileCollision] ✅ Player encontrado: '{playerGo.name}'");
-            PlayAnimationOnTarget(playerGo, config.playerCollisionAnimation, "Player");
+            PlayAnimationOnTarget(playerGo, config.playerCollisionAnimation, "Player", config);
         }
         else
         {
@@ -178,7 +191,7 @@ public static class ProjectileCollisionHandler
     /// <summary>
     /// Reproduce una animación en un GameObject objetivo (Player o NPC)
     /// </summary>
-    private static void PlayAnimationOnTarget(GameObject target, string animationName, string targetType)
+    private static void PlayAnimationOnTarget(GameObject target, string animationName, string targetType, CollisionConfig config)
     {
         Debug.Log($"[ProjectileCollision] 🎬 PlayAnimationOnTarget INICIADO para {targetType}");
         Debug.Log($"[ProjectileCollision]   - Target: {(target != null ? $"'{target.name}'" : "NULL")}");
@@ -218,11 +231,40 @@ public static class ProjectileCollisionHandler
         animator.PlayInFixedTime(animationName, 0, 0f);
         
         Debug.Log($"[ProjectileCollision] 🎬✅ Animación '{animationName}' REPRODUCIDA en {targetType} '{target.name}'");
-        
-        // ✅ Aplicar desplazamiento físico hacia atrás (para compensar si no hay Root Motion)
-        ApplyKnockbackMovement(target, targetType);
+
+        // ✅ El JUGADOR sale volando hacia atrás por el aire (ver AerialKnockbackReceiver);
+        // el resto de objetivos (NPCs, si algún día se reactiva) usan el desplazamiento simple.
+        if (targetType == "Player")
+            ApplyAerialLaunch(target, config);
+        else
+            ApplyKnockbackMovement(target, targetType);
     }
-    
+
+    /// <summary>
+    /// Lanza al jugador hacia atrás por el aire (estilo Kingdom Hearts) usando
+    /// AerialKnockbackReceiver. La dirección se calcula SIEMPRE respecto al propio forward del
+    /// jugador en el momento del impacto: nunca dependemos de la posición del proyectil o del
+    /// punto de colisión, que es lo que antes podía hacer que el roll se fuera hacia el lado.
+    /// </summary>
+    private static void ApplyAerialLaunch(GameObject player, CollisionConfig config)
+    {
+        if (player == null) return;
+
+        var receiver = player.GetComponent<AerialKnockbackReceiver>();
+        if (receiver == null)
+            receiver = player.AddComponent<AerialKnockbackReceiver>();
+
+        Vector3 backward = -player.transform.forward;
+
+        receiver.Launch(
+            backward,
+            config.playerAerialKnockbackDistance,
+            config.playerAerialKnockbackHeight,
+            config.playerAerialKnockbackDuration);
+
+        Debug.Log($"[ProjectileCollision] 🚀 Lanzamiento aéreo hacia atrás aplicado al jugador (distancia={config.playerAerialKnockbackDistance}m, altura={config.playerAerialKnockbackHeight}m)");
+    }
+
     /// <summary>
     /// Aplica un desplazamiento hacia atrás al objetivo (para que el roll se vea físicamente)
     /// </summary>
@@ -332,49 +374,21 @@ public static class ProjectileCollisionHandler
     }
     
     private static void ApplyKnockbackToEntities(
-        GameObject playerProjectile, 
-        GameObject enemyProjectile, 
-        Vector3 collisionPoint, 
+        GameObject playerProjectile,
+        GameObject enemyProjectile,
+        Vector3 collisionPoint,
         CollisionConfig config)
     {
-        // Dirección: del punto de colisión hacia cada proyectil
-        Vector3 playerDirection = (playerProjectile.transform.position - collisionPoint).normalized;
+        // ⚠️ El knockback del JUGADOR ya NO se aplica aquí con un impulso de Rigidbody: ese cálculo
+        // usaba el vector (posición del proyectil del jugador − punto de colisión), que no tiene
+        // relación con el forward del jugador y podía apuntar hacia el lado. Ahora el jugador sale
+        // volando hacia atrás por el aire vía AerialKnockbackReceiver, disparado desde
+        // PlayAnimationOnTarget() con una dirección estrictamente -transform.forward (ver
+        // ApplyAerialLaunch). Aquí solo queda el knockback del NPC.
         Vector3 enemyDirection = (enemyProjectile.transform.position - collisionPoint).normalized;
-        
-        // Aplicar knockback al JUGADOR (propietario del proyectil del jugador)
-        ApplyKnockbackToPlayer(playerDirection, config.playerKnockbackForce);
-        
-        // Aplicar knockback al NPC (propietario del proyectil del enemigo)
         ApplyKnockbackToNPC(enemyProjectile, enemyDirection, config.npcKnockbackForce);
     }
-    
-    private static void ApplyKnockbackToPlayer(Vector3 direction, float force)
-    {
-        // Buscar el jugador
-        if (!PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) || playerGo == null)
-        {
-            Debug.LogWarning("[ProjectileCollision] No se encontró el jugador para aplicar knockback");
-            return;
-        }
-        
-        // Intentar obtener el Rigidbody del jugador
-        var rb = playerGo.GetComponent<Rigidbody>();
-        if (rb != null && !rb.isKinematic)
-        {
-            // Aplicar fuerza horizontal (sin componente Y para no lanzar al aire)
-            Vector3 knockback = direction;
-            knockback.y = 0f;
-            knockback = knockback.normalized * force;
-            
-            rb.AddForce(knockback, ForceMode.Impulse);
-            Debug.Log($"[ProjectileCollision] 👊 Knockback aplicado al jugador: {knockback}");
-        }
-        else
-        {
-            Debug.LogWarning("[ProjectileCollision] El jugador no tiene Rigidbody o es kinematic");
-        }
-    }
-    
+
     private static void ApplyKnockbackToNPC(GameObject enemyProjectile, Vector3 direction, float force)
     {
         // El proyectil del enemigo debería tener referencia real a su instigador (pendiente:

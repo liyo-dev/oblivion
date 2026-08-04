@@ -44,7 +44,7 @@ public class SpecialChargeMeterUI : MonoBehaviour
         if (player != null)
             _duo = player.GetComponentInChildren<DuoSpecialAttackSystem>();
         if (_duo == null)
-            _duo = FindFirstObjectByType<DuoSpecialAttackSystem>();
+            _duo = FindAnyObjectByType<DuoSpecialAttackSystem>();
 
         if (_duo == null)
         {

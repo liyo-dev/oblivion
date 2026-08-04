@@ -33,7 +33,7 @@ public class GlobalObjectFogController: MonoBehaviour
     public float fogEmissionPower = 1f;
     [Range(0.01f, 20.0f)]
     public float fogEmissionFalloff = 0.01f;
-    [ColorUsageAttribute(false, true, -10f, 10f, -10f, 10f)] public Color emissionColor = Color.black;
+    [ColorUsageAttribute(false, true)] public Color emissionColor = Color.black;
     [Range(0.0f, 1.0f)]
     public float emissionPower = 0.0f;
 
@@ -67,7 +67,7 @@ public class GlobalObjectFogController: MonoBehaviour
         {
             DestroyImmediate(this);
 #if UNITY_EDITOR
-            EditorUtility.DisplayDialog("Can't add manager.", "Only one manager allowed on scene! (Manager exists on: " + GameObject.FindObjectOfType<GlobalObjectFogController>().name + ")", "Ok", "");
+            EditorUtility.DisplayDialog("Can't add manager.", "Only one manager allowed on scene! (Manager exists on: " + GameObject.FindAnyObjectByType<GlobalObjectFogController>().name + ")", "Ok", "");
 #endif
         }
         if (instance == null)
@@ -75,7 +75,8 @@ public class GlobalObjectFogController: MonoBehaviour
             instance = this;
         }
 
-        ObjectFogController[] _fogControllers = GameObject.FindObjectsOfType<ObjectFogController>();
+        ObjectFogController[] _fogControllers = GameObject.FindObjectsByType<ObjectFogController>();
+
         for (int i = 0; i < _fogControllers.Length; i++)
         {
             if (controllers == null)
@@ -92,7 +93,7 @@ public class GlobalObjectFogController: MonoBehaviour
         cam = Camera.main;
         if (cam == null)
         {
-            cam = FindObjectOfType<Camera>();
+            cam = FindAnyObjectByType<Camera>();
         }
         if (cam == null)
         {

@@ -124,7 +124,6 @@ public class StarAwakeningSequencer : CinematicSequencerBase
 
     private SlowMotionFireProjectile _activeProjectile;
     private bool                     _collisionTriggered;
-    private bool                     _panicSuccess;
     private bool                     _sequenceFailed;
     private Transform                _collisionPointHelper;
     private CharacterController      _willCC;
@@ -171,7 +170,6 @@ public class StarAwakeningSequencer : CinematicSequencerBase
     protected override IEnumerator Co_Sequence()
     {
         _collisionTriggered = false;
-        _panicSuccess       = false;
         _sequenceFailed     = false;
 
         yield return Co_BeginCinematicWithTransition(camShotEldran);
@@ -480,14 +478,12 @@ public class StarAwakeningSequencer : CinematicSequencerBase
 
     private void OnPanicSuccess()
     {
-        _panicSuccess = true;
         CleanupPanicCallbacks();
         StartCoroutine(Co_WillFiresBack());
     }
 
     private void OnPanicFailure()
     {
-        _panicSuccess = false;
         CleanupPanicCallbacks();
         StartCoroutine(Co_FailedSequence());
     }

@@ -58,6 +58,12 @@ public class NavMeshFloorOnlySetup : EditorWindow
             MessageType.Warning);
     }
 
+    // NOTA: StaticEditorFlags.NavigationStatic y GameObjectUtility.SetNavMeshArea están obsoletos.
+    // La alternativa moderna (NavMeshBuildMarkup + NavMeshBuilder.CollectSources) sirve para bakes
+    // procedurales en runtime, pero esta herramienta prepara objetos para el pipeline clásico
+    // Window → AI → Navigation → Bake (que esta ventana abre explícitamente), el cual sigue
+    // leyendo estos flags. Se suprime el warning en vez de migrar para no romper ese flujo.
+#pragma warning disable 618
     void ConfigureNavigationAreas()
     {
         int floorLayer = LayerMask.NameToLayer(floorLayerName);
@@ -67,7 +73,7 @@ public class NavMeshFloorOnlySetup : EditorWindow
             return;
         }
 
-        var allObjects = FindObjectsByType<GameObject>(FindObjectsSortMode.None);
+        var allObjects = FindObjectsByType<GameObject>();
         int floorCount = 0;
         int obstacleCount = 0;
 
@@ -127,6 +133,7 @@ public class NavMeshFloorOnlySetup : EditorWindow
         
         Debug.Log($"[NavMesh Setup] Floor: {floorCount}, Obstacles: {obstacleCount}");
     }
+#pragma warning restore 618
 }
 #endif
 

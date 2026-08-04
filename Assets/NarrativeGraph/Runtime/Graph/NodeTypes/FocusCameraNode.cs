@@ -53,7 +53,7 @@ public sealed class FocusCameraNode : NarrativeNode
 
     CameraFocusPoint FindFocusPoint()
     {
-        var all = UnityEngine.Object.FindObjectsByType<CameraFocusPoint>(FindObjectsSortMode.None);
+        var all = UnityEngine.Object.FindObjectsByType<CameraFocusPoint>();
         foreach (var p in all)
             if (p.focusId == focusId) return p;
         return null;
@@ -75,7 +75,7 @@ public sealed class FocusCameraNode : NarrativeNode
 
         // --- CUT IN ---
         // Pausar el DayNightCycle para que no sobreescriba la niebla durante el foco
-        var dayNight = UnityEngine.Object.FindFirstObjectByType<DayNightCycle>();
+        var dayNight = UnityEngine.Object.FindAnyObjectByType<DayNightCycle>();
         bool dayNightWasEnabled = dayNight != null && dayNight.enabled;
         if (dayNight != null) dayNight.enabled = false;
 

@@ -25,7 +25,7 @@ class HeightFogLWRPGUI : BaseShaderGUI
         AlbedoAlpha,
     }
 
-    private static class Styles
+    private new static class Styles
     {
         public static GUIContent albedoText =
             new GUIContent("Albedo", "Albedo (RGB) and Transparency (A)");

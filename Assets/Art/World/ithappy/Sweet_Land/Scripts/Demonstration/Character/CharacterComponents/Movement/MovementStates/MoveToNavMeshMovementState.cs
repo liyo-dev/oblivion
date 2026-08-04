@@ -82,7 +82,12 @@ namespace ithappy
             {
                 return;
             }
-            
+
+            // NOTA: OffMeshLinkData.offMeshLink está obsoleto (usar .owner), pero el sistema de
+            // ObstaclePath/ObstacleGroup sigue usando componentes OffMeshLink (ver nota en esos archivos,
+            // ligada a datos ya serializados en LadderPoint.prefab usado en CandyLand.unity).
+            // Se suprime el warning en vez de migrar para no romper esa dependencia de datos.
+#pragma warning disable 618
             if (!_isLinkOccupied && _context.Agent.nextOffMeshLinkData.offMeshLink != null
                                  && _context.Agent.nextOffMeshLinkData.offMeshLink.occupied
                                  && (Vector3.Distance(_context.MoveParent.position,
@@ -101,6 +106,7 @@ namespace ithappy
                 _isLinkOccupied = false;
                 _context.Agent.updatePosition = true;
             }
+#pragma warning restore 618
             
             if (_context.Agent.isOnOffMeshLink)
             {

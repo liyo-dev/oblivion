@@ -97,7 +97,7 @@ public class ProfileReadySubscriptionAnalyzer : MonoBehaviour
         Debug.Log("[ProfileReadySubscriptionAnalyzer] 🔍 INICIANDO ANÁLISIS COMPLETO DE SUSCRIPCIONES OnProfileReady...");
 #endif
         
-        var allMonoBehaviours = FindObjectsOfType<MonoBehaviour>(includeInactive: true);
+        var allMonoBehaviours = FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include);
         
         var suspiciousSystems = new List<SuspiciousSystemInfo>();
         var safeSystems = new List<string>();

@@ -33,10 +33,7 @@ public class NPCSimpleAnimator : MonoBehaviour
     [Header("Animation Layers")]
     [Tooltip("Índice de la capa para animaciones de torso superior (ataques)")]
     [SerializeField] private int upperBodyLayer = 1;
-    
-    [Tooltip("Estado idle de la capa superior")]
-    [SerializeField] private string upperBodyIdleState = "UpperIdle";
-    
+
     [Header("Locomotion Settings")]
     [Tooltip("Velocidad mínima para considerar que está en movimiento")]
     [SerializeField, Range(0.01f, 0.5f)] private float movementThreshold = 0.1f;
@@ -53,9 +50,6 @@ public class NPCSimpleAnimator : MonoBehaviour
     [Header("Rotation Settings")]
     [Tooltip("Velocidad de rotación del NPC (grados/segundo)")]
     [SerializeField, Range(90f, 720f)] private float rotationSpeed = 360f;
-    
-    [Tooltip("Suavizado de rotación")]
-    [SerializeField, Range(0f, 1f)] private float rotationSmoothness = 0.15f;
     
     [Tooltip("Ángulo mínimo para considerar que debe rotar")]
     [SerializeField, Range(1f, 45f)] private float minRotationAngle = 5f;

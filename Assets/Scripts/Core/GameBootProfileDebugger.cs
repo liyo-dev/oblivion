@@ -58,7 +58,7 @@ public class GameBootProfileDebugger : MonoBehaviour
 
         if (!saveSystem)
         {
-            saveSystem = FindFirstObjectByType<SaveSystem>();
+            saveSystem = FindAnyObjectByType<SaveSystem>();
         }
     }
 
@@ -238,19 +238,19 @@ public class GameBootProfileDebugger : MonoBehaviour
         // === SECCIÓN: Comparación con Sistemas Vivos ===
         DrawSection("Estado de Sistemas Vivos", () =>
         {
-            var healthSystem = FindFirstObjectByType<PlayerHealthSystem>();
+            var healthSystem = FindAnyObjectByType<PlayerHealthSystem>();
             if (healthSystem)
             {
                 DrawKeyValue("PlayerHealth (vivo)", $"{healthSystem.CurrentHealth:F0}/{healthSystem.MaxHealth:F0}");
             }
 
-            var manaPool = FindFirstObjectByType<ManaPool>();
+            var manaPool = FindAnyObjectByType<ManaPool>();
             if (manaPool)
             {
                 DrawKeyValue("ManaPool (vivo)", $"{manaPool.Current:F0}/{manaPool.Max:F0}");
             }
 
-            var actionManager = FindFirstObjectByType<PlayerActionManager>();
+            var actionManager = FindAnyObjectByType<PlayerActionManager>();
             if (actionManager)
             {
                 GUILayout.Label("PlayerActionManager (vivo):", labelStyle);
@@ -397,7 +397,7 @@ public class GameBootProfileDebugger : MonoBehaviour
     /// <summary>Helper estático para loggear operaciones desde cualquier lugar</summary>
     public static void Log(string operation, string details, LogType type = LogType.Log)
     {
-        var debugger = FindFirstObjectByType<GameBootProfileDebugger>();
+        var debugger = FindAnyObjectByType<GameBootProfileDebugger>();
         if (debugger)
         {
             debugger.LogOperation(operation, details, type);

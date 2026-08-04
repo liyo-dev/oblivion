@@ -73,10 +73,10 @@ public class GameBootService : MonoBehaviour
     {
         if (_instance != null) return;
 
-        // Con BeforeSceneLoad no hay escena cargada aún, FindFirstObjectByType siempre retorna null.
+        // Con BeforeSceneLoad no hay escena cargada aún, FindAnyObjectByType siempre retorna null.
         // NO crear instancia dinámica: carecería del _bootProfileAsset serializado, rompiendo builds.
         // Start.unity siempre contiene el componente con el perfil asignado; su Awake() lo registra.
-        var existing = FindFirstObjectByType<GameBootService>();
+        var existing = FindAnyObjectByType<GameBootService>();
         if (existing)
         {
             _instance = existing;
@@ -91,7 +91,7 @@ public class GameBootService : MonoBehaviour
         // es posible que las referencias estáticas se pierdan.
         if (Application.isPlaying && _instance == null)
         {
-            _instance = FindFirstObjectByType<GameBootService>();
+            _instance = FindAnyObjectByType<GameBootService>();
             if (_instance)
             {
                 Debug.Log("[GameBootService] 🔄 Referencia estática restaurada tras recarga de scripts.");
@@ -139,7 +139,7 @@ public class GameBootService : MonoBehaviour
         }
 
         // Inicializar el sistema de guardado
-        _saveSystem = FindFirstObjectByType<SaveSystem>();
+        _saveSystem = FindAnyObjectByType<SaveSystem>();
         if (_saveSystem == null)
         {
             var saveGo = new GameObject("[SaveSystem]");
@@ -173,7 +173,7 @@ public class GameBootService : MonoBehaviour
         Debug.Log($"[GameBootService] 📢 Disparando OnProfileReady (componentes listos para recibir)");
         OnProfileReady?.Invoke();
         
-        var diagnostics = FindFirstObjectByType<ProfileReadyDiagnostics>();
+        var diagnostics = FindAnyObjectByType<ProfileReadyDiagnostics>();
         if (diagnostics != null)
         {
             diagnostics.HandleProfileReadyForDiagnostics();
@@ -279,7 +279,7 @@ public class GameBootService : MonoBehaviour
         if (!_profile.ShouldBootFromPreset())
         {
             // Aplicar el preset por defecto al jugador
-            var playerPresetService = FindFirstObjectByType<PlayerPresetService>();
+            var playerPresetService = FindAnyObjectByType<PlayerPresetService>();
             if (playerPresetService != null)
             {
                 playerPresetService.ApplyCurrentPreset();

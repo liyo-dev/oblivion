@@ -31,7 +31,7 @@ public static class CharacterCreatorPersistence
     static void SaveCurrentSelection()
     {
         // Buscar el builder en la escena
-        var builder = Object.FindFirstObjectByType<ModularAutoBuilder>();
+        var builder = Object.FindAnyObjectByType<ModularAutoBuilder>();
         if (builder)
         {
             // Obtener la selección por reflexión para no depender de PartCat

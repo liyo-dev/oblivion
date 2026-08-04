@@ -233,7 +233,7 @@ public class HeightFogGUI : ShaderGUI
             EditorGUILayout.BeginHorizontal();
             GUILayout.Label(Styles.fogEmissionColor, GUILayout.Width(130f));
             fogEmissionColor.colorValue = EditorGUILayout.ColorField(GUIContent.none, fogEmissionColor.colorValue,
-                false, false, true, new ColorPickerHDRConfig(-10, 10, -10, 10));
+                false, false, true);
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.BeginHorizontal();
             GUILayout.Label(Styles.fogEmissionPower, GUILayout.Width(130f));

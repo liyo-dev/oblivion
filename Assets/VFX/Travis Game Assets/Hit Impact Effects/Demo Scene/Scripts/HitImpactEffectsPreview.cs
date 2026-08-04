@@ -25,7 +25,7 @@ namespace TravisGameAssets
 		public Image floorIcon;
 		public Image slowMotionIcon;
 		
-		public new GameObject light;
+		public GameObject light;
 		
 		private GameObject[] hitEffects;
 

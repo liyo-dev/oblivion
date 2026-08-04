@@ -10,10 +10,6 @@ public class SavePoint : MonoBehaviour
     public bool teleportAfterSave;
     public string teleportAnchorId;
 
-    [Header("Feedback")]
-    [SerializeField] private string saveSuccessLocalizationKey = "SAVEPOINT_SAVED";
-    [SerializeField] private string saveSuccessFallback = "¡Partida guardada con éxito!";
-
     CanvasGroup _promptCg;
     GameObject _playerInRange; // cache del jugador dentro del trigger
 
@@ -72,7 +68,7 @@ public class SavePoint : MonoBehaviour
         }
 
         // ✅ Verificar si el nodo narrativo actual bloquea el guardado
-        var narrativeRunner = FindObjectOfType<NarrativeRunner>();
+        var narrativeRunner = FindAnyObjectByType<NarrativeRunner>();
         if (narrativeRunner != null && narrativeRunner.IsCurrentNodeBlockingSave)
         {
             Debug.Log("[SavePoint] No se puede guardar: el nodo narrativo actual bloquea el guardado.");

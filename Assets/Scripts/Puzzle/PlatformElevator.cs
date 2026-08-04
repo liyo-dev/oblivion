@@ -236,7 +236,7 @@ public class PlatformElevator : MonoBehaviour
         // Destruir VFX cuando termina el movimiento (si había VFX)
         if (_currentVFX != null)
         {
-            Destroy(_currentVFX, 0.5f); // Pequeño delay para que termine la animación
+            Destroy(_currentVFX, vfxLifetime); // Delay configurable para que termine la animación
             _currentVFX = null;
         }
     }

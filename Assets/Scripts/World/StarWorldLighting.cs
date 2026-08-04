@@ -30,7 +30,7 @@ public class StarWorldLighting : MonoBehaviour
 
     private void Start()
     {
-        _dayNightCycle = FindObjectOfType<DayNightCycle>();
+        _dayNightCycle = FindAnyObjectByType<DayNightCycle>();
 
         if (_dayNightCycle != null)
             _dayNightCycle.enabled = false;

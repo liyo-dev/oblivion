@@ -5,7 +5,11 @@ using UnityEngine;
 public class NarrativeRunner : MonoBehaviour
 {
     public NarrativeGraph graph;
-    public SimpleBlackboard Blackboard = new SimpleBlackboard();
+
+    // SimpleBlackboard no es [Serializable] (usa Dictionary<string, object> internamente); Unity ya
+    // lo saltaba al serializar. [NonSerialized] documenta esto y silencia el warning del analizador.
+    // El guardado/restaurado real de su contenido pasa por ExportToSerializable/ImportFromSerializable.
+    [System.NonSerialized] public SimpleBlackboard Blackboard = new SimpleBlackboard();
 
     [SerializeField] private DefaultNarrativeSignals signalsProvider;
 

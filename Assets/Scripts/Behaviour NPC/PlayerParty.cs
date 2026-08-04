@@ -23,7 +23,7 @@ namespace Game.NPC
         {
             if (_instance != null) return;
             
-            var existing = FindFirstObjectByType<PlayerParty>();
+            var existing = FindAnyObjectByType<PlayerParty>();
             if (existing != null)
             {
                 _instance = existing;
@@ -45,7 +45,7 @@ namespace Game.NPC
             {
                 if (_instance == null)
                 {
-                    _instance = FindFirstObjectByType<PlayerParty>();
+                    _instance = FindAnyObjectByType<PlayerParty>();
                     if (_instance == null)
                     {
                         var go = new GameObject("PlayerParty");
@@ -68,9 +68,6 @@ namespace Game.NPC
         [Header("Teleport Settings")]
         [Tooltip("Radio alrededor del jugador donde reaparecerán los compañeros")]
         [SerializeField] private float teleportRadius = 2f; // CAMBIADO: Más cerca (era 3f)
-        
-        [Tooltip("Distancia mínima del jugador para el teleport")]
-        [SerializeField] private float minTeleportDistance = 1.5f; // CAMBIADO: Más cerca (era 2f)
         #endregion
 
         #region State
@@ -755,9 +752,7 @@ namespace Game.NPC
         /// </summary>
         private void HideNonPartyNPCs()
         {
-            var allPartyMembers = UnityEngine.Object.FindObjectsByType<NPCPartyMember>(
-                UnityEngine.FindObjectsInactive.Exclude,
-                UnityEngine.FindObjectsSortMode.None);
+            var allPartyMembers = UnityEngine.Object.FindObjectsByType<NPCPartyMember>(UnityEngine.FindObjectsInactive.Exclude);
 
             foreach (var member in allPartyMembers)
             {
@@ -849,7 +844,7 @@ namespace Game.NPC
                 if (npcManager == null)
                 {
                     Log($"  🔍 ÚLTIMO RECURSO: Buscando en escena...");
-                    var allPartyMembers = UnityEngine.Object.FindObjectsByType<NPCPartyMember>(UnityEngine.FindObjectsSortMode.None);
+                    var allPartyMembers = UnityEngine.Object.FindObjectsByType<NPCPartyMember>();
                     Log($"  📋 {allPartyMembers.Length} NPCPartyMember encontrados en escena");
                     
                     var idLower = id.ToLowerInvariant().Replace("_", "").Replace(" ", "");

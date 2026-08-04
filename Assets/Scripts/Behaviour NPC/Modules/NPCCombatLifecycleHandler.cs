@@ -35,6 +35,14 @@ namespace Game.NPC.Modules
         [SerializeField] private float deathSlowMoDuration = 1.0f;
         [SerializeField] private GameObject deathVFXPrefab;
         [SerializeField] private Vector3 deathVFXOffset = Vector3.up;
+
+        [Header("💀 Death Sequence - Cámara cinematográfica")]
+        [Tooltip("Factor de zoom del FOV hacia el enemigo derrotado (1 = sin zoom, <1 = acercar). Comunica que la pausa es intencional en vez de sentirse como un cuelgue.")]
+        [SerializeField, Range(0.5f, 1f)] private float deathZoomFactor = 0.85f;
+        [Tooltip("Duración del zoom de entrada hacia el enemigo")]
+        [SerializeField, Range(0f, 0.5f)] private float deathZoomDuration = 0.15f;
+        [Tooltip("Duración de la vuelta a la normalidad (FOV y ritmo) al terminar el slow-mo")]
+        [SerializeField, Range(0f, 1f)] private float deathReturnDuration = 0.35f;
         #endregion
 
         #region 🔌 Dependencies
@@ -136,7 +144,10 @@ namespace Game.NPC.Modules
                 _damageable.OnDamaged -= OnDamaged;
                 _damageable.OnDied -= OnDied;
             }
-            // Salvaguarda final por si se destruye durante slow-mo
+            // Salvaguarda final por si se destruye durante slow-mo: cancelamos el efecto cinematográfico
+            // (restaura FOV y libera _isEffectActive, si no quedaría bloqueado para la próxima muerte)
+            // y forzamos el timeScale por si acaso.
+            FeedbackService.CancelDeathEffect();
             if (Time.timeScale < 0.99f || Time.timeScale > 1.01f) Time.timeScale = 1f;
         }
 
@@ -191,9 +202,12 @@ namespace Game.NPC.Modules
             
             if (isLethalHit && enableDeathEffects)
             {
-                Debug.Log($"[Lifecycle] 💀 GOLPE LETAL detectado - Aplicando slow motion durante animación de Hit");
+                Debug.Log($"[Lifecycle] 💀 GOLPE LETAL detectado - Aplicando slow motion cinematográfico durante animación de Hit");
                 FeedbackService.CameraShake(cameraShakeIntensity * 2f, 0.5f);
-                Time.timeScale = deathSlowMoScale;
+                // ✅ Usamos el efecto cinematográfico (zoom + easing de entrada/salida) en vez de un
+                // Time.timeScale seco: el corte instantáneo se sentía como un cuelgue en vez de un
+                // golpe deliberado. El zoom hacia el enemigo comunica que la pausa es intencional.
+                FeedbackService.TriggerDeathEffect(transform, deathSlowMoScale, deathSlowMoDuration, deathZoomFactor, deathZoomDuration, deathReturnDuration);
             }
 
             // 1. Feedback Visual/Sonoro
@@ -208,11 +222,11 @@ namespace Game.NPC.Modules
             // 3. Esperar Stun (usar WaitForSecondsRealtime si está en slow-mo)
             if (isLethalHit && enableDeathEffects)
             {
-                // Durante slow-mo, esperar un poco para ver la animación de Hit
+                // El propio FeedbackService.TriggerDeathEffect ya restaura Time.timeScale de forma
+                // suave (con zoom-out) al terminar su hold; aquí solo esperamos en tiempo real la
+                // misma duración para mantener sincronizado el stun del NPC con el efecto visual.
                 yield return new WaitForSecondsRealtime(deathSlowMoDuration);
-                // Restaurar time scale
-                Time.timeScale = 1f;
-                Debug.Log($"[Lifecycle] ⏱️ Slow motion terminado - Time scale restaurado");
+                Debug.Log($"[Lifecycle] ⏱️ Slow motion cinematográfico terminado");
             }
             else
             {

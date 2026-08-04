@@ -16,16 +16,6 @@ public class PlayerHealthSystem : MonoBehaviour
     [Tooltip("Si está activo, el jugador no puede morir (útil para testing)")]
     [SerializeField] private bool godMode; // por defecto false
 
-    [Header("Regeneración de Vida")]
-    [Tooltip("Activa la regeneración pasiva de vida")]
-    [SerializeField] private bool enableHealthRegen = true;
-    [Tooltip("Vida por segundo que se regenera")]
-    [SerializeField] private float healthRegenPerSecond = 3f;
-    [Tooltip("Retraso (segundos) después de recibir daño antes de empezar a regenerar")]
-    [SerializeField] private float healthRegenDelayAfterDamage = 2f;
-    [Tooltip("Evita micro-actualizaciones: margen mínimo de cambio antes de notificar UI")]
-    [SerializeField] private float healthRegenNotifyEpsilon = 0.01f;
-    
     [Header("Animaciones")]
     [Tooltip("Animaciones de daño (se alterna aleatoriamente entre ellas para variedad)")]
     [SerializeField] private string[] damageAnimationNames = new string[] { "TakeDamage", "TakeDamage_2" };

@@ -12,7 +12,6 @@ public class CollectiblePopupPanel : MonoBehaviour
     [SerializeField] private Image iconImage;
 
     [Header("Animation")]
-    [SerializeField] private float scaleInDuration = 0.12f;
     [SerializeField] private float fadeOutDuration = 0.2f;
 
     [Header("Slide")]

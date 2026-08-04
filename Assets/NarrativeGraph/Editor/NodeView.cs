@@ -8,6 +8,9 @@ namespace Sendero.Narrative.Editor
 {
     public class NodeView : Node
     {
+        // Se referencian intencionalmente tipos de nodo marcados [Obsolete] para que el editor
+        // siga coloreando/mostrando correctamente grafos narrativos viejos que aún los contengan.
+#pragma warning disable 618
         static readonly Dictionary<Type, Color> ExplicitPalette = new()
         {
             { typeof(StartNode),                new Color(0.11f, 0.58f, 0.95f) },
@@ -37,6 +40,7 @@ namespace Sendero.Narrative.Editor
             { typeof(ShowLorePopupNode),        new Color(0.72f, 0.55f, 0.22f) },
             { typeof(SetTimeOfDayNode),         new Color(0.18f, 0.52f, 0.72f) }
         };
+#pragma warning restore 618
 
         // Paleta de colores para capítulos
         static readonly Color[] ChapterColors =

@@ -10,7 +10,7 @@ namespace ithappy
         [SerializeField] private Transform characterSpawnPoint;
 
         [Header("Camera Settings")] [SerializeField]
-        private new EditorLikeCameraControllerBase camera;
+        private EditorLikeCameraControllerBase camera;
 
         private PlayerCharacterInputBase _character;
         private Vector3 _targetCameraPosition;

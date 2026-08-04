@@ -274,7 +274,7 @@ namespace Invector.vCharacterController
         {
             if (tpCamera == null)
             {
-                tpCamera = FindFirstObjectByType<vThirdPersonCamera>();
+                tpCamera = FindAnyObjectByType<vThirdPersonCamera>();
                 if (tpCamera == null) return;
 
                 tpCamera.SetMainTarget(this.transform);

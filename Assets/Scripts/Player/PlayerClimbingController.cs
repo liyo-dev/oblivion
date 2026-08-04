@@ -35,7 +35,6 @@ public class PlayerClimbingController : MonoBehaviour
     [Header("Animación")]
     [SerializeField] private string climbUpState = "ClimbUp_RM_NoWeapon";
     [SerializeField] private string climbDownState = "ClimbDown_RM_NoWeapon";
-    [SerializeField] private string climbIdleState = "ClimbIdle_RM_NoWeapon";
     [SerializeField, Tooltip("Índice de capa del Animator que contiene los estados de escalar. Base layer = 0.")]
     private int climbAnimatorLayer = 0;
 

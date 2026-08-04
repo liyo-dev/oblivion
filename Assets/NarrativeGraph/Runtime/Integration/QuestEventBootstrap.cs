@@ -13,10 +13,14 @@ using UnityEngine;
 [DefaultExecutionOrder(100)]
 public sealed class QuestEventBootstrap : MonoBehaviour
 {
+    // Campos sin uso a propósito: el componente está deprecado y su lógica (TryFire) está
+    // comentada más abajo. Se conservan para no perder los valores ya serializados en escenas.
+#pragma warning disable 414
     [SerializeField] private string questId;
     [SerializeField] private QuestState minimumState = QuestState.Completed;
     [SerializeField] private string eventKey;
     [SerializeField] private bool runOnce = true;
+#pragma warning restore 414
 
     bool _fired;
 

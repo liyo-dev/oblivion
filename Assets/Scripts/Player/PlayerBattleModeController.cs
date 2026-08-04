@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using Invector.vCharacterController;
+using Unity.Cinemachine;
 
 namespace Game.Player
 {
@@ -51,7 +53,23 @@ namespace Game.Player
         [Header("Audio")]
         [Tooltip("Clave del evento de audio para victoria (configurado en AudioGraphProfile)")]
         [SerializeField] private string victorySfxKey = "Npc_Battle_Victory";
-        
+
+        [Header("Cámara de Victoria")]
+        [Tooltip("Si está activo, durante la animación de victoria la cámara enfoca al jugador en vez de dejar la cámara de gameplay tal cual. Deja espacio en pantalla para los pop-ups de recompensa (próximo scope).")]
+        [SerializeField] private bool enableVictoryCamera = true;
+        [Tooltip("Distancia de la cámara de victoria al jugador")]
+        [SerializeField] private float victoryCamDistance = 2.8f;
+        [Tooltip("Altura de la cámara de victoria respecto al suelo del jugador")]
+        [SerializeField] private float victoryCamHeight = 1.6f;
+        [Tooltip("Ángulo (grados) respecto al forward del jugador en el momento de la victoria. Negativo = frente-izquierda, dejando el lado derecho de la pantalla libre para pop-ups.")]
+        [SerializeField] private float victoryCamYawOffsetDeg = -35f;
+        [Tooltip("Altura del punto al que mira la cámara (relativa a los pies del jugador)")]
+        [SerializeField] private float victoryCamLookHeight = 1.3f;
+        [Tooltip("FOV de la cámara de victoria (más cerrado que el de gameplay = más protagonismo del jugador)")]
+        [SerializeField] private float victoryCamFOV = 38f;
+        [Tooltip("Duración del blend de entrada/salida de la cámara de victoria")]
+        [SerializeField] private float victoryCamBlendSeconds = 0.4f;
+
 #if UNITY_EDITOR
         [Header("Debug")]
         [SerializeField] private bool debugMode;
@@ -71,6 +89,22 @@ namespace Game.Player
         /// Indica si actualmente se está reproduciendo la secuencia de victoria
         /// </summary>
         public bool IsPlayingVictory => _isPlayingVictory;
+
+        // --- Cámara de victoria ---
+        private CinemachineCamera _victoryVcam;
+        private bool _victoryVcamReady;
+        private CinemachineCamera _gameplayVcam;
+        private int _gameplayVcamOriginalPriority;
+        private CinemachineBrain _mainBrain;
+        private float _mainBrainOriginalBlendTime;
+        private bool _victoryCameraActive;
+
+        /// <summary>
+        /// Se dispara cuando la cámara de victoria ya está enfocando al jugador (tras el blend de entrada).
+        /// El sistema de recompensas post-batalla (próximo scope) puede escuchar este evento para
+        /// lanzar los pop-ups de items/XP conseguidos en la batalla, ya con el encuadre definitivo.
+        /// </summary>
+        public event Action OnVictoryCameraFocused;
         
         void Awake()
         {
@@ -344,14 +378,104 @@ namespace Game.Player
         public bool IsInBattleMode => _isInBattleMode;
         
         /// <summary>
+        /// Crea (una única vez, en runtime) la cámara virtual de victoria. No requiere ninguna
+        /// referencia asignada a mano en el Inspector: se construye y configura por código,
+        /// igual que hace DialogueCinematicController con su pool de cámaras.
+        /// </summary>
+        private void EnsureVictoryCamera()
+        {
+            if (_victoryVcamReady) return;
+
+            _gameplayVcam = ServiceLocator.Get<CinemachineCamera>(logIfMissing: false);
+
+            var camGo = new GameObject("PlayerVictoryVCam");
+            camGo.transform.SetParent(transform);
+            _victoryVcam = camGo.AddComponent<CinemachineCamera>();
+            _victoryVcam.Priority.Value = 0; // inactiva hasta que se active la victoria
+            _victoryVcam.Lens.FieldOfView = victoryCamFOV;
+            _victoryVcam.Lens.NearClipPlane = 0.1f;
+            _victoryVcam.Lens.FarClipPlane = 1000f;
+
+            if (Camera.main != null)
+                _mainBrain = Camera.main.GetComponent<CinemachineBrain>();
+
+            _victoryVcamReady = true;
+        }
+
+        /// <summary>
+        /// Activa la cámara de victoria enfocando al jugador. Encuadre en 3/4 lateral con espacio
+        /// libre en pantalla (ver victoryCamYawOffsetDeg) pensado para los pop-ups de recompensa
+        /// que se añadirán en el próximo scope.
+        /// </summary>
+        private void ActivateVictoryCamera()
+        {
+            if (!enableVictoryCamera) return;
+
+            EnsureVictoryCamera();
+            if (_victoryVcam == null) return;
+
+            Vector3 flatForward = transform.forward;
+            flatForward.y = 0f;
+            if (flatForward.sqrMagnitude < 0.0001f) flatForward = Vector3.forward;
+            flatForward.Normalize();
+
+            Quaternion yaw = Quaternion.AngleAxis(victoryCamYawOffsetDeg, Vector3.up);
+            Vector3 offsetDir = yaw * (-flatForward);
+            Vector3 camPos = transform.position + offsetDir * victoryCamDistance + Vector3.up * victoryCamHeight;
+            Vector3 lookAt = transform.position + Vector3.up * victoryCamLookHeight;
+
+            _victoryVcam.transform.position = camPos;
+            _victoryVcam.transform.rotation = Quaternion.LookRotation((lookAt - camPos).normalized, Vector3.up);
+            _victoryVcam.Target.TrackingTarget = transform;
+
+            if (_gameplayVcam != null)
+            {
+                _gameplayVcamOriginalPriority = _gameplayVcam.Priority.Value;
+            }
+
+            if (_mainBrain != null)
+            {
+                _mainBrainOriginalBlendTime = _mainBrain.DefaultBlend.Time;
+                _mainBrain.DefaultBlend.Time = victoryCamBlendSeconds;
+            }
+
+            _victoryVcam.Priority.Value = (_gameplayVcam != null ? _gameplayVcam.Priority.Value : 10) + 10;
+            _victoryCameraActive = true;
+
+#if UNITY_EDITOR
+            if (debugMode)
+                Debug.Log($"[PlayerBattleMode] 🎥 Cámara de victoria activada (pos: {camPos})");
+#endif
+        }
+
+        /// <summary>
+        /// Restaura la prioridad de la cámara de gameplay y el blend por defecto del brain.
+        /// </summary>
+        private void DeactivateVictoryCamera()
+        {
+            if (!_victoryCameraActive) return;
+
+            if (_victoryVcam != null)
+                _victoryVcam.Priority.Value = 0;
+
+            if (_gameplayVcam != null)
+                _gameplayVcam.Priority.Value = _gameplayVcamOriginalPriority;
+
+            if (_mainBrain != null)
+                _mainBrain.DefaultBlend.Time = _mainBrainOriginalBlendTime;
+
+            _victoryCameraActive = false;
+        }
+
+        /// <summary>
         /// Secuencia de victoria con animación y música
         /// </summary>
         IEnumerator PlayVictorySequence()
         {
             _isPlayingVictory = true;
-            
+
             Debug.Log($"[PlayerBattleMode] 🎉 ✅ INICIANDO ANIMACIÓN DE VICTORIA");
-            
+
             // Deshabilitar control del jugador temporalmente usando campos públicos de Invector
             if (controller != null)
             {
@@ -362,7 +486,15 @@ namespace Game.Player
             {
                 Debug.LogWarning($"[PlayerBattleMode] ⚠️ Controller es NULL - no se puede deshabilitar");
             }
-            
+
+            // Bloquear input mientras dura la victoria (patrón oficial del proyecto: pila de modos)
+            if (actionManager != null)
+                actionManager.PushMode(ActionMode.Cinematic);
+
+            // Enfocar la cámara en el jugador para que se vea bien la animación de victoria
+            // y quede espacio en pantalla para los pop-ups de recompensa (próximo scope)
+            ActivateVictoryCamera();
+
             // Reproducir animación de victoria
             if (animator != null)
             {
@@ -399,16 +531,29 @@ namespace Game.Player
                 Debug.LogWarning($"[PlayerBattleMode] ⚠️ AudioService.Instance es NULL - no se puede reproducir música");
             }
             
+            // Esperar a que la cámara de victoria termine su blend de entrada antes de avisar de que
+            // ya está enfocando al jugador (el sistema de recompensas del próximo scope usará esto)
+            if (_victoryCameraActive)
+            {
+                yield return new WaitForSeconds(victoryCamBlendSeconds);
+                OnVictoryCameraFocused?.Invoke();
+            }
+
             // Esperar duración de la animación
             Debug.Log($"[PlayerBattleMode] ⏱️ Esperando {victoryAnimationDuration}s (duración de animación de victoria)");
-            yield return new WaitForSeconds(victoryAnimationDuration);
-            
+            yield return new WaitForSeconds(Mathf.Max(0f, victoryAnimationDuration - (_victoryCameraActive ? victoryCamBlendSeconds : 0f)));
+
             Debug.Log($"[PlayerBattleMode] 🔄 Terminando animación de victoria - restaurando control del jugador");
-            
+
             // IMPORTANTE: Resetear el flag ANTES de re-habilitar el control
             // Esto permite que el Update() vuelva a funcionar normalmente
             _isPlayingVictory = false;
-            
+
+            // Liberar la cámara de victoria y el bloqueo de input, en orden inverso a como se activaron
+            DeactivateVictoryCamera();
+            if (actionManager != null)
+                actionManager.PopMode(ActionMode.Cinematic);
+
             // Re-habilitar control del jugador
             // La animación de victoria tiene exit time configurado en el Animator
             // que automáticamente transiciona a locomotion, por lo que NO necesitamos

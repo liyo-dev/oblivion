@@ -19,7 +19,6 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     [SerializeField, Range(0f, 0.2f)] private float screenEdgePadding = 0.03f;
 
     [Header("Targeting Automático")]
-    [SerializeField] private bool autoTargetByLayer = true;
     [SerializeField] private bool requireDamageableAlive = true;
 
     [Header("Feedback de Target")]

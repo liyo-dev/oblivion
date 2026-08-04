@@ -28,6 +28,7 @@ public class UISelectVisual : MonoBehaviour, ISelectHandler, IDeselectHandler, I
     Tween _scaleTween;
     Tween _colorTween;
     Tween _pulseTween;
+    Tween _punchTween;
     Vector3 _baseScale;
     Shadow _shadow;
 
@@ -61,6 +62,7 @@ public class UISelectVisual : MonoBehaviour, ISelectHandler, IDeselectHandler, I
         _scaleTween?.Kill();
         _colorTween?.Kill();
         _pulseTween?.Kill();
+        _punchTween?.Kill();
     }
 
     public void OnSelect(BaseEventData eventData) => PlaySelect(true);
@@ -92,9 +94,18 @@ public class UISelectVisual : MonoBehaviour, ISelectHandler, IDeselectHandler, I
         if (selected && enableShadowPunch && _shadow)
         {
             var orig = _shadow.effectDistance;
-            _shadow.DOPunchEffectDistance(punchStrength, punchDuration, punchVibrato, 0.5f)
+            var shadowRef = _shadow;
+            // Guardado en _punchTween (y no descartado como antes) para que KillTweens()
+            // en OnDisable/OnEnable pueda detenerlo si el botón se desactiva/destruye a
+            // mitad de la animación: si no, DOTween sigue intentando escribir
+            // shadowRef.effectDistance tras la destrucción del objeto y dispara el warning
+            // "The object of type 'UnityEngine.UI.Shadow' has been destroyed...".
+            _punchTween = shadowRef.DOPunchEffectDistance(punchStrength, punchDuration, punchVibrato, 0.5f)
                    .SetUpdate(true)
-                   .OnComplete(() => _shadow.effectDistance = orig);
+                   .OnComplete(() =>
+                   {
+                       if (shadowRef) shadowRef.effectDistance = orig;
+                   });
         }
     }
 }

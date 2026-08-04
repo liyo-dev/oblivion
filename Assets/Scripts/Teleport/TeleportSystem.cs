@@ -73,7 +73,7 @@ public class TeleportSystem : MonoBehaviour
     {
         // Auto-buscar TeleportUI si no está asignada
         if (teleportUI == null)
-            teleportUI = FindFirstObjectByType<TeleportUI>();
+            teleportUI = FindAnyObjectByType<TeleportUI>();
     }
     
     /// <summary>
@@ -96,7 +96,7 @@ public class TeleportSystem : MonoBehaviour
         
         if (teleportUI == null)
         {
-            teleportUI = FindFirstObjectByType<TeleportUI>();
+            teleportUI = FindAnyObjectByType<TeleportUI>();
             if (teleportUI == null)
             {
                 Debug.LogError("[TeleportSystem] No se encontró TeleportUI en la escena.");

@@ -40,7 +40,6 @@ public class TabernaSequencer : CinematicSequencerBase
     [SerializeField] private Transform _liamApproachTarget;
     [Tooltip("Punto al que huye Liam al final")]
     [SerializeField] private Transform _liamFleeTarget;
-    [SerializeField] private float _liamWalkSpeed = 2f;
 
     [Header("Asientos — NPCWorldPoints")]
     [Tooltip("NPCWorldPoint de la silla de Will (el jugador se teletransporta aquí al inicio)")]
@@ -54,10 +53,6 @@ public class TabernaSequencer : CinematicSequencerBase
     [Tooltip("Platos que aparecen en la mesa al llegar la comida. Deben estar inactivos por defecto.")]
     [SerializeField] private GameObject[] _foodObjects;
     [SerializeField] private float _foodFadeDuration = 0.35f;
-
-    [Header("Huida")]
-    [SerializeField] private float _fleeSpeed   = 5f;
-    [SerializeField] private float _fleeTimeout = 3.5f;
 
     [Header("Cámara — planos")]
     [Tooltip("Los tres sentados en la mesa")]
@@ -76,7 +71,6 @@ public class TabernaSequencer : CinematicSequencerBase
     [Header("Fase 0 — El grupo discute")]
     [SerializeField] private string     _keyEldran01      = "EVT_TAB_ELDRAN_01";
     [SerializeField] private NPCEmotion _emotionEldran01  = NPCEmotion.Thinking;
-    [SerializeField] private string     _animEldran01     = "Thinking01";
     [SerializeField] private float      _eldran01Duration = 3.5f;
 
     [SerializeField] private string     _keyWill01        = "EVT_TAB_WILL_01";

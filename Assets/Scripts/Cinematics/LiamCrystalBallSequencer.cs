@@ -91,8 +91,6 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
     // ── Timings generales ─────────────────────────────────────────────────────
 
     [Header("Timings generales")]
-    [SerializeField] private float fadeInDuration    = 0.4f;
-    [SerializeField] private float fadeOutDuration   = 0.5f;
     [Tooltip("Duración del dolly back al plano wide (0 = sin dolly)")]
     [SerializeField] private float wideShotBlendTime = 1.2f;
 

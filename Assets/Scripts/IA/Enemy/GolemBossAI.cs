@@ -167,7 +167,6 @@ public class GolemBossAI : MonoBehaviour
     private float _lastChargeTime = -999f;
     private float _lastContactDamageTime = -999f; // Timer para daño por contacto
     private bool _isAttacking;
-    private bool _isJumping;
     private bool _isCharging;
     private bool _hasSpawned;
     private bool _isDead;
@@ -1273,7 +1272,6 @@ public class GolemBossAI : MonoBehaviour
     private IEnumerator JumpAttack()
     {
         _isAttacking = true;
-        _isJumping = true;
         _currentState = BossState.Jumping;
         _lastJumpAttackTime = Time.time;
         _lastAttackTime = Time.time;
@@ -1290,7 +1288,6 @@ public class GolemBossAI : MonoBehaviour
         if (!player)
         {
             _isAttacking = false;
-            _isJumping = false;
             yield break;
         }
         
@@ -1379,8 +1376,7 @@ public class GolemBossAI : MonoBehaviour
         yield return new WaitForSeconds(1.0f);
         
         _isAttacking = false;
-        _isJumping = false;
-        
+
         Log("🦘 Salto completado");
     }
     

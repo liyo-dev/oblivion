@@ -102,8 +102,6 @@ public class MagicProjectile : MonoBehaviour
         RefreshHasRigidbody();
     }
 
-    bool _ttlScheduled;
-
     void OnEnable()
     {
         _spawnPos  = transform.position;
@@ -113,12 +111,10 @@ public class MagicProjectile : MonoBehaviour
         _spawnGraceEnd = Time.time + 0.05f;
 
         // Si el propio componente define un TTL, usarlo ya desde OnEnable
-        _ttlScheduled = false;
         CancelInvoke(nameof(EndByTTL));
         if (lifeTimeSeconds > 0f)
         {
             Invoke(nameof(EndByTTL), lifeTimeSeconds);
-            _ttlScheduled = true;
         }
 
         // Seguridad extra: si hay RB y se configuró gravedad
@@ -140,7 +136,6 @@ public class MagicProjectile : MonoBehaviour
         {
             CancelInvoke(nameof(EndByTTL));
             Invoke(nameof(EndByTTL), _cfg.lifeTime);
-            _ttlScheduled = true;
         }
 
         // Ignorar colisiones con el instigador

@@ -173,20 +173,13 @@ public class TagMinigameController : MonoBehaviour
     [SerializeField] private string exitHintMessage = "MINIGAME_TAG_EXIT_HINT";
     [Tooltip("Clave de traducción con las instrucciones del minijuego (mostrado antes de comenzar).")]
     [SerializeField] private string instructionMessage = "MINIGAME_TAG_INSTRUCTION";
-    [Tooltip("Clave de traducción del prompt de inicio (ej: '— Pulsa [A] para empezar —').")]
-    [SerializeField] private string startPromptMessage = "MINIGAME_TAG_START_PROMPT";
-    [SerializeField] private string startMessage = "MINIGAME_TAG_START";
-    [SerializeField] private string caughtMessage = "MINIGAME_TAG_CAUGHT";
-    [SerializeField] private string winMessage = "MINIGAME_TAG_WIN";
     [SerializeField] private string countdownTaskDescription = "MINIGAME_TAG_COUNTDOWN";
     [SerializeField] private bool showEscapeCountdown = false;
     [Tooltip("Clave de traducción del mensaje que aparece tras la victoria con cuenta atrás de huida.")]
     [SerializeField] private string escapeMessage = "MINIGAME_TAG_ESCAPE";
     [Tooltip("Segundos de cuenta atrás de huida.")]
     [SerializeField] private float escapeCountdownDuration = 10f;
-    [SerializeField] private string protectNpcMessageFormat = "MINIGAME_TAG_PROTECT_NPC";
     [SerializeField] private string objectiveFormat = "MINIGAME_TAG_OBJECTIVE";
-    [SerializeField] private string timeFailedMessage = "MINIGAME_TAG_TIMEOUT";
 
     [Header("UI — Pantalla de Instrucciones (Botón Salir)")]
     [Tooltip("Botón para abandonar el minijuego desde la pantalla de instrucciones.")]
@@ -508,7 +501,7 @@ public class TagMinigameController : MonoBehaviour
         if (CountValidProtectTargets() > 0) return;
 
         int desiredCount = Mathf.Max(1, autoPopulateTargetCount);
-        var allNpcManagers = FindObjectsOfType<NPCBehaviourManagerV2>(true);
+        var allNpcManagers = FindObjectsByType<NPCBehaviourManagerV2>(FindObjectsInactive.Include);
         if (allNpcManagers == null || allNpcManagers.Length == 0)
             return;
 

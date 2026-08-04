@@ -109,7 +109,6 @@ public sealed class AudioService : MonoBehaviour
 
         // Escenas
         SceneManager.sceneLoaded   += OnSceneLoaded;
-        SceneManager.sceneUnloaded += OnSceneUnloaded;
 
         // Señales (incluye inactivos)
         _signals = DefaultNarrativeSignals.Instance
@@ -130,7 +129,6 @@ public sealed class AudioService : MonoBehaviour
     void OnDestroy()
     {
         SceneManager.sceneLoaded   -= OnSceneLoaded;
-        SceneManager.sceneUnloaded -= OnSceneUnloaded;
 
         if (_signals != null)
         {
@@ -258,32 +256,15 @@ public sealed class AudioService : MonoBehaviour
     }
 
     // ===========================================================
-    // Escenas (normales y aditivas/cinemáticas)
+    // Escenas
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         EnsureSignalsAndWireNow();
         if (profile == null) return;
 
+        // Las escenas aditivas no disparan música propia (feature de cinemáticas aditivas eliminada).
         if (mode == LoadSceneMode.Additive)
         {
-            var rule = FindAdditiveRuleFor(scene.name);
-            if (rule != null)
-            {
-                if (rule.duckInsteadOfReplace)
-                {
-                    StartDuck(rule.duckTo, rule.fade);
-                }
-                else
-                {
-                    // REPLACE: apila la música actual y sustituye por la de la cinemática
-                    var current = GetCurrentMusicClip();
-                    _musicStack.Push(new MusicStackItem { clip = current });
-                    if (rule.music != null && current != rule.music)
-                        PlayMusic(rule.music, rule.fade);
-                    else if (rule.music != null && current == rule.music)
-                        PlayMusic(rule.music, rule.fade); // fast-path evita reinicio
-                }
-            }
             return;
         }
 
@@ -308,108 +289,6 @@ public sealed class AudioService : MonoBehaviour
         // si ninguna regla coincide, _lastRequestedSceneClip se queda null
     }
 
-    void OnSceneUnloaded(Scene scene)
-    {
-        if (profile == null) return;
-        var rule = FindAdditiveRuleFor(scene.name);
-        if (rule == null) return;
-
-        if (rule.duckInsteadOfReplace)
-        {
-            StopDuck(rule.fade);
-        }
-        else
-        {
-            // REPLACE: difiere la restauración 1 frame para ver qué música pide la nueva escena base
-            StartCoroutine(HandleAdditiveUnloadRestore(rule.fade));
-        }
-    }
-
-    IEnumerator HandleAdditiveUnloadRestore(float fade)
-    {
-        // Dar un frame para que la nueva escena base haga su OnSceneLoaded y fije _lastRequestedSceneClip
-        yield return null;
-
-        // Si hay batalla o minijuego activo, no restauramos música de base.
-        if (_battleActive || _minigameActive)
-            yield break;
-
-        var current = GetCurrentMusicClip();
-        // Si la nueva escena base quiere continuar EXACTAMENTE con el clip actual, no restaures
-        if (_lastRequestedSceneClip != null && current == _lastRequestedSceneClip)
-        {
-            // Consumimos la entrada del stack asociada a la cinemática para no dejar basura
-            if (_musicStack.Count > 0) _musicStack.Pop();
-            yield break;
-        }
-
-        // Si no hay continuidad, restaurar lo que sonaba antes de la cinemática.
-        // Si el stack guardó null (nada sonaba cuando cargó la escena aditiva), usar _lastRequestedSceneClip.
-        if (_musicStack.Count > 0)
-        {
-            var prev = _musicStack.Pop();
-            if (prev.clip != null)
-                PlayMusic(prev.clip, fade);
-            else if (_lastRequestedSceneClip != null)
-                PlayMusic(_lastRequestedSceneClip, fade);
-            else
-                StopMusic(fade);
-        }
-
-        // Salvaguarda adicional (opcional): si la cinemática define una escena base a restaurar
-        // y no se ha restaurado nada (o la base no pidió música), forzar la música de esa escena.
-        // Buscamos la última regla aditiva activa en las escenas actualmente cargadas.
-        if (profile != null && profile.additiveCinematics != null)
-        {
-            // Buscar alguna regla cuya restoreBaseSceneName esté configurada
-            for (int i = 0; i < profile.additiveCinematics.Count; i++)
-            {
-                var r = profile.additiveCinematics[i];
-                if (r == null) continue;
-                if (string.IsNullOrWhiteSpace(r.restoreBaseSceneName)) continue;
-
-                // Encontrar en SceneMusic el clip asociado a esa escena base por substring
-                var targetClip = FindSceneMusicClipByName(r.restoreBaseSceneName);
-                if (targetClip != null)
-                {
-                    // Si ya está sonando, no reiniciamos; si no, lo forzamos
-                    if (GetCurrentMusicClip() != targetClip)
-                        PlayMusic(targetClip, fade);
-                    break;
-                }
-            }
-        }
-    }
-
-    AudioClip FindSceneMusicClipByName(string sceneName)
-    {
-        if (profile == null || profile.sceneMusic == null || string.IsNullOrWhiteSpace(sceneName))
-            return null;
-        for (int i = 0; i < profile.sceneMusic.Count; i++)
-        {
-            var r = profile.sceneMusic[i];
-            if (r == null || string.IsNullOrWhiteSpace(r.sceneName) || r.music == null) continue;
-            if (sceneName.IndexOf(r.sceneName, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                r.sceneName.IndexOf(sceneName, StringComparison.OrdinalIgnoreCase) >= 0)
-                return r.music;
-        }
-        return null;
-    }
-
-    AudioGraphProfile.AdditiveCinematicRule FindAdditiveRuleFor(string sceneName)
-    {
-        if (profile == null || profile.additiveCinematics == null) return null;
-        for (int i = 0; i < profile.additiveCinematics.Count; i++)
-        {
-            var r = profile.additiveCinematics[i];
-            if (r != null &&
-                !string.IsNullOrEmpty(r.sceneName) &&
-                sceneName.IndexOf(r.sceneName, StringComparison.OrdinalIgnoreCase) >= 0)
-                return r;
-        }
-        return null;
-    }
-
     // ===========================================================
     // Batallas
     void BeginBattleMusic(AudioGraphProfile.BattleRule r)
@@ -427,7 +306,32 @@ public sealed class AudioService : MonoBehaviour
         _musicA.loop = true;
         _musicB.loop = true;
         Debug.Log($"[AudioService] 🔄 Loop restaurado en AudioSources de música");
-        
+
+        // Contabilidad inmediata (stack de música / flag de batalla), independiente de si la
+        // restauración de música se aplica ya o se difiere (ver más abajo).
+        if (_musicStack.Count > 0) _musicStack.Pop();
+        _battleActive = false;
+
+        // FIX: si tras derrotar al boss viene inmediatamente una cinemática (RaiseBattleWon →
+        // grafo narrativo → señal de entrada del CinematicSequencerBase), esta música de mundo
+        // se solapaba con la que pone la cinemática (PlaySequenceMusic) casi en el mismo frame,
+        // produciendo un corte raro (la música de mundo entra a medias y se corta enseguida).
+        // Diferimos un frame: esa cadena de señales es síncrona con RaiseBattleWon, así que si
+        // hay una cinemática arrancando, para entonces ya estará activa (LockCinematic ya habrá
+        // corrido) y podemos omitir por completo la música de mundo.
+        StartCoroutine(Co_RestoreWorldMusicAfterBattle(r.fade));
+    }
+
+    IEnumerator Co_RestoreWorldMusicAfterBattle(float fade)
+    {
+        yield return null;
+
+        if (CinematicSequencerBase.AnySequenceActive)
+        {
+            Debug.Log("[AudioService] Restauración de música de mundo omitida tras la batalla: hay una cinemática activa (evita corte raro).");
+            yield break;
+        }
+
         // PRIORIDAD 1: Si hay una AmbientZone activa, restaurar su música (no usar el stack)
         var activeAmbientZone = AmbientZone.CurrentActiveZone;
         if (activeAmbientZone != null && !string.IsNullOrEmpty(activeAmbientZone.MusicZoneId))
@@ -436,23 +340,16 @@ public sealed class AudioService : MonoBehaviour
             if (zoneRule?.music != null)
             {
                 Debug.Log($"[AudioService] Restaurando música de AmbientZone '{activeAmbientZone.MusicZoneId}' después de batalla");
-                PlayMusic(zoneRule.music, r.fade);
-                // Limpiar el stack porque la AmbientZone maneja su propia música
-                if (_musicStack.Count > 0) _musicStack.Pop();
-                _battleActive = false;
-                return;
+                PlayMusic(zoneRule.music, fade);
+                yield break;
             }
         }
-        
+
         // PRIORIDAD 2: Restaurar música de la escena (Gameplay)
-        // Descartamos lo que hubiera en el stack para esta batalla
-        if (_musicStack.Count > 0) _musicStack.Pop();
-        
-        if (!RestoreSceneMusic(r.fade))
+        if (!RestoreSceneMusic(fade))
         {
-            StopMusic(r.fade);
+            StopMusic(fade);
         }
-        _battleActive = false;
     }
     
     // ===========================================================
@@ -662,6 +559,31 @@ public sealed class AudioService : MonoBehaviour
         _musicA.loop = true;
         _musicB.loop = true;
 
+        // BUGFIX: solo tocar la pila si ESTE combate llegó a apilar algo. Los enemigos
+        // sin battleMusicId nunca pasan por BeginBattleMusic (no cambian de música al
+        // empezar), así que _battleActive sigue en false aquí; hacer Pop() igualmente
+        // robaba la entrada de otro sistema (cinemática aditiva, minijuego) que sí la
+        // había apilado legítimamente y aún no le tocaba restaurarse.
+        bool wasBattleActive = _battleActive;
+        if (wasBattleActive && _musicStack.Count > 0) _musicStack.Pop();
+        _battleActive = false;
+
+        // FIX: mismo caso que OnBattleWonRestoreMusic — si justo después del combate arranca una
+        // cinemática (misma cadena síncrona de señales), evitamos poner la música de mundo para
+        // que no se corte casi al instante con la de la cinemática. Diferimos un frame.
+        StartCoroutine(Co_RestoreAfterBattleDeferred(fade, wasBattleActive));
+    }
+
+    IEnumerator Co_RestoreAfterBattleDeferred(float fade, bool wasBattleActive)
+    {
+        yield return null;
+
+        if (CinematicSequencerBase.AnySequenceActive)
+        {
+            Debug.Log("[AudioService] RestoreAfterBattle: restauración de música omitida, hay una cinemática activa (evita corte raro).");
+            yield break;
+        }
+
         var activeAmbientZone = AmbientZone.CurrentActiveZone;
         if (activeAmbientZone != null && !string.IsNullOrEmpty(activeAmbientZone.MusicZoneId))
         {
@@ -670,21 +592,12 @@ public sealed class AudioService : MonoBehaviour
             {
                 Debug.Log($"[AudioService] RestoreAfterBattle: restaurando música de AmbientZone '{activeAmbientZone.MusicZoneId}'");
                 PlayMusic(zoneRule.music, fade);
-                // BUGFIX: solo tocar la pila si ESTE combate llegó a apilar algo. Los enemigos
-                // sin battleMusicId nunca pasan por BeginBattleMusic (no cambian de música al
-                // empezar), así que _battleActive sigue en false aquí; hacer Pop() igualmente
-                // robaba la entrada de otro sistema (cinemática aditiva, minijuego) que sí la
-                // había apilado legítimamente y aún no le tocaba restaurarse.
-                if (_battleActive && _musicStack.Count > 0) _musicStack.Pop();
-                _battleActive = false;
-                return;
+                yield break;
             }
         }
 
-        if (_battleActive && _musicStack.Count > 0) _musicStack.Pop();
-        if (_battleActive && !RestoreSceneMusic(fade))
+        if (wasBattleActive && !RestoreSceneMusic(fade))
             StopMusic(fade);
-        _battleActive = false;
     }
 
     // ===========================================================
@@ -723,16 +636,16 @@ public sealed class AudioService : MonoBehaviour
         {
             Debug.Log($"[AudioService] ✅ Reproduciendo música de victoria: {victoryRule.music.name}");
 
-            // BUGFIX: si holdSeconds <= 0 la restauración es MANUAL (la hace el lifecycle
-            // handler del NPC, normalmente al cerrar el diálogo post-derrota). Si en ese caso
-            // desactivamos el loop, el AudioSource termina el clip por su cuenta y se para SOLO
-            // en cuanto acaba el jingle — si el diálogo tarda más que el clip (caso muy común),
-            // se queda un silencio real hasta que la restauración manual llega. Con holdSeconds
-            // > 0 sí queremos que suene una sola vez, porque la propia corrutina de restauración
-            // ya está temporizada para llegar a tiempo.
-            bool holdUntilManualRestore = holdSeconds <= 0f;
-            _musicA.loop = holdUntilManualRestore;
-            _musicB.loop = holdUntilManualRestore;
+            // BUGFIX (repetición del jingle de victoria): antes, si holdSeconds <= 0 (restauración
+            // MANUAL, la hace el lifecycle handler del NPC al cerrar el diálogo post-derrota) se
+            // ponía el AudioSource en loop=true para "aguantar" sonando mientras duraba el diálogo.
+            // Como el diálogo casi siempre dura más que el jingle, el clip se reiniciaba desde el
+            // principio una y otra vez — el jugador lo oía sonar dos (o más) veces.
+            // Ahora el jingle de victoria NUNCA hace loop: suena una sola vez y se para solo. Si el
+            // diálogo dura más que el clip, se queda en silencio hasta que llega la restauración
+            // manual — preferible a repetir el jingle completo.
+            _musicA.loop = false;
+            _musicB.loop = false;
 
             PlayMusic(victoryRule.music, victoryRule.fade);
         }
@@ -1047,6 +960,77 @@ public sealed class AudioService : MonoBehaviour
     }
     
     // ===========================================================
+    // SFX en loop con clave propia (loopId) — para ambientes que deben poder
+    // pararse antes de que termine el clip. PlaySFX/PlaySFXAt son "dispara y
+    // olvida": el AudioSource vuelve solo al pool cuando el clip termina
+    // (ReturnWhenDone), así que si el clip es una pista de ambiente larga
+    // (p. ej. rain-sfx.mp3) suena hasta agotarse aunque el evento lógico
+    // (IsRaining) ya haya terminado. PlayLoopingSFX usa una fuente dedicada
+    // por loopId, fuera del pool, que solo se detiene cuando se llama
+    // explícitamente a StopLoopingSFX.
+    readonly Dictionary<string, AudioSource> _loopingSfxSources = new();
+
+    /// <summary>
+    /// Arranca (o reinicia) en loop el SFX asociado a eventKey en el AudioGraphProfile, bajo la
+    /// clave lógica loopId. Llamar a StopLoopingSFX con el mismo loopId para detenerlo.
+    /// </summary>
+    public void PlayLoopingSFX(string loopId, string eventKey, float volume = 1f)
+    {
+        if (string.IsNullOrWhiteSpace(loopId) || string.IsNullOrWhiteSpace(eventKey)) return;
+
+        AudioClip clip = FindSfxClipByKey(eventKey);
+        if (clip == null)
+        {
+            Debug.LogWarning($"[AudioService] SFX en loop no encontrado para clave '{eventKey}'.");
+            return;
+        }
+
+        if (!_loopingSfxSources.TryGetValue(loopId, out var src) || src == null)
+        {
+            src = CreateChildSource($"LoopSFX_{loopId}", sfxGroup, spatial: false, loop: true);
+            _loopingSfxSources[loopId] = src;
+        }
+
+        src.loop = true;
+        src.clip = clip;
+        src.volume = Mathf.Clamp01(volume);
+        src.Play();
+    }
+
+    /// <summary>
+    /// Detiene el SFX en loop asociado a loopId (ver PlayLoopingSFX). Con fadeOut > 0 hace un
+    /// fundido de salida antes de pararlo; con 0 (o por defecto) lo corta en seco.
+    /// </summary>
+    public void StopLoopingSFX(string loopId, float fadeOut = 0f)
+    {
+        if (string.IsNullOrWhiteSpace(loopId)) return;
+        if (!_loopingSfxSources.TryGetValue(loopId, out var src) || src == null) return;
+        if (!src.isPlaying) return;
+
+        if (fadeOut > 0f)
+            StartCoroutine(FadeOutAndStopLoop(src, fadeOut));
+        else
+            src.Stop();
+    }
+
+    IEnumerator FadeOutAndStopLoop(AudioSource src, float duration)
+    {
+        float startVolume = src.volume;
+        float elapsed = 0f;
+        while (elapsed < duration && src != null)
+        {
+            elapsed += Time.deltaTime;
+            src.volume = Mathf.Lerp(startVolume, 0f, elapsed / duration);
+            yield return null;
+        }
+        if (src != null)
+        {
+            src.Stop();
+            src.volume = startVolume;
+        }
+    }
+
+    // ===========================================================
     // SFX (métodos internos y legacy)
     public void PlaySFX(AudioClip clip, float volume = 1f)
     {
@@ -1135,6 +1119,30 @@ public sealed class AudioService : MonoBehaviour
     /// Propiedad pública para obtener el clip de música actual
     /// </summary>
     public AudioClip CurrentMusicClip => GetCurrentMusicClip();
+
+    /// <summary>
+    /// Activa o desactiva el loop de las dos fuentes de música. Útil para temas que deben sonar
+    /// una sola vez y terminar (p.ej. el tema de créditos, ver CreditsSceneController), en vez de
+    /// heredar el loop=true por defecto que usa la música de ambiente/gameplay.
+    /// </summary>
+    public void SetMusicLooping(bool loop)
+    {
+        if (_musicA != null) _musicA.loop = loop;
+        if (_musicB != null) _musicB.loop = loop;
+    }
+
+    /// <summary>
+    /// Segundos que quedan del clip de música actualmente en reproducción (fuente activa).
+    /// Devuelve -1 si no hay música sonando o si esa fuente tiene loop activo (no tiene un
+    /// "final" con sentido). Pensado para sincronizar UI con el final de un tema no-loop.
+    /// </summary>
+    public float GetMusicRemainingSeconds()
+    {
+        var active = _musicATurn ? _musicB : _musicA;
+        if (active == null || active.clip == null || !active.isPlaying || active.loop)
+            return -1f;
+        return Mathf.Max(0f, active.clip.length - active.time);
+    }
     
     /// <summary>
     /// Restaura la música de la escena actual (según las reglas del profile)

@@ -16,10 +16,6 @@ namespace Game.NPC
         [Tooltip("Manager del NPC (auto-detectado si está vacío)")]
         [SerializeField] private NPCBehaviourManagerV2 npcManager;
 
-        [Header("Anchor System")]
-        [Tooltip("¿Usar sistema de anchors para teletransporte?")]
-        [SerializeField] private bool useAnchorSystem = true;
-
         [Header("Debug")]
         [SerializeField] private bool debugMode;
 
@@ -536,7 +532,7 @@ namespace Game.NPC
                 Debug.LogError($"[NPCQuestActionExecutor:{name}] ❌ SpawnAnchor '{action.targetAnchorName}' NO ENCONTRADO");
                 
                 // Listar todos los anchors disponibles para debugging
-                var allAnchors = Object.FindObjectsByType<SpawnAnchor>(FindObjectsSortMode.None);
+                var allAnchors = Object.FindObjectsByType<SpawnAnchor>();
                 Debug.LogWarning($"[NPCQuestActionExecutor:{name}] 📋 Anchors disponibles: {allAnchors.Length}");
                 foreach (var anchor in allAnchors)
                 {

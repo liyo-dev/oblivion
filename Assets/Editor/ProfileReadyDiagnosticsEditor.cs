@@ -60,7 +60,7 @@ public class ProfileReadyDiagnosticsEditor : EditorWindow
         
         if (GUILayout.Button("Informe Completo", GUILayout.Width(150)))
         {
-            var diagnostics = FindFirstObjectByType<ProfileReadyDiagnostics>();
+            var diagnostics = FindAnyObjectByType<ProfileReadyDiagnostics>();
             if (diagnostics != null)
             {
                 diagnostics.GenerateFullReport();
@@ -98,7 +98,7 @@ public class ProfileReadyDiagnosticsEditor : EditorWindow
         EditorGUILayout.Space(5);
 
         // Buscar el componente de diagnósticos
-        var diagnostics = Object.FindObjectOfType<ProfileReadyDiagnostics>();
+        var diagnostics = Object.FindAnyObjectByType<ProfileReadyDiagnostics>();
         if (diagnostics == null)
         {
             EditorGUILayout.HelpBox("ProfileReadyDiagnostics no encontrado en la escena.", MessageType.Error);

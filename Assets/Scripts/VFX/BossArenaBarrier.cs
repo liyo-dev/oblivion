@@ -17,7 +17,6 @@ public class BossArenaBarrier : MonoBehaviour
     Vector2 _noiseSpeed    = new(0.2f, 0f);
     float  _noiseStrength  = 1f;
     float  _alpha          = 1f;
-    bool   _show;
 
     // IDs shader
     static readonly int ID_BaseColor      = Shader.PropertyToID("_BaseColor");
@@ -107,14 +106,12 @@ public class BossArenaBarrier : MonoBehaviour
         _r.SetPropertyBlock(_mpb);
 
         // 7) Estado visible/oculto
-        _show = false;
         _r.enabled = false;
     }
 
     public void Show()
     {
         if (!_r) return;
-        _show = true;
         _r.enabled = true;
         _r.GetPropertyBlock(_mpb);
         _mpb.SetFloat(ID_Alpha, _alpha);
@@ -124,7 +121,6 @@ public class BossArenaBarrier : MonoBehaviour
     public void Hide()
     {
         if (!_r) return;
-        _show = false;
         _r.GetPropertyBlock(_mpb);
         _mpb.SetFloat(ID_Alpha, 0f);
         _r.SetPropertyBlock(_mpb);

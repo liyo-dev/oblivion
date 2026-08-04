@@ -76,6 +76,10 @@ public struct DramaticPhrase
 
     [Tooltip("Posición final del texto en el canvas (píxeles UI). Solo se usa si useMovement es true.")]
     public Vector2 moveTo;
+
+    [Tooltip("Si true, esta frase ignora el degradado + shimmer del modo sueño aunque el config tenga dreamMode activado. " +
+             "Úsalo para frases que deben mantener su color sólido (ej: una amenaza en rojo antes de entrar al sueño).")]
+    public bool disableDreamTextEffect;
 }
 
 [CreateAssetMenu(menuName = "El Sendero/UI/Dramatic Text Config", fileName = "DramaticText_")]

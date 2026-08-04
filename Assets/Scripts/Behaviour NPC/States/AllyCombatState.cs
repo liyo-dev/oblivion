@@ -29,7 +29,6 @@ namespace Game.NPC.States
         private const float NO_ENEMY_TIMEOUT = 30f; // 30 segundos - suficiente tiempo para batallas de boss
         
         private float _noEnemyTimer;
-        private bool _hasLoggedSearch; // Para no spamear logs
         private float _searchCooldown; // Para no buscar cada frame
         
         // Movimiento táctico - valores ajustados para comportamiento más dinámico
@@ -113,7 +112,6 @@ namespace Game.NPC.States
             _lastAttackTime = -DEFAULT_ATTACK_COOLDOWN; // Puede atacar inmediatamente
             _attackCooldown = DEFAULT_ATTACK_COOLDOWN;
             _noEnemyTimer = 0f;
-            _hasLoggedSearch = false;
             _searchCooldown = 0f;
             
             // Movimiento táctico
@@ -451,7 +449,6 @@ namespace Game.NPC.States
 
             _currentTarget = null;
             _forcedTarget = null;
-            _hasLoggedSearch = false;
             _currentTargetDamageable = null;
             _damageableCachedFor = null;
 

@@ -192,7 +192,7 @@ public class GameStateInspectorWindow : EditorWindow
 
     private void DrawEventsTab()
     {
-        var signals = Object.FindFirstObjectByType<DefaultNarrativeSignals>();
+        var signals = Object.FindAnyObjectByType<DefaultNarrativeSignals>();
         if (signals == null)
         {
             EditorGUILayout.HelpBox("DefaultNarrativeSignals no encontrado.", MessageType.Warning);

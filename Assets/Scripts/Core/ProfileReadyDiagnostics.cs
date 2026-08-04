@@ -208,8 +208,7 @@ public class ProfileReadyDiagnostics : MonoBehaviour
         
         // Buscar todos los MonoBehaviour activos E INACTIVOS en todas las escenas cargadas
         var allMonoBehaviours = UnityEngine.Object.FindObjectsByType<MonoBehaviour>(
-            UnityEngine.FindObjectsInactive.Include, 
-            UnityEngine.FindObjectsSortMode.None
+            UnityEngine.FindObjectsInactive.Include
         );
         
         Debug.Log($"[ProfileReadyDiagnostics] Escaneando {allMonoBehaviours.Length} MonoBehaviours...");
@@ -287,8 +286,7 @@ public class ProfileReadyDiagnostics : MonoBehaviour
         Debug.Log($"[ProfileReadyDiagnostics] 🔍 Escaneando escena en busca de sistemas problemáticos...");
 
         var allMonoBehaviours = UnityEngine.Object.FindObjectsByType<MonoBehaviour>(
-            UnityEngine.FindObjectsInactive.Include,
-            UnityEngine.FindObjectsSortMode.None
+            UnityEngine.FindObjectsInactive.Include
         );
         var potentialIssues = new List<string>();
 

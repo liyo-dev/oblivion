@@ -42,6 +42,28 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
     [Tooltip("Primer plano de Liam — Fases 1 y 4 (pregunta / apoyo)")]
     [SerializeField] private Transform _shotLiamClose;
 
+    [Header("Decoración — pétalos al iniciar")]
+    [Tooltip("Prefabs de pétalos a esparcir al arrancar la secuencia (mismos assets que decoran el Reino en MainWorld: Assets/Art/World/Fantasy_Kingdom_Pack/Particle/Petal01_P y Petal02_P). Se reproducen vía VfxPoolService, nunca con Instantiate/Destroy directo (ver CLAUDE.md §2). Vacío = sin decoración.")]
+    [SerializeField] private GameObject[] _petalDecorPrefabs;
+    [Tooltip("Puntos manuales donde aparecen los pétalos (uno por prefab/punto). Si se asigna, tiene prioridad sobre el reparto automático por pantalla de abajo. Dejar vacío para el efecto \"viento por toda la pantalla\".")]
+    [SerializeField] private Transform[] _petalSpawnPoints;
+    [Tooltip("Duración de cada instancia de pétalos. Con margen de sobra sobre la duración típica del banter (los diálogos paginados pueden alargarse según el idioma); si en playtest la secuencia dura más, subir este valor.")]
+    [SerializeField] private float _petalsLifetime = 45f;
+
+    [Header("Decoración — reparto por pantalla (si no hay _petalSpawnPoints)")]
+    [Tooltip("Cuántas instancias de pétalos se reparten por delante de la cámara para cubrir toda la pantalla.")]
+    [SerializeField] private int _petalScreenCount = 24;
+    [Tooltip("Ancho x alto (en unidades de mundo) del área frente a la cámara donde se reparten los pétalos. Súbelo si quedan huecos sin cubrir en los bordes de pantalla.")]
+    [SerializeField] private Vector2 _petalScreenSpread = new Vector2(16f, 9f);
+    [Tooltip("Distancia mínima/máxima delante de la cámara a la que aparecen (varias profundidades = sensación de volumen, no un plano plano).")]
+    [SerializeField] private Vector2 _petalScreenDepthRange = new Vector2(4f, 14f);
+
+    [Header("Decoración — viento (rollo Pocahontas)")]
+    [Tooltip("Dirección del viento en espacio de CÁMARA: x = hacia la derecha de pantalla (negativo = izquierda), y = hacia arriba de pantalla, z = alejándose de cámara. Se normaliza sola, solo importa la proporción entre ejes.")]
+    [SerializeField] private Vector3 _petalWindDirectionCameraSpace = new Vector3(-1f, 0.2f, 0f);
+    [Tooltip("Velocidad del viento en unidades/seg. ApplyWind() anula la gravedad y el impulso inicial aleatorio del prefab para que esta dirección se vea claramente, así que puede quedar más lento de lo que parece necesario.")]
+    [SerializeField] private float _petalWindSpeed = 3.5f;
+
     // ── Fase 0 — Will se detiene; Estela y Liam siguen caminando y se giran ──────
 
     [Header("Fase 0 — Estela y Liam continúan y se giran")]
@@ -104,7 +126,12 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
 
         // Sin transición asignada, esto corta de inmediato sin fundido (ver Co_Transition):
         // el banter arranca en marcha, sin interrumpir la caminata con un negro.
-        yield return Co_BeginCinematicWithTransition(_shotWalkGroup);
+        // SpawnPetalDecor() va como additionalOnCut (no como sentencia suelta después del yield):
+        // así se dispara en el MISMO instante en que _cinematicCamera.Cut(_shotWalkGroup) coloca la
+        // cámara en el plano del grupo, nunca antes. Si en el futuro se asigna un _entryTransition
+        // con fundido, los pétalos seguirán naciendo justo en el punto de corte (pantalla cubierta),
+        // no se verán ya cayendo cuando la pantalla se revele.
+        yield return Co_BeginCinematicWithTransition(_shotWalkGroup, SpawnPetalDecor);
 
         // Apagamos la música de gameplay al inicio. PlaySequenceMusic() se retrasa hasta
         // después de la Fase 0 (≈ _continueWalkDuration): para cuando el grupo se gira,
@@ -157,6 +184,88 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
         if (_estelaManager == null) Debug.LogWarning($"[ReinoExitBanterSequencer] No se encontró a Estela (id='{_estelaCharacterId}') en PlayerParty.");
         if (_liamManager   == null) Debug.LogWarning($"[ReinoExitBanterSequencer] No se encontró a Liam (id='{_liamCharacterId}') en PlayerParty.");
 #endif
+    }
+
+    /// <summary>
+    /// Esparce pétalos ambientales al arrancar la secuencia (decoración, no gameplay). Un único
+    /// disparo por punto configurado vía VfxPoolService — nunca Instantiate/Destroy directo, es el
+    /// mismo patrón que un impacto o una explosión, solo que con una vida más larga (CLAUDE.md §2).
+    /// Sin _petalSpawnPoints manuales, reparte los pétalos por delante de la cámara activa (varias
+    /// profundidades para dar volumen) y les añade una deriva de viento constante en espacio de
+    /// cámara, para el efecto "viento cruzando toda la pantalla" (rollo Pocahontas).
+    /// </summary>
+    private void SpawnPetalDecor()
+    {
+        if (_petalDecorPrefabs == null || _petalDecorPrefabs.Length == 0) return;
+        if (VfxPoolService.Instance == null) return;
+
+        if (_petalSpawnPoints != null && _petalSpawnPoints.Length > 0)
+        {
+            for (int i = 0; i < _petalSpawnPoints.Length; i++)
+            {
+                Transform point = _petalSpawnPoints[i];
+                if (point == null) continue;
+
+                GameObject prefab = _petalDecorPrefabs[i % _petalDecorPrefabs.Length];
+                VfxPoolService.Instance.Play(prefab, point.position, point.rotation, _petalsLifetime);
+            }
+            return;
+        }
+
+        Camera cam = Camera.main;
+        if (cam == null) return;
+
+        Transform camT = cam.transform;
+        Vector3 windVelocityWorld = (camT.right   * _petalWindDirectionCameraSpace.x
+                                    + camT.up      * _petalWindDirectionCameraSpace.y
+                                    + camT.forward * _petalWindDirectionCameraSpace.z)
+                                    .normalized * _petalWindSpeed;
+
+        for (int i = 0; i < _petalScreenCount; i++)
+        {
+            GameObject prefab = _petalDecorPrefabs[i % _petalDecorPrefabs.Length];
+
+            float depth = Random.Range(_petalScreenDepthRange.x, _petalScreenDepthRange.y);
+            float xOff  = Random.Range(-0.5f, 0.5f) * _petalScreenSpread.x;
+            float yOff  = Random.Range(-0.5f, 0.5f) * _petalScreenSpread.y;
+
+            Vector3 pos = camT.position + camT.forward * depth + camT.right * xOff + camT.up * yOff;
+
+            // OJO: usar prefab.transform.rotation, no Quaternion.identity. El prefab trae una
+            // rotación local de -90° en X (igual que las decoraciones estáticas del Reino en
+            // MainWorld, ver Petal01_P/02_P) que orienta el ShapeModule del ParticleSystem; con
+            // identity el volumen de emisión queda mal orientado y los pétalos pueden no llegar
+            // a verse.
+            Transform instance = VfxPoolService.Instance.Play(prefab, pos, prefab.transform.rotation, _petalsLifetime);
+            ApplyWind(instance, windVelocityWorld);
+        }
+    }
+
+    /// Añade una deriva constante en espacio de mundo (velocityOverLifetime) por encima del
+    /// revoloteo aleatorio propio del ParticleSystem, para simular una ráfaga de viento sostenida.
+    /// También anula la gravedad y el impulso inicial omnidireccional del prefab (InitialModule:
+    /// gravityModifier y startSpeed con randomDirectionAmount=1): sin esto, esos dos siguen tirando
+    /// de cada pétalo hacia abajo/en cualquier dirección y acaban ganándole visualmente al viento.
+    private static void ApplyWind(Transform instance, Vector3 windVelocityWorld)
+    {
+        if (instance == null) return;
+
+        var systems = instance.GetComponentsInChildren<ParticleSystem>(true);
+        for (int i = 0; i < systems.Length; i++)
+        {
+            var ps = systems[i];
+
+            var main = ps.main;
+            main.gravityModifier = 0f;
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.1f, 0.3f);
+
+            var vel = ps.velocityOverLifetime;
+            vel.enabled = true;
+            vel.space = ParticleSystemSimulationSpace.World;
+            vel.x = new ParticleSystem.MinMaxCurve(windVelocityWorld.x);
+            vel.y = new ParticleSystem.MinMaxCurve(windVelocityWorld.y);
+            vel.z = new ParticleSystem.MinMaxCurve(windVelocityWorld.z);
+        }
     }
 
     private static NPCBehaviourManagerV2 FindPartyMember(string dialogueCharacterId)

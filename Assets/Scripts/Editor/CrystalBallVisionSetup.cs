@@ -160,7 +160,7 @@ public static class CrystalBallVisionSetup
 
     private static void TryAutoAssignSequencer(GameObject camGO)
     {
-        var sequencer = Object.FindObjectOfType<LiamCrystalBallSequencer>();
+        var sequencer = Object.FindAnyObjectByType<LiamCrystalBallSequencer>();
         if (sequencer == null)
         {
             Debug.Log("[CrystalBallVision] LiamCrystalBallSequencer no encontrado en escena. Abre la escena correcta y vuelve a ejecutar, o asigna manualmente.");

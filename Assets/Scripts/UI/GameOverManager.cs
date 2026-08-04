@@ -359,7 +359,7 @@ public class GameOverManager : MonoBehaviour
             {
                 // Buscar directamente incluyendo objetos inactivos
                 #if UNITY_2022_3_OR_NEWER
-                found = UnityEngine.Object.FindFirstObjectByType<GameOverManager>(FindObjectsInactive.Include);
+                found = UnityEngine.Object.FindAnyObjectByType<GameOverManager>(FindObjectsInactive.Include);
                 #else
                 found = UnityEngine.Object.FindObjectOfType<GameOverManager>(true);
                 #endif

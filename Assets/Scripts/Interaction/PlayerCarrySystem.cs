@@ -11,7 +11,6 @@ public class PlayerCarrySystem : MonoBehaviour
     [SerializeField] private string pickupStateName = "CarryStart_NoWeapon";
     [SerializeField] private string carryMoveStateName = "CarryMoveIdle_NoWeapon";
     [SerializeField] private string throwStateName = "CarryThrow_NoWeapon";
-    [SerializeField] private string locomotionStateName = "Locomotion";
 
     [Header("Configuración de Animación")]
     [SerializeField] private int animatorLayer = 1;   // UpperBody
@@ -19,9 +18,6 @@ public class PlayerCarrySystem : MonoBehaviour
     [SerializeField] private float attachDelay = 0.5f;
     [SerializeField] private float throwAnimationDuration = 0.3f;
     [SerializeField] private float dropCooldown = 0.5f; // Cooldown después de soltar para evitar interacciones
-
-    [Header("Interacción para soltar")]
-    [SerializeField] private bool dropOnInteract = true;
 
     /// <summary>
     /// Evento disparado cuando el player suelta un objeto.

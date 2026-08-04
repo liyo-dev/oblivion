@@ -70,7 +70,7 @@ public class ActiveCharacterSwapper : MonoBehaviour
     {
         if (magicCaster == null)
             magicCaster = GetComponentInParent<MagicCaster>()
-                ?? UnityEngine.Object.FindFirstObjectByType<MagicCaster>();
+                ?? UnityEngine.Object.FindAnyObjectByType<MagicCaster>();
 
         CaptureWillSpells();
 
@@ -96,6 +96,15 @@ public class ActiveCharacterSwapper : MonoBehaviour
         if (_willFollowCheckTimer < 0.5f) return;
         _willFollowCheckTimer = 0f;
 
+        // Red de seguridad periódica contra la condición de carrera de FIX INC-050 (ver
+        // SetNpcVisible/ReassertWillVisibilityNextFrames): si algo tocó los renderers del Will
+        // NPC instanciado más tarde de lo que cubre esa ventana (p.ej. el Brain tardó más de lo
+        // normal en inicializar, o hubo un pico de carga), lo detectamos aquí. Invariante: si
+        // _willNpcInstance existe, SIEMPRE debe estar visible (Will nunca se instancia como NPC
+        // mientras él sea el personaje activo). Gateado a 0.5s, no por frame, así que no incumple
+        // la regla de GetComponentInChildren en Update.
+        EnsureWillNpcVisible();
+
         var brain = _willNpcInstance.NPCManager?.Brain;
         if (brain == null) return;
         if (_willNpcInstance.NPCManager.Context.IsInCinematic) return;
@@ -118,6 +127,30 @@ public class ActiveCharacterSwapper : MonoBehaviour
         if (brain.CurrentState?.StateName == "Idle"
             && !(_willNpcInstance.NPCManager?.Context?.IsPinnedByParty ?? false))
             _willNpcInstance.StartFollowingIgnorePartyCheck();
+    }
+
+    /// <summary>
+    /// Reafirma que el Will NPC instanciado tiene todos sus renderers activos. Ver comentario
+    /// en el llamador (Update) sobre la condición de carrera que esto blinda.
+    /// </summary>
+    private void EnsureWillNpcVisible()
+    {
+        if (_willNpcInstance == null) return;
+
+        bool hadDisabled = false;
+        foreach (var r in _willNpcInstance.GetComponentsInChildren<Renderer>(true))
+        {
+            if (r != null && !r.enabled)
+            {
+                r.enabled = true;
+                hadDisabled = true;
+            }
+        }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (hadDisabled)
+            Debug.LogWarning("[ActiveCharacterSwapper] Will NPC tenía renderers desactivados fuera de la ventana de ReassertWillVisibilityNextFrames — reactivados por la red de seguridad periódica (0.5s).");
+#endif
     }
     #endregion
 
@@ -553,6 +586,15 @@ public class ActiveCharacterSwapper : MonoBehaviour
         yield return new WaitForSeconds(0.25f);
         if (npc == null || npc == _hiddenNpc) yield break;
         ApplyRendererVisibility(npc, true);
+
+        // Tercer pase más allá de los 0.25s originales: en frames con carga pesada (streaming,
+        // ModularAutoBuilder reconstruyendo partes, etc.) ese margen no siempre alcanzaba y el
+        // NPC quedaba invisible de forma intermitente ("solo a veces"). Cubrimos una ventana más
+        // amplia sin pasar a reafirmar por frame indefinidamente (evita pisar ocultamientos
+        // legítimos de sistemas como DialogueCinematicController más allá de este margen corto).
+        yield return new WaitForSeconds(0.5f);
+        if (npc == null || npc == _hiddenNpc) yield break;
+        ApplyRendererVisibility(npc, true);
     }
 
     /// <summary>
@@ -568,6 +610,14 @@ public class ActiveCharacterSwapper : MonoBehaviour
         ApplyRendererVisibility(willNpc, true);
 
         yield return new WaitForSeconds(0.25f);
+        if (willNpc == null || willNpc != _willNpcInstance) yield break;
+        ApplyRendererVisibility(willNpc, true);
+
+        // Tercer pase (ver mismo comentario en ReassertVisibilityNextFrames): amplía la ventana
+        // de protección más allá de los 0.25s originales. A partir de aquí, EnsureWillNpcVisible()
+        // en Update() (cada 0.5s mientras _willNpcInstance exista) actúa como red de seguridad
+        // continua, así que no hace falta seguir encadenando pases aquí.
+        yield return new WaitForSeconds(0.5f);
         if (willNpc == null || willNpc != _willNpcInstance) yield break;
         ApplyRendererVisibility(willNpc, true);
     }

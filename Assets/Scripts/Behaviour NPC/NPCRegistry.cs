@@ -27,7 +27,7 @@ namespace Game.NPC
                 if (_instance == null)
                 {
                     // Buscar si ya existe una instancia en la escena
-                    _instance = FindFirstObjectByType<NPCRegistry>();
+                    _instance = FindAnyObjectByType<NPCRegistry>();
 
                     if (_instance == null)
                     {

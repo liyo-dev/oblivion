@@ -16,7 +16,7 @@ public sealed class SetTimeOfDayNode : NarrativeNode
 
     public override void Enter(NarrativeContext ctx, Action onReadyToAdvance)
     {
-        var cycle = UnityEngine.Object.FindFirstObjectByType<DayNightCycle>();
+        var cycle = UnityEngine.Object.FindAnyObjectByType<DayNightCycle>();
         if (cycle != null)
             cycle.SetTimeOfDay(targetTime, immediate);
         else

@@ -110,6 +110,8 @@ public class ProjectileCollisionService : MonoBehaviour
     /// </summary>
     public void UpdateSettings(ProjectileCollisionSettingsSO newSettings)
     {
+        if (_isShuttingDown) return;
+
         settings = newSettings;
         InitializeCollisionSystem();
         Debug.Log("[ProjectileCollisionService] Configuración actualizada en runtime");

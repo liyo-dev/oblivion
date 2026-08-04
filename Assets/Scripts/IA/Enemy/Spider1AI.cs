@@ -67,7 +67,6 @@ public class Spider1AI : MonoBehaviour
 
     [Header("Knockback al recibir daño (opcional)")]
     [SerializeField, Min(0f)] private float hitKnockback = 0f;
-    [SerializeField, Min(0f)] private float hitKnockbackDamp = 8f;
 
     private Targetable _targetable;
 

@@ -54,7 +54,7 @@ public class CampfireRestInteractable : MonoBehaviour
         _interactable.OnInteract.AddListener(OnInteractStarted);
         _interactable.OnConfirm.AddListener(DoTimeSkip);
 
-        _dayNightCycle = Object.FindFirstObjectByType<DayNightCycle>();
+        _dayNightCycle = Object.FindAnyObjectByType<DayNightCycle>();
     }
 
     void OnDestroy()
@@ -67,7 +67,7 @@ public class CampfireRestInteractable : MonoBehaviour
     void OnInteractStarted(GameObject interactor)
     {
         if (_dayNightCycle == null)
-            _dayNightCycle = Object.FindFirstObjectByType<DayNightCycle>();
+            _dayNightCycle = Object.FindAnyObjectByType<DayNightCycle>();
 
         bool isNight = IsNightTime();
         _pendingTarget = isNight ? dayTarget : nightTarget;

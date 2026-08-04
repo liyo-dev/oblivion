@@ -47,7 +47,7 @@ public class DayOnlyInspectionTrigger : MonoBehaviour
         if (physicalBlocker != null && physicalBlocker.isTrigger)
             physicalBlocker.isTrigger = false;
 
-        _dayNightCycle = Object.FindFirstObjectByType<DayNightCycle>();
+        _dayNightCycle = Object.FindAnyObjectByType<DayNightCycle>();
     }
 
     void Start()
@@ -102,7 +102,7 @@ public class DayOnlyInspectionTrigger : MonoBehaviour
         if (!questRequirement.IsSatisfied()) return;
 
         if (_dayNightCycle == null)
-            _dayNightCycle = Object.FindFirstObjectByType<DayNightCycle>();
+            _dayNightCycle = Object.FindAnyObjectByType<DayNightCycle>();
 
         bool isNight = _dayNightCycle != null &&
                        (_dayNightCycle.CurrentTimeOfDay == DayNightCycle.TimeOfDay.Night ||

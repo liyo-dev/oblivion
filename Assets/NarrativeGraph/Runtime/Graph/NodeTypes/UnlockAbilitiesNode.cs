@@ -65,7 +65,7 @@ public sealed class UnlockAbilitiesNode : NarrativeNode
         Debug.Log($"[UnlockAbilitiesNode] Frames esperados, verificando estado del DialogueManager");
         
         // Verificar que realmente no hay diálogo activo
-        var dialogueManager = UnityEngine.Object.FindFirstObjectByType<DialogueManager>();
+        var dialogueManager = UnityEngine.Object.FindAnyObjectByType<DialogueManager>();
         if (dialogueManager != null && dialogueManager.IsOpen)
         {
             Debug.LogWarning($"[UnlockAbilitiesNode] DialogueManager aún abierto después de esperar, esperando más...");
@@ -85,10 +85,13 @@ public sealed class UnlockAbilitiesNode : NarrativeNode
     private void ExecuteUnlocks(NarrativeContext ctx, Action onReadyToAdvance)
     {
         bool changed = false;
-        
+
             try
             {
                 // Compatibilidad: si venimos de assets antiguos, mapear AbilityId -> AbilityKey (solo MagicAttack -> Magic).
+                // abilitiesToUnlock está marcado [Obsolete] a propósito: solo se lee aquí como shim de
+                // compatibilidad con assets viejos, se suprime el warning en vez de eliminar el campo.
+#pragma warning disable 618
                 if ((abilityKeysToUnlock == null || abilityKeysToUnlock.Count == 0) && abilitiesToUnlock != null && abilitiesToUnlock.Count > 0)
                 {
                     foreach (var legacy in abilitiesToUnlock)
@@ -110,6 +113,7 @@ public sealed class UnlockAbilitiesNode : NarrativeNode
                     for (int i = 0; i < abilitiesToUnlock.Count; i++)
                         changed |= UnlockService.UnlockAbility(abilitiesToUnlock[i]);
                 }
+#pragma warning restore 618
 
                 if (spellsToUnlock != null)
                 {

@@ -10,7 +10,7 @@ public class FixTerrainTrees : EditorWindow
     public static void CleanTerrainTrees()
     {
         // Buscar todos los Terrains en la escena actual
-        Terrain[] terrains = FindObjectsOfType<Terrain>(true);
+        Terrain[] terrains = FindObjectsByType<Terrain>(FindObjectsInactive.Include);
         
         if (terrains.Length == 0)
         {

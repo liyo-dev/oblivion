@@ -533,7 +533,7 @@ public class AmbientZone : MonoBehaviour
     private static vThirdPersonCamera GetOrCacheCamera()
     {
         if (_cachedCamera != null) return _cachedCamera;
-        _cachedCamera = Object.FindFirstObjectByType<vThirdPersonCamera>();
+        _cachedCamera = Object.FindAnyObjectByType<vThirdPersonCamera>();
         return _cachedCamera;
     }
 

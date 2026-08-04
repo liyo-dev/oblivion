@@ -334,7 +334,7 @@ public class AdditiveSceneCinematic : MonoBehaviour
         // 2) Compatibilidad: si hay un HoldToSkipUI activo, disparar su OnSkipCompleted
         try
         {
-            var hold = FindFirstObjectByType<HoldToSkipUI>();
+            var hold = FindAnyObjectByType<HoldToSkipUI>();
             if (hold != null)
             {
                 if (hold.OnSkipCompleted != null)

@@ -70,7 +70,7 @@ public class SavePointTeleportTrigger : MonoBehaviour
             if (_hintRequested)
             {
                 _hintRequested = false;
-                var hintUI = TeleportHintUI.Instance ?? FindFirstObjectByType<TeleportHintUI>();
+                var hintUI = TeleportHintUI.Instance ?? FindAnyObjectByType<TeleportHintUI>();
                 if (hintUI != null)
                     hintUI.RequestHide();
             }
@@ -103,7 +103,7 @@ public class SavePointTeleportTrigger : MonoBehaviour
             if (_hintRequested)
             {
                 _hintRequested = false;
-                var hintUI = TeleportHintUI.Instance ?? FindFirstObjectByType<TeleportHintUI>();
+                var hintUI = TeleportHintUI.Instance ?? FindAnyObjectByType<TeleportHintUI>();
                 if (hintUI != null)
                     hintUI.RequestHide();
             }
@@ -145,12 +145,12 @@ public class SavePointTeleportTrigger : MonoBehaviour
             if (_hintRequested)
             {
                 _hintRequested = false;
-                var hintUI = TeleportHintUI.Instance ?? FindFirstObjectByType<TeleportHintUI>();
+                var hintUI = TeleportHintUI.Instance ?? FindAnyObjectByType<TeleportHintUI>();
                 if (hintUI != null)
                     hintUI.RequestHide();
             }
             
-            var teleportSystem = TeleportSystem.Instance ?? FindFirstObjectByType<TeleportSystem>();
+            var teleportSystem = TeleportSystem.Instance ?? FindAnyObjectByType<TeleportSystem>();
             if (teleportSystem != null)
             {
                 // Pasar el anchorId actual para excluirlo de la lista
@@ -171,7 +171,7 @@ public class SavePointTeleportTrigger : MonoBehaviour
             // Buscar TeleportHintUI si no existe instancia
             var hintUI = TeleportHintUI.Instance;
             if (hintUI == null)
-                hintUI = FindFirstObjectByType<TeleportHintUI>();
+                hintUI = FindAnyObjectByType<TeleportHintUI>();
             
             if (shouldShow && !_hintRequested)
             {

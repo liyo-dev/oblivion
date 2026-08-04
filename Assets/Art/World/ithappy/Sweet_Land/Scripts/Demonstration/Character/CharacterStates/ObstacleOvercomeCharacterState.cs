@@ -24,7 +24,10 @@ namespace ithappy
                 return;
             }
             
+            // NOTA: OffMeshLinkData.offMeshLink obsoleto, se suprime (ver nota en ObstaclePath.cs).
+#pragma warning disable 618
             _currentObstaclePath = _movement.Agent.currentOffMeshLinkData.offMeshLink.transform.GetComponent<ObstaclePath>();
+#pragma warning restore 618
             _currentObstacles = _currentObstaclePath.GetNearestPath(_movement.MoveParent.position);
             _currentObstaclePath.SetIsUsedPath(true);
             CharacterBase.StartCoroutine(ObstaclesProcess());

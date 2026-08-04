@@ -27,7 +27,7 @@ public class NarrativeEventDebugger : MonoBehaviour
     {
         if (_signals == null)
         {
-            _signals = FindFirstObjectByType<DefaultNarrativeSignals>();
+            _signals = FindAnyObjectByType<DefaultNarrativeSignals>();
         }
         
         // Procesar eventos comunes
@@ -66,6 +66,12 @@ public class NarrativeEventDebugger : MonoBehaviour
             emitEXIT_FROM_WOODS_ESTELA = false;
             EmitEvent("EXIT_FROM_WOODS_ESTELA");
         }
+
+        if (showPendingEvents)
+        {
+            showPendingEvents = false;
+            ShowPendingEvents();
+        }
     }
 
     /// <summary>
@@ -87,7 +93,7 @@ public class NarrativeEventDebugger : MonoBehaviour
     {
         if (_signals == null)
         {
-            _signals = FindFirstObjectByType<DefaultNarrativeSignals>();
+            _signals = FindAnyObjectByType<DefaultNarrativeSignals>();
         }
         
         if (_signals == null)
@@ -108,7 +114,7 @@ public class NarrativeEventDebugger : MonoBehaviour
     {
         if (_signals == null)
         {
-            _signals = FindFirstObjectByType<DefaultNarrativeSignals>();
+            _signals = FindAnyObjectByType<DefaultNarrativeSignals>();
         }
         
         if (_signals == null)

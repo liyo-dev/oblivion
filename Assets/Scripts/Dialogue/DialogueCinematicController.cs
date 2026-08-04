@@ -955,8 +955,7 @@ public class DialogueCinematicController : MonoBehaviour
             currentLineIndex = lineIndex;
 
             // Pre-resolver el Transform del speaker para que currentSpeaker esté listo antes de
-            // los efectos y del breathing grupal. NO actualizar currentSpeakerId aquí:
-            // CheckAndAdjustCameraForSpeaker lo necesita intacto para detectar cambios en 1:1.
+            // los efectos y del breathing grupal. NO actualizar currentSpeakerId aquí.
             {
                 string preSpeakerId = DetermineSpeakerId(currentLine);
                 if (preSpeakerId != currentSpeakerId)
@@ -968,45 +967,9 @@ public class DialogueCinematicController : MonoBehaviour
             }
 
             // ── EFECTOS CINEMATOGRÁFICOS (CloseUp siempre activo) ──
+            // El sistema de cortes de cámara por modo grupal/1:1 fue retirado a favor de esto
+            // (ver historial: "CloseUp siempre activo"); el código de cortes quedaba inalcanzable.
             ApplyLineEffect(currentSpeaker);
-            return;
-
-            // ── MODO GRUPAL: cámara estable sin cortes ──
-            if (_isGroupConversation)
-            {
-                RotatePlayerInGroup(currentLine);
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                if (showDebugInfo)
-                    Debug.Log($"[DialogueCinematicController] Grupo: speaker → '{currentSpeakerId}' (sin corte de cámara)");
-#endif
-                return;
-            }
-
-            // ── MODO DIÁLOGO 1:1 ──
-
-            if (lineIndex == 0)
-            {
-                nextCutAtLine = CalculateNextCutLine();
-                CheckAndAdjustCameraForSpeaker(currentLine, lineIndex, totalLines);
-                return;
-            }
-
-            bool speakerChanged = CheckAndAdjustCameraForSpeaker(currentLine, lineIndex, totalLines);
-            if (speakerChanged)
-            {
-                nextCutAtLine = lineIndex + CalculateNextCutLine();
-                return;
-            }
-
-            // PRIORIDAD 2: Determinar si es momento de cortar automáticamente
-            bool shouldCut = lineIndex >= nextCutAtLine;
-
-            if (shouldCut)
-            {
-                CinematicCameraShot nextShot = activeProfile.GetNextShot(lineIndex, totalLines);
-                ApplyShotWithContext(nextShot, false, currentSpeaker);
-                nextCutAtLine = CalculateNextCutLine();
-            }
         }
 
         /// <summary>
@@ -1092,7 +1055,7 @@ public class DialogueCinematicController : MonoBehaviour
                 // Buscar en NPCs de la escena (solo en modo grupal para evitar FindObjectsByType en 1:1)
                 if (speakerTransform == null && _isGroupConversation)
                 {
-                    var allNPCs = GameObject.FindObjectsByType<Game.NPC.NPCBehaviourManagerV2>(FindObjectsSortMode.None);
+                    var allNPCs = GameObject.FindObjectsByType<Game.NPC.NPCBehaviourManagerV2>();
                     foreach (var npc in allNPCs)
                     {
                         if ((!string.IsNullOrEmpty(npc.DialogueCharacterId) && npc.DialogueCharacterId == speakerId)

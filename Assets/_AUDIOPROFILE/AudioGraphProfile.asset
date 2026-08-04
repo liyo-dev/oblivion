@@ -51,11 +51,13 @@ MonoBehaviour:
     loop: 1
   sceneMusic:
   - sceneName: Prologo
-    music: {fileID: 8300000, guid: 1eb98af82fcbff840af600ecbacb0f9c, type: 3}
+    music: {fileID: 8300000, guid: 2b6499ae1b7898d41ad775bffb9b370b, type: 3}
   - sceneName: MainMenu
     music: {fileID: 8300000, guid: 785493ca564adeb44bb1c68fa22f00ab, type: 3}
   - sceneName: MainWorld
     music: {fileID: 8300000, guid: 9ce05d94df26a2342b601cc8c5becb59, type: 3}
+  - sceneName: Credits
+    music: {fileID: 8300000, guid: e4417147d8027ae48a5ef706f52635d8, type: 3}
   eventSfx:
   - eventKey: UI_Navigate
     sfx: {fileID: 8300000, guid: c83e31fc92bdc722b8d62fa8ebea0722, type: 3}
@@ -99,45 +101,8 @@ MonoBehaviour:
     sfx: {fileID: 8300000, guid: 35516e4b9e78e6452a3ea26209b1aa61, type: 3}
   - eventKey: orbSpawn
     sfx: {fileID: 8300000, guid: bc199d6e558713e42b289920a0b0135d, type: 3}
-  - eventKey: orbAttract
-    sfx: {fileID: 8300000, guid: 79e20d4314e5328e782a9b6f6b2b71b8, type: 3}
-  additiveCinematics:
-  - sceneName: Cinematic_DemonAppears
-    music: {fileID: 8300000, guid: fe45a7da307add14a9f93158f047bc7c, type: 3}
-    duckInsteadOfReplace: 0
-    duckTo: 0
-    fade: 0
-    restoreBaseSceneName: 
-  - sceneName: Cinematic_VillainPlans
-    music: {fileID: 8300000, guid: fe45a7da307add14a9f93158f047bc7c, type: 3}
-    duckInsteadOfReplace: 0
-    duckTo: 0
-    fade: 1
-    restoreBaseSceneName: MainWorld
-  - sceneName: Cinematic_EstelaAppears
-    music: {fileID: 8300000, guid: 3016e07caab81b34486bedfdbbd140d6, type: 3}
-    duckInsteadOfReplace: 0
-    duckTo: 0
-    fade: 1
-    restoreBaseSceneName: MainWorld
-  - sceneName: Cinematic_Golem
-    music: {fileID: 8300000, guid: fe45a7da307add14a9f93158f047bc7c, type: 3}
-    duckInsteadOfReplace: 0
-    duckTo: 0
-    fade: 1
-    restoreBaseSceneName: MainWorld
-  - sceneName: Cinematic_Taberna
-    music: {fileID: 8300000, guid: 3016e07caab81b34486bedfdbbd140d6, type: 3}
-    duckInsteadOfReplace: 0
-    duckTo: 0
-    fade: 1
-    restoreBaseSceneName: 
-  - sceneName: MainMenu
-    music: {fileID: 8300000, guid: 785493ca564adeb44bb1c68fa22f00ab, type: 3}
-    duckInsteadOfReplace: 0
-    duckTo: 0
-    fade: 1
-    restoreBaseSceneName: 
+  - eventKey: rain
+    sfx: {fileID: 8300000, guid: b289d41cd1e67ee46bb53d07586b58c3, type: 3}
   sequences:
   - sequenceId: AWAKEN
     music: {fileID: 8300000, guid: a6d965cd64d1ef040986deabe19c2107, type: 3}
@@ -160,6 +125,6 @@ MonoBehaviour:
     fadeIn: 0.5
     fadeOut: 0.5
   - sequenceId: REINO_EXIT
-    music: {fileID: 8300000, guid: a3cc4bb37e6b3b14885e644f20e9271a, type: 3}
+    music: {fileID: 8300000, guid: 781689e46248308499a3914697668573, type: 3}
     fadeIn: 0.5
     fadeOut: 0.5

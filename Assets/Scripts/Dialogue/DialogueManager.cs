@@ -832,7 +832,7 @@ public class DialogueManager : MonoBehaviour
         string speakerNameToShow = string.Empty;
         if (!string.IsNullOrEmpty(line.speakerNameId))
         {
-            if (LocalizationManager.Instance != null)
+            if (resolveWithLocalizationManager && LocalizationManager.Instance != null)
                 speakerNameToShow = LocalizationManager.Instance.Get(line.speakerNameId, line.speakerNameId);
             else
                 speakerNameToShow = line.speakerNameId;
@@ -843,7 +843,7 @@ public class DialogueManager : MonoBehaviour
         string textToShow = line.text ?? string.Empty;
         if (!string.IsNullOrEmpty(line.textId))
         {
-            if (LocalizationManager.Instance != null)
+            if (resolveWithLocalizationManager && LocalizationManager.Instance != null)
                 textToShow = LocalizationManager.Instance.Get(line.textId, line.text ?? string.Empty);
             else if (!string.IsNullOrEmpty(line.text))
                 textToShow = line.text;

@@ -18,7 +18,7 @@ public static class ProfileReadyDiagnosticsInstaller
             return;
 
         // Verificar si ya existe ProfileReadyDiagnostics en la escena
-        if (Object.FindObjectOfType<ProfileReadyDiagnostics>() == null)
+        if (Object.FindAnyObjectByType<ProfileReadyDiagnostics>() == null)
         {
             var diagnosticsGO = new GameObject("[ProfileReadyDiagnostics]");
             diagnosticsGO.AddComponent<ProfileReadyDiagnostics>();
@@ -27,7 +27,7 @@ public static class ProfileReadyDiagnosticsInstaller
         }
 
         // Verificar si ya existe ProfileReadySubscriptionAnalyzer en la escena
-        if (Object.FindObjectOfType<ProfileReadySubscriptionAnalyzer>() == null)
+        if (Object.FindAnyObjectByType<ProfileReadySubscriptionAnalyzer>() == null)
         {
             var analyzerGO = new GameObject("[ProfileReadySubscriptionAnalyzer]");
             analyzerGO.AddComponent<ProfileReadySubscriptionAnalyzer>();

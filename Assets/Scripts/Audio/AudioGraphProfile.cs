@@ -49,22 +49,6 @@ public class AudioGraphProfile : ScriptableObject
     public List<AmbientZoneRule> ambientZones = new();
     
     [Serializable]
-    public class AdditiveCinematicRule
-    {
-        [Tooltip("Subcadena que debe contener el nombre de la escena aditiva (p.ej. 'Cine_', 'Cinematic.DemonAppears')")]
-        public string sceneName;
-        [Tooltip("Música a reproducir para esta cinemática (si Replace = true)")]
-        public AudioClip music;
-        [Tooltip("Si está activo, no sustituye la música; hace ducking de la actual.")]
-        public bool duckInsteadOfReplace = true;
-        [Range(0f,1f)] public float duckTo = 0.35f;
-        [Min(0f)] public float fade = 0.5f;
-        [Header("Restauración tras cinemática (opcional)")]
-        [Tooltip("Si no está vacía, al finalizar la cinemática se forzará la música asociada a esta escena base usando las reglas de SceneMusic.")]
-        public string restoreBaseSceneName;
-    }
-
-    [Serializable]
     public class SequenceRule
     {
         [Tooltip("ID de la secuencia de gameplay (debe coincidir con el campo sequenceMusicId del StarAwakeningSequencer u otro orquestador)")]
@@ -76,7 +60,6 @@ public class AudioGraphProfile : ScriptableObject
 
     public List<SceneMusic> sceneMusic = new();
     public List<EventSfx>   eventSfx   = new();
-    public List<AdditiveCinematicRule> additiveCinematics = new();
     public List<SequenceRule> sequences = new();
     
     public SequenceRule GetSequenceRule(string sequenceId)

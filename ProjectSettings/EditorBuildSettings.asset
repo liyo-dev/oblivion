@@ -24,25 +24,7 @@ EditorBuildSettings:
     path: Assets/Scenes/Cinematics/Prologo.unity
     guid: c28ba70b11fa8f848a11513362b098cd
   - enabled: 1
-    path: Assets/Scenes/Cinematics/Cinematic_Intro.unity
-    guid: af34893d73760c1499b677d5dee7bfc3
-  - enabled: 1
-    path: Assets/Scenes/Cinematics/Aditivas/Cinematic_Golem.unity
-    guid: 9dbcbd7ecb2b5654eb364e66e2264f3e
-  - enabled: 1
-    path: Assets/Scenes/Cinematics/Aditivas/Cinematic_DemonAppears.unity
-    guid: 36f9451ecd1250b47911c827c36c51f9
-  - enabled: 1
-    path: Assets/Scenes/Cinematics/Aditivas/Cinematic_EstelaAppears.unity
-    guid: efe3ed3e913ea3a40995010ff0a45614
-  - enabled: 1
-    path: Assets/Scenes/Cinematics/Aditivas/Cinematic_Mountain.unity
-    guid: 1ee7430b3d58d054b87f8315950633e3
-  - enabled: 1
-    path: Assets/Scenes/Cinematics/Aditivas/Cinematic_Taberna.unity
-    guid: e176e9ecfb1f93049b482bcc643c82b0
-  - enabled: 1
-    path: Assets/Scenes/Cinematics/Aditivas/Cinematic_VillainPlans.unity
-    guid: 5584327ed38f19d438ac3cfd54de34bc
+    path: Assets/Scenes/Systems/Credits.unity
+    guid: 6a1c80849cb11764a88ff809dd3b48bd
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

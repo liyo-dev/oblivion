@@ -315,9 +315,11 @@ public class DramaticTextOverlayUI : MonoBehaviour
             _textContainer.DOAnchorPos(holdTarget, holdDuration)
                 .SetEase(Ease.InOutSine).SetUpdate(true);
 
-        // Degradado + shimmer en modo sueño (corre concurrente con el hold)
+        // Degradado + shimmer en modo sueño (corre concurrente con el hold).
+        // disableDreamTextEffect permite que una frase concreta mantenga su color sólido
+        // (ej: la amenaza inicial en rojo) aunque el resto de la secuencia sea modo sueño.
         Coroutine dreamFx = null;
-        if (_dreamModeActive)
+        if (_dreamModeActive && !phrase.disableDreamTextEffect)
             dreamFx = StartCoroutine(Co_DreamTextEffect(holdDuration, preset.textColor.a));
 
         yield return new WaitForSecondsRealtime(holdDuration);

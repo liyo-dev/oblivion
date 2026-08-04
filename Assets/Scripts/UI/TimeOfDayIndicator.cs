@@ -86,7 +86,7 @@ namespace Sendero.UI
             // Si ya tenemos referencia válida no hace falta buscar de nuevo
             if (_dayNight != null) return;
 
-            var found = FindObjectOfType<DayNightCycle>();
+            var found = FindAnyObjectByType<DayNightCycle>();
             if (found == null) return;
 
             _dayNight = found;

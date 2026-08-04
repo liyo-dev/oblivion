@@ -5,7 +5,7 @@ using System;
 [Serializable]
 public sealed class WaitBattleWinNode : NarrativeNode
 {
-    public object arenaContext; // si quieres pasar una referencia/ID
+    [NonSerialized] public object arenaContext; // si quieres pasar una referencia/ID; tipo 'object' nunca fue serializable por Unity
     Action _cb;
 
     public override void Enter(NarrativeContext ctx, Action onReadyToAdvance)

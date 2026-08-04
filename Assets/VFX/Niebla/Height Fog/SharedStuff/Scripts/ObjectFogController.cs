@@ -26,7 +26,7 @@ public class ObjectFogController : MonoBehaviour
     public Color fogEmissionColor;
     [Range(0.0f,  100.0f)] public float fogEmissionPower;
     [Range(0.01f, 20.0f)]  public float fogEmissionFalloff;
-    [ColorUsageAttribute(false, true, -10f, 10f, -10f, 10f)] public                        Color emissionColor = Color.black;
+    [ColorUsageAttribute(false, true)] public                        Color emissionColor = Color.black;
     [Range(0.0f, 1.0f)] public    float emissionPower = 0.0f;
 
     [Space()] [Header("Standard fog configuration")]
@@ -43,7 +43,7 @@ public class ObjectFogController : MonoBehaviour
     public float fogWaveFreqZ;
 
     [HideInInspector] public MeshRenderer          renderer;
-    [HideInInspector] public MaterialPropertyBlock mpb;
+    [System.NonSerialized] [HideInInspector] public MaterialPropertyBlock mpb;
 
     [Space()] [HideInInspector] public bool overridedFromGlobalController = false;
 

@@ -14,7 +14,7 @@ namespace ithappy
         public HelloCharacterState(CharacterBase context, MovementBase movement) : base(context)
         {
             _movement = movement;
-            _player = Object.FindFirstObjectByType<EditorLikeCameraControllerBase>();
+            _player = Object.FindAnyObjectByType<EditorLikeCameraControllerBase>();
         }
 
         public override void Enter()

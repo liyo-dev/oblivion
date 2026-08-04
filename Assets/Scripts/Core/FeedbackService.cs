@@ -196,7 +196,28 @@
             var inst = EnsureInstance();
             EnsureDeathCameraEffect().TriggerDeathEffect(target);
         }
-        
+
+        /// <summary>
+        /// Variante configurable: permite a quien dispara el efecto (ej. NPCCombatLifecycleHandler)
+        /// controlar el zoom y la duración del slow-mo por NPC, en vez de usar siempre los valores
+        /// por defecto del componente. Pensado para sustituir un `Time.timeScale` manual y "seco"
+        /// por el efecto cinematográfico ya existente (zoom + easing de entrada/salida).
+        /// </summary>
+        public static void TriggerDeathEffect(
+            Transform target,
+            float slowMotionScale,
+            float holdDuration,
+            float zoomFactor = 0.85f,
+            float zoomDuration = 0.15f,
+            float returnDuration = 0.35f)
+        {
+            if (target == null) return;
+            var inst = EnsureInstance();
+            var effect = EnsureDeathCameraEffect();
+            effect.ConfigureEffect(zoomFactor, zoomDuration, holdDuration, returnDuration, slowMotionScale, holdDuration);
+            effect.TriggerDeathEffect(target);
+        }
+
         public static void CancelDeathEffect()
         {
             if (_deathCameraEffect != null)

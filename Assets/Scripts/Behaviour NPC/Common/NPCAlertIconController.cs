@@ -63,7 +63,6 @@ namespace Game.NPC.Common
         
         // Estado
         private bool _isHiding;
-        private bool _isShowing;
         private bool _hiddenDuringDialogue;
         private Vector3 _targetScale;
         
@@ -518,7 +517,6 @@ namespace Game.NPC.Common
             }
             
             _isHiding = false;
-            _isShowing = false;
             _hiddenDuringDialogue = false;
             
             if (showDebugLogs) Debug.Log($"[NPCAlertIcon:{name}] ⚡ Icono eliminado inmediatamente");
@@ -526,8 +524,7 @@ namespace Game.NPC.Common
         
         private IEnumerator ShowIconRoutine(GameObject iconPrefab, float duration, System.Action<GameObject> onInstanceCreated = null)
         {
-            _isShowing = true;
-            
+
             // Instanciar en WORLD SPACE
             _currentIconInstance = Instantiate(iconPrefab);
             _currentIconInstance.name = $"{iconPrefab.name}_{name}_Alert";
@@ -560,8 +557,6 @@ namespace Game.NPC.Common
             _currentTween = showSeq;
 
             yield return new WaitForSecondsRealtime(showAnimDuration);
-
-            _isShowing = false;
 
             // Loop de actualización durante la duración
             float elapsed = 0f;
@@ -625,8 +620,6 @@ namespace Game.NPC.Common
         /// </summary>
         private IEnumerator ShowPersistentIconRoutine(GameObject iconPrefab)
         {
-            _isShowing = true;
-            
             // Instanciar en WORLD SPACE
             _currentIconInstance = Instantiate(iconPrefab);
             _currentIconInstance.name = $"{iconPrefab.name}_{name}_Persistent";
@@ -657,7 +650,6 @@ namespace Game.NPC.Common
 
             yield return new WaitForSecondsRealtime(showAnimDuration);
 
-            _isShowing = false;
             float baseTime = Time.unscaledTime;
 
             // Loop de actualización infinito (hasta que se llame HideAlertIcon)
