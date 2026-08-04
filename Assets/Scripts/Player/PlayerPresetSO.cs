@@ -65,6 +65,12 @@ public class PlayerPresetSO : ScriptableObject
     [Tooltip("Lista de posiciones persistidas por NPC. El id es el nombre único del GameObject del NPC.")]
     public List<NpcPosEntry> npcPositions = new();
 
+    [Header("Relaciones sociales dinámicas entre NPCs")]
+    [Tooltip("Vínculos forjados en runtime entre NPCs al hablar entre ellos (WanderState/IdleState + " +
+             "NPCSocialEncounterState). Se reutiliza directamente NPCRelationshipRegistry.SaveEntry en vez " +
+             "de duplicar el struct — ver NPCRelationshipRegistry.cs.")]
+    public List<NPCRelationshipRegistry.SaveEntry> npcRelationships = new();
+
     [Header("Interactuables consumidos (single-use)")]
     [Tooltip("IDs de Interactable marcados como singleUse que ya han sido consumidos.")]
     public List<string> consumedInteractableIds = new();

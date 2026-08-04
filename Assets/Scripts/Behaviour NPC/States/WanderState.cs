@@ -22,11 +22,11 @@ namespace Game.NPC.States
         private float _playerDetectionTimer;
         private const float PLAYER_DETECTION_INTERVAL = 0.2f;
 
-        // Encuentros sociales
+        // Encuentros sociales (la lógica de escaneo vive en NPCStateBase.CheckSocialEncounter,
+        // compartida con IdleState)
         private float _socialScanTimer;
         private const float SOCIAL_SCAN_INTERVAL = 3f;
         private readonly Collider[] _socialBuffer = new Collider[8];
-        private static readonly int NpcLayerMask = LayerMask.GetMask("Interactable", "Default");
 
         // Punto de actividad elegido al entrar en el estado
         private NPCWorldPoint _pendingWorldPoint;
@@ -55,11 +55,29 @@ namespace Game.NPC.States
 
             if (context.Agent != null) context.Agent.speed = wanderSpeed;
 
-            // Con cierta probabilidad (energía baja → prefiere actividades), buscar NPCWorldPoint
             var socialConfig = context.Config?.socialConfig;
             float energy = socialConfig?.personality.energy ?? 0.5f;
             float searchRange = socialConfig?.worldPointSearchRange ?? 20f;
-            if (UnityEngine.Random.value > energy &&
+
+            // Radar de amistad: los NPCs sociables intentan buscar activamente a un Friend/
+            // BestFriend conocido en vez de solo toparse con quien pase cerca por azar (radio
+            // ampliado respecto al de detección social pasiva). Ver diseño § B.6.1 — sin esto,
+            // dos NPCs con vínculo fuerte pueden no volver a cruzarse nunca por pura geografía
+            // aleatoria en un pueblo con pocos NPCs ambientales.
+            Game.NPC.NPCBehaviourManagerV2 nearbyFriend = null;
+            if (socialConfig != null && UnityEngine.Random.value <= socialConfig.personality.sociability)
+            {
+                float friendSeekRange = socialConfig.socialDetectionRange * 2.5f;
+                nearbyFriend = NPCAmbientRegistry.FindNearbyFriend(
+                    context.RelationshipId, context.Transform.position, friendSeekRange);
+            }
+
+            // Con cierta probabilidad (energía baja → prefiere actividades), buscar NPCWorldPoint
+            if (nearbyFriend != null)
+            {
+                _targetPosition = nearbyFriend.transform.position;
+            }
+            else if (UnityEngine.Random.value > energy &&
                 NPCWorldPoint.TryFindAny(context.Transform.position, searchRange, out var wp))
             {
                 _pendingWorldPoint = wp;
@@ -100,7 +118,7 @@ namespace Game.NPC.States
             if (_socialScanTimer >= SOCIAL_SCAN_INTERVAL)
             {
                 _socialScanTimer = 0f;
-                CheckSocialEncounter(context);
+                CheckSocialEncounter(context, _socialBuffer);
             }
         }
         
@@ -110,6 +128,13 @@ namespace Game.NPC.States
             if (context.IsInCombat)           return new CombatState();
             if (context.WasDefeatedInCombat)  return new DeadState();
             if (context.IsInteracting)        return new IdleState();
+
+            // Refugio de lluvia - interrumpe el vagabundeo normal, pero no combate/cinemática/interacción
+            if (context.ShouldSeekShelter && context.CurrentShelter == null &&
+                context.Config != null && context.Config.canSeekShelter)
+            {
+                return new SeekShelterState();
+            }
 
             // Encuentro social iniciado por otro NPC mientras vagamos
             if (context.PendingSocialPartner != null)
@@ -274,52 +299,5 @@ namespace Game.NPC.States
             context.Brain.ChangeState(alertStateDefault);
         }
 
-        /// <summary>
-        /// Busca NPCs cercanos con los que iniciar un encuentro social, ponderado por personalidad.
-        /// </summary>
-        private void CheckSocialEncounter(NPCStateContext context)
-        {
-            var socialConfig = context.Config?.socialConfig;
-            if (socialConfig == null) return;
-
-            // Comprobar cooldown
-            if (Time.time - context.LastSocialEncounterTime < socialConfig.socialCooldown) return;
-
-            // El dado de sociabilidad: alta sociabilidad → mayor probabilidad de iniciar
-            if (UnityEngine.Random.value > socialConfig.personality.sociability) return;
-
-            float range = socialConfig.socialDetectionRange;
-            int count = Physics.OverlapSphereNonAlloc(
-                context.Transform.position, range, _socialBuffer, NpcLayerMask);
-
-            for (int i = 0; i < count; i++)
-            {
-                var col = _socialBuffer[i];
-                if (col == null) continue;
-
-                Transform root = col.transform.root;
-                if (root == context.Transform.root) continue; // ignorar a sí mismo
-
-                var partnerManager = root.GetComponent<Game.NPC.NPCBehaviourManagerV2>();
-                if (partnerManager == null) continue;
-
-                // Determinar la relación con este NPC
-                string partnerId = partnerManager.Configuration?.socialConfig?.npcId;
-                NPCRelationType relation = socialConfig.GetRelationshipWith(partnerId);
-
-                // Los enemigos no tienen encuentros sociales amistosos (omitir si se quiere)
-                if (relation == NPCRelationType.Enemy) continue;
-
-                // Intentar que el otro NPC acepte el encuentro
-                if (partnerManager.TryAcceptSocialEncounter(context.Transform, relation))
-                {
-                    // El partner aceptó: yo también entro en el encuentro
-                    context.PendingSocialPartner  = root;
-                    context.PendingSocialRelation = relation;
-                    context.Brain?.ChangeState(new NPCSocialEncounterState());
-                    return;
-                }
-            }
-        }
     }
 }

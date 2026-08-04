@@ -37,6 +37,13 @@ namespace Game.NPC.Modules
         [Tooltip("Actividad que realiza el NPC mientras está parado. Requiere enableWander = false.")]
         public NPCAmbientActivity ambientActivity = NPCAmbientActivity.None;
 
+        [Header("Refugio de lluvia")]
+        [Tooltip("Si está activo, el NPC interrumpe lo que está haciendo y busca un NPCShelterPoint " +
+                 "cuando empieza a llover (ver SeekShelterState). Desactivar para NPCs que deben seguir " +
+                 "disponibles bajo la lluvia: vendedores con puesto fijo, guardias apostados, NPCs con " +
+                 "diálogo de quest activo, etc.")]
+        public bool canSeekShelter = true;
+
         public override bool ValidateConfig(out string errorMessage)
         {
             errorMessage = "";

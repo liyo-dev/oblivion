@@ -122,6 +122,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &443759495478130787
 GameObject:
@@ -370,6 +371,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &1643844922967258048
 GameObject:
@@ -639,6 +641,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &2557227044893983473
 GameObject:
@@ -760,6 +763,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &2804784622617024341
 GameObject:
@@ -1328,6 +1332,7 @@ SkinnedMeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
@@ -1858,25 +1863,44 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCSimpleAnimator
   animator: {fileID: 2003696389517686881}
+  navAgent: {fileID: 0}
   locomotionState: Free Locomotion
-  battleIdleState: Idle_Battle_NoWeapon
+  idleNormalState: Idle_Normal_NoWeapon
+  idleBattleState: Idle_Battle_NoWeapon
   upperBodyLayer: 1
-  greetState: Greeting01_NoWeapon
+  movementThreshold: 0.1
+  locomotionSpeedMultiplier: 1
+  locomotionBlendTime: 0.1
+  inputMagnitudeDampTime: 0.1
+  rotationSpeed: 360
+  minRotationAngle: 5
   interactState: InteractWithPeople_NoWeapon
-  greetOnSight: 1
-  greetRadius: 3
-  fovDegrees: 110
-  requirePlayerLookingAtMe: 1
-  playerLookDotThreshold: 0.6
-  greetCooldown: 4
-  occluders:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  rotateToPlayerOnInteract: 1
-  rotateSpeed: 10
-  playerOverride: {fileID: 0}
-  lookFrom: {fileID: 0}
-  ambientInhibitor: {fileID: 0}
+  greetingState: Greeting01_NoWeapon
+  playGreetingOnDialogueStart: 0
+  greetingDialogueState: HandWave01
+  enableIdleVariations: 1
+  idleVariationStates:
+  - Idle01
+  - Idle02
+  - Idle03
+  minIdleVariationInterval: 8
+  maxIdleVariationInterval: 20
+  challengingState: Challenging_NoWeapon
+  senseSomethingState: SenseSomethingStart_NoWeapon
+  searchingState: SenseSomethingSearching_NoWeapon
+  defendState: Idle_Battle_NoWeapon
+  getHitStates:
+  - TakeDamage
+  - TakeDamage_2
+  defendHitState: DefendHit_NoWeapon
+  dieState: Die02_NoWeapon
+  dizzyState: Dizzy_NoWeapon
+  victoryState: Victory_NoWeapon
+  spellCastLeftState: MagicLeft
+  spellCastRightState: MagicRight
+  spellCastSpecialState: MagicSpecial
+  useRootMotionForSpecialAnims: 0
+  debugMode: 0
   drawGizmos: 1
 --- !u!114 &2026690195902510469
 MonoBehaviour:
@@ -1893,9 +1917,10 @@ MonoBehaviour:
   mode: 1
   hint: {fileID: 8713669460710631262}
   hideHintAtStart: 1
+  hintAnimDuration: 0.25
   singleUse: 0
   initiallyEnabled: 1
-  persistentIdOverride:
+  persistentIdOverride: 
   includeSceneInPersistentId: 1
   dialogueCharacterId: CHAR_LEONARDO
   dialogue: {fileID: 11400000, guid: f48aaf6ecc6281e4bb72c128c2e97a8d, type: 2}
@@ -2101,6 +2126,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &7878130137476141588
 GameObject:
@@ -2285,6 +2311,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &8455206357252105674
 GameObject:
@@ -2410,6 +2437,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: -1748431125

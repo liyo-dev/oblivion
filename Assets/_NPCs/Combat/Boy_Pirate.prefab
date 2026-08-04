@@ -16690,6 +16690,7 @@ MonoBehaviour:
   initiallyEnabled: 1
   persistentIdOverride: 
   includeSceneInPersistentId: 1
+  dialogueCharacterId: 
   dialogue: {fileID: 0}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}
@@ -16728,16 +16729,23 @@ MonoBehaviour:
   idleNormalState: Idle_Normal_NoWeapon
   idleBattleState: Idle_Battle_NoWeapon
   upperBodyLayer: 1
-  upperBodyIdleState: UpperIdle
   movementThreshold: 0.1
   locomotionSpeedMultiplier: 1
   locomotionBlendTime: 0.1
   inputMagnitudeDampTime: 0.1
   rotationSpeed: 360
-  rotationSmoothness: 0.15
   minRotationAngle: 5
   interactState: InteractWithPeople_NoWeapon
   greetingState: Greeting01_NoWeapon
+  playGreetingOnDialogueStart: 0
+  greetingDialogueState: HandWave01
+  enableIdleVariations: 1
+  idleVariationStates:
+  - Idle01
+  - Idle02
+  - Idle03
+  minIdleVariationInterval: 8
+  maxIdleVariationInterval: 20
   challengingState: Challenging_NoWeapon
   senseSomethingState: SenseSomethingStart_NoWeapon
   searchingState: SenseSomethingSearching_NoWeapon
@@ -16788,6 +16796,7 @@ MonoBehaviour:
     questConfig: {fileID: 0}
     interactiveNarrativeConfig: {fileID: 0}
     partyConfig: {fileID: 0}
+    socialConfig: {fileID: 0}
     walkSpeed: 1.5
     runSpeed: 4
     rotationSpeed: 180
@@ -16801,10 +16810,20 @@ MonoBehaviour:
     useKinematicRigidbody: 1
     rigidbodyConstraints: 112
   debugMode: 1
+  disableWander: 0
   startInIdleState: 1
   forceKinematicRigidbody: 1
   persistLastPosition: 0
+  persistenceId: 
   dialogueCharacterId: CHAR_PIRATA
+  rotateToPlayerOnInteract: 1
+  rotationDuration: 0.3
+  initialLayer: 0
+  switchToEnemyLayerOnCombat: 1
+  narrativeDetectionRange: 10
+  walkTowardsPlayerOnAlert: 1
+  stopDistanceFromPlayer: 2
+  narrativeAlertIconPrefab: {fileID: 0}
   onJoinedParty:
     m_PersistentCalls:
       m_Calls: []
@@ -16821,7 +16840,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: da121c18fee445abbd93a480699e2e65, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCEmotionController
   emotionProfile: {fileID: 11400000, guid: 16d5ab4386c36fb4794a8154b6410158, type: 2}
   originalEyeMesh: {fileID: 2236174855419748191}
@@ -16859,14 +16878,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4fd846acda22bfd41bb1c016673b9e6d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OrbDropper
-  healthOrbPrefab: {fileID: 720135145037961379, guid: 5714829a3d11d394c8f7dba269972167, type: 3}
-  manaOrbPrefab: {fileID: 720135145037961379, guid: 5714829a3d11d394c8f7dba269972167, type: 3}
-  healthChance: 1
-  manaChance: 0.2
-  estelaOrbPrefab: {fileID: 7011574980652007753, guid: d5e45887b593fd449bb7e2b65a451fb4, type: 3}
-  liamOrbPrefab: {fileID: 7011574980652007753, guid: d5e45887b593fd449bb7e2b65a451fb4, type: 3}
-  specialChance: 1
-  spawnRadius: 0.4
+  _profileId: 
+  _spawnOrigin: {fileID: 0}
 --- !u!114 &7369555659256803442
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16885,8 +16898,12 @@ MonoBehaviour:
   levitationAnimState: LevelUp_NoWeapon
   holdPauseNormalizedTime: 0.5
   liftSpeed: 3
+  hitAnimState: Hit
+  hitAnimDuration: 0.4
   disableNavMeshDuringLevitation: 1
   levitationDrag: 2
+  wallBounceForce: 8
+  wallBounceMinSpeed: 0.5
   levitationVFXPrefab: {fileID: 6403252182692130976, guid: 4e12b3c53c0f8ee4da83655d8d2770d5, type: 3}
   impactVFXPrefab: {fileID: 5024009746357069194, guid: ec3f674830402cc45bce805cf6493db7, type: 3}
   impactVFXLifetime: 2

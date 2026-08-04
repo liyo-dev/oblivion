@@ -5,9 +5,14 @@ using UnityEngine.Rendering;
 
 /// <summary>
 /// Genera un techo de nubes 3D reales (mallas del pack Low Poly Modular Terrain, u otras que se
-/// asignen) sobre el jugador cuando el cielo se está nublando, para que se vea un cielo
-/// literalmente cubierto de nubes (sin skybox visible entre huecos) en vez de solo un cambio de
-/// material de skybox.
+/// asignen) alrededor del jugador la PRIMERA vez que el cielo se está nublando, para que se vea
+/// un cielo literalmente cubierto de nubes (sin skybox visible entre huecos) en vez de solo un
+/// cambio de material de skybox.
+///
+/// El techo se construye UNA sola vez y luego queda FIJO en el mundo (no sigue al jugador frame
+/// a frame). En lluvias posteriores se reutiliza el mismo conjunto de mallas ya instanciadas
+/// (pool manual vía SetActive, sin volver a golpear Instantiate/Destroy) y solo se anima el
+/// fundido de alfa al aparecer/disiparse.
 ///
 /// Totalmente desacoplado de DayNightCycle: se limita a escuchar sus eventos
 /// (CloudsBuildingUp / RainStopped), tal como pide la arquitectura del proyecto (comunicación
@@ -22,7 +27,7 @@ public class CloudCoverSpawner : MonoBehaviour
     [Header("Nubes")]
     [Tooltip("Prefabs de malla de nube a repartir por el techo (p.ej. Cloud_01..04 del Low Poly Modular Terrain Pack). Se elige uno al azar por instancia.")]
     [SerializeField] private GameObject[] cloudPrefabs;
-    [Tooltip("Altura sobre el jugador a la que se coloca el CENTRO del techo de nubes. Las nubes NO tienen collider (los prefabs Cloud_XX son solo malla+material), así que si el jugador puede volar (PlayerFlyingController) las atraviesa sin más: por debajo se ve el cielo cubierto, por encima el cielo/skybox normal (el skybox nunca se toca, así que el sol sigue ahí arriba). Si minClearanceAboveFollowTarget detecta que esta altura no basta para las mallas ya escaladas, se sube automáticamente.")]
+    [Tooltip("Altura sobre el jugador a la que se coloca el CENTRO del techo de nubes la PRIMERA vez que se construye (después el techo queda fijo en el mundo, no vuelve a recalcularse aunque el jugador se mueva). Las nubes NO tienen collider (los prefabs Cloud_XX son solo malla+material), así que si el jugador puede volar (PlayerFlyingController) las atraviesa sin más: por debajo se ve el cielo cubierto, por encima el cielo/skybox normal (el skybox nunca se toca, así que el sol sigue ahí arriba). Si minClearanceAboveFollowTarget detecta que esta altura no basta para las mallas ya escaladas, se sube automáticamente.")]
     [SerializeField] private float cloudHeight = 45f;
     [Tooltip("Radio horizontal alrededor del jugador que cubre el techo de nubes. Cuanto más grande, menos se nota el borde del área cubierta, pero más instancias hacen falta.")]
     [SerializeField] private float coverRadius = 150f;
@@ -38,8 +43,8 @@ public class CloudCoverSpawner : MonoBehaviour
     [SerializeField] private float minClearanceAboveFollowTarget = 25f;
 
     [Header("Aspecto de tormenta")]
-    [Tooltip("Color al que se tiñen las nubes al cubrir el cielo (el alfa se anima aparte, de 0 a 1).")]
-    [SerializeField] private Color stormCloudColor = new Color(0.12f, 0.12f, 0.14f);
+    [Tooltip("Color al que se tiñen las nubes al cubrir el cielo (el alfa se anima aparte, de 0 a 1). Gris de tormenta medio por defecto: lo bastante oscuro para leerse como nublado, sin llegar a negro.")]
+    [SerializeField] private Color stormCloudColor = new Color(0.42f, 0.43f, 0.47f);
 
     [Header("Transición")]
     [Tooltip("Si es true, usa DayNightCycle.RainDarkenTransitionDuration para sincronizar la aparición/disipación con el oscurecimiento del cielo. Si es false, usa fadeDuration.")]
@@ -98,23 +103,23 @@ public class CloudCoverSpawner : MonoBehaviour
         DestroyCover();
     }
 
-    // Solo lectura de un Transform ya cacheado (_followTransform se resuelve una vez por evento de
-    // nubosidad, nunca aquí) — no viola la regla de no buscar Camera.main/GetComponent en Update.
-    void LateUpdate()
-    {
-        if (_root == null || _followTransform == null) return;
-
-        Vector3 pos = _followTransform.position;
-        pos.y += cloudHeight + _safetyHeightBonus;
-        _root.position = pos;
-    }
-
     void HandleCloudsBuildingUp()
     {
-        _followTransform = PlayerService.Player != null ? PlayerService.Player.transform :
-                            Camera.main != null ? Camera.main.transform : null;
+        if (!_built)
+        {
+            // _followTransform solo se usa aquí, para anclar el techo la primera vez que se
+            // construye. Una vez construido queda fijo en el mundo: no hay LateUpdate que lo
+            // reposicione por frame (eso era lo que hacía que las nubes "acompañaran" al jugador).
+            _followTransform = PlayerService.Player != null ? PlayerService.Player.transform :
+                                Camera.main != null ? Camera.main.transform : null;
+            BuildCoverIfNeeded();
+        }
+        else if (_root != null)
+        {
+            // Pool: reactivar las mallas ya instanciadas en vez de Instantiate de nuevo.
+            _root.gameObject.SetActive(true);
+        }
 
-        BuildCoverIfNeeded();
         StartFade(1f);
     }
 
@@ -253,7 +258,7 @@ public class CloudCoverSpawner : MonoBehaviour
         _fadeCoroutine = null;
 
         if (target <= 0f)
-            DestroyCover();
+            DeactivateCover();
     }
 
     void ApplyAlpha(float alpha)
@@ -272,6 +277,23 @@ public class CloudCoverSpawner : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Oculta el techo de nubes sin destruir las mallas (pool): las deja desactivadas y fijas en
+    /// su posición de mundo, listas para reaparecer en la próxima lluvia con solo un SetActive +
+    /// fundido de alfa, sin volver a pagar el coste de Instantiate.
+    /// </summary>
+    void DeactivateCover()
+    {
+        if (_root != null)
+            _root.gameObject.SetActive(false);
+
+        _currentAlpha = 0f;
+    }
+
+    /// <summary>
+    /// Limpieza real (destruye las mallas). Solo se usa cuando el propio componente se
+    /// desactiva/destruye (p.ej. descarga de escena), no en cada ciclo de lluvia.
+    /// </summary>
     void DestroyCover()
     {
         if (_root != null)

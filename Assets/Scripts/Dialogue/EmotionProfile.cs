@@ -60,14 +60,14 @@ public struct EmotionMeshData
     public NPCEmotion emotion;
 
     [Header("Cara")]
-    [Tooltip("Nombre del GameObject de ojos a activar (ej: 'Eye01', 'Eye03')")]
+    [Tooltip("Nombre del GameObject de ojos a activar (ej: 'Eye01', 'Eye03'). Vacío = no cambia, se mantienen los ojos que ya tenía el NPC.")]
     public string eyeMeshName;
 
-    [Tooltip("Nombre del GameObject de boca a activar (ej: 'Mouth01', 'Mouth03')")]
+    [Tooltip("Nombre del GameObject de boca a activar (ej: 'Mouth01', 'Mouth03'). Vacío = no cambia, se mantiene la boca que ya tenía el NPC.")]
     public string mouthMeshName;
 
     [Header("Animación Corporal (jugador)")]
-    [Tooltip("Nombre del estado en el Animator Controller del jugador (ej: 'Cheer01', 'Cry01'). Vacío = sin animación específica.")]
+    [Tooltip("Nombre del estado en el Animator Controller del jugador (ej: 'Cheer01', 'Cry01'). Vacío = no se reproduce ninguna animación, se mantiene el gesto/pose actual. Útil para emociones que solo deben cambiar la cara.")]
     public string bodyAnimStateName;
 }
 

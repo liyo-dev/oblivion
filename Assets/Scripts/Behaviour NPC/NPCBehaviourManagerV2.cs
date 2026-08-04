@@ -169,11 +169,18 @@ namespace Game.NPC
             if (disableWander)
                 configuration.DisableWander();
 
+            // Los NPCs narrativos (con persistenceId) no deben desaparecer refugiándose de la
+            // lluvia: podrían ser necesarios para una interacción o quest en curso. Ver
+            // Diseno_Refugio_Lluvia_y_Relaciones_NPC.md § A.4.
+            if (!string.IsNullOrEmpty(persistenceId))
+                configuration.DisableShelterSeeking();
+
             // 5. Crear Contexto FSM
             _context = new NPCStateContext(null, transform, _agent, _animator, _unityAnimator, _rigidbody)
             {
                 Config = configuration,
-                DebugMode = debugMode
+                DebugMode = debugMode,
+                RelationshipId = ResolveRelationshipId()
             };
             
             // 6. Crear Brain
@@ -190,8 +197,50 @@ namespace Game.NPC
             PlayerService.OnPlayerRegistered += OnPlayerRegistered;
             PlayerService.OnPlayerUnregistered += OnPlayerUnregistered;
             ResolvePlayerReferences();
+
+            // 9. Refugio de lluvia: escuchar cambios de clima y aplicar el estado actual por si
+            // ya está lloviendo al activarse este NPC (recarga de escena a mitad de tormenta, etc.)
+            NPCWeatherAwareness.RainStarted += HandleRainStarted;
+            NPCWeatherAwareness.RainStopped += HandleRainStopped;
+            _context.ShouldSeekShelter = NPCWeatherAwareness.IsRaining;
+        }
+
+        private void HandleRainStarted()
+        {
+            if (_context != null) _context.ShouldSeekShelter = true;
+        }
+
+        private void HandleRainStopped()
+        {
+            if (_context == null) return;
+            _context.ShouldSeekShelter = false;
+
+            // Si estábamos ocultos refugiados en una casa, reactivarnos aquí directamente: con el
+            // GameObject desactivado, Unity no llama a Update(), así que SeekShelterState no puede
+            // reaccionar por sí solo a este evento. Esta suscripción SÍ se ejecuta con el
+            // GameObject desactivado, al ser una invocación de delegado C# normal, no un callback
+            // de ciclo de vida de Unity.
+            if (_context.IsHiddenForShelter)
+            {
+                _context.IsHiddenForShelter = false;
+                gameObject.SetActive(true);
+            }
         }
         
+        void OnEnable()
+        {
+            // _context ya existe siempre aquí: Unity llama Awake() antes que OnEnable(),
+            // incluida la primera activación. Ver NPCAmbientRegistry para el uso (radar de amistad).
+            if (_context != null)
+                NPCAmbientRegistry.Register(_context.RelationshipId, this);
+        }
+
+        void OnDisable()
+        {
+            if (_context != null)
+                NPCAmbientRegistry.Unregister(_context.RelationshipId, this);
+        }
+
         void Start()
         {
             // Aplicar persistencia si existe
@@ -251,6 +300,8 @@ namespace Game.NPC
             UnregisterNarrativeIdentity();
             PlayerService.OnPlayerRegistered -= OnPlayerRegistered;
             PlayerService.OnPlayerUnregistered -= OnPlayerUnregistered;
+            NPCWeatherAwareness.RainStarted -= HandleRainStarted;
+            NPCWeatherAwareness.RainStopped -= HandleRainStopped;
         }
 
         // =================================================================================
@@ -642,6 +693,24 @@ namespace Game.NPC
             }
 
             _brain?.HandleInteraction(interactor);
+        }
+
+        /// <summary>
+        /// Id estable para el registro de relaciones dinámicas (NPCRelationshipRegistry).
+        /// Los NPCs con historia propia ya tienen un npcId único en su NPCSocialConfig individual.
+        /// Los NPCs de relleno comparten un NPCSocialConfig de arquetipo con npcId vacío
+        /// (ej. NPC_Social_Archetype_Friendly.asset) — para esos, generamos un id único por
+        /// instancia aquí. Nunca se escribe de vuelta al ScriptableObject compartido.
+        /// Ver Diseno_Refugio_Lluvia_y_Relaciones_NPC.md § B.2.
+        /// </summary>
+        private string ResolveRelationshipId()
+        {
+            string authoredId = configuration?.socialConfig?.npcId;
+            if (!string.IsNullOrEmpty(authoredId)) return authoredId;
+
+            if (!string.IsNullOrEmpty(persistenceId)) return persistenceId;
+
+            return $"{gameObject.name}_{GetEntityId()}";
         }
 
         private void RegisterNarrativeIdentity()

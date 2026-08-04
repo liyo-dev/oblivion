@@ -1859,13 +1859,11 @@ MonoBehaviour:
   idleNormalState: Idle_Normal_NoWeapon
   idleBattleState: Idle_Battle_NoWeapon
   upperBodyLayer: 1
-  upperBodyIdleState: UpperIdle
   movementThreshold: 0.1
   locomotionSpeedMultiplier: 1
   locomotionBlendTime: 0.1
   inputMagnitudeDampTime: 0.1
   rotationSpeed: 360
-  rotationSmoothness: 0.15
   minRotationAngle: 5
   interactState: InteractWithPeople_NoWeapon
   greetingState: Greeting01_NoWeapon
@@ -1873,8 +1871,9 @@ MonoBehaviour:
   greetingDialogueState: HandWave01
   enableIdleVariations: 1
   idleVariationStates:
-  - Idle02_NoWeapon
-  - Idle03_NoWeapon
+  - Idle01
+  - Idle02
+  - Idle03
   minIdleVariationInterval: 8
   maxIdleVariationInterval: 20
   challengingState: Challenging_NoWeapon
@@ -1914,6 +1913,7 @@ MonoBehaviour:
   initiallyEnabled: 1
   persistentIdOverride: 
   includeSceneInPersistentId: 1
+  dialogueCharacterId: 
   dialogue: {fileID: 11400000, guid: 37e5a0b34a0f05a419dd91694e08d1f9, type: 2}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}

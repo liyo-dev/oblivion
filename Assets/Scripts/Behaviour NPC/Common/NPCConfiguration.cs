@@ -142,6 +142,13 @@ namespace Game.NPC.Common
         private bool _wanderDisabledOverride;
         public void DisableWander() => _wanderDisabledOverride = true;
         public bool enableWander => !_wanderDisabledOverride && (ambientConfig != null ? ambientConfig.enableWander : true);
+
+        // Refugio de lluvia (ver SeekShelterState). NPCBehaviourManagerV2 desactiva esto
+        // automáticamente para cualquier NPC con persistenceId (relevante para el grafo narrativo),
+        // para que no desaparezca a mitad de una interacción de quest.
+        private bool _shelterSeekingDisabledOverride;
+        public void DisableShelterSeeking() => _shelterSeekingDisabledOverride = true;
+        public bool canSeekShelter => !_shelterSeekingDisabledOverride && (ambientConfig != null ? ambientConfig.canSeekShelter : true);
         public float detectionRadius => combatConfig != null ? combatConfig.detectionRange : 10f;
         public float combatRange => combatConfig != null ? combatConfig.maxAttackDistance : 8f;
         public float meleeRange => combatConfig != null ? combatConfig.minAttackDistance : 2f;

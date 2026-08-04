@@ -2,7 +2,7 @@
 using System;
 using UnityEngine;
 
-[Obsolete("ActivateGameObjectNode eliminado - ya no usar. Usa UnlockAbilitiesNode o PlayCinematicNode según corresponda.")]
+[Obsolete("ActivateGameObjectNode eliminado - ya no usar. Usa UnlockAbilitiesNode o PlayTimelineNode según corresponda.")]
 public sealed class ActivateGameObjectNode : NarrativeNode
 {
     public string targetName;

@@ -58,7 +58,6 @@ public class ProfileReadyDiagnostics : MonoBehaviour
         "Interactable",              // Acceso condicional bajo demanda
         "GameBootService",           // Es el que dispara el evento
         "ProfileReadyDiagnostics",   // Sistema de diagnóstico
-        "AdditiveSceneCinematic",    // Acceso condicional para one-shot flags
         "NarrativeGraphStarter",     // Acceso condicional para restaurar blackboards
         "PlayerHUDV2",               // No accede al Profile, usa ServiceLocator
         "SpawnManager",              // ✅ Tiene métodos estáticos que acceden al Profile, pero está correctamente suscrito

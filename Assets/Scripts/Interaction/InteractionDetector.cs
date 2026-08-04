@@ -198,7 +198,7 @@ public class InteractionDetector : MonoBehaviour
         bool dialogueActive = DialogueManager.Instance != null && DialogueManager.Instance.IsOpen;
         bool choicePromptActive = GameState.Is(GamePhase.SavePrompt);
         bool menusBlock = !GameState.CanInteractGlobally; // incluye PauseMenu/MainMenu
-        bool cinematicPlaying = AdditiveSceneCinematic.IsAnyAdditiveCinematicPlaying;
+        bool cinematicPlaying = CinematicSequencerBase.AnySequenceActive;
         bool combatBlocked = IsCombatBlockingInteractions();
 
         if (dialogueActive)

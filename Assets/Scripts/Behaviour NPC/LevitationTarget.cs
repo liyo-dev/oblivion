@@ -366,14 +366,57 @@ public class LevitationTarget : MonoBehaviour
 
             if (_navAgent != null && _wasNavAgentEnabled)
             {
-                if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out var hit, 2f, UnityEngine.AI.NavMesh.AllAreas))
-                    transform.position = hit.position;
-                _navAgent.enabled = true;
+                StartCoroutine(Co_ReenableNavAgentWhenGrounded());
             }
         }
 
         OnAnyLevitationEnded?.Invoke();
         if (showDebugLogs) Debug.Log($"[LevitationTarget] {name} estado normal restaurado");
+    }
+
+    /// <summary>
+    /// Reactiva el NavMeshAgent tras la levitación sin congelar al NPC en el aire.
+    /// Si al aterrizar no hay NavMesh cerca (p.ej. quedó encajado contra una pared),
+    /// activar el agente igualmente hace que tome el control del transform y lo
+    /// deje "flotando" en ese punto, porque el NavMeshAgent ignora la física una
+    /// vez habilitado. En su lugar esperamos a que la gravedad asiente al NPC en
+    /// el suelo y solo entonces reactivamos el agente, con un radio de búsqueda
+    /// más generoso como fallback.
+    /// </summary>
+    IEnumerator Co_ReenableNavAgentWhenGrounded()
+    {
+        const float initialSampleRadius = 2f;
+        const float fallbackSampleRadius = 10f;
+        const float settleTimeout = 3f;
+
+        if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out var hit, initialSampleRadius, UnityEngine.AI.NavMesh.AllAreas))
+        {
+            transform.position = hit.position;
+            _navAgent.enabled = true;
+            yield break;
+        }
+
+        // No hay NavMesh cerca todavía: dejar que la física (gravedad ya activa
+        // desde EndLevitation) lo lleve al suelo antes de reintentar.
+        float elapsed = 0f;
+        while (elapsed < settleTimeout)
+        {
+            elapsed += Time.deltaTime;
+            bool grounded = Physics.Raycast(transform.position + Vector3.up * 0.2f, Vector3.down, 0.35f);
+            bool settled  = _rigidbody == null || _rigidbody.linearVelocity.sqrMagnitude < 0.01f;
+            if (grounded && settled) break;
+            yield return null;
+        }
+
+        if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out var hit2, fallbackSampleRadius, UnityEngine.AI.NavMesh.AllAreas))
+        {
+            transform.position = hit2.position;
+            _navAgent.enabled = true;
+        }
+        else if (showDebugLogs)
+        {
+            Debug.LogWarning($"[LevitationTarget] {name}: no se encontró NavMesh cercano tras aterrizar (radio {fallbackSampleRadius}m); el agente permanece desactivado para no congelar al NPC en el aire.");
+        }
     }
 
     void UnsubscribeDamage()

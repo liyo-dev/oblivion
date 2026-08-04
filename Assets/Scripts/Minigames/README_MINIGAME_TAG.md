@@ -74,7 +74,7 @@ Asegúrate de que la zona del minijuego tenga **NavMesh bakeado** para que el pe
 4. El nodo **esperará automáticamente** a que el jugador gane para avanzar
 
 ```
-[PlayCinematicNode] → [StartTagMinigameNode] → [DialogueNode "¡Lo lograste!"]
+[PlayTimelineNode] → [StartTagMinigameNode] → [DialogueNode "¡Lo lograste!"]
 ```
 
 ### Opción B: Usando Eventos Custom

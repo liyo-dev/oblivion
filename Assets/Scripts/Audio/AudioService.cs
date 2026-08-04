@@ -1121,6 +1121,13 @@ public sealed class AudioService : MonoBehaviour
     public AudioClip CurrentMusicClip => GetCurrentMusicClip();
 
     /// <summary>
+    /// True mientras la música de combate está activa (entre BeginBattleMusic y EndBattleMusic).
+    /// Usado por sistemas externos (p. ej. AmbientZone) para no pisar la música de combate
+    /// con transiciones ambientales mientras el combate sigue en curso.
+    /// </summary>
+    public bool IsBattleActive => _battleActive;
+
+    /// <summary>
     /// Activa o desactiva el loop de las dos fuentes de música. Útil para temas que deben sonar
     /// una sola vez y terminar (p.ej. el tema de créditos, ver CreditsSceneController), en vez de
     /// heredar el loop=true por defecto que usa la música de ambiente/gameplay.

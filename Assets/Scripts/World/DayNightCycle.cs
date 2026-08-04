@@ -256,7 +256,16 @@ public class DayNightCycle : MonoBehaviour
     // Suprime la lluvia y la niebla VISUALMENTE mientras el jugador está en un interior
     // (AnchorEnvironment.isInterior), sin tocar el ciclo lógico (IsRaining/IsMisty, temporizadores)
     // para que al salir se reanuden si el clima sigue activo.
+    // OJO: esto solo se actualiza vía OnInteriorEntered/OnInteriorExited, que EnvironmentController
+    // dispara únicamente desde ApplyInterior/ApplyExterior (el flujo "real" de entrar/salir andando).
+    // NO se actualiza durante un override cinemático (BeginCinematicOverride + ApplyInteriorForCinematic,
+    // ver CinematicSequencerBase/SimpleCinematicDirector), porque ese flujo no toca _mode a propósito.
+    // Por eso IsSkyboxLockedByEnvironment() de abajo comprueba también IsCinematicOverrideActive.
     private bool _outdoorWeatherSuppressedIndoors;
+
+    // Para detectar cuándo un override cinemático termina y poder re-aplicar el skybox correcto
+    // (periodo actual o tormenta) que se haya quedado pendiente mientras estaba bloqueado.
+    private bool _wasCinematicOverrideActive;
 
     void Awake()
     {
@@ -398,6 +407,12 @@ public class DayNightCycle : MonoBehaviour
         _outdoorWeatherSuppressedIndoors = false;
         SetRainVisualActive(true);
         SetMistVisualActive(true);
+
+        // Si la tormenta arrancó mientras estábamos dentro, o cambió el periodo del día,
+        // ApplyStormSkybox()/ApplySettingsImmediate()/TransitionToSettings() se saltaron el cambio
+        // de skybox (ver IsSkyboxLockedByEnvironment). Al volver a exterior hay que aplicarlo ahora,
+        // si no el cielo se queda con el look de antes de entrar aunque haya cambiado mientras dentro.
+        ReapplyPendingSkybox();
     }
 
     void SetRainVisualActive(bool active)
@@ -432,12 +447,57 @@ public class DayNightCycle : MonoBehaviour
 
     void Update()
     {
+        // Detectar el final de un override cinemático (cinemática en un interior vía
+        // CinematicSequencerBase/SimpleCinematicDirector) para re-aplicar aquí el skybox que se
+        // haya quedado pendiente (ver IsSkyboxLockedByEnvironment). EnvironmentController no avisa
+        // de esto con un evento, así que se sondea igual que hace el propio EnvironmentController
+        // con su _cinematicReapplyPending.
+        var ec = EnvironmentController.Instance;
+        bool cinematicActiveNow = ec != null && ec.IsCinematicOverrideActive;
+        if (_wasCinematicOverrideActive && !cinematicActiveNow)
+            ReapplyPendingSkybox();
+        _wasCinematicOverrideActive = cinematicActiveNow;
+
         if (!autoAdvance || _isTransitioning) return;
 
         _timeElapsed += Time.deltaTime;
 
         if (_timeElapsed >= _currentDuration)
             AdvanceToNextPeriod();
+    }
+
+    /// <summary>
+    /// True mientras algo ajeno al ciclo día/noche debe tener el control exclusivo de
+    /// RenderSettings.skybox: el jugador está físicamente en un interior (AnchorEnvironment), o hay
+    /// una cinemática con override activo (BeginCinematicOverride, típicamente con un anchor de
+    /// interior propio vía ApplyInteriorForCinematic). En ambos casos escribir el skybox del periodo
+    /// o de la tormenta aquí pisaría lo que EnvironmentController ya está mostrando — el bug de
+    /// "sale un azul de fondo en medio de la secuencia" era justo esto: la transición de periodo o el
+    /// inicio de lluvia ignoraban por completo el override cinemático.
+    /// </summary>
+    bool IsSkyboxLockedByEnvironment()
+    {
+        return _outdoorWeatherSuppressedIndoors
+            || (EnvironmentController.Instance != null && EnvironmentController.Instance.IsCinematicOverrideActive);
+    }
+
+    /// <summary>
+    /// Re-aplica el skybox correcto (tormenta si está lloviendo/nublando, si no el del periodo
+    /// actual) cuando algo que lo tenía bloqueado (interior real o cinemática) deja de bloquearlo.
+    /// </summary>
+    void ReapplyPendingSkybox()
+    {
+        if (IsSkyboxLockedByEnvironment()) return; // seguimos bloqueados por otro motivo, no tocar
+
+        if (IsRaining || _isCloudBuildingUp)
+        {
+            ApplyStormSkybox();
+        }
+        else if (timeSettings[_currentIndex].skybox != null && RenderSettings.skybox != timeSettings[_currentIndex].skybox)
+        {
+            RenderSettings.skybox = timeSettings[_currentIndex].skybox;
+            DynamicGI.UpdateEnvironment();
+        }
     }
 
     void InitializeCycle()
@@ -602,7 +662,9 @@ public class DayNightCycle : MonoBehaviour
 
     void ApplySettingsImmediate(TimeOfDaySettings settings)
     {
-        if (settings.skybox != null)
+        // No pisar el skybox si un interior (real o cinemático) tiene el control ahora mismo — ver
+        // IsSkyboxLockedByEnvironment. Se re-aplicará solo al salir/terminar (ReapplyPendingSkybox).
+        if (settings.skybox != null && !IsSkyboxLockedByEnvironment())
         {
             RenderSettings.skybox = settings.skybox;
             DynamicGI.UpdateEnvironment();
@@ -631,8 +693,9 @@ public class DayNightCycle : MonoBehaviour
     {
         _isTransitioning = true;
 
-        // El skybox cambia al inicio para que cielo y luz evolucionen juntos, evitando el "pop" al final
-        if (target.skybox != null && RenderSettings.skybox != target.skybox)
+        // El skybox cambia al inicio para que cielo y luz evolucionen juntos, evitando el "pop" al final.
+        // No pisar el skybox si un interior (real o cinemático) tiene el control ahora mismo.
+        if (target.skybox != null && RenderSettings.skybox != target.skybox && !IsSkyboxLockedByEnvironment())
         {
             RenderSettings.skybox = target.skybox;
             DynamicGI.UpdateEnvironment();
@@ -747,6 +810,14 @@ public class DayNightCycle : MonoBehaviour
 
     void ApplyStormSkybox()
     {
+        // No tocar cámara/skybox mientras el jugador está en un interior (real o cinemático):
+        // EnvironmentController ya está aplicando el fondo/skybox de la AnchorEnvironment actual
+        // (ver ApplyInteriorTo / ApplyInteriorForCinematic). Pisarlo aquí sin comprobar esto causaba
+        // el bug "llueve dentro de la casa" / "sale un azul de fondo en medio de la secuencia": la
+        // lluvia VISUAL sí se suprimía (ver ActivateRain), pero el fondo de cámara se sobrescribía
+        // con el stormSkybox / el tinte gris de lluvia igualmente, en cuanto empezaba a nublarse.
+        if (IsSkyboxLockedByEnvironment()) return;
+
         if (stormSkybox != null && RenderSettings.skybox != stormSkybox)
         {
             _preStormSkybox = RenderSettings.skybox;
@@ -816,9 +887,9 @@ public class DayNightCycle : MonoBehaviour
             Debug.LogWarning("[DayNightCycle] No se encontró jugador ni cámara, lluvia instanciada sin padre.");
         }
 
-        // Si el jugador ya está en un interior cuando empieza a llover, que no se vea/oiga
-        // hasta que salga (evita el problema de "llueve dentro de la casa").
-        if (_outdoorWeatherSuppressedIndoors)
+        // Si el jugador ya está en un interior (real o cinemático) cuando empieza a llover, que no
+        // se vea/oiga hasta que salga (evita el problema de "llueve dentro de la casa").
+        if (IsSkyboxLockedByEnvironment())
             _activeRainInstance.SetActive(false);
 
         IsRaining = true;
@@ -942,8 +1013,9 @@ public class DayNightCycle : MonoBehaviour
                 Debug.LogWarning("[DayNightCycle] No se encontró jugador ni cámara, niebla instanciada sin padre.");
             }
 
-            // Igual que con la lluvia: si el jugador ya está en un interior, que no se vea hasta salir.
-            if (_outdoorWeatherSuppressedIndoors)
+            // Igual que con la lluvia: si el jugador ya está en un interior (real o cinemático),
+            // que no se vea hasta salir.
+            if (IsSkyboxLockedByEnvironment())
                 _activeMistInstance.SetActive(false);
         }
 

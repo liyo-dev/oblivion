@@ -65,7 +65,7 @@ MonoBehaviour:
     blackboardData:
     - key: __currentNodeGuid
       type: string
-      value: 
+      value: 10559b15-8995-40fa-bb17-eb2f5dd42b6d
     - key: __event_78455749-f638-46de-a00c-c00cb1e61e5d_LETTER_START_received
       type: bool
       value: 1
@@ -97,7 +97,7 @@ MonoBehaviour:
     blackboardData:
     - key: __currentNodeGuid
       type: string
-      value: 
+      value: 434108a8-8f50-407a-b807-74d22ff2a5ac
     - key: __forked_434108a8-8f50-407a-b807-74d22ff2a5ac
       type: bool
       value: 1

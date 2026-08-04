@@ -615,7 +615,9 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         if (shouldLock)
         {
             if (_hasMovementLock) return;
-            PlayerLockService.Instance.Acquire(_lockOwner);
+            var lockService = PlayerLockService.Instance;
+            if (lockService == null) return; // Juego cerrando: no crear una instancia nueva a destiempo
+            lockService.Acquire(_lockOwner);
             _hasMovementLock = true;
         }
         else

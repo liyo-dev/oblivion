@@ -52,7 +52,7 @@ MonoBehaviour:
     blackboardData:
     - key: __currentNodeGuid
       type: string
-      value: 
+      value: 83efb3b4-a261-43b9-b5e2-56c03b1cec4f
     - key: __forked_83efb3b4-a261-43b9-b5e2-56c03b1cec4f
       type: bool
       value: 1
@@ -72,7 +72,7 @@ MonoBehaviour:
     blackboardData:
     - key: __currentNodeGuid
       type: string
-      value: 
+      value: 434108a8-8f50-407a-b807-74d22ff2a5ac
     - key: __forked_434108a8-8f50-407a-b807-74d22ff2a5ac
       type: bool
       value: 1

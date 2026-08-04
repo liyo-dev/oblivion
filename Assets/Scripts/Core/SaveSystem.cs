@@ -79,6 +79,7 @@ public class SaveSystem : MonoBehaviour
                 data.unlockedTeleportPoints ??= new System.Collections.Generic.List<string>();
                 data.completedInteractiveNarratives ??= new System.Collections.Generic.List<string>();
                 data.seenLorePopupIds ??= new System.Collections.Generic.List<string>();
+                data.npcRelationships ??= new System.Collections.Generic.List<NPCRelationshipRegistry.SaveEntry>();
             }
             
             return data != null;

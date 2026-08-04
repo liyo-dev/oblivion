@@ -17,7 +17,7 @@ MonoBehaviour:
   - emotion: 1
     eyeMeshName: Eye07
     mouthMeshName: Mouth09
-    bodyAnimStateName: Victory_NoWeapon
+    bodyAnimStateName: HeadNod01
   - emotion: 2
     eyeMeshName: Eye10
     mouthMeshName: Mouth01

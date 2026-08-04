@@ -11,11 +11,19 @@ using UnityEngine;
 public class PlayerLockService : MonoBehaviour
 {
     static PlayerLockService _instance;
+    static bool _isShuttingDown;
     public static bool HasInstance => _instance != null;
     public static PlayerLockService Instance
     {
         get
         {
+            // No recrear la instancia si el juego/escena ya está cerrando: crear un
+            // GameObject nuevo en ese momento es exactamente lo que dispara el warning
+            // de Unity "Some objects were not cleaned up when closing the scene"
+            // (el nuevo GO queda huérfano porque DontDestroyOnLoad no llega a tiempo).
+            if (_isShuttingDown)
+                return _instance;
+
             if (_instance == null)
             {
                 var go = new GameObject("PlayerLockService");
@@ -26,6 +34,15 @@ public class PlayerLockService : MonoBehaviour
             return _instance;
         }
     }
+
+#if UNITY_EDITOR
+    [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        _instance = null;
+        _isShuttingDown = false;
+    }
+#endif
 
     readonly HashSet<object> _owners = new HashSet<object>();
 
@@ -245,14 +262,28 @@ public class PlayerLockService : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-        
+
+        _instance = this;
+        _isShuttingDown = false;
+
         // Suscribirse a cambios de escena para auto-limpieza
         UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
     }
-    
+
     void OnDestroy()
     {
         UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+
+        if (_instance == this)
+        {
+            _instance = null;
+            _isShuttingDown = true;
+        }
+    }
+
+    void OnApplicationQuit()
+    {
+        _isShuttingDown = true;
     }
     
     /// <summary>

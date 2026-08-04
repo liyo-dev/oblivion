@@ -86,6 +86,25 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
     // ── API pública ──────────────────────────────────────────────────────────────
 
     /// <summary>
+    /// True mientras el jugador está en una actividad ambiental activa (sentado, comiendo, durmiendo...).
+    /// </summary>
+    public bool IsSeated => _currentWorldPoint != null;
+
+    /// <summary>
+    /// Vuelve a aplicar el loop de la actividad actual (sin repetir el Begin). Se usa cuando un
+    /// gesto de diálogo (PlayerDialogueAnimator.PlayGesture) ha sobreescrito el layer 0 mientras
+    /// el jugador seguía sentado/tumbado, para no dejarlo de pie al terminar el gesto.
+    /// </summary>
+    public void ResumeActivityLoop()
+    {
+        if (_currentWorldPoint == null) return;
+
+        string loopState = GetActivityLoopState(_currentWorldPoint.activityType);
+        if (!string.IsNullOrEmpty(loopState) && HasState(loopState))
+            CrossFade(loopState, 0.2f);
+    }
+
+    /// <summary>
     /// Inicia la actividad del WorldPoint. El Interactable ya llamó TryOccupy() antes de llamar aquí.
     /// </summary>
     public void StartActivity(NPCWorldPoint worldPoint)
@@ -188,8 +207,11 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
         if (_rb != null)
         {
             _rbWasKinematic = _rb.isKinematic;
-            _rb.isKinematic = true;
+            // Poner la velocidad a cero ANTES de marcar isKinematic=true: si se hace en el orden
+            // inverso, Unity ignora la asignación (warning "Setting linear velocity of a kinematic
+            // body is not supported") porque el Rigidbody ya es kinemático en ese momento.
             _rb.linearVelocity = Vector3.zero;
+            _rb.isKinematic = true;
         }
 
         // Bloquear el motor de Invector directamente, sin cambiar el mapa de input.

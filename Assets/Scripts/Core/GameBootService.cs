@@ -210,7 +210,6 @@ public class GameBootService : MonoBehaviour
         GameState.ResetAll();
         vThirdPersonCamera.lockCameraForCinematic = false;
         Game.Cinematics.SimpleCinematicDirector.ForceResetStaticState();
-        AdditiveSceneCinematic.ForceResetStaticState();
         TeleportService.ForceResetTransitionLock();
     }
     #endregion
@@ -376,6 +375,12 @@ public class GameBootService : MonoBehaviour
         // 7. Restaurar puntos de teletransporte desbloqueados
         TeleportRegistry.LoadFromSaveData(preset.unlockedTeleportPoints);
         Debug.Log($"[GameBootService]   ✅ Teleport points restaurados desde preset: {preset.unlockedTeleportPoints?.Count ?? 0}");
+
+        // 7b. Restaurar vínculos sociales dinámicos entre NPCs (mismo patrón que TeleportRegistry).
+        // Necesario también en modo testeo: SetRuntimePresetFromSave (donde se recarga para partidas
+        // reales) no se llama aquí — el bootPreset nunca pasa por el save JSON (Regla 1, CLAUDE.md).
+        NPCRelationshipRegistry.LoadFromSaveEntries(preset.npcRelationships);
+        Debug.Log($"[GameBootService]   ✅ Relaciones de NPCs restauradas desde preset: {preset.npcRelationships?.Count ?? 0}");
 
         // 8. Restaurar blackboards narrativos si existen
         if (preset.narrativeBlackboards != null && preset.narrativeBlackboards.Count > 0)

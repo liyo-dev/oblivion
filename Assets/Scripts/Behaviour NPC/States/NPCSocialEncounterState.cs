@@ -52,7 +52,17 @@ namespace Game.NPC.States
 
             // Gesto de apertura
             string[] gestures = GetGestureSet(_relation);
-            context.Animator?.PlaySocialGesture(gestures[Random.Range(0, gestures.Length)], null);
+            string openingGesture = gestures[Random.Range(0, gestures.Length)];
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            // Diagnóstico siempre visible: confirma si el encuentro realmente se dispara y con
+            // qué gesto, para distinguir "el encuentro no se activó" de "se activó pero la
+            // animación no se ve" (ver también el warning en NPCSimpleAnimator.PlaySocialGesture).
+            Debug.Log($"[Social] 🗣️ {context.Transform.name} ↔ {_partner?.name ?? "?"} — " +
+                $"encuentro iniciado (relación: {_relation}, duración: {_duration:F1}s, gesto: {openingGesture})");
+#endif
+
+            context.Animator?.PlaySocialGesture(openingGesture, null);
         }
 
         public override void OnUpdate(NPCStateContext context)
@@ -84,6 +94,36 @@ namespace Game.NPC.States
                 string[] gestures = GetGestureSet(_relation);
                 context.Animator?.PlaySocialGesture(gestures[Random.Range(0, gestures.Length)], null);
             }
+        }
+
+        public override void OnExit(NPCStateContext context)
+        {
+            // Si el encuentro llegó a completar su duración (no se cortó por combate/cinemática/
+            // interacción a medias), registrarlo en NPCRelationshipRegistry para que la relación
+            // pueda evolucionar (Stranger → Acquaintance → Friend → BestFriend).
+            // Simplificación v1: no distingue el caso extremo de que combate/cinemática coincidan
+            // en el mismo frame exacto en que _timer ya había alcanzado _duration.
+            if (_partner != null && _timer >= _duration)
+            {
+                var partnerManager = _partner.GetComponent<Game.NPC.NPCBehaviourManagerV2>();
+                string myId = context.RelationshipId;
+                string partnerId = partnerManager?.Context?.RelationshipId;
+
+                // Ambos NPCs del encuentro ejecutan su propia instancia de este estado; solo uno
+                // de los dos debe registrar el encuentro para no duplicar el progreso del vínculo.
+                // Mismo criterio de orden que NPCRelationshipRegistry.MakeKey (comparación ordinal).
+                if (!string.IsNullOrEmpty(myId) && !string.IsNullOrEmpty(partnerId) &&
+                    string.CompareOrdinal(myId, partnerId) <= 0)
+                {
+                    float myFriendliness = context.Config?.socialConfig?.personality.friendliness ?? 0.5f;
+                    float partnerFriendliness = partnerManager?.Configuration?.socialConfig?.personality.friendliness ?? 0.5f;
+                    float avgFriendliness = (myFriendliness + partnerFriendliness) * 0.5f;
+
+                    NPCRelationshipRegistry.RegisterEncounterCompleted(myId, partnerId, _relation, avgFriendliness);
+                }
+            }
+
+            base.OnExit(context);
         }
 
         public override INPCState CheckTransitions(NPCStateContext context)

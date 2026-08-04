@@ -150,6 +150,32 @@ BlendTree:
   m_UseAutomaticThresholds: 0
   m_NormalizedBlendValues: 0
   m_BlendType: 0
+--- !u!1102 &-8176002422514224403
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Idle03
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions: []
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 1
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 3094330708855449807, guid: 1d3a375b9afc3d14eae31e10d901bfb1, type: 3}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
 --- !u!1102 &-8157458548047537422
 AnimatorState:
   serializedVersion: 6
@@ -1445,9 +1471,6 @@ AnimatorStateMachine:
   - {fileID: -708385713359909848}
   - {fileID: -4154447091029921734}
   m_StateMachineTransitions:
-  - first: {fileID: 0}
-    second:
-    - {fileID: -2564285637276640619}
   - first: {fileID: 704839005104493464}
     second:
     - {fileID: 2881717461508113178}
@@ -1755,9 +1778,7 @@ AnimatorStateMachine:
   m_AnyStateTransitions: []
   m_EntryTransitions:
   - {fileID: -499389656709283364}
-  m_StateMachineTransitions:
-  - first: {fileID: 0}
-    second: []
+  m_StateMachineTransitions: {}
   m_StateMachineBehaviours: []
   m_AnyStatePosition: {x: 48, y: 168, z: 0}
   m_EntryPosition: {x: 50, y: 120, z: 0}
@@ -2204,7 +2225,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: ' SitLow_Loop'
+  m_Name: SitLow_Loop
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions: []
@@ -2589,7 +2610,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: ' SitMedium_Loop'
+  m_Name: SitMedium_Loop
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions: []
@@ -2814,6 +2835,9 @@ AnimatorStateMachine:
   - serializedVersion: 1
     m_State: {fileID: 5415289028732837672}
     m_Position: {x: 350, y: 470, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: -8176002422514224403}
+    m_Position: {x: 1260, y: 280, z: 0}
   m_ChildStateMachines:
   - serializedVersion: 1
     m_StateMachine: {fileID: -232320825355694139}

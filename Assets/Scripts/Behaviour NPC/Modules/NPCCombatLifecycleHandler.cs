@@ -317,7 +317,9 @@ namespace Game.NPC.Modules
             }
 
             // 2. VFX inicial
-            if (deathVFXPrefab) Instantiate(deathVFXPrefab, transform.position + deathVFXOffset, Quaternion.identity);
+            // ✅ FIX: VfxPoolService en vez de Instantiate suelto — el prefab no se autodestruía
+            // y quedaba flotando en el suelo indefinidamente tras terminar el combate.
+            if (deathVFXPrefab) VfxPoolService.Instance.Play(deathVFXPrefab, transform.position + deathVFXOffset, Quaternion.identity, 3f);
 
             // 3. Rotar hacia el jugador (Último aliento)
             if (PlayerService.TryGetPlayer(out GameObject player))
@@ -430,7 +432,7 @@ namespace Game.NPC.Modules
 
             // VFX Desaparición
             if (_config?.disappearVFXPrefab)
-                Instantiate(_config.disappearVFXPrefab, transform.position + Vector3.up, Quaternion.identity);
+                VfxPoolService.Instance.Play(_config.disappearVFXPrefab, transform.position + Vector3.up, Quaternion.identity, 3f);
 
             gameObject.SetActive(false);
         }
@@ -849,7 +851,7 @@ namespace Game.NPC.Modules
                                 // Reproducir VFX si existe
                                 if (_config?.disappearVFXPrefab != null)
                                 {
-                                    Instantiate(_config.disappearVFXPrefab, transform.position + Vector3.up, Quaternion.identity);
+                                    VfxPoolService.Instance.Play(_config.disappearVFXPrefab, transform.position + Vector3.up, Quaternion.identity, 3f);
                                 }
                                 
                                 // Desactivar el GameObject
@@ -886,7 +888,7 @@ namespace Game.NPC.Modules
                             Debug.LogWarning($"[Lifecycle] ⚠️ No se encontró TransitionManager, desapareciendo sin transición");
                             // Fallback: desaparecer sin transición
                             if (_config?.disappearVFXPrefab)
-                                Instantiate(_config.disappearVFXPrefab, transform.position + Vector3.up, Quaternion.identity);
+                                VfxPoolService.Instance.Play(_config.disappearVFXPrefab, transform.position + Vector3.up, Quaternion.identity, 3f);
                             gameObject.SetActive(false);
                         }
                     }
@@ -895,7 +897,7 @@ namespace Game.NPC.Modules
                         Debug.Log($"[Lifecycle] ℹ️ No hay TransitionSettings configurado, desapareciendo sin transición");
                         // Desaparecer sin transición (comportamiento original)
                         if (_config?.disappearVFXPrefab)
-                            Instantiate(_config.disappearVFXPrefab, transform.position + Vector3.up, Quaternion.identity);
+                            VfxPoolService.Instance.Play(_config.disappearVFXPrefab, transform.position + Vector3.up, Quaternion.identity, 3f);
                         gameObject.SetActive(false);
                     }
                     break;
@@ -1144,7 +1146,7 @@ namespace Game.NPC.Modules
             {
                 if (_config.disappearOnArrivalVFX != null)
                 {
-                    Instantiate(_config.disappearOnArrivalVFX, transform.position + Vector3.up, Quaternion.identity);
+                    VfxPoolService.Instance.Play(_config.disappearOnArrivalVFX, transform.position + Vector3.up, Quaternion.identity, 3f);
                 }
                 
                 yield return new WaitForSeconds(0.5f);
@@ -1429,7 +1431,7 @@ namespace Game.NPC.Modules
 
                     if (config.disappearOnArrivalVFX != null)
                     {
-                        Instantiate(config.disappearOnArrivalVFX, member.transform.position + Vector3.up, Quaternion.identity);
+                        VfxPoolService.Instance.Play(config.disappearOnArrivalVFX, member.transform.position + Vector3.up, Quaternion.identity, 3f);
                     }
                     
                     yield return new WaitForSeconds(0.5f);

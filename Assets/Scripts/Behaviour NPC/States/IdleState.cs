@@ -14,10 +14,16 @@ namespace Game.NPC.States
 
         private float _idleTimer;
         private float _idleDuration;
-        
+
         // Detección
         private float _playerDetectionTimer;
         private const float PLAYER_DETECTION_INTERVAL = 0.2f; // 5 veces por segundo es suficiente
+
+        // Encuentros sociales (compartido con WanderState vía NPCStateBase.CheckSocialEncounter).
+        // Antes solo se escaneaba en WanderState: un NPC parado o recién llegado nunca conversaba.
+        private float _socialScanTimer;
+        private const float SOCIAL_SCAN_INTERVAL = 3f;
+        private readonly Collider[] _socialBuffer = new Collider[8];
 
         public override void OnEnter(NPCStateContext context)
         {
@@ -49,6 +55,7 @@ namespace Game.NPC.States
 
             _idleTimer = 0f;
             _playerDetectionTimer = 0f;
+            _socialScanTimer = 0f;
         }
 
         public override void OnExit(NPCStateContext context)
@@ -97,6 +104,15 @@ namespace Game.NPC.States
                 _playerDetectionTimer = 0f;
                 CheckPlayerDetection(context);
             }
+
+            // Encuentros sociales: un NPC parado también puede charlar con quien pase cerca,
+            // no solo mientras vaga (ver Diseno_Refugio_Lluvia_y_Relaciones_NPC.md § B.6.2)
+            _socialScanTimer += Time.deltaTime;
+            if (_socialScanTimer >= SOCIAL_SCAN_INTERVAL)
+            {
+                _socialScanTimer = 0f;
+                CheckSocialEncounter(context, _socialBuffer);
+            }
         }
         
         public override INPCState CheckTransitions(NPCStateContext context)
@@ -110,7 +126,14 @@ namespace Game.NPC.States
             
             // 3. Interacción
             if (context.IsInteracting) return null; // Quedarse en Idle mientras habla
-            
+
+            // 3b. Refugio de lluvia - interrumpe el idle normal, pero no combate/cinemática/interacción
+            if (context.ShouldSeekShelter && context.CurrentShelter == null &&
+                context.Config != null && context.Config.canSeekShelter)
+            {
+                return new SeekShelterState();
+            }
+
             // 4. Lógica de Patrulla (Wander) - bloqueada si el NPC está anclado por el sistema de party
             if (context.Config != null && context.Config.enableWander && !context.IsPinnedByParty)
             {

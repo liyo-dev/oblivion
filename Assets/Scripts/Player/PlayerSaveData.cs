@@ -58,6 +58,10 @@ public class PlayerSaveData
     // Posiciones persistidas de NPCs (reflejadas desde/hacia el PlayerPresetSO)
     public List<NpcPosEntry> npcPositions = new();
 
+    // Vínculos sociales forjados en runtime entre NPCs (reflejados desde/hacia NPCRelationshipRegistry
+    // vía PlayerPresetSO.npcRelationships). Se reutiliza NPCRelationshipRegistry.SaveEntry directamente.
+    public List<NPCRelationshipRegistry.SaveEntry> npcRelationships = new();
+
     // Slots guardados (opcional: si faltan en saves antiguos, quedarán en None por defecto)
     public SpellId leftSpellId  = SpellId.None;
     public SpellId rightSpellId = SpellId.None;
@@ -183,6 +187,9 @@ public class PlayerSaveData
             ? new List<string>(preset.unlockedTeleportPoints)
             : TeleportRegistry.ToSaveData();
         Debug.Log($"[PlayerSaveData] 💾 Teleport points guardados: {d.unlockedTeleportPoints.Count}");
+
+        // === NUEVO: persistir vínculos sociales forjados en runtime entre NPCs ===
+        d.npcRelationships = NPCRelationshipRegistry.ToSaveEntries();
 
         return d;
     }

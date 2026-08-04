@@ -11285,13 +11285,11 @@ MonoBehaviour:
   idleNormalState: Idle_Normal_NoWeapon
   idleBattleState: Idle_Battle_NoWeapon
   upperBodyLayer: 1
-  upperBodyIdleState: UpperIdle
   movementThreshold: 0.1
   locomotionSpeedMultiplier: 1
   locomotionBlendTime: 0.1
   inputMagnitudeDampTime: 0.1
   rotationSpeed: 360
-  rotationSmoothness: 0.15
   minRotationAngle: 5
   interactState: InteractWithPeople_NoWeapon
   greetingState: Greeting01_NoWeapon
@@ -11299,8 +11297,9 @@ MonoBehaviour:
   greetingDialogueState: HandWave01
   enableIdleVariations: 1
   idleVariationStates:
-  - Idle02_NoWeapon
-  - Idle03_NoWeapon
+  - Idle01
+  - Idle02
+  - Idle03
   minIdleVariationInterval: 8
   maxIdleVariationInterval: 20
   challengingState: Challenging_NoWeapon
@@ -11504,7 +11503,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EldranCombatCheerController
   eldranTransform: {fileID: 3275434959031855424}
-  eldranAnimator: {fileID: 4053936688121270491}
+  willTransform: {fileID: 0}
   startSignal: AWAKEN_DONE
   stopSignal: AWAKEN_COMBAT_END
   cheerKeys:
@@ -11519,6 +11518,7 @@ MonoBehaviour:
   firstDelay: 2.5
   minInterval: 6
   maxInterval: 14
+  lookAtSpeed: 360
 --- !u!1 &8911537771988408263
 GameObject:
   m_ObjectHideFlags: 0

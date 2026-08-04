@@ -49,13 +49,17 @@ MonoBehaviour:
     music: {fileID: 8300000, guid: b7d879b37c2696b448f8e1a9b249f3bd, type: 3}
     fade: 1
     loop: 1
+  - zoneId: Castle
+    music: {fileID: 8300000, guid: d5bb22677ff496a4a89fd8ea69ddf48a, type: 3}
+    fade: 1
+    loop: 1
   sceneMusic:
   - sceneName: Prologo
     music: {fileID: 8300000, guid: 2b6499ae1b7898d41ad775bffb9b370b, type: 3}
   - sceneName: MainMenu
     music: {fileID: 8300000, guid: 785493ca564adeb44bb1c68fa22f00ab, type: 3}
   - sceneName: MainWorld
-    music: {fileID: 8300000, guid: 9ce05d94df26a2342b601cc8c5becb59, type: 3}
+    music: {fileID: 8300000, guid: ad3ca9176615a184287a1335238a3c7a, type: 3}
   - sceneName: Credits
     music: {fileID: 8300000, guid: e4417147d8027ae48a5ef706f52635d8, type: 3}
   eventSfx:
@@ -101,6 +105,8 @@ MonoBehaviour:
     sfx: {fileID: 8300000, guid: 35516e4b9e78e6452a3ea26209b1aa61, type: 3}
   - eventKey: orbSpawn
     sfx: {fileID: 8300000, guid: bc199d6e558713e42b289920a0b0135d, type: 3}
+  - eventKey: orbAttract
+    sfx: {fileID: 8300000, guid: 79e20d4314e5328e782a9b6f6b2b71b8, type: 3}
   - eventKey: rain
     sfx: {fileID: 8300000, guid: b289d41cd1e67ee46bb53d07586b58c3, type: 3}
   sequences:

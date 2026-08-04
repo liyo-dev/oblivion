@@ -20,6 +20,6 @@ MonoBehaviour:
     friendliness: 0.25
     energy: 0.55
   relationships: []
-  socialDetectionRange: 4
-  socialCooldown: 65
+  socialDetectionRange: 6
+  socialCooldown: 40
   worldPointSearchRange: 14

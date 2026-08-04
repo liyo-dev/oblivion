@@ -138,8 +138,12 @@ public class DayOnlyInspectionTrigger : MonoBehaviour
             physicalBlocker.enabled = false;
 
         // Adquirir lock ANTES de enviar el evento: puente hasta que el sistema narrativo tome el control
-        PlayerLockService.Instance.Acquire(this);
-        _lockAcquired = true;
+        var lockService = PlayerLockService.Instance;
+        if (lockService != null)
+        {
+            lockService.Acquire(this);
+            _lockAcquired = true;
+        }
 
         if (!string.IsNullOrEmpty(narrativeEventKey))
         {

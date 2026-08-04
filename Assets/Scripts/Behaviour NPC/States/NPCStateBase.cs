@@ -77,5 +77,68 @@ namespace Game.NPC.States
                 context.Animator.ResetMovement();
             }
         }
+
+        // =================================================================================
+        // 🗣️ ENCUENTROS SOCIALES (compartido entre WanderState e IdleState)
+        // =================================================================================
+
+        protected static readonly int SocialNpcLayerMask = LayerMask.GetMask("Interactable", "Default");
+
+        /// <summary>
+        /// Busca NPCs cercanos con los que iniciar un encuentro social, ponderado por personalidad,
+        /// y resuelve la relación combinando el valor forjado en runtime (NPCRelationshipRegistry)
+        /// con el valor autor del NPCSocialConfig. Compartido entre WanderState e IdleState para
+        /// que los NPCs también puedan socializar mientras están parados, no solo mientras caminan
+        /// (ver Diseno_Refugio_Lluvia_y_Relaciones_NPC.md § B.6.2).
+        /// </summary>
+        protected void CheckSocialEncounter(Common.NPCStateContext context, Collider[] socialBuffer)
+        {
+            var socialConfig = context.Config?.socialConfig;
+            if (socialConfig == null) return;
+
+            // Comprobar cooldown
+            if (Time.time - context.LastSocialEncounterTime < socialConfig.socialCooldown) return;
+
+            // El dado de sociabilidad: alta sociabilidad → mayor probabilidad de iniciar
+            if (UnityEngine.Random.value > socialConfig.personality.sociability) return;
+
+            float range = socialConfig.socialDetectionRange;
+            int count = Physics.OverlapSphereNonAlloc(
+                context.Transform.position, range, socialBuffer, SocialNpcLayerMask);
+
+            for (int i = 0; i < count; i++)
+            {
+                var col = socialBuffer[i];
+                if (col == null) continue;
+
+                Transform root = col.transform.root;
+                if (root == context.Transform.root) continue; // ignorar a sí mismo
+
+                var partnerManager = root.GetComponent<Game.NPC.NPCBehaviourManagerV2>();
+                if (partnerManager == null) continue;
+
+                // Relación "autor" (relationships[] del SO), igual que antes
+                string partnerAuthoredId = partnerManager.Configuration?.socialConfig?.npcId;
+                NPCRelationType authoredRelation = socialConfig.GetRelationshipWith(partnerAuthoredId);
+
+                // Los enemigos no tienen encuentros sociales amistosos
+                if (authoredRelation == NPCRelationType.Enemy) continue;
+
+                // Relación "efectiva": prioriza el vínculo forjado en runtime sobre el autor
+                string myId = context.RelationshipId;
+                string partnerId = partnerManager.Context?.RelationshipId;
+                NPCRelationType relation = NPCRelationshipRegistry.Resolve(myId, partnerId, authoredRelation);
+
+                // Intentar que el otro NPC acepte el encuentro
+                if (partnerManager.TryAcceptSocialEncounter(context.Transform, relation))
+                {
+                    // El partner aceptó: yo también entro en el encuentro
+                    context.PendingSocialPartner  = root;
+                    context.PendingSocialRelation = relation;
+                    context.Brain?.ChangeState(new NPCSocialEncounterState());
+                    return;
+                }
+            }
+        }
     }
 }

@@ -20,7 +20,7 @@ MonoBehaviour:
     condition:
       conditionType: 5
       targetQuest: {fileID: 0}
-      targetStepConditionId: 
+      targetStepConditionId:
       customEventKey: AWAKEN_DONE
       debugMode: 0
     narrativeChain:

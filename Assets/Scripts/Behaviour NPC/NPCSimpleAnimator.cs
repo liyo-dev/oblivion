@@ -124,6 +124,16 @@ public class NPCSimpleAnimator : MonoBehaviour
     // Animator parameters
     private static readonly int InputMagnitudeHash = Animator.StringToHash("InputMagnitude");
 
+    // ✅ FIX: parámetros de suelo/vuelo del controller compartido de personajes jugables
+    // (Will/Liam/Estela usan el Animator Controller de Invector, que trae un Any State →
+    // "Falling" condicionado a IsGrounded=false / GroundDistance>0.25 / isFlying=false).
+    // El controller genérico de NPCs (Eldran) no tiene ese Any State, así que esto es
+    // inofensivo para él. Ver ForceGroundedForSit().
+    private static readonly int HashIsGrounded    = Animator.StringToHash("IsGrounded");
+    private static readonly int HashGroundDistance = Animator.StringToHash("GroundDistance");
+    private static readonly int HashIsFlying      = Animator.StringToHash("isFlying");
+    private HashSet<int> _animatorParamHashes;
+
     private EmotionProfile _emotionProfile;
     
     // References
@@ -159,6 +169,13 @@ public class NPCSimpleAnimator : MonoBehaviour
     private float _lastBattleIdleTime = -999f;
     private const float BattleIdleCooldown = 0.5f; // Mínimo 0.5s entre llamadas (antes 0.3s)
     private bool _disableAutoRotation; // Flag para desactivar rotación automática (usado durante diálogos)
+
+    // ✅ FIX: recuerda si el NPC está sentado (PlayAmbientActivity con un Sit*) para que un
+    // PlaySocialGesture/PlayOneShot lanzado durante un diálogo (p.ej. TabernaSequencer) no lo
+    // deje de pie al terminar. Antes TransitionToIdle() siempre iba a idleNormalState, ignorando
+    // que el NPC seguía sentado en la silla.
+    private bool _isSeated;
+    private NPCAmbientActivity _seatedActivity;
     
     // ✅ Corrutina para seguimiento de rotación durante diálogos
     private Coroutine _dialogueLookAtCoroutine;
@@ -255,6 +272,17 @@ public class NPCSimpleAnimator : MonoBehaviour
             animator.applyRootMotion = useRootMotionForSpecialAnims;
             _stateCache = new AnimatorStateCache(animator);
             CacheAnimationClips();
+
+            // ✅ FIX: cachear qué parámetros existen realmente en ESTE Animator Controller.
+            // Eldran (NPC_NoWeapon.controller) no tiene IsGrounded/GroundDistance/isFlying;
+            // Will/Liam/Estela sí (Invector@BasicLocomotion.controller). Sin esta guarda,
+            // SetBool/SetFloat sobre un parámetro inexistente sería un no-op silencioso pero
+            // costoso (y con warnings en editor); con ella, ForceGroundedForSit() es seguro
+            // de llamar en cualquier NPC sin comprobar antes qué controller tiene.
+            _animatorParamHashes = new HashSet<int>();
+            var animParams = animator.parameters;
+            for (int i = 0; i < animParams.Length; i++)
+                _animatorParamHashes.Add(animParams[i].nameHash);
         }
         
         // ✅ FIX CRÍTICO: Configurar NavMeshAgent para control de rotación correcto
@@ -517,6 +545,7 @@ public class NPCSimpleAnimator : MonoBehaviour
         {
             // Desactivar modo batalla para permitir transiciones de locomoción
             _isInBattle = false;
+            _isSeated = false; // fuerza de pie explícitamente (usado al liberar un asiento)
             _currentState = AnimationState.Idle;
             CrossFadeToState(idleNormalState, 0.2f);
         }
@@ -1282,6 +1311,9 @@ public class NPCSimpleAnimator : MonoBehaviour
     /// <summary>
     /// Reproduce una animación corporal acorde a la emoción del NPC durante el diálogo.
     /// Las emociones Neutral/None rotan entre Talk01/02/03 para variedad.
+    /// Si la emoción tiene el campo "Anim Corporal" vacío en el EmotionProfile, NO se reproduce
+    /// ninguna animación: el NPC se queda con el gesto/pose que tuviera en ese momento (permite
+    /// emociones que solo cambian la cara, sin tocar el cuerpo).
     /// Solo actúa si el NPC está en estado Interacting.
     /// </summary>
     public void PlayBodyEmotion(NPCEmotion emotion)
@@ -1290,6 +1322,9 @@ public class NPCSimpleAnimator : MonoBehaviour
             return;
 
         string stateName = ResolveBodyAnimStateName(emotion);
+        if (string.IsNullOrEmpty(stateName))
+            return; // Emoción sin animación corporal asignada: se mantiene la pose actual
+
         PlayOneShot(stateName, 0, () =>
         {
             if (_isInteracting && _currentState != AnimationState.Dead)
@@ -1297,6 +1332,14 @@ public class NPCSimpleAnimator : MonoBehaviour
         });
     }
 
+    /// <summary>
+    /// Resuelve el estado de animación corporal para una emoción.
+    /// Neutral/None siempre rotan entre las animaciones neutrales (para dar variedad al hablar).
+    /// Para el resto de emociones, devuelve tal cual el bodyAnimStateName configurado en el
+    /// EmotionProfile: si está vacío, el llamador debe interpretarlo como "sin cambio de animación"
+    /// (no hay fallback a Talk01, para no forzar un gesto en emociones que solo cambian la cara).
+    /// Solo si no hay EmotionProfile asignado se usa un fallback de seguridad.
+    /// </summary>
     private string ResolveBodyAnimStateName(NPCEmotion emotion)
     {
         string[] neutralAnims = (_emotionProfile != null && _emotionProfile.neutralBodyAnims is { Length: > 0 })
@@ -1312,8 +1355,7 @@ public class NPCSimpleAnimator : MonoBehaviour
         if (_emotionProfile != null)
         {
             var data = _emotionProfile.GetEmotionData(emotion);
-            if (!string.IsNullOrEmpty(data.bodyAnimStateName))
-                return data.bodyAnimStateName;
+            return data.bodyAnimStateName; // puede venir vacío a propósito: "sin cambio"
         }
 
         return neutralAnims[0];
@@ -1327,6 +1369,21 @@ public class NPCSimpleAnimator : MonoBehaviour
     {
         if (string.IsNullOrEmpty(stateName) || _currentState == AnimationState.Dead)
             return;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // Diagnóstico siempre visible (no depende de debugMode): si el estado no existe en el
+        // Base Layer del Animator Controller de este NPC en concreto, PlayOneShot fallará en
+        // silencio (CrossFadeToState solo loguea con debugMode activo). Esto confirma o descarta
+        // rápidamente si "no hacen animación al socializar" es un problema de contenido
+        // (estado/clip faltante en ESTE controller) y no de la lógica del encuentro.
+        if (animator != null && !animator.HasState(0, Animator.StringToHash(stateName)))
+        {
+            Debug.LogWarning($"[NPCAnimator:{gameObject.name}] ⚠️ PlaySocialGesture('{stateName}'): " +
+                $"ese estado no existe en el Base Layer del Animator Controller " +
+                $"'{(animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name : "null")}'. " +
+                "El NPC se quedará callado en este gesto.");
+        }
+#endif
 
         PlayOneShot(stateName, 0, onComplete);
     }
@@ -1381,10 +1438,52 @@ public class NPCSimpleAnimator : MonoBehaviour
 
         StopIdleVariations();
 
+        _isSeated       = IsSitActivity(activity);
+        _seatedActivity = activity;
+
+        // ✅ FIX: si el NPC viene de un modo especial (vuelo/salto/plataforma replicado del
+        // jugador vía FollowPlayerState) puede quedar con IsGrounded=false, GroundDistance
+        // alto o isFlying=true en el Animator. En el controller compartido de personajes
+        // jugables (Will/Liam/Estela) eso dispara un Any State → "Falling" que interrumpe
+        // CUALQUIER estado activo, incluido el loop de sentado — el NPC se teletransporta
+        // bien a la silla pero la animación salta a caída/de pie ("se sienta mal"). Eldran
+        // usa un controller sin ese Any State, así que para él esto es inofensivo.
+        if (_isSeated)
+            ForceGroundedForSit();
+
         if (_activityCoroutine != null)
             StopCoroutine(_activityCoroutine);
 
         _activityCoroutine = StartCoroutine(AmbientActivityRoutine(activity, worldPoint));
+    }
+
+    private void ForceGroundedForSit()
+    {
+        TrySetBool(HashIsGrounded, true);
+        TrySetFloat(HashGroundDistance, 0f);
+        TrySetBool(HashIsFlying, false);
+    }
+
+    private void TrySetBool(int paramHash, bool value)
+    {
+        if (animator == null) return;
+        if (_animatorParamHashes != null && !_animatorParamHashes.Contains(paramHash)) return;
+        try { animator.SetBool(paramHash, value); } catch { }
+    }
+
+    private void TrySetFloat(int paramHash, float value)
+    {
+        if (animator == null) return;
+        if (_animatorParamHashes != null && !_animatorParamHashes.Contains(paramHash)) return;
+        try { animator.SetFloat(paramHash, value); } catch { }
+    }
+
+    private static bool IsSitActivity(NPCAmbientActivity activity)
+    {
+        return activity == NPCAmbientActivity.SitGround
+            || activity == NPCAmbientActivity.SitLow
+            || activity == NPCAmbientActivity.SitMedium
+            || activity == NPCAmbientActivity.SitHigh;
     }
 
     /// <summary>
@@ -1393,6 +1492,8 @@ public class NPCSimpleAnimator : MonoBehaviour
     /// </summary>
     public void StopAmbientActivity(NPCAmbientActivity activity, NPCWorldPoint worldPoint = null)
     {
+        _isSeated = false;
+
         if (_activityCoroutine != null)
         {
             StopCoroutine(_activityCoroutine);
@@ -1703,16 +1804,29 @@ public class NPCSimpleAnimator : MonoBehaviour
     public void TransitionToIdle()
     {
         _currentState = AnimationState.Idle;
-        
+
         // ✅ FIX: Desactivar root motion en Idle también
         if (animator != null)
         {
             animator.applyRootMotion = false;
         }
-        
+
+        // ✅ FIX: si el NPC sigue sentado (p.ej. este TransitionToIdle llega desde el callback
+        // de PlayOneShot al terminar un PlaySocialGesture lanzado mientras estaba en la mesa),
+        // volver al loop de sentado en vez de ponerlo de pie con idleNormalState.
+        if (_isSeated && !_isInBattle)
+        {
+            string seatLoop = GetActivityLoopState(_seatedActivity);
+            if (!string.IsNullOrEmpty(seatLoop) && animator != null && animator.HasState(0, Animator.StringToHash(seatLoop)))
+            {
+                CrossFadeToState(seatLoop, 0.2f);
+                return; // no arrancar variaciones de idle de pie mientras sigue sentado
+            }
+        }
+
         // Elegir el idle correcto según el modo (batalla o normal)
         string targetIdle = _isInBattle ? idleBattleState : idleNormalState;
-        
+
         // ✅ Seguridad: Si el estado no existe, no intentar CrossFade para evitar errores en consola
         if (!string.IsNullOrEmpty(targetIdle) && animator != null && animator.HasState(0, Animator.StringToHash(targetIdle)))
         {

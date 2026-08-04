@@ -122,7 +122,10 @@ public class GameBootProfile : ScriptableObject
         {
             dst.npcPositions = new List<PlayerPresetSO.NpcPosEntry>();
         }
-        
+
+        // === Copiar vínculos sociales dinámicos entre NPCs (snapshot, ver NPCRelationshipRegistry) ===
+        dst.npcRelationships = new List<NPCRelationshipRegistry.SaveEntry>(src.npcRelationships ?? new List<NPCRelationshipRegistry.SaveEntry>());
+
         if (src.abilities != null)
         {
             dst.abilities = new PlayerAbilities();
@@ -230,6 +233,16 @@ public class GameBootProfile : ScriptableObject
                 });
             }
         }
+
+        // === NUEVO: restaurar vínculos sociales dinámicos entre NPCs ===
+        // Mismo patrón que TeleportRegistry.LoadFromSaveData: el preset guarda el snapshot,
+        // pero la fuente de verdad en runtime es el registro estático — hay que recargarlo
+        // explícitamente para que WanderState/IdleState lo usen a partir de ahora.
+        p.npcRelationships = data.npcRelationships != null
+            ? new List<NPCRelationshipRegistry.SaveEntry>(data.npcRelationships)
+            : new List<NPCRelationshipRegistry.SaveEntry>();
+        NPCRelationshipRegistry.LoadFromSaveEntries(p.npcRelationships);
+
         // Anchor procedente del save
         if (!string.IsNullOrEmpty(data.lastSpawnAnchorId))
         {
@@ -394,6 +407,11 @@ public class GameBootProfile : ScriptableObject
         data.unlockedTeleportPoints = activePreset.unlockedTeleportPoints != null
             ? new List<string>(activePreset.unlockedTeleportPoints)
             : new List<string>();
+
+        // === NUEVO: incluir vínculos sociales dinámicos entre NPCs ===
+        // A diferencia de otros campos, la fuente de verdad en runtime es el registro estático
+        // (NPCRelationshipRegistry), no el preset — se lee directamente de ahí, no de activePreset.
+        data.npcRelationships = NPCRelationshipRegistry.ToSaveEntries();
 
         return data;
     }
@@ -874,15 +892,36 @@ public class GameBootProfile : ScriptableObject
 
             try
             {
+                // Validar la posición persistida antes de aplicarla. Un preset capturado
+                // en mal momento (p.ej. un NPC "colgado" en el aire tras ser levitado, o
+                // congelado junto a una pared por el bug de LevitationTarget) puede haber
+                // guardado una Y inválida; aplicarla sin comprobar deja al NPC flotando
+                // al cargar la partida en vez de en el suelo.
+                Vector3 targetPos = pos;
+                if (UnityEngine.AI.NavMesh.SamplePosition(pos, out var navHit, 3f, UnityEngine.AI.NavMesh.AllAreas))
+                {
+                    targetPos = navHit.position;
+                }
+                else if (Physics.Raycast(pos + Vector3.up * 5f, Vector3.down, out var groundHit, 20f))
+                {
+                    targetPos = groundHit.point;
+                    Debug.LogWarning($"[GameBootProfile] Posición persistida de NPC '{id}' no está sobre NavMesh; ajustada al suelo más cercano ({pos} → {targetPos}).");
+                }
+                else
+                {
+                    targetPos = npc.transform.position;
+                    Debug.LogWarning($"[GameBootProfile] Posición persistida de NPC '{id}' inválida (sin NavMesh ni suelo cerca de {pos}); se mantiene la posición actual en escena para no dejarlo flotando.");
+                }
+
                 // Si tiene NavMeshAgent, usar Warp para evitar física/paths
                 var agent = npc.GetComponent<UnityEngine.AI.NavMeshAgent>();
                 if (agent != null && agent.isOnNavMesh)
                 {
-                    agent.Warp(pos);
+                    agent.Warp(targetPos);
                 }
                 else
                 {
-                    npc.transform.position = pos;
+                    npc.transform.position = targetPos;
                 }
 
                 // FIX INC-028: usar el flag explícito hasRotation en vez de comparar contra

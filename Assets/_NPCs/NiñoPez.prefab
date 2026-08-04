@@ -1428,6 +1428,7 @@ MonoBehaviour:
   initiallyEnabled: 1
   persistentIdOverride: 
   includeSceneInPersistentId: 1
+  dialogueCharacterId: 
   dialogue: {fileID: 0}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}
@@ -1500,13 +1501,11 @@ MonoBehaviour:
   idleNormalState: Idle_Normal_NoWeapon
   idleBattleState: Idle_Battle_NoWeapon
   upperBodyLayer: 1
-  upperBodyIdleState: UpperIdle
   movementThreshold: 0.1
   locomotionSpeedMultiplier: 1
   locomotionBlendTime: 0.1
   inputMagnitudeDampTime: 0.1
   rotationSpeed: 360
-  rotationSmoothness: 0.15
   minRotationAngle: 5
   interactState: InteractWithPeople_NoWeapon
   greetingState: Greeting01_NoWeapon
@@ -1514,8 +1513,9 @@ MonoBehaviour:
   greetingDialogueState: HandWave01
   enableIdleVariations: 1
   idleVariationStates:
-  - Idle02_NoWeapon
-  - Idle03_NoWeapon
+  - Idle01
+  - Idle02
+  - Idle03
   minIdleVariationInterval: 8
   maxIdleVariationInterval: 20
   challengingState: Challenging_NoWeapon
@@ -1573,7 +1573,7 @@ MonoBehaviour:
   forceKinematicRigidbody: 1
   persistLastPosition: 0
   persistenceId: 
-  dialogueCharacterId: CHAR_NIÑOPEZ
+  dialogueCharacterId: "CHAR_NI\xD1OPEZ"
   rotateToPlayerOnInteract: 1
   rotationDuration: 0.3
   initialLayer: 0

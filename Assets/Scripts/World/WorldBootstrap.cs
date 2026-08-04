@@ -104,6 +104,10 @@ public class WorldBootstrap : MonoBehaviour
 
         Debug.Log($"[WorldBootstrap] Profile encontrado - ShouldBootFromPreset: {bootProfile.ShouldBootFromPreset()}");
 
+        // Refugio de lluvia: (re)enganchar el relay de clima al DayNightCycle de esta escena.
+        // Ver NPCWeatherAwareness — evita que cada NPC haga su propio FindAnyObjectByType.
+        NPCWeatherAwareness.Resubscribe();
+
         // 1) Modo PRESET (test): SIEMPRE tiene prioridad sobre saves
         if (bootProfile.ShouldBootFromPreset())
         {
@@ -135,7 +139,6 @@ public class WorldBootstrap : MonoBehaviour
             // Así el skybox/interior es correcto desde el primer frame visible
             ApplySpawnEnvironmentNow(anchor);
             StartCoroutine(WaitForPlayerAndTeleport(anchor));
-            StartCoroutine(EnsureEnvironmentAfterCinematic(anchor));
             // Debug.Log("[WorldBootstrap] Iniciado en modo PRESET (testing)");
             return;
         }
@@ -172,7 +175,6 @@ public class WorldBootstrap : MonoBehaviour
         // Aplicar entorno del anchor de spawn antes de esperar al jugador
         ApplySpawnEnvironmentNow(anchorId);
         StartCoroutine(WaitForPlayerAndTeleport(anchorId));
-        StartCoroutine(EnsureEnvironmentAfterCinematic(anchorId));
     }
 
     private void ApplySpawnEnvironmentNow(string anchorId)
@@ -198,25 +200,6 @@ public class WorldBootstrap : MonoBehaviour
         else ec.ApplyExterior();
     }
 
-
-    // Si hay una cinemática aditiva en curso al cargar (ej: prólogo), su Unload() llama
-    // SafeTeleportToCurrent() con el anchor de salida (exterior), lo que puede sobreescribir
-    // el entorno interior del anchor guardado. Esta corrutina re-aplica el entorno correcto
-    // un frame después de que la cinemática termine, mientras el fade-out aún cubre la pantalla.
-    private System.Collections.IEnumerator EnsureEnvironmentAfterCinematic(string anchorId)
-    {
-        yield return null; // esperar a que AdditiveSceneCinematic.Start() inicialice su flag
-
-        if (!AdditiveSceneCinematic.IsAnyAdditiveCinematicPlaying) yield break;
-
-        while (AdditiveSceneCinematic.IsAnyAdditiveCinematicPlaying)
-            yield return null;
-
-        // Un frame extra para que SafeTeleportToCurrent() complete su ApplyExterior()
-        yield return null;
-
-        ApplySpawnEnvironmentNow(anchorId);
-    }
 
     private System.Collections.IEnumerator WaitForPlayerAndTeleport(string anchorId)
     {

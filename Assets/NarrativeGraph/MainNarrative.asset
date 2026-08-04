@@ -842,7 +842,7 @@ MonoBehaviour:
         targetTag: Player
         text: Otra vez esa pesadilla.
         textId: 
-        duration: 4
+        duration: 2
         waitForCompletion: 1
         animTrigger: HeadShake01
         emphasis: 0

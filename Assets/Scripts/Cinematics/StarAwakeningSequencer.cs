@@ -296,6 +296,17 @@ public class StarAwakeningSequencer : CinematicSequencerBase
         if (playerSpawner != null) playerSpawner.enabled = true;
         EndCinematic();
         RaiseSignal(signalOutDone);
+
+        // NOTA: no revelar aquí. RaiseSignal(AWAKEN_DONE) dispara SÍNCRONAMENTE (dentro de esta
+        // misma llamada) toda la cadena río abajo del grafo: UnlockAbilitiesNode → StartQuestNode
+        // → StartBattleNode → BossIntroPresentation, que gestiona su propio candado
+        // (PlayerLockService) y su propia transición/fundido de cámara. Un fundido de reveal
+        // añadido aquí se ejecuta DESPUÉS de que BossIntroPresentation ya ha empezado su propia
+        // transición (pisándola) y provoca el enganchón visible justo antes de la intro del boss.
+        // El diseño original (patrón Co_EndCinematicStayBlack) es correcto: el sistema siguiente
+        // revela la pantalla. El bug real de "pantalla negra para siempre" era el bleed-through
+        // de InteractionDetector (ya corregido con CinematicSequencerBase.AnySequenceActive), no
+        // la ausencia de este fundido.
     }
 
     // ══════════════════════════════════════════════════════════════════════════

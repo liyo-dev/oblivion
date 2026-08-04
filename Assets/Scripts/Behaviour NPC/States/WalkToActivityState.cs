@@ -124,6 +124,13 @@ namespace Game.NPC.States
             if (context.WasDefeatedInCombat)  return new DeadState();
             if (context.IsInteracting)        return new IdleState();
 
+            // Refugio de lluvia - levantarse/interrumpir la actividad para ir a resguardarse
+            if (context.ShouldSeekShelter && context.CurrentShelter == null &&
+                context.Config != null && context.Config.canSeekShelter)
+            {
+                return new SeekShelterState();
+            }
+
             // Otro NPC quiere socializar: levantarse para el encuentro
             if (context.PendingSocialPartner != null)
                 return new NPCSocialEncounterState();

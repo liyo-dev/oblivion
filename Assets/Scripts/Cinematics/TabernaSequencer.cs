@@ -207,6 +207,11 @@ public class TabernaSequencer : CinematicSequencerBase
     private Vector3    _willPreSequencePosition;
     private Quaternion _willPreSequenceRotation;
 
+    // ✅ FIX: true mientras Eldran/Estela están sentados por esta secuencia. Permite
+    // liberar el asiento de forma defensiva en OnDestroy si la secuencia se interrumpe
+    // antes de llegar al blackout de salida (ver CleanupSeatsIfNeeded).
+    private bool _seatsActive;
+
     protected override void Awake()
     {
         base.Awake();
@@ -258,6 +263,7 @@ public class TabernaSequencer : CinematicSequencerBase
         yield return Co_BeginCinematicWithTransition(_shotGroup, () =>
         {
             SeatAll();
+            _seatsActive = true;
             // Liam no debe verse hasta su turno (Fase 5): ocultarlo durante el blackout
             // por si su comportamiento/posición actual lo deja a la vista en la taberna
             if (_liamTransform != null) _liamTransform.gameObject.SetActive(false);
@@ -309,9 +315,7 @@ public class TabernaSequencer : CinematicSequencerBase
             if (_lightningVFXInstance != null) { Destroy(_lightningVFXInstance); _lightningVFXInstance = null; }
 
             // Snap a idle durante el blackout: sin animación de levantarse, sincrónico para no bloquear locomoción
-            _willActivityHandler?.ForceStopActivityImmediate();
-            UnseatNPCSnap(_eldranTransform, _eldranSeat, _eldranAgent, _eldranSimpleAnim, _eldranBehaviour);
-            UnseatNPCSnap(_estelaTransform, _estelaSeat, _estelaAgent, _estelaSimpleAnim, _estelaBehaviour);
+            CleanupSeatsIfNeeded();
             if (_liamAgent != null && _liamAgent.isOnNavMesh)
             {
                 _liamAgent.nextPosition   = _liamTransform.position;
@@ -338,13 +342,15 @@ public class TabernaSequencer : CinematicSequencerBase
         FaceTarget(_eldranTransform, _willTransform);
         FaceTarget(_estelaTransform, _eldranTransform);
 
+        bool done;
         _eldranEmotion?.SetEmotion(_emotionEldran01);
-        bool done = false;
-        // Sin animTrigger: Eldran está sentado y los gestos sociales son a cuerpo
-        // completo de pie (PlaySocialGesture en layer 0), lo levantarían de la silla
-        SpeechBubbleUI.Instance.Show(_eldranTransform, Loc(_keyEldran01),
-            duration: _eldran01Duration, onComplete: () => done = true);
-        yield return new WaitUntil(() => done);
+        // ✅ FIX: la línea es casi el doble de larga que cualquier otra de la Fase 0 (dos ideas:
+        // quién invocó al demonio/golem, y por qué van a por ellos) y no cabía bien en un solo
+        // bocadillo de _eldran01Duration. Se pagina en dos con '\n' en la clave de localización,
+        // igual que ya se hace con EVT_TAB_LIAM_01. Sin animTrigger: Eldran está sentado y los
+        // gestos sociales son a cuerpo completo de pie (PlaySocialGesture en layer 0), lo
+        // levantarían de la silla
+        yield return ShowBubblePaged(_eldranTransform, Loc(_keyEldran01), _eldran01Duration);
 
         _cinematicCamera.Cut(_shotWillEldran);
         _willEmotion?.SetEmotion(_emotionWill01);
@@ -749,11 +755,37 @@ public class TabernaSequencer : CinematicSequencerBase
         }
     }
 
+    // Libera los asientos de Eldran/Estela y reactiva su FSM. Idempotente: no hace
+    // nada si ya se liberaron (_seatsActive en false).
+    //
+    // ✅ FIX: red de seguridad ante interrupción anómala de la secuencia (excepción,
+    // StopAllRunners en test mode al recargar el preset — Regla 2 de CLAUDE.md—,
+    // descarga de la escena aditiva a mitad de reproducción, etc.). Antes de este
+    // fix, el bloque que libera el asiento y reactiva NPCBehaviourManagerV2 solo
+    // vivía dentro del callback de Co_EndCinematicWithTransition, que únicamente se
+    // ejecuta si Co_Sequence() llega hasta el final. Si algo cortaba la secuencia
+    // antes, el NPCWorldPoint de Estela se quedaba con _isOccupied=true para
+    // siempre (o hasta un domain reload) y su NPCBehaviourManagerV2 deshabilitado.
+    // El siguiente intento de reproducir la taberna llamaba a SeatNPC() →
+    // seat.TryOccupy() devolvía false en silencio → Estela nunca se sentaba. Esto
+    // explica por qué la incidencia "Estela no está sentada en su sitio" se repetía
+    // en cada sesión de testeo que interrumpía la cinemática a medias.
+    private void CleanupSeatsIfNeeded()
+    {
+        if (!_seatsActive) return;
+        _seatsActive = false;
+
+        _willActivityHandler?.ForceStopActivityImmediate();
+        UnseatNPCSnap(_eldranTransform, _eldranSeat, _eldranAgent, _eldranSimpleAnim, _eldranBehaviour);
+        UnseatNPCSnap(_estelaTransform, _estelaSeat, _estelaAgent, _estelaSimpleAnim, _estelaBehaviour);
+    }
+
     protected override void OnDestroy()
     {
         base.OnDestroy();
         Time.timeScale      = 1f;
         Time.fixedDeltaTime = 0.02f;
+        CleanupSeatsIfNeeded();
     }
 
 }

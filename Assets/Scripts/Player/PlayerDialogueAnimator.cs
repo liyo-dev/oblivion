@@ -26,6 +26,10 @@ public class PlayerDialogueAnimator : MonoBehaviour
     // Estado
     private Coroutine _gestureCoroutine;
     private int _lastTalkIndex = -1;
+    // ✅ FIX: si el jugador está sentado/tumbado en un NPCWorldPoint, un gesto de diálogo
+    // sobreescribe el layer 0 con su propio clip y no vuelve solo al loop de la actividad al
+    // terminar. Referencia cacheada para poder restaurarlo (ver PlayGestureCoroutine).
+    private PlayerAmbientActivityHandler _ambientActivity;
 
     #region Unity Lifecycle
 
@@ -38,6 +42,8 @@ public class PlayerDialogueAnimator : MonoBehaviour
     {
         if (animator == null)
             animator = GetComponent<Animator>();
+
+        _ambientActivity = GetComponent<PlayerAmbientActivityHandler>();
     }
 
     void OnEnable()
@@ -107,6 +113,8 @@ public class PlayerDialogueAnimator : MonoBehaviour
             return;
 
         string stateName = ResolveStateName(emotion);
+        if (string.IsNullOrEmpty(stateName))
+            return; // Emoción sin animación corporal asignada: el jugador mantiene el gesto actual
 
         int stateHash = Animator.StringToHash(stateName);
         if (!animator.HasState(0, stateHash))
@@ -124,6 +132,11 @@ public class PlayerDialogueAnimator : MonoBehaviour
         _gestureCoroutine = StartCoroutine(PlayGestureCoroutine(stateHash, stateName));
     }
 
+    /// <summary>
+    /// Igual que NPCSimpleAnimator.ResolveBodyAnimStateName: para emociones no neutrales devuelve
+    /// el bodyAnimStateName tal cual esté en el EmotionProfile (vacío = sin cambio de animación,
+    /// para emociones que solo deben cambiar la cara del jugador).
+    /// </summary>
     private string ResolveStateName(NPCEmotion emotion)
     {
         string[] neutralAnims = (emotionProfile != null && emotionProfile.neutralBodyAnims is { Length: > 0 })
@@ -139,8 +152,7 @@ public class PlayerDialogueAnimator : MonoBehaviour
         if (emotionProfile != null)
         {
             var data = emotionProfile.GetEmotionData(emotion);
-            if (!string.IsNullOrEmpty(data.bodyAnimStateName))
-                return data.bodyAnimStateName;
+            return data.bodyAnimStateName; // puede venir vacío a propósito: "sin cambio"
         }
 
         return neutralAnims[0];
@@ -167,6 +179,12 @@ public class PlayerDialogueAnimator : MonoBehaviour
         }
 
         _gestureCoroutine = null;
+
+        // ✅ FIX: si el jugador sigue sentado/tumbado (actividad ambiental activa), el gesto
+        // acaba de sobreescribir el layer 0 con su propio clip — volver al loop de la actividad
+        // para no dejarlo de pie/flotando tras terminar el gesto.
+        if (_ambientActivity != null && _ambientActivity.IsSeated)
+            _ambientActivity.ResumeActivityLoop();
     }
 
     #endregion
