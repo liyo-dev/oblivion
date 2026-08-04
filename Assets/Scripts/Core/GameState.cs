@@ -63,6 +63,21 @@ public static class GameState
         }
     }
 
+    /// <summary>
+    /// Vacía todo el stack de golpe. Mismo criterio que ForceRemove (usado ya en
+    /// GameOverManager para Cutscene) pero para todas las fases a la vez. Usar SOLO en los
+    /// puntos de entrada seguros de una sesión (llegar al MainMenu por cualquier camino, o
+    /// justo antes de inicializar una partida nueva/continuada) para garantizar que ninguna
+    /// fase quede "colgada" (p.ej. Cutscene/Dialogue) si la sesión anterior se cortó de forma
+    /// abrupta — p.ej. cerrar la demo a mitad de una cinemática para ir a Créditos.
+    /// </summary>
+    public static void ResetAll()
+    {
+        if (_stack.Count == 0) return;
+        _stack.Clear();
+        OnChanged?.Invoke();
+    }
+
     public static bool IsAny(params GamePhase[] phases)
     {
         for (int i = 0; i < phases.Length; i++)

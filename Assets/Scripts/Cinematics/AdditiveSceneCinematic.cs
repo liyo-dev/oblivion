@@ -11,6 +11,14 @@ public class AdditiveSceneCinematic : MonoBehaviour
 {
     // NUEVO: Flag estático para detectar si hay una cinemática aditiva en reproducción
     public static bool IsAnyAdditiveCinematicPlaying { get; private set; }
+
+    /// <summary>
+    /// Fuerza el flag a false. El "finally" de Co_EndCinematic ya lo limpia en el camino normal,
+    /// pero un finally de coroutine NO se garantiza si el GameObject se destruye a mitad de un
+    /// yield (p.ej. un cambio de escena abrupto). Llamar desde los puntos de entrada seguros de
+    /// sesión (MainMenu, arranque de una partida) para que nunca quede "colgado" en true.
+    /// </summary>
+    public static void ForceResetStaticState() => IsAnyAdditiveCinematicPlaying = false;
     
     [Header("Cinematic Scene")]
     [SerializeField] private string cinematicSceneName = "";   // usado en runtime

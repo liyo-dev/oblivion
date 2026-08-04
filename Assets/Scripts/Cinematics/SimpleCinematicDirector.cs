@@ -199,6 +199,13 @@ namespace Game.Cinematics
         // Estado global para que otros scripts (como vThirdPersonCamera) sepan si hay cinemática
         public static bool IsAnyCinematicPlaying { get; private set; }
 
+        /// <summary>
+        /// Fuerza el flag a false sin pasar por OnDisable/OnDestroy de ninguna instancia. Red de
+        /// seguridad adicional para los puntos de entrada de sesión (MainMenu, arranque de
+        /// partida); en el camino normal OnDisable/OnDestroy ya lo dejan en false.
+        /// </summary>
+        public static void ForceResetStaticState() => IsAnyCinematicPlaying = false;
+
         private void Start()
         {
             if (playOnStart) Play();

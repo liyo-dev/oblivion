@@ -55,6 +55,14 @@ public class TeleportService : MonoBehaviour
     // Flag propio para no invocar Transition() cuando ya hay una en curso (el plugin usa el mismo mensaje de error)
     private static bool _sTransitionInProgress;
 
+    /// <summary>
+    /// Solo se libera en el callback tm.onTransitionEnd; si la escena cambia a mitad de una
+    /// transición (evento que nunca llega a dispararse) queda "colgado" en true para siempre,
+    /// bloqueando cualquier teleport con fade futuro (cae a "teletransporte inmediato" sin fundido
+    /// permanentemente). Llamar desde los puntos de entrada seguros de sesión.
+    /// </summary>
+    public static void ForceResetTransitionLock() => _sTransitionInProgress = false;
+
     private void Awake()
     {
         if (_inst != null && _inst != this) { Destroy(gameObject); return; }

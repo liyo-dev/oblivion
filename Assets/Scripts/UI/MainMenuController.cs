@@ -123,6 +123,14 @@ public class MainMenuController : MonoBehaviour
 
     void OnEnable()
     {
+        // Llegar al MainMenu (por cualquier camino: recién arrancado, pausa → salir al menú,
+        // créditos → menú...) es un punto de entrada seguro de sesión: nunca hay legítimamente
+        // una cinemática/transición/cámara bloqueada en curso aquí. Aprovechamos para tirar
+        // cualquier flag estático de sesión que haya quedado "colgado" de una sesión anterior
+        // cortada a mitad de camino, antes de que el jugador pueda volver a cargar partida.
+        // Ver GameBootService.ResetTransientSessionState() para el detalle.
+        GameBootService.ResetTransientSessionState();
+
         GameState.Push(GamePhase.MainMenu);
 
         // Forzar modo UI de forma síncrona: cancela cualquier actualización diferida pendiente

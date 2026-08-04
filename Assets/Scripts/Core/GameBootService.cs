@@ -186,6 +186,33 @@ public class GameBootService : MonoBehaviour
     /// Indica si el perfil está configurado para forzar el boot desde el preset (modo test).
     /// </summary>
     public static bool IsPresetOverrideActive => _profile != null && _profile.ShouldBootFromPreset();
+
+    /// <summary>
+    /// Resetea todo el estado transitorio de sesión que vive en variables estáticas y que NO
+    /// está atado al ciclo de vida de ningún GameObject (por eso sobrevive a un LoadSceneAsync
+    /// en modo Single, a diferencia de los objetos normales de la escena).
+    ///
+    /// Motivo: cada uno de estos flags se pone a true/incrementa al empezar algo (cinemática,
+    /// teleport con fade, cámara bloqueada...) y depende de que el camino de vuelta se ejecute
+    /// completo para desactivarse. Si una sesión se corta a mitad de camino — el caso que lo
+    /// destapó es KingdomExitTransitionNode.CloseDemo(), que deja vThirdPersonCamera.
+    /// lockCameraForCinematic en true a propósito porque el jugador va a morir con el cambio de
+    /// escena — el flag sobrevive intacto a Créditos → MainMenu y contamina la siguiente sesión
+    /// (p.ej. la cámara de la nueva MainWorld nace "congelada" tras pulsar Continuar).
+    ///
+    /// Llamar SIEMPRE en los puntos de entrada seguros de una sesión, sea cual sea el camino por
+    /// el que se llegó: al aterrizar en el MainMenu (MainMenuController.OnEnable) y al arrancar
+    /// una partida (WorldBootstrap.InitializeWorld). En ambos puntos es seguro asumir que no hay
+    /// ninguna cinemática/transición/cámara bloqueada legítimamente en curso.
+    /// </summary>
+    public static void ResetTransientSessionState()
+    {
+        GameState.ResetAll();
+        vThirdPersonCamera.lockCameraForCinematic = false;
+        Game.Cinematics.SimpleCinematicDirector.ForceResetStaticState();
+        AdditiveSceneCinematic.ForceResetStaticState();
+        TeleportService.ForceResetTransitionLock();
+    }
     #endregion
 
     #region Scene Load Handling

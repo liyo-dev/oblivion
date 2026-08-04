@@ -86,7 +86,15 @@ public class WorldBootstrap : MonoBehaviour
     private void InitializeWorld()
     {
         Debug.Log($"[WorldBootstrap] 🌍 InitializeWorld() - Iniciando configuración del mundo");
-        
+
+        // BUGFIX: al inicializar el mundo siempre estamos en gameplay normal (nunca a mitad de
+        // una cinemática), así que este es un punto seguro para tirar de golpe cualquier flag de
+        // sesión estático que pudiera haber quedado "colgado" en true/incrementado por una sesión
+        // anterior cortada abruptamente (p.ej. cerrar la demo a mitad de una cinemática para ir a
+        // Créditos). Ver GameBootService.ResetTransientSessionState() para el detalle de qué se
+        // resetea y por qué.
+        GameBootService.ResetTransientSessionState();
+
         var bootProfile = GameBootService.Profile;
         if (bootProfile == null)
         {
