@@ -165,7 +165,7 @@ MonoBehaviour:
     singleUse: 1
     autoStartOnDetection: 1
     autoExecuteOnQuestConditionMet: 0
-    freezePlayerOnDetection: 0
+    freezePlayerOnDetection: 1
     lockPlayerAfterChain: 0
     lockPlayerMaxDuration: 8
     postNarrativeState: 0
@@ -175,6 +175,8 @@ MonoBehaviour:
     sendNarrativeEvent: 0
     narrativeEventKey: 
     debugMode: 1
+    loopWhileConditionMet: 0
+    loopPauseDuration: 1
   - description: 
     priority: 0
     condition:
@@ -243,6 +245,8 @@ MonoBehaviour:
     sendNarrativeEvent: 0
     narrativeEventKey: 
     debugMode: 0
+    loopWhileConditionMet: 0
+    loopPauseDuration: 1
   persistState: 1
   enableDetailedLogs: 1
   persistenceId: oliver-narrative-b8a7c6d5-unique

@@ -248,16 +248,47 @@ public class GolemBossAI : MonoBehaviour
             damageable.OnDamaged -= OnDamageTaken;
             damageable.OnDied -= OnDeath;
         }
-        
+
         if (_registeredInCombat)
         {
             ActiveCombatRegistry.UnregisterNPC(gameObject);
         }
-        
+
         if (_aiRoutine != null)
         {
             StopCoroutine(_aiRoutine);
         }
+    }
+
+    /// <summary>
+    /// FIX INC-067: cuando el GameObject/componente se desactiva a mitad de un ataque (p.ej. por
+    /// una cinemática que oculta al boss, culling, etc.), Unity detiene TODAS las corrutinas sin
+    /// avisar, incluida la que tenía puesto <see cref="_isAttacking"/> a true. Al reactivarse esa
+    /// corrutina ya no existe y nada volvía a poner el flag a false, así que el Golem se quedaba
+    /// "vivo" pero sin volver a atacar nunca más. Al reactivarse limpiamos el estado de ataque y
+    /// relanzamos la rutina de IA si se había perdido.
+    /// </summary>
+    void OnEnable()
+    {
+        if (!_hasSpawned || _isDead) return;
+
+        _isAttacking = false;
+        _isCharging = false;
+        _pendingChargeAttack = false;
+        if (agent) agent.speed = walkSpeed;
+        if (animator) animator.speed = 1f;
+
+        if (_aiRoutine == null)
+        {
+            _aiRoutine = StartCoroutine(AIBehaviorRoutine());
+        }
+    }
+
+    void OnDisable()
+    {
+        // La corrutina ya ha sido detenida por Unity al desactivarse; limpiamos la referencia
+        // para que OnEnable sepa que debe relanzarla en vez de asumir que sigue viva.
+        _aiRoutine = null;
     }
 
     void Update()
@@ -716,8 +747,15 @@ public class GolemBossAI : MonoBehaviour
             Vector3 direction = (targetPos - spawnPos).normalized;
             
             // Configurar layer del proyectil
+            // FIX INC-068: "EnemyProjectile" no existe como layer en el proyecto (ver
+            // ProjectSettings/TagManager.asset), así que el fallback caía en "Projectile", que es
+            // la layer de los hechizos del jugador/aliados (MagicProjectil.cs, AllyCombatState.cs).
+            // Con eso, las rocas del golem chocaban entre sí o con hechizos aliados y se destruían
+            // antes de llegar al jugador, y el escudo (PlayerShieldController, que solo bloquea
+            // "ProjectileEnemy") no las reconocía. La layer correcta para proyectiles enemigos es
+            // "ProjectileEnemy".
             int projectileLayer = LayerMask.NameToLayer("EnemyProjectile");
-            if (projectileLayer == -1) projectileLayer = LayerMask.NameToLayer("Projectile");
+            if (projectileLayer == -1) projectileLayer = LayerMask.NameToLayer("ProjectileEnemy");
             if (projectileLayer != -1)
             {
                 rock.layer = projectileLayer;
@@ -975,9 +1013,9 @@ public class GolemBossAI : MonoBehaviour
     /// </summary>
     private void SetupRockProjectile(GameObject rock, Vector3 direction, float speed)
     {
-        // Layer del proyectil
+        // Layer del proyectil (FIX INC-068: usar "ProjectileEnemy", ver comentario en RockThrowAttack)
         int projectileLayer = LayerMask.NameToLayer("EnemyProjectile");
-        if (projectileLayer == -1) projectileLayer = LayerMask.NameToLayer("Projectile");
+        if (projectileLayer == -1) projectileLayer = LayerMask.NameToLayer("ProjectileEnemy");
         if (projectileLayer != -1)
         {
             rock.layer = projectileLayer;

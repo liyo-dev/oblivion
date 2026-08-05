@@ -98,7 +98,9 @@ public class EmotionProfileEditor : Editor
         EditorGUILayout.BeginHorizontal();
         if (GUILayout.Button("+ Añadir Emoción"))
         {
-            emotionsProperty.InsertArrayElementAtIndex(emotionsProperty.arraySize);
+            // Usa la utilidad genérica para que el nuevo elemento nazca con valores por defecto
+            // en vez de duplicar la última emoción configurada (comportamiento por defecto de Unity).
+            SerializedArrayUtils.AddElementReset(emotionsProperty, typeof(EmotionMeshData));
         }
         if (emotionsProperty.arraySize > 0 && GUILayout.Button("- Quitar Última"))
         {

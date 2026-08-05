@@ -15,7 +15,7 @@ namespace Game.NPC.Modules
     /// </summary>
     public class NPCInteractiveNarrativeExecutor : MonoBehaviour
     {
-        public const int COMPONENT_VERSION = 7; // Added diagnostic logs
+        public const int COMPONENT_VERSION = 11; // Fix: el bucle ambiental ya no bloquea Interactable/detección/icono de quest, y se interrumpe al instante ante una interacción real del jugador
 
         #region 🔌 Dependencies
         private NPCBehaviourManagerV2 _npcManager;
@@ -49,6 +49,16 @@ namespace Game.NPC.Modules
         private const int NARRATIVE_CHECK_INTERVAL = 10;
         
         private bool _detectPlayerRoutineStarted = false;
+        private bool _ambientLoopRoutineStarted = false;
+        // true mientras se ejecuta una cadena disparada por AmbientLoopRoutine (sin interacción real
+        // del jugador). Acciones que asumen que el jugador está mirando/congelado por una interacción
+        // (ej: DialogueCameraController.FocusOnNPC en ExecuteMove) deben consultarlo para no secuestrar
+        // la cámara del jugador mientras éste sigue moviéndose libremente.
+        private bool _isAmbientLoopExecution = false;
+        // Coroutine de la cadena de bucle ambiental actualmente en marcha (si la hay). Se guarda
+        // por referencia (en vez de usar "yield return ExecuteNarrativeChain(...)" anidado) para
+        // poder cortarla al instante con StopCoroutine() en cuanto el jugador interactúa de verdad.
+        private Coroutine _ambientChainCoroutine = null;
         private bool _playerFrozenByDetection = false;
         private bool _wasTriggeredByDetection = false;
         private bool _chainWasTriggeredByDetection = false;
@@ -62,8 +72,18 @@ namespace Game.NPC.Modules
         #endregion
         
         #region 📢 Public API
-        public bool IsExecuting => _isExecuting || (Time.time - _lastExecutionEndTime < POST_EXECUTION_COOLDOWN) || (Time.time < _joinPartyFailedUntil);
+        // IMPORTANTE: el bucle ambiental (loopWhileConditionMet) es solo la "animación de espera"
+        // del NPC — nunca debe contar como "ocupado" de cara al exterior. Interactable, la detección
+        // por proximidad y NPCQuestIconManager consultan esta propiedad para decidir si pueden
+        // interactuar/disparar/mostrar icono; por eso excluye explícitamente la ejecución ambiental.
+        // Una narrativa REAL (diálogo/quest) sigue bloqueando con normalidad, incluido su cooldown.
+        public bool IsExecuting => (_isExecuting && !_isAmbientLoopExecution) || (Time.time - _lastExecutionEndTime < POST_EXECUTION_COOLDOWN) || (Time.time < _joinPartyFailedUntil);
         public NPCBehaviourManagerV2 Manager => _npcManager;
+
+        // Igual que IsExecuting (raw, sin cooldown): true solo si hay una narrativa REAL en curso.
+        // Usarlo en los disparadores automáticos (quest completada, evento custom...) para que puedan
+        // interrumpir el bucle ambiental en vez de quedarse bloqueados esperando a que termine.
+        private bool IsBusyWithRealNarrative() => _isExecuting && !_isAmbientLoopExecution;
         #endregion
         
         private ConditionalNarrative GetCachedActiveNarrative(bool forceRefresh = false)
@@ -208,7 +228,7 @@ namespace Game.NPC.Modules
         private void OnStepCompletedHandler(string questId, int stepIndex)
         {
             if (_config == null || _config.conditionalNarratives == null) return;
-            if (_isExecuting) return;
+            if (IsBusyWithRealNarrative()) return;
 
             foreach (var narrative in _config.conditionalNarratives)
             {
@@ -233,7 +253,7 @@ namespace Game.NPC.Modules
         private void CheckAndAutoExecuteQuestNarrative(string questId, NarrativeConditionType expectedConditionType)
         {
             if (_config == null || _config.conditionalNarratives == null) return;
-            if (_isExecuting) return; // Ya ejecutando otra narrativa
+            if (IsBusyWithRealNarrative()) return; // Ya ejecutando otra narrativa REAL (el bucle ambiental no cuenta)
             
             foreach (var narrative in _config.conditionalNarratives)
             {
@@ -264,13 +284,15 @@ namespace Game.NPC.Modules
         {
             // Pequeña espera para que el sistema se estabilice
             yield return _waitPointTwo;
-            
-            if (_isExecuting) yield break;
-            
+
+            // Si solo el bucle ambiental está en marcha, TryExecuteNarrative() lo interrumpirá
+            // al instante; solo hay que abortar aquí si hay una narrativa REAL ya en curso.
+            if (IsBusyWithRealNarrative()) yield break;
+
             // Invalidar caché y forzar esta narrativa
             InvalidateNarrativeCache();
             _cachedActiveNarrative = narrative;
-            
+
             // Ejecutar
             TryExecuteNarrative();
         }
@@ -381,8 +403,8 @@ namespace Game.NPC.Modules
             
             if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] 📨 Evento custom '{eventKey}' recibido para narrativa '{narrative.description}'");
             
-            // Si tiene autoExecuteOnQuestConditionMet, auto-ejecutar
-            if (narrative.autoExecuteOnQuestConditionMet && !_isExecuting)
+            // Si tiene autoExecuteOnQuestConditionMet, auto-ejecutar (el bucle ambiental no bloquea esto)
+            if (narrative.autoExecuteOnQuestConditionMet && !IsBusyWithRealNarrative())
             {
                 if (narrative.CanExecute())
                 {
@@ -407,8 +429,14 @@ namespace Game.NPC.Modules
                 _detectPlayerRoutineStarted = true;
                 StartCoroutine(DetectPlayerRoutine());
             }
+
+            if (!_ambientLoopRoutineStarted && _config != null)
+            {
+                _ambientLoopRoutineStarted = true;
+                StartCoroutine(AmbientLoopRoutine());
+            }
         }
-        
+
         public NPCInteractiveNarrativeConfig GetConfiguration()
         {
             if (_config == null && _npcManager != null && _npcManager.Configuration != null)
@@ -447,8 +475,14 @@ namespace Game.NPC.Modules
                 _detectPlayerRoutineStarted = true;
                 StartCoroutine(DetectPlayerRoutine());
             }
+
+            if (!_ambientLoopRoutineStarted)
+            {
+                _ambientLoopRoutineStarted = true;
+                StartCoroutine(AmbientLoopRoutine());
+            }
         }
-        
+
         private void InitializeAlertIconController()
         {
             _alertIconController = GetComponent<NPCAlertIconController>();
@@ -499,9 +533,14 @@ namespace Game.NPC.Modules
         {
             if (_config == null) return;
 
+            // El bucle ambiental no cuenta como "narrativa real en curso": solo una cadena
+            // disparada por interacción/detección/evento debe bloquear el Interactable y ocultar
+            // el icono. Así el jugador siempre puede pulsar A sobre un NPC que solo está "esperando".
+            bool isRealNarrativeRunning = IsBusyWithRealNarrative();
+
             if (_interactable != null)
             {
-                if (_isExecuting)
+                if (isRealNarrativeRunning)
                 {
                     if (_interactable.enabled) _interactable.enabled = false;
                 }
@@ -516,7 +555,7 @@ namespace Game.NPC.Modules
                 }
             }
 
-            if (!_isExecuting)
+            if (!isRealNarrativeRunning)
             {
                 var activeNarrative = GetCachedActiveNarrative();
                 if (activeNarrative != null)
@@ -574,8 +613,20 @@ namespace Game.NPC.Modules
 
         public bool TryExecuteNarrative()
         {
-            // ✅ FIX: Usar IsExecuting (propiedad) para respetar todos los cooldowns
-            if (IsExecuting || _config == null) return false;
+            if (_config == null) return false;
+
+            // El bucle ambiental (loopWhileConditionMet) nunca debe bloquear una interacción real:
+            // se corta al instante -limpiando cualquier movimiento/animación a medias- para dar paso
+            // al diálogo/quest que el jugador acaba de pedir. IsExecuting ya ignora el bucle ambiental,
+            // así que si sigue en true aquí es porque hay una narrativa REAL en curso o en cooldown.
+            if (_isExecuting && _isAmbientLoopExecution)
+            {
+                InterruptAmbientLoop();
+            }
+            else if (IsExecuting)
+            {
+                return false;
+            }
 
             var activeNarrative = _config.GetActiveNarrative();
             if (activeNarrative == null) return false;
@@ -587,9 +638,42 @@ namespace Game.NPC.Modules
             return true;
         }
 
-        private IEnumerator ExecuteNarrativeChain(NarrativeChainEntry[] chain, ConditionalNarrative narrativeData)
+        /// <summary>
+        /// Corta al instante la cadena de bucle ambiental en curso (si la hay) para dar paso a una
+        /// interacción real. No espera a que termine el paso actual (animación o movimiento):
+        /// para la corrutina de la cadena y fuerza Idle en el NPC, lo que dispara
+        /// CinematicState.OnExit -> CinematicSequence.Cleanup() y restaura obstacle avoidance,
+        /// PlayerLockService (si aplicara) y el NavMeshAgent, igual que si la secuencia hubiera
+        /// terminado sola. Ver MoveToPositionSequence.Cleanup() en CinematicState.cs.
+        /// </summary>
+        private void InterruptAmbientLoop()
+        {
+            if (_ambientChainCoroutine != null)
+            {
+                StopCoroutine(_ambientChainCoroutine);
+                _ambientChainCoroutine = null;
+            }
+
+            _npcManager?.ForceIdle();
+
+            if (_npcManager?.SimpleAnimator != null)
+                _npcManager.SimpleAnimator.AllowManualRotation = false;
+
+            if (_npcManager?.Context != null)
+                _npcManager.Context.IsInteracting = false;
+
+            _isExecuting = false;
+            _isAmbientLoopExecution = false;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log($"[NarrativeExecutor:{name}] ⏹️ Bucle ambiental interrumpido por interacción real del jugador");
+#endif
+        }
+
+        private IEnumerator ExecuteNarrativeChain(NarrativeChainEntry[] chain, ConditionalNarrative narrativeData, bool isAmbientLoop = false)
         {
             _isExecuting = true;
+            _isAmbientLoopExecution = isAmbientLoop;
             _currentActionIndex = 0;
             _chainWasTriggeredByDetection = _wasTriggeredByDetection;
             _wasTriggeredByDetection = false;
@@ -605,23 +689,28 @@ namespace Game.NPC.Modules
                 _npcManager.SimpleAnimator.AllowManualRotation = true;
             }
 
-            // --- ANIMACIÓN DE INTERACCIÓN ---
-            if (_npcManager?.SimpleAnimator != null && PlayerService.TryGetPlayer(out var player, allowSceneLookup: true))
+            // El bucle ambiental (loopWhileConditionMet) no es una interacción real con el jugador:
+            // no hay saludo ni rotación hacia él, es solo la actividad "de espera" del NPC.
+            if (!isAmbientLoop)
             {
-                Vector3 toPlayer = player.transform.position - transform.position;
-                float angle = Vector3.Angle(transform.forward, toPlayer);
+                // --- ANIMACIÓN DE INTERACCIÓN ---
+                if (_npcManager?.SimpleAnimator != null && PlayerService.TryGetPlayer(out var player, allowSceneLookup: true))
+                {
+                    Vector3 toPlayer = player.transform.position - transform.position;
+                    float angle = Vector3.Angle(transform.forward, toPlayer);
 
-                if (angle <= 90f)
-                {
-                    _npcManager.SimpleAnimator.PlayOneShot("Greeting01_NoWeapon");
+                    if (angle <= 90f)
+                    {
+                        _npcManager.SimpleAnimator.PlayOneShot("Greeting01_NoWeapon");
+                    }
+                    else
+                    {
+                        _npcManager.SimpleAnimator.PlayOneShot("SenseSomethingStart_NoWeapon");
+                    }
                 }
-                else
-                {
-                    _npcManager.SimpleAnimator.PlayOneShot("SenseSomethingStart_NoWeapon");
-                }
+
+                if (_npcManager.RotateToPlayerOnInteract) yield return RotateToPlayer();
             }
-            
-            if (_npcManager.RotateToPlayerOnInteract) yield return RotateToPlayer();
 
             for (int i = 0; i < chain.Length; i++)
             {
@@ -678,8 +767,18 @@ namespace Game.NPC.Modules
                 _npcManager.Context.IsInteracting = false;
 
             _isExecuting = false;
-            _lastExecutionEndTime = Time.time;
-            if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] ⏱️ Narrativa finalizada - Cooldown activo hasta {_lastExecutionEndTime + POST_EXECUTION_COOLDOWN:F2}s");
+            bool wasAmbientLoop = _isAmbientLoopExecution;
+            _isAmbientLoopExecution = false;
+
+            // El cooldown post-narrativa (POST_EXECUTION_COOLDOWN) existe para dar un respiro tras un
+            // diálogo/quest REAL antes de permitir otra interacción; no tiene sentido aplicarlo tras
+            // cada repetición del bucle ambiental, o el jugador seguiría sin poder interactuar durante
+            // 0.5s extra después de cada ciclo aunque IsExecuting ya ignore el bucle en sí.
+            if (!wasAmbientLoop)
+            {
+                _lastExecutionEndTime = Time.time;
+                if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] ⏱️ Narrativa finalizada - Cooldown activo hasta {_lastExecutionEndTime + POST_EXECUTION_COOLDOWN:F2}s");
+            }
         }
 
         private IEnumerator ExecuteAction(NarrativeChainEntry entry)
@@ -754,7 +853,11 @@ namespace Game.NPC.Modules
 
             // Enfocar cámara en el NPC durante el movimiento: evita que la cámara se quede mirando
             // al jugador bloqueado mientras el NPC se aleja y parece que el juego se ha pillado.
-            DialogueCameraController.Instance?.FocusOnNPC(transform);
+            // Solo tiene sentido si esto es una interacción real (el jugador ya está congelado
+            // mirando al NPC); en el bucle ambiental el jugador sigue moviéndose libremente y
+            // FocusOnNPC bloquearía su cámara/movimiento cada vez que el NPC camina.
+            if (!_isAmbientLoopExecution)
+                DialogueCameraController.Instance?.FocusOnNPC(transform);
 
             if (entry.waitForPlayer)
             {
@@ -762,7 +865,8 @@ namespace Game.NPC.Modules
             }
             else
             {
-                var moveSeq = new MoveToPositionSequence(_npcManager, targetPos, entry.maxMovementDuration, entry.turnAroundOnArrival, 999f, targetAnchor);
+                var moveSeq = new MoveToPositionSequence(_npcManager, targetPos, entry.maxMovementDuration, entry.turnAroundOnArrival, 999f, targetAnchor,
+                    lockPlayer: !_isAmbientLoopExecution);
                 _npcManager.StartCinematicSequence(moveSeq);
                 while (!moveSeq.IsCompleted) yield return null;
             }
@@ -793,7 +897,8 @@ namespace Game.NPC.Modules
             }
 
             // Liberar enfoque de cámara tras completar el movimiento/desaparición
-            DialogueCameraController.Instance?.EndDialogueCamera();
+            if (!_isAmbientLoopExecution)
+                DialogueCameraController.Instance?.EndDialogueCamera();
         }
 
         /// <summary>
@@ -1570,6 +1675,64 @@ namespace Game.NPC.Modules
             return false;
         }
 
+        /// <summary>
+        /// Bucle ambiental: repite automáticamente, sin interacción del jugador, la cadena de
+        /// cualquier ConditionalNarrative con loopWhileConditionMet = true mientras su condición
+        /// se siga cumpliendo. Se detiene solo mientras el NPC está ocupado (diálogo, combate,
+        /// ejecutando otra narrativa) y se re-evalúa constantemente, así que en cuanto la
+        /// condición deja de cumplirse (ej: se completa la quest) simplemente deja de repetirse.
+        /// </summary>
+        private IEnumerator AmbientLoopRoutine()
+        {
+            yield return _waitOneSecond;
+
+            while (true)
+            {
+                if (_config != null && !IsExecuting && CanRunAmbientLoopNow())
+                {
+                    var loopNarrative = _config.GetAmbientLoopCandidate();
+                    if (loopNarrative != null)
+                    {
+                        // ✅ StartCoroutine (no "yield return ExecuteNarrativeChain(...)" anidado):
+                        // así InterruptAmbientLoop() puede cortarla con StopCoroutine() en cuanto el
+                        // jugador interactúa, sin depender de que Unity despierte este "yield return"
+                        // al detener manualmente la corrutina hija (no lo hace).
+                        _ambientChainCoroutine = StartCoroutine(ExecuteNarrativeChain(loopNarrative.narrativeChain, loopNarrative, isAmbientLoop: true));
+
+                        while (_isExecuting && _isAmbientLoopExecution)
+                            yield return null;
+
+                        _ambientChainCoroutine = null;
+
+                        // Si se interrumpió por una interacción real, no tiene sentido esperar la
+                        // pausa del bucle: directamente se vuelve a comprobar (la narrativa real ya
+                        // está en marcha, así que !IsExecuting fallará y este bucle se limitará a
+                        // hacer polling hasta que termine).
+                        yield return new WaitForSeconds(loopNarrative.loopPauseDuration);
+                        continue;
+                    }
+                }
+
+                yield return _waitHalfSecond;
+            }
+        }
+
+        /// <summary>
+        /// El bucle ambiental nunca debe pisar una interacción real (diálogo/quest en curso),
+        /// un combate, ni otra narrativa/cinemática ya en marcha.
+        /// </summary>
+        private bool CanRunAmbientLoopNow()
+        {
+            if (_npcManager?.Context == null) return false;
+            if (_npcManager.Context.IsInteracting) return false;
+            if (_npcManager.Context.IsInCombat) return false;
+
+            var dm = DialogueManager.Instance;
+            if (dm != null && dm.IsOpen) return false;
+
+            return true;
+        }
+
         private IEnumerator StartAlertSequence(ConditionalNarrative narrative = null)
         {
             var combatConfig = _npcManager.Configuration.combatConfig;
@@ -1604,12 +1767,52 @@ namespace Game.NPC.Modules
 
         private Vector3 GetTargetPosition(NarrativeChainEntry entry)
         {
+            // moveToRandomPoint tiene prioridad: no necesita anchor/transform (así lo exige
+            // NPCInteractiveNarrativeConfig.ValidateChainEntry para el tipo Move).
+            if (entry.moveToRandomPoint)
+            {
+                return GetRandomPointAround(transform.position, entry.randomMoveMinRadius, entry.randomMoveMaxRadius);
+            }
+
             if (!string.IsNullOrEmpty(entry.targetAnchorName))
             {
                 var anchor = SpawnAnchor.FindById(entry.targetAnchorName);
                 if (anchor) return anchor.transform.position;
             }
             return entry.targetTransform ? entry.targetTransform.position : Vector3.zero;
+        }
+
+        /// <summary>
+        /// Calcula un punto aleatorio válido en el NavMesh dentro de un anillo [minRadius, maxRadius]
+        /// alrededor de <paramref name="origin"/>. Usado por NarrativeActionType.Move cuando
+        /// entry.moveToRandomPoint = true. Reintenta varias veces con distintos ángulos/distancias
+        /// antes de rendirse y devolver origin (el NPC se quedaría donde está, en vez de romper la
+        /// cadena narrativa con un Vector3.zero).
+        /// </summary>
+        private Vector3 GetRandomPointAround(Vector3 origin, float minRadius, float maxRadius)
+        {
+            const int maxAttempts = 8;
+
+            float lo = Mathf.Min(minRadius, maxRadius);
+            float hi = Mathf.Max(minRadius, maxRadius);
+            float sampleRadius = Mathf.Max(2f, hi * 0.25f);
+
+            for (int attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                Vector2 dir2D = Random.insideUnitCircle.normalized;
+                float distance = Random.Range(lo, hi);
+                Vector3 candidate = origin + new Vector3(dir2D.x, 0f, dir2D.y) * distance;
+
+                if (UnityEngine.AI.NavMesh.SamplePosition(candidate, out var hit, sampleRadius, UnityEngine.AI.NavMesh.AllAreas))
+                {
+                    return hit.position;
+                }
+            }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning($"[NarrativeExecutor:{name}] ⚠️ GetRandomPointAround: no se encontró punto válido en NavMesh tras {maxAttempts} intentos (origin={origin}, radios=[{lo},{hi}]). El NPC se queda donde está.");
+#endif
+            return origin;
         }
 
         private void SwitchToEnemyLayer()

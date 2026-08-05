@@ -75,4 +75,28 @@ public static class NPCAmbientRegistry
 
         return best;
     }
+
+    /// <summary>
+    /// Devuelve, en <paramref name="results"/> (limpiada primero), todos los NPCs ambientales
+    /// activos dentro de <paramref name="radius"/> de <paramref name="position"/>, sin filtrar por
+    /// relación ni estado. Pensado para sistemas que necesitan "quién anda cerca ahora mismo" sin
+    /// FindObjectsByType — por ejemplo <c>DialogueCinematicController</c>, que congela temporalmente
+    /// a los NPCs ambientales cercanos a una conversación cinematográfica para que no crucen el
+    /// encuadre caminando. Reutiliza la lista del caller, sin allocation.
+    /// </summary>
+    public static void GetActiveNPCsInRadius(Vector3 position, float radius, List<Game.NPC.NPCBehaviourManagerV2> results)
+    {
+        results.Clear();
+        float sqrRadius = radius * radius;
+
+        foreach (var kvp in _byId)
+        {
+            var candidate = kvp.Value;
+            if (candidate == null) continue;
+
+            float sqr = (candidate.transform.position - position).sqrMagnitude;
+            if (sqr <= sqrRadius)
+                results.Add(candidate);
+        }
+    }
 }

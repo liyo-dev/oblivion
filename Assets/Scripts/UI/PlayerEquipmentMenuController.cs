@@ -1102,7 +1102,20 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         // Nivelar la cámara: conservar el yaw horizontal original pero eliminar cualquier
         // inclinación (pitch/roll) para que Will se vea recto en vez de "desde arriba".
-        Vector3 flatForward = Vector3.ProjectOnPlane(camT.forward, Vector3.up);
+        //
+        // FIX INC-065: en una AmbientZone con ZoneCameraMode.TopDown la cámara mira casi en
+        // vertical (camT.forward casi paralelo a Vector3.up), así que su componente horizontal
+        // es minúscula y está dominada por ruido numérico. Al normalizarla, "nivelar" a partir de
+        // ese vector casi degenerado producía un giro horizontal prácticamente aleatorio cada vez
+        // que se abría/cerraba el menú de equipamiento en esas zonas ("la cámara se vuelve loca").
+        // Si la cámara está casi vertical, usamos la orientación del propio personaje (siempre
+        // bien definida, no depende del ángulo de la cámara) como base en su lugar.
+        Vector3 flatForward = Vector3.zero;
+        bool cameraNearVertical = Mathf.Abs(camT.forward.y) > 0.85f;
+        if (!cameraNearVertical)
+            flatForward = Vector3.ProjectOnPlane(camT.forward, Vector3.up);
+        if (flatForward.sqrMagnitude < 0.001f && _playerPreviewTarget != null)
+            flatForward = Vector3.ProjectOnPlane(_playerPreviewTarget.forward, Vector3.up);
         if (flatForward.sqrMagnitude < 0.001f)
             flatForward = Vector3.ProjectOnPlane(targetWorldPos - _mainCameraOriginalPosition, Vector3.up);
         if (flatForward.sqrMagnitude < 0.001f)

@@ -198,7 +198,16 @@ namespace Game.NPC.States
                 // Si chocamos con algo que NO es el jugador, estamos bloqueados
                 if (hit.transform != context.Player && !hit.transform.IsChildOf(context.Player))
                 {
-                    return; 
+                    // FIX INC-073: el layerMask usado aquí incluye "Everything" salvo que se
+                    // configure coverLayerMask explícitamente, así que el propio compañero de
+                    // equipo (p.ej. Lety y Vicky, colocados muy cerca el uno del otro) podía tapar
+                    // el raycast del otro y ninguno de los dos llegaba a "ver" al jugador
+                    // acercarse — había que atacarles para forzar el combate. Un compañero del
+                    // mismo equipo no debe bloquear la detección.
+                    var hitTeamMember = hit.transform.GetComponentInParent<NPCTeamMember>();
+                    bool isTeammate = hitTeamMember != null && teamMember != null && hitTeamMember.Team == teamMember.Team;
+                    if (!isTeammate)
+                        return;
                 }
             }
             

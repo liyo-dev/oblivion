@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 /// <summary>
 /// Tipo de refugio: bajo un árbol/porche exterior (el NPC se queda ahí parado) o puerta de una
@@ -82,26 +83,64 @@ public class NPCShelterPoint : MonoBehaviour
 
     // ── Búsqueda ────────────────────────────────────────────────────────────────
 
+    // FIX INC-071: elegir el refugio más cercano en línea recta podía mandar al NPC a un punto
+    // más corto "a vista de pájaro" pero bloqueado por un muro/casa/río, forzando un rodeo
+    // larguísimo o dejándolo atascado a mitad de camino (ver IsPathBlocked en SeekShelterState).
+    // Entre los candidatos dentro de maxDist se prefiere ahora el que tenga la ruta de NavMesh
+    // COMPLETA más corta; si ninguno tiene ruta completa (p.ej. todos bloqueados), se cae al
+    // comportamiento anterior — el más cercano en línea recta — para no dejar nunca al NPC sin
+    // refugio asignado.
     public static bool TryFindNearest(
         Vector3 position, NPCShelterType? filter, float maxDist, out NPCShelterPoint result)
     {
         result = null;
-        float bestSqr = maxDist * maxDist;
+        float maxSqr = maxDist * maxDist;
+
+        NPCShelterPoint bestStraightLine = null;
+        float bestStraightLineSqr = maxSqr;
+
+        NPCShelterPoint bestByPath = null;
+        float bestPathDist = float.MaxValue;
+        NavMeshPath path = new NavMeshPath();
 
         foreach (var sp in _all)
         {
             if (sp == null || sp.IsFull) continue;
             if (filter.HasValue && sp.shelterType != filter.Value) continue;
 
-            float sqr = (sp.InteractionPosition - position).sqrMagnitude;
-            if (sqr < bestSqr)
+            Vector3 candidatePos = sp.InteractionPosition;
+            float sqr = (candidatePos - position).sqrMagnitude;
+            if (sqr >= maxSqr) continue;
+
+            if (sqr < bestStraightLineSqr)
             {
-                bestSqr = sqr;
-                result  = sp;
+                bestStraightLineSqr = sqr;
+                bestStraightLine = sp;
+            }
+
+            if (NavMesh.CalculatePath(position, candidatePos, NavMesh.AllAreas, path) &&
+                path.status == NavMeshPathStatus.PathComplete)
+            {
+                float pathDist = PathLength(path);
+                if (pathDist < bestPathDist)
+                {
+                    bestPathDist = pathDist;
+                    bestByPath = sp;
+                }
             }
         }
 
+        result = bestByPath != null ? bestByPath : bestStraightLine;
         return result != null;
+    }
+
+    private static float PathLength(NavMeshPath path)
+    {
+        var corners = path.corners;
+        float dist = 0f;
+        for (int i = 1; i < corners.Length; i++)
+            dist += Vector3.Distance(corners[i - 1], corners[i]);
+        return dist;
     }
 
 #if UNITY_EDITOR

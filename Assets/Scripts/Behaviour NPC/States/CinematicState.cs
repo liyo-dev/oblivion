@@ -158,6 +158,7 @@ namespace Game.NPC.States
         private readonly float _walkDisplayDuration;
         private readonly MonoBehaviour _owner;
         private readonly SpawnAnchor _targetAnchor; // ✅ Anchor de destino explícito (opcional)
+        private readonly bool _lockPlayer; // ✅ false para movimientos ambientales sin interacción real con el jugador
         
         private float _timer;
         private bool _hasSetDestination;
@@ -188,8 +189,13 @@ namespace Game.NPC.States
         /// <param name="turnAroundOnArrival">¿Girar 180° al llegar? (solo si no hay SpawnAnchor)</param>
         /// <param name="walkDisplayDuration">Tiempo caminando antes de hacer fade (default: 999s = sin fade)</param>
         /// <param name="targetAnchor">SpawnAnchor de destino (opcional, si se conoce). Evita búsqueda.</param>
-        public MoveToPositionSequence(MonoBehaviour owner, Vector3 targetPosition, float maxDuration = 15f, 
-            bool turnAroundOnArrival = false, float walkDisplayDuration = 999f, SpawnAnchor targetAnchor = null)
+        /// <param name="lockPlayer">¿Bloquear el input del jugador (PlayerLockService) mientras dura el movimiento?
+        /// Por defecto true (comportamiento histórico: pensado para cinemáticas de interacción donde el jugador
+        /// ya está mirando/congelado). Pasar false para movimientos ambientales de fondo donde el jugador debe
+        /// seguir jugando con normalidad mientras el NPC camina (ej: bucle de espera).</param>
+        public MoveToPositionSequence(MonoBehaviour owner, Vector3 targetPosition, float maxDuration = 15f,
+            bool turnAroundOnArrival = false, float walkDisplayDuration = 999f, SpawnAnchor targetAnchor = null,
+            bool lockPlayer = true)
         {
             _owner = owner ?? throw new ArgumentNullException(nameof(owner));
             _targetPosition = targetPosition;
@@ -197,6 +203,7 @@ namespace Game.NPC.States
             _turnAroundOnArrival = turnAroundOnArrival;
             _walkDisplayDuration = walkDisplayDuration;
             _targetAnchor = targetAnchor;
+            _lockPlayer = lockPlayer;
         }
         
         #endregion
@@ -261,8 +268,10 @@ namespace Game.NPC.States
         /// </summary>
         private void InitializeSequence(Common.NPCStateContext context)
         {
-            // Bloquear movimiento del jugador durante la cinemática
-            if (PlayerLockService.HasInstance)
+            // Bloquear movimiento del jugador durante la cinemática (solo si este movimiento
+            // representa una interacción real; los movimientos ambientales de fondo no deben tocar
+            // el input del jugador — ver parámetro lockPlayer del constructor).
+            if (_lockPlayer && PlayerLockService.HasInstance)
             {
                 PlayerLockService.Instance.Acquire(this);
                 _playerLocked = true;

@@ -198,21 +198,29 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
     // memoria (SetActive/gameObject.SetActive), y ese estado no se guarda ni se re-aplica al
     // recargar la escena. Al marcar el flag al terminar y comprobarlo en Awake, si la escena se
     // recarga tras haber visto la secuencia, estos GameObjects se ocultan inmediatamente.
-    private const string SeenFlag = "CINEMATIC_SEEN:ESTELA_APPEARS";
+    //
+    // INC-075 (05/08/2026): la clave usada aquí originalmente ("CINEMATIC_SEEN:ESTELA_APPEARS")
+    // no seguía la convención real del proyecto (ver CinematicSequencerBase.HasCinematicBeenSeen/
+    // MarkCinematicAsSeen: "CINEMATIC_SEEN:Cinematic_{id}", la misma que ya llevan escrita los 9
+    // PlayerPreset_*.asset existentes como "CINEMATIC_SEEN:Cinematic_EstelaAppears"). Al activar
+    // modo test contra uno de esos presets, la clave nunca coincidía y la secuencia se consideraba
+    // "no vista" pese a estarlo, reapareciendo arañas y guerreros. Se usa ahora la convención común
+    // de la base; se mantiene la clave antigua SOLO como lectura de compatibilidad, por si algún
+    // save real (no preset) escrito entre el 27/jul y el 5/ago quedó con la clave incorrecta.
+    private const string LegacySeenFlagCompat = "CINEMATIC_SEEN:ESTELA_APPEARS";
+    private const string SequenceId = "EstelaAppears";
 
     private static bool HasSequencePlayed()
     {
+        if (HasCinematicBeenSeen(SequenceId)) return true;
+
+        // Compatibilidad hacia atrás: saves reales (no presets de test) grabados con el código
+        // anterior a este fix pudieron quedar con la clave incorrecta.
         var preset = GameBootService.Profile != null ? GameBootService.Profile.GetActivePresetResolved() : null;
-        return preset != null && preset.flags != null && preset.flags.Contains(SeenFlag);
+        return preset != null && preset.flags != null && preset.flags.Contains(LegacySeenFlagCompat);
     }
 
-    private static void MarkSequencePlayed()
-    {
-        var preset = GameBootService.Profile != null ? GameBootService.Profile.GetActivePresetResolved() : null;
-        if (preset == null) return;
-        if (preset.flags == null) preset.flags = new System.Collections.Generic.List<string>();
-        if (!preset.flags.Contains(SeenFlag)) preset.flags.Add(SeenFlag);
-    }
+    private static void MarkSequencePlayed() => MarkCinematicAsSeen(SequenceId);
 
     protected override void Awake()
     {

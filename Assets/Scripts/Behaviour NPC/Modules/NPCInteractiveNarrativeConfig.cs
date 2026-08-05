@@ -103,6 +103,35 @@ namespace Game.NPC.Modules
                     errorMessage = $"Conditional narrative {i} ('{condNarrative.description}'): PostNarrativeState = SwitchToAmbient requiere postNarrativeAmbientConfig";
                     return false;
                 }
+
+                // Validar bucle ambiental: no tiene sentido combinarlo con singleUse,
+                // porque tras la primera ejecución CanExecute() dejaría de repetirse.
+                if (condNarrative.loopWhileConditionMet && condNarrative.singleUse)
+                {
+                    errorMessage = $"Conditional narrative {i} ('{condNarrative.description}'): loopWhileConditionMet requiere singleUse = false";
+                    return false;
+                }
+
+                // El bucle ambiental se corta a medio gesto (StopCoroutine + ForceIdle) en cuanto el
+                // jugador interactúa de verdad (ver NPCInteractiveNarrativeExecutor.InterruptAmbientLoop).
+                // Eso limpia bien un Move/PlayAnimation/Wait a medias, pero NO un diálogo abierto, un
+                // combate iniciado o un teleport de jugador. Restringir la cadena a tipos "seguros" de
+                // interrumpir evita reintroducir el bug de cámara/PlayerLockService que motivó todo esto.
+                if (condNarrative.loopWhileConditionMet && condNarrative.narrativeChain != null)
+                {
+                    foreach (var chainEntry in condNarrative.narrativeChain)
+                    {
+                        if (chainEntry == null) continue;
+                        bool isSafeForLoop = chainEntry.actionType == NarrativeActionType.Move
+                            || chainEntry.actionType == NarrativeActionType.PlayAnimation
+                            || chainEntry.actionType == NarrativeActionType.Wait;
+                        if (!isSafeForLoop)
+                        {
+                            errorMessage = $"Conditional narrative {i} ('{condNarrative.description}'): loopWhileConditionMet solo admite acciones Move/PlayAnimation/Wait en la cadena (encontrado: {chainEntry.actionType}). El resto de acciones (diálogo, combate, teleports...) puede quedar a medias si el jugador interrumpe el bucle interactuando.";
+                            return false;
+                        }
+                    }
+                }
             }
 
             return true;
@@ -192,6 +221,12 @@ namespace Game.NPC.Modules
             for (int i = 0; i < _sortedNarrativesCache.Length; i++)
             {
                 var narrative = _sortedNarrativesCache[i];
+
+                // Las narrativas de bucle ambiental nunca se disparan por interacción manual del
+                // jugador (clic/Interact). Solo las dispara NPCInteractiveNarrativeExecutor desde su
+                // bucle interno. Así un clic del jugador siempre cae al diálogo/quest normal.
+                if (narrative.loopWhileConditionMet) continue;
+
                 if (narrative.CanExecute())
                 {
                     if (enableDetailedLogs)
@@ -199,12 +234,35 @@ namespace Game.NPC.Modules
                     return narrative;
                 }
             }
-            
+
             if (enableDetailedLogs)
                 Debug.Log($"[NPCInteractiveNarrativeConfig:{name}] ❌ No hay narrativas disponibles para ejecutar");
             return null;
         }
-        
+
+        /// <summary>
+        /// Devuelve la narrativa de bucle ambiental con mayor prioridad cuya condición se cumpla
+        /// actualmente, o null si no hay ninguna. A diferencia de <see cref="GetActiveNarrative"/>,
+        /// esto SÍ considera narrativas con <c>loopWhileConditionMet = true</c> — está pensado para
+        /// que NPCInteractiveNarrativeExecutor las dispare desde su bucle ambiental interno,
+        /// nunca desde una interacción manual del jugador.
+        /// </summary>
+        public ConditionalNarrative GetAmbientLoopCandidate()
+        {
+            if (conditionalNarratives == null || conditionalNarratives.Length == 0) return null;
+
+            if (!_isCacheValid) RebuildNarrativeCache();
+
+            for (int i = 0; i < _sortedNarrativesCache.Length; i++)
+            {
+                var narrative = _sortedNarrativesCache[i];
+                if (!narrative.loopWhileConditionMet) continue;
+                if (narrative.CanExecute()) return narrative;
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Reconstruye el caché de narrativas ordenadas (llamar cuando cambian las narrativas)
         /// </summary>

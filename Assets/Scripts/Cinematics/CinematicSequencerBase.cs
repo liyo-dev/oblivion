@@ -275,6 +275,33 @@ public abstract class CinematicSequencerBase : MonoBehaviour
         ? LocalizationManager.Instance.Get(key, key)
         : key;
 
+    // ── Persistencia de "cinemática ya vista" ─────────────────────────────────
+    // INC-075 (05/08/2026): EstelaAppearsSequencer llevaba su propia clave de flag
+    // ("CINEMATIC_SEEN:ESTELA_APPEARS", añadida a mano el 27/28 jul) que NO coincidía con la
+    // convención real del proyecto ("CINEMATIC_SEEN:Cinematic_{id}", la misma que genera
+    // SimpleCinematicDirector.GetPersistenceId()/MarkAsSeen() y la que ya llevan escrita los 9
+    // PlayerPreset_*.asset existentes como "CINEMATIC_SEEN:Cinematic_EstelaAppears"). Al activar
+    // modo test contra un preset con la clave "buena", HasSequencePlayed() nunca la encontraba y
+    // las arañas/guerreros volvían a aparecer aunque la secuencia constara como vista.
+    //
+    // Estos dos helpers centralizan la convención correcta para que cualquier sequencer que
+    // necesite ocultar actores de forma permanente tras su cinemática (como EstelaAppearsSequencer)
+    // la use igual, sin reinventar el formato de la clave cada vez.
+    protected static bool HasCinematicBeenSeen(string id)
+    {
+        var preset = GameBootService.Profile != null ? GameBootService.Profile.GetActivePresetResolved() : null;
+        return preset != null && preset.flags != null && preset.flags.Contains($"CINEMATIC_SEEN:Cinematic_{id}");
+    }
+
+    protected static void MarkCinematicAsSeen(string id)
+    {
+        var preset = GameBootService.Profile != null ? GameBootService.Profile.GetActivePresetResolved() : null;
+        if (preset == null) return;
+        if (preset.flags == null) preset.flags = new System.Collections.Generic.List<string>();
+        string flag = $"CINEMATIC_SEEN:Cinematic_{id}";
+        if (!preset.flags.Contains(flag)) preset.flags.Add(flag);
+    }
+
     // ── Bocadillos paginados ──────────────────────────────────────────────────
 
     /// Muestra un texto con saltos de línea como páginas sucesivas de bocadillo.

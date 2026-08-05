@@ -70,7 +70,22 @@ namespace Game.NPC.Modules
         [Header("Debug")]
         [Tooltip("Mostrar logs de debug para esta narrativa")]
         public bool debugMode = false;
-        
+
+        [Header("Bucle Ambiental")]
+        [Tooltip("¿Repetir esta cadena automáticamente, sin interacción del jugador, mientras la condición se siga cumpliendo? " +
+                 "Pensado para comportamientos de espera (ej: NPC mareado que camina en bucle hasta que se complete una quest). " +
+                 "IMPORTANTE: una narrativa con este flag activo queda EXCLUIDA de la interacción manual (un clic del jugador " +
+                 "nunca la dispara a ella misma; solo se dispara desde el bucle ambiental interno del executor). Pero NO bloquea " +
+                 "el Interactable ni la detección por proximidad: en cuanto el jugador interactúa (o se detecta según la " +
+                 "narrativa real que corresponda), el bucle se corta al instante -a medio gesto si hace falta- y da paso al " +
+                 "diálogo/quest normal. Requiere singleUse = false — si no, la cadena se ejecutaría una sola vez y dejaría de " +
+                 "repetirse.")]
+        public bool loopWhileConditionMet = false;
+
+        [Tooltip("Segundos de pausa entre cada repetición del bucle (solo aplica si loopWhileConditionMet = true).")]
+        [Min(0f)]
+        public float loopPauseDuration = 1f;
+
         // Estado runtime
         [NonSerialized]
         private bool _hasBeenExecuted = false;

@@ -42,6 +42,12 @@ public class CloudCoverSpawner : MonoBehaviour
     [Tooltip("Margen mínimo, en unidades de mundo, entre el punto más bajo de la malla de nubes ya instanciada/escalada y el jugador. Tras construir el techo se mide su altura REAL (no solo cloudHeight) y si no deja este margen, se sube el techo entero lo que haga falta. Es la protección contra 'la cámara se queda dentro de la nube' si cloudHeight/scaleRange quedan mal calibrados para el prefab que uses.")]
     [SerializeField] private float minClearanceAboveFollowTarget = 25f;
 
+    [Header("Cobertura total del mundo (FIX INC-074)")]
+    [Tooltip("El techo se construye UNA vez y queda fijo (ver comentario de clase), así que solo cubre 'coverRadius' unidades alrededor del punto donde se activó por primera vez. Si el jugador se aleja lo bastante, sale por el borde y ve el skybox despejado en vez de nubes. Cada 'recenterCheckInterval' segundos se comprueba la distancia del jugador al centro actual y, si supera la mitad de coverRadius, se recoloca el techo YA CONSTRUIDO (solo se mueve _root, sin volver a instanciar nada) centrado en la nueva posición — así las nubes acaban cubriendo todo el mundo según se explora, sin volver a seguir al jugador cada frame (que era lo que causaba el temblor que motivó fijarlo originalmente).")]
+    [SerializeField] private float recenterCheckInterval = 2f;
+
+    private float _recenterTimer;
+
     [Header("Aspecto de tormenta")]
     [Tooltip("Color al que se tiñen las nubes al cubrir el cielo (el alfa se anima aparte, de 0 a 1). Gris de tormenta medio por defecto: lo bastante oscuro para leerse como nublado, sin llegar a negro.")]
     [SerializeField] private Color stormCloudColor = new Color(0.42f, 0.43f, 0.47f);
@@ -126,6 +132,43 @@ public class CloudCoverSpawner : MonoBehaviour
     void HandleRainStopped()
     {
         StartFade(0f);
+    }
+
+    void Update()
+    {
+        // Solo merece la pena comprobar el recentrado mientras el techo existe y es visible.
+        if (!_built || _currentAlpha <= 0f || _root == null) return;
+
+        _recenterTimer += Time.deltaTime;
+        if (_recenterTimer < recenterCheckInterval) return;
+        _recenterTimer = 0f;
+
+        CheckRecenter();
+    }
+
+    /// <summary>
+    /// FIX INC-074: ver tooltip de recenterCheckInterval. Recoloca el techo YA CONSTRUIDO (mover
+    /// _root, sin Instantiate) cuando el jugador se acerca al borde de la cobertura actual, para
+    /// que las nubes terminen cubriendo todo el mundo explorado en vez de quedarse ancladas al
+    /// punto donde empezó a llover la primera vez.
+    /// </summary>
+    void CheckRecenter()
+    {
+        Transform playerT = PlayerService.Player != null ? PlayerService.Player.transform : _followTransform;
+        if (playerT == null) return;
+
+        Vector3 rootPos = _root.position;
+        float dx = playerT.position.x - rootPos.x;
+        float dz = playerT.position.z - rootPos.z;
+        float distSqr = dx * dx + dz * dz;
+
+        float recenterThreshold = coverRadius * 0.5f;
+        if (distSqr <= recenterThreshold * recenterThreshold) return;
+
+        Vector3 newPos = playerT.position;
+        newPos.y = rootPos.y; // mantiene la altura ya calculada (incluye _safetyHeightBonus)
+        _root.position = newPos;
+        _followTransform = playerT;
     }
 
     void BuildCoverIfNeeded()

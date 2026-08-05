@@ -672,10 +672,38 @@ namespace Game.NPC
         public void ApplyLastPositionIfNeeded()
         {
             if (!persistLastPosition || lastPosition == Vector3.zero) return;
-            
-            if (_agent != null && _agent.isOnNavMesh) _agent.Warp(lastPosition);
-            else transform.position = lastPosition;
-            
+
+            // FIX INC-070: si el NavMesh se ha vuelto a bakear (o el terreno cambió) desde que se
+            // guardó lastPosition, esa altura guardada puede ya no coincidir con la superficie
+            // actual. Antes, si _agent.isOnNavMesh daba false en este punto (p.ej. porque la
+            // posición de editor del NPC quedó fuera del NavMesh rebakeado), se hacía un
+            // "transform.position = lastPosition" en crudo, sin comprobar el NavMesh actual — el
+            // NPC quedaba flotando/enterrado ahí para siempre, ya que es cinemático
+            // (forceKinematicRigidbody) y sin gravedad que lo corrija. Ahora buscamos primero el
+            // punto válido más cercano en el NavMesh vigente antes de colocar al NPC.
+            if (NavMesh.SamplePosition(lastPosition, out var hit, 5f, NavMesh.AllAreas))
+            {
+                if (_agent != null)
+                {
+                    bool wasEnabled = _agent.enabled;
+                    if (!wasEnabled) _agent.enabled = true;
+                    _agent.Warp(hit.position);
+                    if (!wasEnabled) _agent.enabled = false;
+                }
+                else
+                {
+                    transform.position = hit.position;
+                }
+            }
+            else if (_agent != null && _agent.isOnNavMesh)
+            {
+                _agent.Warp(lastPosition);
+            }
+            else
+            {
+                transform.position = lastPosition;
+            }
+
             if(debugMode) Debug.Log($"[NPCManager] 📍 Posición restaurada: {lastPosition}");
         }
         

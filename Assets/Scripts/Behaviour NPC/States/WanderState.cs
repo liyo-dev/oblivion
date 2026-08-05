@@ -267,7 +267,13 @@ namespace Game.NPC.States
                 // Si golpeamos algo que NO es el jugador, hay una pared
                 if (hit.transform != context.Player && !hit.transform.IsChildOf(context.Player))
                 {
-                    return; // Bloqueado por pared
+                    // FIX INC-073: ver mismo comentario en IdleState.CheckPlayerDetection — un
+                    // compañero del mismo equipo (dúo Lety/Vicky, etc.) no debe bloquear la
+                    // detección solo por estar de pie al lado.
+                    var hitTeamMember = hit.transform.GetComponentInParent<NPCTeamMember>();
+                    bool isTeammate = hitTeamMember != null && teamMember != null && hitTeamMember.Team == teamMember.Team;
+                    if (!isTeammate)
+                        return; // Bloqueado por pared
                 }
             }
 

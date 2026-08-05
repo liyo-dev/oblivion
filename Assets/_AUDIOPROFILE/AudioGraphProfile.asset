@@ -59,7 +59,7 @@ MonoBehaviour:
   - sceneName: MainMenu
     music: {fileID: 8300000, guid: 785493ca564adeb44bb1c68fa22f00ab, type: 3}
   - sceneName: MainWorld
-    music: {fileID: 8300000, guid: ad3ca9176615a184287a1335238a3c7a, type: 3}
+    music: {fileID: 8300000, guid: 325160c1b0f253a44aabf1e5bc2334fd, type: 3}
   - sceneName: Credits
     music: {fileID: 8300000, guid: e4417147d8027ae48a5ef706f52635d8, type: 3}
   eventSfx:

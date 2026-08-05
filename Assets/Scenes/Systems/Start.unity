@@ -8890,6 +8890,10 @@ MonoBehaviour:
   groupCameraProbeRadius: 0.4
   dialogueCameraSelfClearance: 0.5
   dialogueCameraMinDistance: 2.4
+  bystanderFreezeRadius: 9
+  bystanderRescanInterval: 0.6
+  intruderCheckInterval: 0.12
+  intruderProbeRadius: 0.3
   groupPlayerRotationDuration: 0.35
 --- !u!1 &961376697
 GameObject:

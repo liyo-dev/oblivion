@@ -72,6 +72,40 @@ public class DialogueCinematicController : MonoBehaviour
     [Tooltip("Modo 1:1: distancia mínima a la que se permite acercar la cámara al esquivar una obstrucción. Los planos normales están entre 3 y 5m; bajarla demasiado produce un primerísimo plano roto (metros)")]
     [SerializeField] private float dialogueCameraMinDistance = 2.4f;
 
+    [Header("Anti-intrusión (NPCs ajenos cruzándose en cámara)")]
+    [Tooltip("Radio (m) alrededor del punto medio de la conversación en el que se detiene la navegación de NPCs ambientales ajenos al diálogo (no el NPC principal, no el player, no party) mientras dura la escena.")]
+    [SerializeField] private float bystanderFreezeRadius = 9f;
+    [Tooltip("Cada cuánto (segundos) se reescanea el radio de congelado, por si un NPC nuevo entra en él o alguno reanuda su ruta entre reescaneos")]
+    [SerializeField] private float bystanderRescanInterval = 0.6f;
+    [Tooltip("Cada cuánto (segundos) se comprueba si algún personaje se ha metido entre la cámara y quien habla (red de seguridad final, independiente del congelado preventivo)")]
+    [SerializeField] private float intruderCheckInterval = 0.12f;
+    [Tooltip("Radio del SphereCast usado para detectar intrusos entre la cámara y la cara de quien habla")]
+    [SerializeField] private float intruderProbeRadius = 0.3f;
+
+    // ── Anti-intrusión: NPCs ambientales que caminan dentro del encuadre del diálogo ──
+    // Contexto (Agosto 2026): la cámara de diálogo solo evitaba geometría estática (paredes) y
+    // ocultaba party members no-hablantes; cualquier NPC ambiental ajeno a la conversación podía
+    // cruzarse libremente delante de cámara sin que nada lo detectara. Doble red, sin tocar la FSM:
+    //  1) Preventiva (RescanAndFreezeBystanders): HardStop periódico sobre el NavMeshAgent de los
+    //     NPCs ambientales cercanos que no participan en el diálogo. Solo actúa a nivel de agente
+    //     (no cambia su estado ni su lógica), así que no hay riesgo de interferir con quests o el
+    //     grafo narrativo — en el peor caso el NPC retoma su ruta con normalidad al siguiente tick.
+    //  2) Reactiva (CheckAndHideCameraIntruders): si aun así algo se cruza en la línea cámara→cara
+    //     del speaker, se oculta su renderer (mismo patrón que HideNonSpeakingPartyMembers) hasta
+    //     que deje de bloquear. Esta es la garantía real: aunque el congelado falle o llegue tarde,
+    //     nunca se ve a un personaje tapando la cámara en primerísimo plano.
+    private readonly List<Game.NPC.NPCBehaviourManagerV2> _nearbyBystanderBuffer = new List<Game.NPC.NPCBehaviourManagerV2>();
+    private readonly HashSet<Game.NPC.NPCBehaviourManagerV2> _frozenBystanders = new HashSet<Game.NPC.NPCBehaviourManagerV2>();
+    private readonly HashSet<Transform> _bystanderRootTransforms = new HashSet<Transform>();
+    private float _bystanderRescanTimer;
+
+    private readonly RaycastHit[] _intruderHitsBuffer = new RaycastHit[8];
+    private readonly HashSet<Transform> _hiddenIntruders = new HashSet<Transform>();
+    private readonly HashSet<Transform> _frameIntruders = new HashSet<Transform>();
+    private readonly List<Transform> _intrudersToRestoreBuffer = new List<Transform>();
+    private readonly Dictionary<Renderer, bool> _hiddenIntruderOrigState = new Dictionary<Renderer, bool>();
+    private float _intruderCheckTimer;
+
     // Interpolación suave del lookAt en modo grupal
     private Vector3 _groupLookAtTarget;
     private Vector3 _groupLookAtVelocity;
@@ -372,6 +406,24 @@ public class DialogueCinematicController : MonoBehaviour
             }
         }
 
+        // ── Anti-intrusión: reescaneo de bystanders + red de seguridad de intrusos en cámara ──
+        if (isInCinematicMode)
+        {
+            _bystanderRescanTimer -= Time.deltaTime;
+            if (_bystanderRescanTimer <= 0f)
+            {
+                _bystanderRescanTimer = bystanderRescanInterval;
+                RescanAndFreezeBystanders();
+            }
+
+            _intruderCheckTimer -= Time.deltaTime;
+            if (_intruderCheckTimer <= 0f)
+            {
+                _intruderCheckTimer = intruderCheckInterval;
+                CheckAndHideCameraIntruders();
+            }
+        }
+
         // ── Breathing suave del lookAt en modo grupal ──
         // Recalcula el centro del grupo e interpola el punto de mira hacia el speaker actual.
         if (_isGroupConversation && isInCinematicMode && currentPlayer != null)
@@ -614,6 +666,12 @@ public class DialogueCinematicController : MonoBehaviour
             Debug.LogError("[DialogueCinematicController] ❌ dialogueCamera es NULL - no se puede activar!");
         }
 
+        // PASO 4.5: Congelar de inmediato a los NPCs ambientales cercanos que no participan
+        // en el diálogo, para que el plano de apertura no arranque con alguien cruzando el encuadre.
+        _bystanderRescanTimer = bystanderRescanInterval;
+        _intruderCheckTimer = intruderCheckInterval;
+        RescanAndFreezeBystanders();
+
         // PASO 5: Activar el plano de apertura
         ApplyShotWithContext(activeProfile.openingShot, true);
     }
@@ -729,6 +787,10 @@ public class DialogueCinematicController : MonoBehaviour
         }
         // Restaurar party members ocultos
         ShowAllPartyMembers();
+
+        // Liberar bystanders congelados y restaurar cualquier intruso oculto por la red de seguridad
+        UnfreezeBystanders();
+        RestoreAllHiddenIntruders();
 
         // Mostrar el HUD con fade suave
         ShowHUD();
@@ -943,6 +1005,171 @@ public class DialogueCinematicController : MonoBehaviour
         }
         _hiddenPartyRenderers.Clear();
         _hiddenPartyRenderersOrigState.Clear();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ANTI-INTRUSIÓN: NPCs ambientales cruzándose en la cámara
+    // ═══════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Capa preventiva: detiene (HardStop sobre el NavMeshAgent, sin tocar su FSM) a los NPCs
+    /// ambientales dentro del radio de la conversación que no son el NPC principal, el player ni
+    /// party members. No interfiere con NPCs ya ocupados en su propio combate/cinemática/interacción.
+    /// Se llama al iniciar el diálogo y se refresca periódicamente desde LateUpdate.
+    /// </summary>
+    private void RescanAndFreezeBystanders()
+    {
+        if (currentPlayer == null) return;
+
+        Vector3 center = currentNPC != null
+            ? (currentPlayer.position + currentNPC.position) * 0.5f
+            : currentPlayer.position;
+
+        NPCAmbientRegistry.GetActiveNPCsInRadius(center, bystanderFreezeRadius, _nearbyBystanderBuffer);
+
+        for (int i = 0; i < _nearbyBystanderBuffer.Count; i++)
+        {
+            var npc = _nearbyBystanderBuffer[i];
+            if (npc == null) continue;
+            if (npc.transform == currentNPC || npc.transform == currentPlayer) continue;
+            if (IsPartyMember(npc.transform)) continue;
+
+            var ctx = npc.Context;
+            if (ctx != null && (ctx.IsInCombat || ctx.IsInCinematic || ctx.IsInteracting || ctx.WasDefeatedInCombat))
+                continue;
+
+            if (npc.Agent != null)
+                Game.NPC.Common.NavMeshAgentUtility.HardStop(npc.Agent);
+
+            if (_frozenBystanders.Add(npc))
+                _bystanderRootTransforms.Add(npc.transform);
+        }
+    }
+
+    /// <summary>
+    /// Libera a todos los bystanders congelados. No hace falta "reactivarlos" explícitamente:
+    /// HardStop solo tocó el NavMeshAgent, nunca su FSM, así que su propio estado (Wander/Idle)
+    /// retoma la navegación con normalidad en cuanto vuelve a evaluarse.
+    /// </summary>
+    private void UnfreezeBystanders()
+    {
+        _frozenBystanders.Clear();
+        _bystanderRootTransforms.Clear();
+    }
+
+    /// <summary>
+    /// Capa reactiva (red de seguridad): comprueba si algún NPC ambiental conocido (de
+    /// <see cref="_bystanderRootTransforms"/>) se ha metido entre la cámara y la cara de quien
+    /// habla, y si es así oculta sus renderers hasta que deje de bloquear. Garantiza que, aunque
+    /// el congelado preventivo falle o llegue tarde, nunca se vea a un personaje tapando la cámara.
+    /// </summary>
+    private void CheckAndHideCameraIntruders()
+    {
+        if (currentPlayer == null || _bystanderRootTransforms.Count == 0)
+        {
+            // Nada que vigilar: si había intrusos ocultos de un chequeo anterior, restaurarlos.
+            if (_hiddenIntruders.Count > 0) RestoreAllHiddenIntruders();
+            return;
+        }
+
+        Transform focusTarget = currentSpeaker != null ? currentSpeaker : currentNPC;
+        if (focusTarget == null) return;
+
+        Camera activeCam = (dialogueCamera != null && dialogueCamera.enabled) ? dialogueCamera : null;
+        if (activeCam == null) return;
+
+        Vector3 camPos = activeCam.transform.position;
+        Vector3 headPos = focusTarget.position + Vector3.up * 1.5f;
+        Vector3 toHead = headPos - camPos;
+        float dist = toHead.magnitude;
+        if (dist < 0.5f) return;
+
+        Vector3 dir = toHead / dist;
+        float castDist = Mathf.Max(0.1f, dist - 0.3f); // no llegar hasta la propia cara del speaker
+
+        int hitCount = Physics.SphereCastNonAlloc(camPos, intruderProbeRadius, dir, _intruderHitsBuffer,
+            castDist, _camObstructionMask, QueryTriggerInteraction.Ignore);
+
+        _frameIntruders.Clear();
+        for (int i = 0; i < hitCount; i++)
+        {
+            var col = _intruderHitsBuffer[i].collider;
+            if (col == null) continue;
+
+            Transform root = col.transform.root;
+            if (root == focusTarget || root == currentPlayer || root == currentNPC) continue;
+            if (!_bystanderRootTransforms.Contains(root)) continue; // solo NPCs ambientales conocidos
+
+            _frameIntruders.Add(root);
+        }
+
+        foreach (var intruder in _frameIntruders)
+        {
+            if (_hiddenIntruders.Add(intruder))
+            {
+                HideIntruderRenderers(intruder);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                if (showDebugInfo)
+                    Debug.Log($"[DialogueCinematicController] 🙈 Intruso oculto (se cruzó en cámara): {intruder.name}");
+#endif
+            }
+        }
+
+        if (_hiddenIntruders.Count > 0)
+        {
+            _intrudersToRestoreBuffer.Clear();
+            foreach (var hidden in _hiddenIntruders)
+                if (!_frameIntruders.Contains(hidden))
+                    _intrudersToRestoreBuffer.Add(hidden);
+
+            for (int i = 0; i < _intrudersToRestoreBuffer.Count; i++)
+            {
+                RestoreIntruderRenderers(_intrudersToRestoreBuffer[i]);
+                _hiddenIntruders.Remove(_intrudersToRestoreBuffer[i]);
+            }
+        }
+    }
+
+    private void HideIntruderRenderers(Transform root)
+    {
+        if (root == null) return;
+        var renderers = root.GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            var r = renderers[i];
+            if (r == null || _hiddenIntruderOrigState.ContainsKey(r)) continue;
+            _hiddenIntruderOrigState[r] = r.enabled;
+            r.enabled = false;
+        }
+    }
+
+    private void RestoreIntruderRenderers(Transform root)
+    {
+        if (root == null) return;
+        var renderers = root.GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            var r = renderers[i];
+            if (r != null && _hiddenIntruderOrigState.TryGetValue(r, out bool orig))
+            {
+                r.enabled = orig;
+                _hiddenIntruderOrigState.Remove(r);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Restaura todos los intrusos ocultos de golpe (fin del diálogo, o el root de alguno se
+    /// destruyó/desactivó y ya no se puede resolver por transform).
+    /// </summary>
+    private void RestoreAllHiddenIntruders()
+    {
+        foreach (var kvp in _hiddenIntruderOrigState)
+        {
+            if (kvp.Key != null) kvp.Key.enabled = kvp.Value;
+        }
+        _hiddenIntruderOrigState.Clear();
+        _hiddenIntruders.Clear();
     }
 
         /// <summary>

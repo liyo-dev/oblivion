@@ -14,7 +14,8 @@ namespace Game.NPC.Modules
         QuestCompleted  = 3, // La quest ha sido completada
         QuestActive        = 4, // La quest está activa (iniciada pero no completada)
         Custom             = 5, // Condición custom (delegate/función)
-        QuestStepCompleted = 6  // Un step concreto de la quest está completado
+        QuestStepCompleted = 6, // Un step concreto de la quest está completado
+        QuestNotCompleted  = 7  // La quest NO ha sido completada (Inactive, Active o no iniciada; lo contrario de QuestCompleted)
     }
     
     /// <summary>
@@ -98,6 +99,10 @@ namespace Game.NPC.Modules
                 
                 case NarrativeConditionType.QuestStepCompleted:
                     result = EvaluateQuestStepCompleted();
+                    break;
+
+                case NarrativeConditionType.QuestNotCompleted:
+                    result = EvaluateQuestNotCompleted();
                     break;
 
                 case NarrativeConditionType.Custom:
@@ -229,6 +234,32 @@ namespace Game.NPC.Modules
             return result;
         }
         
+        private bool EvaluateQuestNotCompleted()
+        {
+            if (targetQuest == null)
+            {
+                if (debugMode)
+                    Debug.LogWarning("[NarrativeCondition] QuestNotCompleted: targetQuest es null");
+                return false;
+            }
+
+            var questManager = GetQuestManager();
+            if (questManager == null)
+            {
+                if (debugMode)
+                    Debug.LogWarning("[NarrativeCondition] QuestManager no disponible");
+                return false;
+            }
+
+            var state = questManager.GetState(targetQuest.questId);
+            bool result = state != QuestState.Completed;
+
+            if (debugMode)
+                Debug.Log($"[NarrativeCondition] QuestNotCompleted('{targetQuest.questId}') = {result} (state={state})");
+
+            return result;
+        }
+
         private bool EvaluateQuestStepCompleted()
         {
             if (targetQuest == null)
@@ -303,6 +334,11 @@ namespace Game.NPC.Modules
                     if (targetQuest != null && !string.IsNullOrEmpty(targetStepConditionId))
                         return $"Step '{targetStepConditionId}' de '{targetQuest.questId}' completado";
                     return "Step completado (sin configurar)";
+
+                case NarrativeConditionType.QuestNotCompleted:
+                    return targetQuest != null
+                        ? $"Quest '{targetQuest.questId}' NO completada"
+                        : "Quest NO completada (sin quest)";
 
                 case NarrativeConditionType.Custom:
                     return !string.IsNullOrEmpty(customEventKey)

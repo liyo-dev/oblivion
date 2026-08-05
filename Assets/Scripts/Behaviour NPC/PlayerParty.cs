@@ -509,9 +509,15 @@ namespace Game.NPC
             }
         }
         
+        // Capas que cuentan como obstrucción real entre el player y una posición de formación de
+        // diálogo: Default, Interactable (las puertas usan esta capa para el raycast de interacción)
+        // y Obstacle. NavMesh.SamplePosition solo garantiza que el punto es NavMesh válido, no que
+        // esté en la misma habitación que el jugador o al mismo lado de una puerta cerrada.
+        private const int DialoguePositionObstructionMask = (1 << 0) | (1 << 8) | (1 << 15);
+
         private void PlaceMemberInDialogueFormation(NPCPartyMember member, Vector3 dirOffset, float radius, Transform npcTarget, float thetaDeg)
         {
-            Vector3 targetPosition = _playerTransform.position + dirOffset * radius;
+            Vector3 targetPosition = FindClearDialogueFormationPosition(dirOffset, radius);
 
             if (NavMesh.SamplePosition(targetPosition, out NavMeshHit hit, 3f, NavMesh.AllAreas))
                 targetPosition = hit.position;
@@ -524,6 +530,30 @@ namespace Game.NPC
 
             member.MoveToDialoguePosition(targetPosition, member.PartyConfig.tiempoMaximoMovimientoDialogo, npcTarget);
             Log($"  ↳ {member.DisplayName} → arco θ={thetaDeg:F0}° (radio: {radius:F1}m)");
+        }
+
+        /// <summary>
+        /// Comprueba si hay geometría (pared, puerta, obstáculo) entre el jugador y la posición
+        /// candidata del arco de diálogo. Si la hay, recorta el radio hasta justo antes del
+        /// obstáculo en esa misma dirección, en vez de teletransportar al compañero al otro lado
+        /// (p.ej. dentro de la habitación contigua, si el arco caía sobre una puerta cerrada).
+        /// Bug de referencia: Liam apareciendo hablando desde detrás de una puerta cerrada
+        /// mientras el player quedaba delante, con la cámara de diálogo pegada a la hoja de la puerta.
+        /// </summary>
+        private Vector3 FindClearDialogueFormationPosition(Vector3 dirOffset, float radius)
+        {
+            Vector3 playerPos = _playerTransform.position;
+            Vector3 chestOrigin = playerPos + Vector3.up * 1f;
+
+            if (Physics.Raycast(chestOrigin, dirOffset, out RaycastHit obstructionHit, radius,
+                DialoguePositionObstructionMask, QueryTriggerInteraction.Ignore))
+            {
+                float clearDist = Mathf.Max(obstructionHit.distance - 0.3f, 0.8f);
+                Log($"  ↳ Obstrucción detectada ({obstructionHit.collider.name}) en el arco de diálogo - radio recortado a {clearDist:F1}m");
+                return playerPos + dirOffset * clearDist;
+            }
+
+            return playerPos + dirOffset * radius;
         }
 
         /// <summary>
