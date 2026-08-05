@@ -176,6 +176,23 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
             _liamAgent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
         }
         if (_liamNpc != null) _liamNpc.enabled = false;
+
+        // FIX INC-069: Co_RestoreLiamDesignPosition() (llamado desde Start) solo corrige el
+        // desplazamiento que provoca el NavMeshAgent al activarse en la carga de la escena. Pero
+        // esta cinemática se dispara por señal narrativa y puede arrancar mucho más tarde, después
+        // de que la IA normal de Liam (NPCBehaviourManagerV2) lo haya movido libremente por la
+        // sala — así que para cuando empieza la secuencia ya no está en el sitio/orientación
+        // diseñados para los planos de cámara ("se mueve quedando la cara oculta"). Lo recolocamos
+        // aquí también, justo cuando se congela su navegación con la pantalla ya cubierta por la
+        // transición de entrada.
+        if (liamTransform != null)
+        {
+            if (_liamAgent != null && _liamAgent.isOnNavMesh)
+                _liamAgent.Warp(_liamDesignPosition);
+            else
+                liamTransform.position = _liamDesignPosition;
+            liamTransform.rotation = _liamDesignRotation;
+        }
     }
 
     private void UnfreezeLiamNavigation()
