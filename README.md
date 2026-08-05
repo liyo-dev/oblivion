@@ -1,239 +1,111 @@
-﻿﻿﻿# 🌟 El Sendero de las Estrellas
+﻿# 🌟 El Sendero de las Estrellas
 
-**Género:** RPG de acción/aventura  
-**Motor:** Unity 2020.3+  
-**Estado:** En desarrollo activo
+RPG de acción/aventura en 3D, desarrollado en solitario por [Raúl Báez](https://github.com/liyo-dev).
+
+**Motor:** Unity 6 (6000.5.x) · **Render pipeline:** URP 17.5 · **Estado:** en desarrollo activo
+
+<!--
+TODO: capturas de pantalla / GIF de gameplay aquí.
+Sugerencias: una del mundo abierto, una de combate, una de diálogo con NPC.
+![Gameplay](docs/screenshots/gameplay.png)
+-->
 
 ---
+
+## 📖 Sobre el proyecto
+
+Un RPG de acción/aventura construido sobre una arquitectura multi-escena aditiva: una escena `Start` con los managers persistentes (quests, diálogos, guardado, audio, input) y escenas de mundo que se cargan y descargan dinámicamente sobre ella. Los NPCs usan una FSM modular configurable desde ScriptableObjects, y la narrativa se dirige mediante un grafo de nodos visual (`NarrativeGraph`) más un sistema legacy de diálogo condicional para NPCs ya cerrados.
 
 ## 📘 Documentación
 
-### [📖 Documentación Técnica Completa](DOCUMENTACION_TECNICA_COMPLETA.md)
+| Documento | Contenido |
+|---|---|
+| **[CLAUDE.md](CLAUDE.md)** | Guía de arquitectura, reglas de código no negociables y convenciones del proyecto |
+| **[TDD.md](TDD.md)** | Documento técnico de diseño completo: todos los sistemas, API interna, troubleshooting |
+| **[STEAM_DEMO_CHECKLIST.md](STEAM_DEMO_CHECKLIST.md)** | Checklist para publicar la demo en Steam |
 
-**Ubicación:** `DOCUMENTACION_TECNICA_COMPLETA.md` (raíz del proyecto)
+`TDD.md` es la fuente de verdad técnica del proyecto — ante cualquier duda de arquitectura, se consulta ahí primero.
 
-✨ **CONSOLIDADO (Feb 2026): Toda la documentación técnica en un solo archivo** ✨
+## 🚀 Quick start
 
-Contiene toda la documentación del proyecto:
-- ✅ Arquitectura de escenas (START como núcleo)
-- ✅ Sistema de NPCs (FSM con NPCBehaviourManagerV2)
-- ✅ Sistema de combate completo
-- ✅ Sistema de quests con iconos
-- ✅ Sistemas Core (Input, Dialogue, Localización)
-- ✅ Sistema de guardado
-- ✅ Sistema de narrativa interactiva
-- ✅ Sistema de Puzzles (Burnable, PressurePlate, PlatformElevator)
-- ✅ Sistema de Iconos en Diálogos (TextMeshPro)
-- ✅ Optimizaciones de Rendimiento (FASE 1 y 2)
-- ✅ Fixes Importantes Aplicados (NPCs caminando en sitio v4)
-- ✅ **Troubleshooting Avanzado (Spawn, Presets, Variables Estáticas)** ⭐ NUEVO
-- ✅ Debugging (F3, F4)
-- ✅ Mejores prácticas
+1. Abre el proyecto con **Unity 6 (6000.5.x)** o superior.
+2. La escena de entrada es `Assets/Scenes/Systems/Start.unity` — contiene todos los managers persistentes (`DontDestroyOnLoad`) y siempre debe estar cargada.
+3. Para testear cualquier otra escena (mundo, cinemática, etc.), ábrela directamente y dale a Play: `AutoBootstrapOnPlay.cs` detecta que no es `Start` y la carga aditivamente antes de entrar en PlayMode. No hace falta configuración manual.
 
-**Archivos consolidados:** 47 archivos .md individuales → 1 archivo completo  
-**Ver:** `LIMPIEZA_DOCUMENTACION_2026-02-11.md` para detalles de la consolidación
+**Requisito:** `Start.unity` debe estar en la posición 0 de Build Settings.
 
----
+### Script Execution Order crítico
 
-## 🚀 Quick Start
+```
+GameBootService   -1000   (primero)
+PlayerService      -900
+ServiceLocator     -800
+WorldBootstrap      +200
+```
 
-### Para Iniciar el Proyecto:
+## 🏗️ Arquitectura clave
 
-1. **Abre Unity 2020.3 o superior**
-2. **Inicia desde:** `Assets/Scenes/Systems/Start.unity`
-3. El sistema carga MainMenu automáticamente (managers persistentes)
+- **Multi-escena aditiva** — `Start` persiste siempre; el resto de escenas se cargan/descargan sobre ella.
+- **ServiceLocator** (`Core/ServiceLocator.cs`) — punto de acceso a singletons globales, cachea tras la primera búsqueda.
+- **ScriptableObjects como datos** — configuración de NPCs, quests, hechizos y presets. Nunca lógica.
+- **Eventos C# (`Action<T>`)** — comunicación desacoplada entre sistemas, sin referencias directas entre managers.
+- **FSM de NPCs:** `NPCBehaviourManagerV2 → NPCBrain → NPCStateContext → INPCState` (`Assets/Scripts/Behaviour NPC/`).
+- **Narrativa:** `NarrativeGraph` (grafo de nodos, sistema activo para todo NPC/quest nueva) conviviendo con el executor legacy `NPCInteractiveNarrativeExecutor` (congelado, sin nuevos NPCs). Detalle completo en `CLAUDE.md` § 7.
 
-### Testing Rápido
+Detalle completo de cada sistema, reglas de rendimiento y bugs conocidos: ver `TDD.md` y `CLAUDE.md`.
 
-Para testear una escena específica (MainWorld, Woods, etc.):
-1. **Simplemente abre la escena y presiona Play** ✅
-2. El sistema `AutoBootstrapOnPlay` (Editor) detecta automáticamente que no es Start
-3. Carga Start.unity aditivamente antes de entrar en PlayMode
-4. Todos los managers se inicializan correctamente
-5. El spawn funciona desde cualquier escena
-
-**Nota:** No necesitas añadir componentes manualmente, el sistema es completamente automático.
-
----
-
-## 🏗️ Arquitectura Clave
-
-### Escena START = Núcleo del Proyecto
-
-La escena `Start.unity` contiene todos los managers persistentes:
-- QuestManager
-- DialogueManager  
-- PlayerInputManager
-- LocalizationManager
-- SaveSystem
-- UIManager
-
-**⚠️ Importante:** Start SIEMPRE debe estar cargada.
-
----
-
-## 📂 Estructura del Proyecto
+## 📂 Estructura del proyecto
 
 ```
 Assets/
 ├── Scenes/
-│   ├── Systems/           ← Start, MainMenu, LoadingScreen
-│   └── Main World/        ← MainWorld, Town, Woods, Cave, etc.
+│   ├── Systems/        ← Start, MainMenu, LoadingScreen
+│   ├── Main World/     ← MainWorld y escenas de mundo
+│   ├── Cinematics/     ← cinemáticas y prólogo
+│   └── Test/           ← escenas de prueba
 ├── Scripts/
-│   ├── Core/              ← Managers, Services
-│   ├── Behaviour NPC/     ← FSM, States, NPCBehaviourManagerV2
-│   ├── Puzzle/            ← PressurePlate, PlatformElevator, Burnable ⭐
-│   ├── UI/                ← Menús, HUD
-│   └── Quests/            ← QuestManager, QuestData
-├── Data/
-│   ├── NPCs/              ← Configs y Dialogues
-│   └── Quests/            ← QuestData assets
-├── docs/                  ← DOCUMENTACION_TECNICA.md
-└── StreamingAssets/
-    └── Localization/      ← JSON de localización (ES/EN)
+│   ├── Core/               ← GameBootService, ServiceLocator, PlayerService, SaveSystem
+│   ├── Behaviour NPC/      ← FSM de NPCs
+│   ├── NarrativeGraph/     ← grafo narrativo (nodos, runner)
+│   ├── Narrative/          ← sistema legacy "Interactive"
+│   ├── Quests/, Dialogue/, Audio/, Inventory/, Puzzle/, UI/, ...
+├── NarrativeGraph/      ← assets runtime del grafo (MainNarrative.asset, etc.)
+├── _BootProfile/        ← presets de testing (ScriptableObjects)
+├── Resources/Localization/  ← JSON de localización (ES/EN)
+└── Plugins/             ← Invector 3rd Person Controller, DOTween, etc.
 ```
 
----
+## 🎮 Stack técnico
 
-## 🎮 Sistemas Principales
+- Unity 6 · URP 17.5
+- Unity Input System 1.19 (input centralizado por eventos)
+- Cinemachine 3.1.7 · Timeline 1.8.12 · AI Navigation 2.0.13
+- Invector 3rd Person Controller (base de movimiento del jugador) · DOTween
 
-### Sistema de NPCs (FSM Modular)
-- Arquitectura de estados finitos completamente configurable
-- ScriptableObjects reutilizables para configs
-- Estados: Idle, Wander, Alert, Combat, Cinematic
-- Sistema de combate completo con IA táctica
+## 📝 Convenciones de código (resumen)
 
-### Sistema de Combate
-- Detección automática de jugador
-- AlertState con iconos visuales y diálogos
-- Barras de vida instanciadas automáticamente
-- Diálogos en combate (alerta, derrota, post-derrota)
-
-### Sistema de Quests
-- Cadenas de quests configurables
-- Iconos persistentes (!, ?)
-- Detección automática de items
-- Integración con diálogos
-
-### Sistema de Puzzles ⭐ NUEVO
-- **Burnable:** Objetos quemables con elementos mágicos
-- **PressurePlate:** Interruptores de presión
-- **PlatformElevator:** Plataformas móviles con encadenamiento
-- Feedback completo (camera shake, SFX, VFX)
-- Gizmos para debugging visual
-
-### Sistema de Diálogos ⭐ NUEVO
-- Iconos de botones y items en textos
-- TextMeshPro Sprite Assets
-- Sintaxis simple: `<sprite name="ButtonA">`
-- Herramienta de configuración: `Tools → Dialogue → Setup Icons`
-
-### Sistema de Iluminación ⭐ NUEVO
-- Bake nocturno optimizado (2-4 horas)
-- Configuración balanceada calidad/tiempo
-- Lightmaps de producción con Global Illumination
-
----
-
-## 🐛 Solución de Problemas Rápida
-
-| Problema | Solución |
-|----------|----------|
-| Player no spawnea correctamente | Verificar que GameBootService está en Script Execution Order (-1000) |
-| Boss trigger no funciona con preset | Preset tiene flag de evento, ver Sección 13.2 en documentación |
-| Menús no se abren | Verificar que Start.unity está en Build Settings |
-| NPC no se mueve suavemente | Verificar NavMeshAgent config |
-| Quest no se completa | Verificar `completionMode` y `dlgTurnIn` |
-| Targeting no funciona | NPC debe estar en Layer `Enemy` |
-| Errores AI Toolkit | **Ignorar** - Son inofensivos |
-
-**Más soluciones:** Consulta [DOCUMENTACION_TECNICA_COMPLETA.md](DOCUMENTACION_TECNICA_COMPLETA.md) → Sección 13 (Troubleshooting Avanzado)
-
----
-
-## 📝 Convenciones de Código
+Reglas completas y no negociables en [CLAUDE.md](CLAUDE.md#2-reglas-de-código--no-negociables). Las más importantes:
 
 ```csharp
-// ✅ CORRECTO - Usar Services y Singletons
+// ❌ Nunca en Update/LateUpdate/FixedUpdate
+FindObjectOfType<T>();                 // usar registros (ActiveCombatRegistry, PlayerParty...)
+GetComponent<T>();                     // cachear en Awake
+Physics.OverlapSphere(...);            // usar OverlapSphereNonAlloc con buffer
+
+// ✅ Patrón preferido
 var dm = DialogueManager.Instance;
-if (PlayerService.TryGetComponent(out Inventory inv)) { }
-
-// ✅ CORRECTO - Eventos C# tipados
 QuestManager.OnQuestCompleted += HandleQuestComplete;
-
-// ❌ INCORRECTO - FindObjectOfType en runtime
-var qm = FindObjectOfType<QuestManager>(); // NO
-
-// ✅ CORRECTO - ScriptableObjects para configuración
-public NPCCombatConfig combatConfig;
 ```
 
----
+- VFX de un solo uso → `VfxPoolService.Instance.Play(...)`, nunca `Instantiate` + `Destroy` directo.
+- Comentarios, documentación y mensajes de commit **en español**.
+- `Debug.Log` de diagnóstico siempre bajo `#if UNITY_EDITOR || DEVELOPMENT_BUILD`.
 
-## 🎯 Filosofía del Proyecto
+## 🔧 Herramientas de desarrollo
 
-> **"RPG clásico simple: desde el Inspector digo 'narrativa completa misión → activa otra → gana batalla → NPC se mueve'. Sin código denso ni complejidad innecesaria."**
-
-### Principios:
-1. **Configuración desde Inspector** - Todo accesible sin código
-2. **Eventos C# tipados** - Sistema centralizado
-3. **ServiceLocator** - Referencias globales sin `FindObjectOfType`
-4. **Localización First** - Todo texto usa IDs
-5. **Modular y Extensible** - Sistemas independientes
+- **F3** — debug visual de NPCs · **F4** — panel de debug general
+- `El Sendero/Narrativa/Validar Interactive vs Grafo (proyecto completo)` — valida que quests/eventos no estén referenciados a la vez por el grafo y por el sistema legacy (ver `CLAUDE.md` § 7)
 
 ---
 
-## 🔧 Herramientas de Desarrollo
-
-- **F3** - Toggle debug visual NPCs
-- **F4** - Toggle debug UI panel
-- **Tools → Dialogue → Setup Icons** - Configurar iconos en diálogos
-- **Window → Rendering → Lighting** - Configurar bake de luces
-
----
-
-## 📚 Documentación Adicional
-
-- **[DOCUMENTACION_TECNICA_COMPLETA.md](DOCUMENTACION_TECNICA_COMPLETA.md)** - Documentación técnica completa consolidada
-- Todos los scripts tienen comentarios XML detallados
-- Gizmos en Scene view para debugging visual
-- Debug panels en runtime (F3, F4)
-
----
-
-## 🚧 Estado del Proyecto
-
-**Última actualización:** 11 Febrero 2026
-
-**Sistemas Completados:**
-- ✅ FSM de NPCs modular
-- ✅ Sistema de combate con IA
-- ✅ Sistema de quests con iconos
-- ✅ Sistema de diálogos con localización
-- ✅ Sistema de guardado
-- ✅ Sistema de puzzles (Burnable, PressurePlate)
-- ✅ Sistema de spawn consistente (desde cualquier escena)
-- ✅ Reset automático de variables estáticas
-- ✅ AutoBootstrapOnPlay para testing
-
-**En Desarrollo:**
-- 🔄 Sistema de inventario expandido
-- 🔄 Más tipos de puzzles
-- 🔄 Boss fights con fases
-
----
-
-## 📞 Recursos
-
-**Para más información:**
-- Consulta `DOCUMENTACION_TECNICA_COMPLETA.md` para guías detalladas
-- Revisa los comentarios XML en los scripts
-- Usa Gizmos en Scene view para visualizar sistemas
-- Activa debug visual (F3) y panel (F4) en runtime
-
----
-
-**¡Proyecto en desarrollo activo!** 🎮
-
-Consulta la [documentación técnica completa](DOCUMENTACION_TECNICA_COMPLETA.md) para información detallada de todos los sistemas.
-
+Consulta [TDD.md](TDD.md) para la documentación técnica completa y [CLAUDE.md](CLAUDE.md) para las reglas de arquitectura del proyecto.
