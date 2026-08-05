@@ -67,21 +67,37 @@ public class EnvironmentController : MonoBehaviour
     private AnchorEnvironment _preCinematicInterior;
     // true cuando ApplyInterior fue bloqueado por cinemática activa: reintentar al terminar
     private bool _cinematicReapplyPending;
-    
+    // true mientras el override cinemático está mostrando un interior (última llamada fue
+    // ApplyInteriorForCinematic, no ApplyExteriorForCinematic). Necesario porque _mode NO cambia
+    // durante el override (a propósito), así que sistemas externos como DayNightCycle (lluvia/niebla)
+    // no pueden fiarse solo de CurrentMode para saber si deben suprimirse visualmente. Ver IsEffectivelyInterior.
+    private bool _cinematicShowingInterior;
+
     /// <summary>
     /// Indica si actualmente hay un override cinemático activo
     /// </summary>
     public bool IsCinematicOverrideActive => _cinematicOverrideActive;
-    
+
     /// <summary>
     /// El modo de entorno actual (Interior/Exterior)
     /// </summary>
     public EnvironmentMode CurrentMode => _mode;
-    
+
     /// <summary>
     /// El interior actual (si estamos en modo Interior)
     /// </summary>
     public AnchorEnvironment CurrentInterior => _currentInterior;
+
+    /// <summary>
+    /// True si, desde el punto de vista de sistemas externos (lluvia/niebla, minimapa, etc.),
+    /// el jugador está "efectivamente" en un interior: o bien CurrentMode ya es Interior (flujo
+    /// real de ApplyInterior/ApplyExterior), o bien hay un override cinemático activo que está
+    /// mostrando un interior (ApplyInteriorForCinematic). Usar esto en vez de CurrentMode a secas
+    /// para cualquier efecto que deba desaparecer dentro de un interior (p.ej. lluvia), porque
+    /// CurrentMode no se actualiza durante cinemáticas.
+    /// </summary>
+    public bool IsEffectivelyInterior =>
+        _mode == EnvironmentMode.Interior || (_cinematicOverrideActive && _cinematicShowingInterior);
 
     void Awake()
     {
@@ -172,6 +188,10 @@ public class EnvironmentController : MonoBehaviour
         _cinematicOverrideActive = true;
         _preCinematicMode = _mode;
         _preCinematicInterior = _currentInterior;
+        // Por defecto asumimos que arrancamos mostrando lo mismo que había antes del override;
+        // ApplyInteriorForCinematic/ApplyExteriorForCinematic lo corrigen en cuanto se llamen
+        // (normalmente en el mismo frame, en el cut point de la transición de entrada).
+        _cinematicShowingInterior = _preCinematicMode == EnvironmentMode.Interior;
 
         // Capturar snapshot del exterior ahora si no existe todavía.
         // Sin esto, ForceApplyExteriorTo no puede restaurar el skybox cuando el jugador
@@ -217,6 +237,7 @@ public class EnvironmentController : MonoBehaviour
         
         // Ahora sí desactivamos el flag
         _cinematicOverrideActive = false;
+        _cinematicShowingInterior = false;
         _preCinematicInterior = null;
     }
     
@@ -234,7 +255,9 @@ public class EnvironmentController : MonoBehaviour
         
         cam = cam != null ? cam : ResolveCamera();
         if (cam == null) return;
-        
+
+        _cinematicShowingInterior = false;
+
         // Aplicar skybox/exterior sin cambiar el _mode interno
         cam.clearFlags = CameraClearFlags.Skybox;
         
@@ -276,7 +299,9 @@ public class EnvironmentController : MonoBehaviour
         
         cam = cam != null ? cam : ResolveCamera();
         if (cam == null) return;
-        
+
+        _cinematicShowingInterior = true;
+
         // Usar el interior pre-cinemático si no se especifica uno
         env = env != null ? env : _preCinematicInterior;
         

@@ -106,10 +106,11 @@ namespace Game.NPC
         /// <summary>
         /// ¿Está activo en el equipo? (en party y no en combate/cinemática)
         /// </summary>
-        public bool IsActiveInParty => _isInParty && 
-            _npcManager != null && 
-            !_npcManager.Context.IsInCombat && 
-            !_npcManager.Context.IsInCinematic;
+        public bool IsActiveInParty => _isInParty &&
+            _npcManager != null &&
+            !_npcManager.Context.IsInCombat &&
+            !_npcManager.Context.IsInCinematic &&
+            !CinematicSequencerBase.AnySequenceActive;
         
         /// <summary>
         /// Nombre para mostrar en UI
@@ -211,8 +212,22 @@ namespace Game.NPC
                     return;
 
                 var currentState = _npcManager.Brain.CurrentState;
+                // ✅ FIX: comprobar también CinematicSequencerBase.AnySequenceActive (mismo patrón
+                // que CompanionFollowPrompt, comentario "FIX INC-059"). Context.IsInCinematic solo se
+                // activa vía CinematicState de la FSM; TabernaSequencer sienta a los NPCs pausando
+                // NPCBehaviourManagerV2 directamente (ForceIdle() + enabled=false) sin pasar por esa
+                // FSM, así que Context.IsInCinematic nunca llega a true durante la secuencia. Como
+                // ForceIdle() deja al Brain en el estado "Idle", este chequeo (que corre en
+                // NPCPartyMember.Update(), un componente aparte que sigue activo aunque
+                // NPCBehaviourManagerV2 esté deshabilitado) veía "Idle" + "no cinemática" y llamaba a
+                // StartFollowing() a mitad de la secuencia de la taberna — deshaciendo el sentado de
+                // Estela de forma intermitente (según el instante en que caía este chequeo de 0.5s
+                // respecto al SeatNPC). Eldran no sufría esto porque en esta partida no figura como
+                // miembro activo del party (ver PlayerParty), así que este bucle nunca se ejecutaba
+                // para él.
                 if (currentState != null && currentState.StateName == "Idle"
                     && !_npcManager.Context.IsInCombat && !_npcManager.Context.IsInCinematic
+                    && !CinematicSequencerBase.AnySequenceActive
                     && (PartyControlManager.Instance?.IsPartyFollowing ?? true)
                     && GetDistanceToPlayer() <= 40f)
                 {
@@ -340,8 +355,10 @@ namespace Game.NPC
         {
             if (_npcManager?.Brain == null) return;
 
-            // Solo cambiar a FollowState si no estamos en combate/cinemática
-            if (!_npcManager.Context.IsInCombat && !_npcManager.Context.IsInCinematic)
+            // Solo cambiar a FollowState si no estamos en combate/cinemática.
+            // ✅ FIX: añadido AnySequenceActive — ver comentario detallado en Update().
+            if (!_npcManager.Context.IsInCombat && !_npcManager.Context.IsInCinematic
+                && !CinematicSequencerBase.AnySequenceActive)
             {
                 _npcManager.Brain.ChangeState(new FollowPlayerState(this));
             }
@@ -354,7 +371,9 @@ namespace Game.NPC
         public void StartFollowingIgnorePartyCheck()
         {
             if (_npcManager?.Brain == null) return;
-            if (!_npcManager.Context.IsInCombat && !_npcManager.Context.IsInCinematic)
+            // ✅ FIX: añadido AnySequenceActive — ver comentario detallado en Update().
+            if (!_npcManager.Context.IsInCombat && !_npcManager.Context.IsInCinematic
+                && !CinematicSequencerBase.AnySequenceActive)
                 _npcManager.Brain.ChangeState(new FollowPlayerState(this, skipPartyCheck: true));
         }
 

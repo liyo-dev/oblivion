@@ -54,3 +54,7 @@ MonoBehaviour:
     textId: LORE_ESCOLTA_GUARDIA_10
     text: 
     duration: 4
+  - portrait: {fileID: 21300000, guid: 8863788beef1f5b429bf9291c1ca1285, type: 3}
+    textId: LORE_ESCOLTA_GUARDIA_11
+    text: 
+    duration: 4

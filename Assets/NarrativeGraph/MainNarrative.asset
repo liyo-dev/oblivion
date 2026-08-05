@@ -65,6 +65,7 @@ MonoBehaviour:
   - rid: 4910061783221010770
   - rid: 4910061957291442300
   - rid: 4910062183143178472
+  - rid: 4910062183143178480
   - rid: 4910062183143178473
   - rid: 5290829092219519135
   - rid: 5290829092219519136
@@ -738,9 +739,9 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 683b23e6-c1ac-40d0-91eb-1dde84f1526d
-        position: {x: 4670, y: 4386}
+        position: {x: 4669, y: 4368}
         outputs:
-        - 18293a97-824e-4a42-b35b-a28365fd1601
+        - f3d8a2c1-9e47-4b6a-8d1f-2c7e9a4b5f10
         questId: ELDRAN_MISSION13
         debugLogs: 1
     - rid: 4910062183143178473
@@ -754,10 +755,25 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 18293a97-824e-4a42-b35b-a28365fd1601
-        position: {x: 4147, y: 4386}
+        position: {x: 3647, y: 4388}
         outputs:
         - 9ea2d2e7-363d-46aa-8f18-ba93cca2b5d7
         questId: ELDRAN_MISSION14
+    - rid: 4910062183143178480
+      type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Reabrir puertas del castillo (fin mision 13)
+        chapter: Cap. 6
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: f3d8a2c1-9e47-4b6a-8d1f-2c7e9a4b5f10
+        position: {x: 4108, y: 4388}
+        outputs:
+        - 18293a97-824e-4a42-b35b-a28365fd1601
+        eventKey: OPEN_THE_DOORS
     - rid: 5290829092219519135
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
@@ -769,7 +785,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 5174be77-fb15-4c62-a78f-628406a93537
-        position: {x: 2081, y: 4386}
+        position: {x: 1581, y: 4388}
         outputs:
         - 48ab005c-2705-439a-a06f-c14d558d9700
         eventKey: EVT_WILL_LIAM
@@ -784,7 +800,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 48ab005c-2705-439a-a06f-c14d558d9700
-        position: {x: 1566, y: 4383}
+        position: {x: 1066, y: 4385}
         outputs:
         - eb2ae8e6-c475-41f9-920f-d86ac850f82a
         config: {fileID: 11400000, guid: ff88c3c7406cf83459916cd5472cc9ad, type: 2}
@@ -799,7 +815,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: eb2ae8e6-c475-41f9-920f-d86ac850f82a
-        position: {x: 1014, y: 4386}
+        position: {x: 514, y: 4388}
         outputs: []
         questId: 
         stepConditionIds:
@@ -1090,7 +1106,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 9ea2d2e7-363d-46aa-8f18-ba93cca2b5d7
-        position: {x: 3683, y: 4384}
+        position: {x: 3183, y: 4386}
         outputs:
         - c8b7cb2f-7629-42db-94e7-273fb9d32b2c
         eventKey: EVT_REINO_EXIT_BOUNDARY
@@ -1105,7 +1121,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 7b8d3392-e124-4510-a26b-3180ee1c378e
-        position: {x: 2596, y: 4383}
+        position: {x: 2096, y: 4385}
         outputs:
         - 5174be77-fb15-4c62-a78f-628406a93537
         landscapeFocusId: ReinoExit_LandscapeShot
@@ -1135,7 +1151,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: c8b7cb2f-7629-42db-94e7-273fb9d32b2c
-        position: {x: 3335, y: 4384}
+        position: {x: 2835, y: 4386}
         outputs:
         - 3b9cb25d-ad9d-4d7a-b8fb-04bc049f95ca
         eventKey: EVT_REINOEXIT_BANTER_START
@@ -1150,7 +1166,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 3b9cb25d-ad9d-4d7a-b8fb-04bc049f95ca
-        position: {x: 2959, y: 4384}
+        position: {x: 2459, y: 4386}
         outputs:
         - 7b8d3392-e124-4510-a26b-3180ee1c378e
         eventKey: EVT_REINOEXIT_BANTER_DONE

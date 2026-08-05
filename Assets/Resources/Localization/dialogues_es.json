@@ -866,7 +866,7 @@
         },
         {
             "key": "DLG_NIÑOPEZ_CARACOLA_TURNIN_02",
-            "value": "Te doy a cambio este hechizo: CORAZÓN ESTELAR que yo no puedo usar la magia."
+            "value": "Te doy a cambio este complemento que yo no lo uso."
         },
         {
             "key": "DLG_NIÑOPEZ_TURNIN_01",
@@ -1070,7 +1070,11 @@
         },
         {
             "key": "LORE_ESCOLTA_GUARDIA_10",
-            "value": "Os lo creáis o no puede que ahí esten vuestras respuestas... aunque no creo que sea el momento para hablarlo."
+            "value": "Os lo creáis o no puede que ahí esten vuestras respuestas... "
+        },
+        {
+            "key": "LORE_ESCOLTA_GUARDIA_11",
+            "value": "Aunque no creo que sea el momento para hablarlo."
         },
         {
             "key": "LORE_ESCOLTA_GUARDIA_2",
@@ -1082,7 +1086,7 @@
         },
         {
             "key": "LORE_ESCOLTA_GUARDIA_4",
-            "value": "Pues no pude evitar escuchar vuestra conversacción."
+            "value": "Pues no pude evitar escuchar vuestra conversación."
         },
         {
             "key": "LORE_ESCOLTA_GUARDIA_5",

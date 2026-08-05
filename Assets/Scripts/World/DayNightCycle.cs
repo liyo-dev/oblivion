@@ -267,6 +267,12 @@ public class DayNightCycle : MonoBehaviour
     // (periodo actual o tormenta) que se haya quedado pendiente mientras estaba bloqueado.
     private bool _wasCinematicOverrideActive;
 
+    // Para detectar el inicio de un minijuego (TagMinigameController.IsAnyMinigameActive) y cortar
+    // la lluvia que ya estuviera cayendo en ese instante. StartRain() ya bloquea que arranque lluvia
+    // NUEVA mientras haya un minijuego activo, pero eso no cubre el caso de que empezara a llover
+    // justo antes de que el jugador entrara en el minijuego.
+    private bool _wasMinigameActive;
+
     void Awake()
     {
         if (timeSettings == null || timeSettings.Length == 0)
@@ -458,6 +464,32 @@ public class DayNightCycle : MonoBehaviour
             ReapplyPendingSkybox();
         _wasCinematicOverrideActive = cinematicActiveNow;
 
+        // FIX: la supresión visual de lluvia/niebla (_outdoorWeatherSuppressedIndoors) solo se
+        // actualizaba vía OnInteriorEntered/OnInteriorExited, que EnvironmentController dispara
+        // únicamente desde ApplyInterior/ApplyExterior (entrar andando). El flujo cinemático
+        // (CinematicSequencerBase → BeginCinematicOverride + ApplyInteriorForCinematic, ver p.ej.
+        // TabernaSequencer) nunca pasa por ahí, así que si llovía justo al entrar en una cinemática
+        // de interior, la lluvia seguía cayendo "dentro" durante toda la secuencia. Sondeamos aquí
+        // IsEffectivelyInterior (que sí tiene en cuenta el override cinemático) y sincronizamos la
+        // supresión con el mismo patrón edge-triggered que ya usa el resto de este método.
+        bool effectivelyInteriorNow = ec != null && ec.IsEffectivelyInterior;
+        if (effectivelyInteriorNow != _outdoorWeatherSuppressedIndoors)
+        {
+            _outdoorWeatherSuppressedIndoors = effectivelyInteriorNow;
+            SetRainVisualActive(!effectivelyInteriorNow);
+            SetMistVisualActive(!effectivelyInteriorNow);
+            if (!effectivelyInteriorNow) ReapplyPendingSkybox();
+        }
+
+        // Minijuegos: durante un minijuego activo no puede llover (ver StartRain). Ese guard
+        // solo bloquea lluvia NUEVA; aquí cortamos también la que ya estuviera cayendo justo al
+        // entrar en el minijuego. Sondeo edge-triggered porque IsAnyMinigameActive es un flag
+        // estático sin evento propio de inicio/fin (mismo patrón que el resto de este método).
+        bool minigameActiveNow = TagMinigameController.IsAnyMinigameActive;
+        if (minigameActiveNow && !_wasMinigameActive && (IsRaining || _isCloudBuildingUp))
+            StopRain();
+        _wasMinigameActive = minigameActiveNow;
+
         if (!autoAdvance || _isTransitioning) return;
 
         _timeElapsed += Time.deltaTime;
@@ -551,6 +583,11 @@ public class DayNightCycle : MonoBehaviour
     public void StartRain(float? duration = null, bool immediate = false)
     {
         if (rainPrefab == null || IsRaining || _isCloudBuildingUp) return;
+
+        // Durante los minijuegos no puede llover (p.ej. TagMinigameController): bloqueamos aquí
+        // cualquier intento de arrancar lluvia, tanto el sorteo automático de ApplyTimeOfDay como
+        // una llamada manual/narrativa a StartRain o ToggleRain.
+        if (TagMinigameController.IsAnyMinigameActive) return;
 
         if (_rainCoroutine != null)
             StopCoroutine(_rainCoroutine);

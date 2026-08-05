@@ -675,9 +675,33 @@ public class TabernaSequencer : CinematicSequencerBase
 
     private void SeatAll()
     {
+        // ✅ FIX: cada NPC se sienta en su propio try/catch. Antes, si SeatNPC(Eldran) lanzaba
+        // una excepción a mitad (p.ej. dentro de PlayAmbientActivity → AttachPropToOccupant →
+        // GetBoneTransform, o cualquier otro punto tras posicionarlo), la excepción cortaba
+        // SeatAll() entero y SeatNPC(Estela) — que va DESPUÉS en esta lista — nunca llegaba a
+        // ejecutarse. Eldran se veía sentado con normalidad (ya estaba posicionado antes del
+        // fallo) mientras Estela se quedaba de pie sin ningún log que lo explicara, porque su
+        // llamada ni siquiera arrancaba. Aislar cada NPC evita que un fallo en uno tumbe a los demás.
         SeatPlayer(_willSeat);
-        SeatNPC(_eldranTransform, _eldranSeat, _eldranSimpleAnim, _eldranAgent, _eldranBehaviour);
-        SeatNPC(_estelaTransform, _estelaSeat, _estelaSimpleAnim, _estelaAgent, _estelaBehaviour);
+        TrySeatNPC(_eldranTransform, _eldranSeat, _eldranSimpleAnim, _eldranAgent, _eldranBehaviour);
+        TrySeatNPC(_estelaTransform, _estelaSeat, _estelaSimpleAnim, _estelaAgent, _estelaBehaviour);
+    }
+
+    private void TrySeatNPC(Transform npc, NPCWorldPoint seat, NPCSimpleAnimator simAnim, NavMeshAgent agent, NPCBehaviourManagerV2 behaviour)
+    {
+        try
+        {
+            SeatNPC(npc, seat, simAnim, agent, behaviour);
+        }
+        catch (System.Exception e)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            string npcName = npc != null ? npc.name : "NULL";
+            Debug.LogError($"[TabernaSequencer] ❌ SeatNPC('{npcName}') lanzó una excepción y se abortó a " +
+                $"mitad — el NPC puede haber quedado a medio sentar (posición sin animación, o FSM " +
+                $"pausada sin reanudar). Excepción: {e}");
+#endif
+        }
     }
 
     private void SeatPlayer(NPCWorldPoint seat)
@@ -689,8 +713,40 @@ public class TabernaSequencer : CinematicSequencerBase
 
     private void SeatNPC(Transform npc, NPCWorldPoint seat, NPCSimpleAnimator simAnim, NavMeshAgent agent, NPCBehaviourManagerV2 behaviour)
     {
+        // ✅ DIAGNÓSTICO TEMPORAL: el bug "Estela no se sienta" ha sobrevivido a dos rondas de
+        // fix a nivel de código (limpieza de asiento en interrupciones + normalización de
+        // IsGrounded/isFlying) sin resolverse, y no tengo forma de inspeccionar el wiring del
+        // Inspector de Cinematic_Taberna.unity desde aquí. Estos logs identifican en qué punto
+        // exacto falla SeatNPC() para cada NPC — quitar una vez encontrada la causa real.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        string npcName = npc != null ? npc.name : "NULL";
+        if (seat == null)
+        {
+            Debug.LogWarning($"[TabernaSequencer] ⚠️ SeatNPC('{npcName}'): el campo _*Seat no tiene " +
+                "asignado ningún NPCWorldPoint en el Inspector de Cinematic_Taberna.unity. El NPC no se moverá.");
+            return;
+        }
+        if (npc == null)
+        {
+            Debug.LogWarning($"[TabernaSequencer] ⚠️ SeatNPC: la referencia al Transform del NPC es null " +
+                $"(seat destino: '{seat.name}'). Revisar _eldranTransform/_estelaTransform en el Inspector.");
+            return;
+        }
+        if (!seat.TryOccupy(npc))
+        {
+            Debug.LogWarning($"[TabernaSequencer] ⚠️ SeatNPC('{npcName}'): seat.TryOccupy() devolvió false — " +
+                $"el NPCWorldPoint '{seat.name}' (activityType={seat.activityType}) ya está marcado como ocupado " +
+                "(IsOccupied=true) por otro transform. Puede ser: (a) el mismo NPCWorldPoint asignado por error " +
+                "a dos personajes distintos, o (b) quedó 'ocupado' de una sesión de Play anterior que no liberó " +
+                "el asiento (Reload Domain desactivado). El NPC NO se sentará.");
+            return;
+        }
+        Debug.Log($"[TabernaSequencer] ✅ SeatNPC('{npcName}'): asiento '{seat.name}' ocupado correctamente. " +
+            $"Posición destino: {seat.InteractionPosition}, activityType: {seat.activityType}.");
+#else
         if (seat == null || npc == null) return;
         if (!seat.TryOccupy(npc)) return;
+#endif
 
         // ✅ FIX: Pausar la FSM (NPCBehaviourManagerV2) ANTES de fijar la posición de asiento.
         // Eldran/Estela están en el party y su brain sigue en FollowPlayerState mientras

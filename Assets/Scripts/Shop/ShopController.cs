@@ -20,14 +20,11 @@ public class ShopController : MonoBehaviour
 
     public event Action OnStockChanged;
     private Inventory playerInventory;
-    private WardrobeInventory wardrobeInventory;
 
     void Awake()
     {
         if (playerInventory == null)
             PlayerService.TryGetComponent(out playerInventory, includeInactive: true, allowSceneLookup: true);
-        if (wardrobeInventory == null)
-            PlayerService.TryGetComponent(out wardrobeInventory, includeInactive: true, allowSceneLookup: true);
 
         for (int i = 0; i < stock.Count; i++)
             stock[i]?.ResetRuntime();
@@ -131,7 +128,6 @@ public class ShopController : MonoBehaviour
         // PlayerService, que internamente cachea de forma barata y se invalida solo cuando
         // el player realmente cambia.
         PlayerService.TryGetComponent(out playerInventory, includeInactive: true, allowSceneLookup: true);
-        PlayerService.TryGetComponent(out wardrobeInventory, includeInactive: true, allowSceneLookup: true);
 
         if (playerInventory == null)
         {
@@ -168,22 +164,9 @@ public class ShopController : MonoBehaviour
     {
         if (item == null || playerInventory == null) return;
 
-        switch (item.usageKind)
-        {
-            case ItemData.ItemUsageKind.Equipment:
-                if (item.wardrobeUnlock != null && wardrobeInventory != null)
-                {
-                    wardrobeInventory.Unlock(item.wardrobeUnlock);
-                }
-                else
-                {
-                    playerInventory.Add(item, 1);
-                }
-                break;
-            default:
-                playerInventory.Add(item, 1);
-                break;
-        }
+        // Inventory.Add ya redirige automáticamente los items de equipamiento con
+        // wardrobeUnlock al armario en vez de la bolsa normal (punto único de control).
+        playerInventory.Add(item, 1);
     }
 
     [Serializable]

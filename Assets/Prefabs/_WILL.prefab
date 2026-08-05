@@ -12855,7 +12855,7 @@ MonoBehaviour:
   doubleTapWindow: 0.35
   boostMultiplier: 1.5
   debugLogs: 0
-  flightArmedDuration: 2
+  flightArmedDuration: 0.45
   vfxAttach: {fileID: 4420504159218681614}
   trailPrefab: {fileID: 0}
   trailSpeedThreshold: 1

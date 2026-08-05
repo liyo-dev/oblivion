@@ -159,34 +159,16 @@ public class PlayerPickupCollector : MonoBehaviour
         int quantity = effect.GetQuantityOrDefault();
         if (quantity <= 0) return false;
 
-        // Añadir al inventario (esto disparará el popup de CollectiblePopupQueue vía OnItemAdded)
+        // Inventory.Add ya redirige automáticamente los items de equipamiento con
+        // wardrobeUnlock al armario en vez de la bolsa normal (punto único de control),
+        // así que este pickup funciona igual sin importar el tipo de item configurado.
         inventory.Add(effect.item, quantity);
-        Debug.Log($"[PlayerPickupCollector] ✅ Item añadido al inventario: {effect.item.displayName} x{quantity}");
-
-        // Si el ItemData aporta una referencia a un WardrobeItemSO, desbloquearlo
-        // tras un frame para asegurar que el popup de recogida se muestre primero.
-        if (effect.item.wardrobeUnlock != null)
-        {
-            // Iniciar corrutina ligera para retrasar el desbloqueo una frame
-            StartCoroutine(DelayedUnlockWardrobe(effect.item.wardrobeUnlock));
-        }
+        Debug.Log($"[PlayerPickupCollector] ✅ Pickup procesado: {effect.item.displayName} x{quantity}");
 
         return true;
     }
 
-    // Delay smallo para asegurar orden: primero popup de recogida (inventory.Add -> OnItemAdded),
-    // luego intentar desbloquear en el wardrobe para que la UX muestre primero el popup de "has cogido".
-    private System.Collections.IEnumerator DelayedUnlockWardrobe(WardrobeItemSO wardrobeItem)
-    {
-        // Esperar un frame para dejar que CollectiblePopupQueue procese el OnItemAdded
-        yield return null;
 
-        if (wardrobeItem == null) yield break;
-
-        // Intentar desbloquear; WardrobeService gestionará si ya estaba desbloqueado y mostrará su propio popup si procede.
-        WardrobeService.UnlockWardrobeItem(wardrobeItem, logWarnings: true);
-    }
-    
     private bool ApplyUnlockWardrobeItem(PickupEffect effect)
     {
         if (effect.item == null || effect.item.wardrobeUnlock == null)

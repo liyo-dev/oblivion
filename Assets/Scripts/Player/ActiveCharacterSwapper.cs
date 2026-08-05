@@ -145,6 +145,20 @@ public class ActiveCharacterSwapper : MonoBehaviour
                 r.enabled = true;
                 hadDisabled = true;
             }
+
+            // Ver comentario en SpawnWillNpc(): partes activadas más tarde por ModularAutoBuilder
+            // (equipamiento, pelo, etc.) traen su propio SkinnedMeshRenderer con
+            // updateWhenOffscreen=false por defecto — reafirmarlo aquí también cubre esos casos.
+            // Además forzamos la lectura de .bounds: es lo que el editor hace al seleccionar el
+            // objeto en la Hierarchy y lo que realmente "curaba" el AABB de culling atascado —
+            // red de seguridad extra por si algún recálculo se pierde entre spawn y este tick.
+            if (r is SkinnedMeshRenderer smr)
+            {
+                if (!smr.updateWhenOffscreen)
+                    smr.updateWhenOffscreen = true;
+                if (smr.gameObject.activeInHierarchy)
+                    _ = smr.bounds;
+            }
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -364,6 +378,22 @@ public class ActiveCharacterSwapper : MonoBehaviour
         _willNpcInstance?.SetRuntimeSpells(_willLeft, _willRight, _willSpecial);
         _willFollowCheckTimer = 0f;
 
+        // FIX Will invisible al separar el equipo: a diferencia de Liam/Estela (NPCs que ya
+        // llevan varios frames renderizándose desde que cargó la escena), el NPC de Will se
+        // Instantiate() de cero aquí. Si en su primer frame la cámara está mirando al personaje
+        // recién activado (no a Will, que puede quedar fuera de cuadro o incluso detrás),
+        // Unity nunca llega a considerarlo "visible" una primera vez. Con el Animator en modo
+        // Cull Update Transforms (el que usa este rig) y el SkinnedMeshRenderer con
+        // updateWhenOffscreen=false (valor por defecto en el prefab), eso deja los bounds del
+        // renderer sin inicializar correctamente y en un punto muerto: al no considerarse visible
+        // nunca se actualizan animación/bounds, y al no actualizarse nunca pasa a considerarse
+        // visible. El resultado es un Will "invisible pero presente" que no se cura solo — encaja
+        // con que solo le pase a él y justo al dejarlo quieto en un puzle (nunca se mueve lo
+        // suficiente para forzar un recálculo de bounds). Forzamos updateWhenOffscreen=true para
+        // que el renderer recalcule bounds cada frame sin depender de haber sido visible antes.
+        foreach (var smr in go.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            smr.updateWhenOffscreen = true;
+
         // ✅ Aplicar la apariencia actual de Will al NPC instanciado
         if (CharacterAppearanceRegistry.Instance != null)
         {
@@ -380,6 +410,28 @@ public class ActiveCharacterSwapper : MonoBehaviour
                 npcBuilder.ApplySelection(willAppearance);
                 Debug.Log($"[ActiveCharacterSwapper] SpawnWillNpc — apariencia aplicada al NPC ({willAppearance.Count} partes).");
             }
+        }
+
+        // FIX Will invisible (parte 2 — la de verdad): updateWhenOffscreen=true no basta si el
+        // AABB de culling de cada SkinnedMeshRenderer se calculó UNA vez a partir del rootBone en
+        // su pose inicial (antes de que el Animator corriera ni un solo frame, o antes de que
+        // ModularAutoBuilder activara las partes correctas). Si ese primer cálculo cae fuera del
+        // frustum de la cámara real, Unity lo marca "no visible" y ahí se queda: nada dispara un
+        // recálculo mientras se considera no-visible, así que nunca vuelve a considerarse visible.
+        // Confirmado en el editor: seleccionar el NPC en la Hierarchy (que fuerza a leer
+        // Renderer.bounds para dibujar el gizmo) lo hacía "reaparecer" al instante en el Game View
+        // — exactamente la firma de un AABB de culling nunca refrescado. Forzamos aquí lo mismo
+        // que hace la selección del editor: una pasada de Animator ANTES del primer frame de
+        // render (para que las bones ya estén en su pose/posición real) y una lectura de
+        // Renderer.bounds por cada SkinnedMeshRenderer para forzar el recálculo del AABB ya con
+        // la pose correcta, antes de que la cámara real haga su primer test de culling.
+        var willAnimator = go.GetComponentInChildren<Animator>(true);
+        if (willAnimator != null)
+            willAnimator.Update(0f);
+        foreach (var smr in go.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+        {
+            if (smr.gameObject.activeInHierarchy)
+                _ = smr.bounds;
         }
 
         // FIX INC-050: mismo problema de carrera que documenta SetNpcVisible() más abajo —

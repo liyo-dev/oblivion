@@ -39,6 +39,17 @@ public class Inventory : MonoBehaviour
     public void Add(ItemData item, int amount)
     {
         if (item == null || amount <= 0) return;
+
+        // Punto único de control: los items de equipamiento con wardrobeUnlock nunca
+        // deben terminar en el inventario normal, sea cual sea la vía de obtención
+        // (tienda, pickup de mundo, grafo narrativo, recompensa de quest...). Se
+        // desbloquean directamente en el armario para poder equiparlos desde el menú.
+        if (item.usageKind == ItemData.ItemUsageKind.Equipment && item.wardrobeUnlock != null)
+        {
+            WardrobeService.UnlockWardrobeItem(item.wardrobeUnlock);
+            return;
+        }
+
         RegisterDefinition(item);
 
         _bag.TryGetValue(item.itemId, out int cur);

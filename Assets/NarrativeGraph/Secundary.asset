@@ -24,12 +24,27 @@ MonoBehaviour:
   - rid: 5623891572275806459
   - rid: 5623891572275806460
   - rid: 2337184645389222053
-  - rid: 2337184645389222054
+  - rid: 648455780169416944
   applicableSceneNames:
   - MainWorld
   references:
     version: 2
     RefIds:
+    - rid: 648455780169416944
+      type: {class: UnlockWardrobeItemNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Recibo orejas de angel
+        chapter: 
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: e14cad4b-3e1f-4d63-aec7-b992b768fb01
+        position: {x: 1713, y: -310}
+        outputs: []
+        wardrobeItem: {fileID: 11400000, guid: e57680d74430c0041b9f24ed7e99989d, type: 2}
+        logWarnings: 1
     - rid: 2337184645389222053
       type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
@@ -41,31 +56,11 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 19e6376b-e48c-41d5-bf3a-aa9beef62892
-        position: {x: 1307.4417, y: -310}
+        position: {x: 1307, y: -310}
         outputs:
-        - 1a1603a0-9b04-479e-a110-442a4dcf20c0
+        - e14cad4b-3e1f-4d63-aec7-b992b768fb01
         questId: "Q_NI\xD1OPEZ_CARACOLA"
         debugLogs: 0
-    - rid: 2337184645389222054
-      type: {class: UnlockAbilitiesNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: "Coraz\xF3n Estelar"
-        chapter: 
-        blockSaving: 0
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: 1a1603a0-9b04-479e-a110-442a4dcf20c0
-        position: {x: 1702.9979, y: -310}
-        outputs: []
-        abilityKeysToUnlock: 
-        abilitiesToUnlock: 
-        spellsToUnlock: 03000000
-        assignSpellsToEmptySlot: 1
-        oneShotFlag: 
-        applyPresetAfterUnlock: 1
-        saveAfterUnlock: 0
     - rid: 5623891252771815605
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
@@ -109,7 +104,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 434108a8-8f50-407a-b807-74d22ff2a5ac
-        position: {x: -498.69543, y: 44}
+        position: {x: -499, y: 44}
         outputs:
         - 099fe10e-98f2-475b-ae44-0f435002ee2c
         - 00079bce-e03b-4fa9-bf56-051f0f3b427c
@@ -142,7 +137,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: f01dc9e7-de62-484e-8166-01c99735cb97
-        position: {x: 871.0001, y: 220.27925}
+        position: {x: 871, y: 220}
         outputs: []
         abilityKeysToUnlock: 01000000
         abilitiesToUnlock: 
@@ -162,7 +157,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: fa24c4e1-e60f-4788-b4c0-a6d276e5cddb
-        position: {x: 399, y: -309.88733}
+        position: {x: 399, y: -310}
         outputs:
         - 98f9b923-1d1f-443b-9cf7-cfcfd55dc1ea
         questId: "Q_NI\xD1OPEZ"
@@ -178,7 +173,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 98f9b923-1d1f-443b-9cf7-cfcfd55dc1ea
-        position: {x: 870.63306, y: -310}
+        position: {x: 871, y: -310}
         outputs:
         - 19e6376b-e48c-41d5-bf3a-aa9beef62892
         abilityKeysToUnlock: 00000000
@@ -199,7 +194,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 00079bce-e03b-4fa9-bf56-051f0f3b427c
-        position: {x: 398.99976, y: 785.9998}
+        position: {x: 399, y: 786}
         outputs:
         - b3cc61c7-023e-47cc-865a-06c7e4c93ab5
         questId: ROBERTO_MISION1
@@ -215,7 +210,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: b3cc61c7-023e-47cc-865a-06c7e4c93ab5
-        position: {x: 870.99963, y: 786.00006}
+        position: {x: 871, y: 786}
         outputs: []
         item: {fileID: 11400000, guid: e420f009517398f4aa2f67aed445c278, type: 2}
         amount: 5

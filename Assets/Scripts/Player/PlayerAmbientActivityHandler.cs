@@ -34,6 +34,14 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
     // Hash cacheado para no usar StringToHash en runtime
     private static readonly int _groundDistanceHash = Animator.StringToHash("GroundDistance");
 
+    // Candidatos de estado de locomoción del player (Invector), en orden de preferencia.
+    // Mismo patrón que DialogueManager.PlayerLocomotionStateCandidates.
+    private static readonly string[] _locomotionStateCandidates =
+    {
+        "Locomotion",
+        "Free Locomotion"
+    };
+
     void Awake()
     {
         _animator = GetComponent<Animator>() ?? GetComponentInChildren<Animator>();
@@ -160,6 +168,10 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
         leaving.Release(transform);
         leaving.DetachProp();
         RestoreCC();
+        // FIX: sin esto el Animator se queda congelado en el Sit*_Loop del WorldPoint, porque
+        // este método (a diferencia de StopActivity) nunca hace CrossFade al estado de salida.
+        // Se usa al saltar de cinemáticas (ej. TabernaSequencer) que restauran la posición a mano.
+        ReturnAnimatorToLocomotion();
         _actionManager?.PopMode(ActionMode.UsingWorldPoint);
     }
 
@@ -347,6 +359,24 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
         transform.position = _preSnapPosition;
         RestoreCC();
         _actionManager?.PopMode(ActionMode.UsingWorldPoint);
+    }
+
+    // Saca al Animator del estado Sit*/Sleep*_Loop y lo devuelve a locomoción cuando se corta
+    // la actividad sin pasar por el exit state normal (ver ForceStopActivityImmediate).
+    private void ReturnAnimatorToLocomotion()
+    {
+        if (_animator == null) return;
+        foreach (var state in _locomotionStateCandidates)
+        {
+            if (HasState(state))
+            {
+                CrossFade(state, 0.15f);
+                return;
+            }
+        }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.LogWarning("[PlayerAmbientActivityHandler] ReturnAnimatorToLocomotion: ningún estado de locomoción encontrado, el Animator puede quedarse pillado en la pose de sentado.");
+#endif
     }
 
     private void CrossFade(string stateName, float duration)

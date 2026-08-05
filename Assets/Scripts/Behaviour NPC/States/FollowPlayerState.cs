@@ -68,8 +68,24 @@ namespace Game.NPC.States
         private Vector3 _specialFollowPosition;
         private float _bobPhase;
 
+        // Estado persistente (no recalculado desde cero cada frame) para la histéresis de
+        // isMoving en seguimiento especial, y valor suavizado del InputMagnitude de nado.
+        private bool _isMovingSpecial;
+        private float _swimInputMag;
+
         private const float SPECIAL_FOLLOW_SPEED    = 8f;
         private const float SPECIAL_FOLLOW_STOP_DIST = 1.5f;
+        // Histéresis para el estado "moviéndose" en seguimiento especial (vuelo/nado/plataforma).
+        // Con un único umbral, dist oscila frame a frame alrededor de él mientras el jugador nada
+        // a velocidad constante, y el compañero arranca/frena en seco (y el blend de animación
+        // salta entre 0 y el valor "moviéndose") en vez de decelerar suavemente. Con dos umbrales
+        // separados, una vez que empieza a moverse no se para hasta estar bastante más cerca, y
+        // viceversa.
+        private const float SPECIAL_FOLLOW_MOVE_ENTER = SPECIAL_FOLLOW_STOP_DIST * 0.65f;
+        private const float SPECIAL_FOLLOW_MOVE_EXIT   = SPECIAL_FOLLOW_STOP_DIST * 0.35f;
+        // Velocidad de interpolación del parámetro InputMagnitude del nado (unidades/seg).
+        // Evita que el blend tree de nado salte en seco entre "quieto" y "nadando".
+        private const float SWIM_INPUT_MAG_LERP_SPEED = 3f;
         private const float OFF_NAVMESH_THRESHOLD   = 1.5f;
         private const float WARP_SEARCH_RADIUS      = 12f;
         // Valores reales usados por Will (_WILL.prefab), no los defaults de PlayerFlyingController:
@@ -123,6 +139,8 @@ namespace Game.NPC.States
             _bobPhase            = (_partyMember?.PartyIndex ?? 0) * 0.7f;
             _footVfxInstance     = null;
             _footVfxPs           = null;
+            _isMovingSpecial     = false;
+            _swimInputMag        = 0f;
 
             if (context.Player != null)
             {
@@ -360,7 +378,15 @@ namespace Game.NPC.States
             Vector3 currentPos = _specialFollowPosition;
             Vector3 delta      = targetPos - currentPos;
             float   dist       = delta.magnitude;
-            bool    isMoving   = dist > SPECIAL_FOLLOW_STOP_DIST * 0.5f;
+
+            // Histéresis: si ya se estaba moviendo, sigue hasta bajar de MOVE_EXIT;
+            // si estaba parado, no arranca hasta superar MOVE_ENTER. Evita el parpadeo
+            // frame a frame de isMoving (y el consiguiente movimiento/animación a trompicones)
+            // cuando dist oscila justo alrededor de un único umbral.
+            _isMovingSpecial = _isMovingSpecial
+                ? dist > SPECIAL_FOLLOW_MOVE_EXIT
+                : dist > SPECIAL_FOLLOW_MOVE_ENTER;
+            bool isMoving = _isMovingSpecial;
 
             if (isMoving)
             {
@@ -479,7 +505,13 @@ namespace Game.NPC.States
                 case ActionMode.Swimming:
                     TrySetBool(anim, HashIsGrounded, true);
                     TrySetFloat(anim, HashGroundDist, 0f);
-                    TrySetFloat(anim, HashInputMag, isMoving ? 0.5f : 0f);
+                    // Interpolado, no asignado en seco: InputMagnitude es a la vez el blend
+                    // parameter del blend tree de nado y el speed parameter de al menos un
+                    // estado, así que un salto discreto entre 0 y 0.5 se ve como un tirón tanto
+                    // en la pose como en el ritmo de reproducción del clip.
+                    float targetInputMag = isMoving ? 0.5f : 0f;
+                    _swimInputMag = Mathf.MoveTowards(_swimInputMag, targetInputMag, SWIM_INPUT_MAG_LERP_SPEED * Time.deltaTime);
+                    TrySetFloat(anim, HashInputMag, _swimInputMag);
                     break;
 
                 case ActionMode.Climbing:

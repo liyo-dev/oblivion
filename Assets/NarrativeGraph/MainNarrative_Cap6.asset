@@ -24,6 +24,7 @@ MonoBehaviour:
   - rid: 5290829725662445804
   - rid: 5290829725662445805
   - rid: 5290829725662445806
+  - rid: 5290829725662445807
   applicableSceneNames: []
   references:
     version: 2
@@ -39,9 +40,9 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 683b23e6-c1ac-40d0-91eb-1dde84f1526d
-        position: {x: 4670, y: 4386}
+        position: {x: 5115.296, y: 4366}
         outputs:
-        - 18293a97-824e-4a42-b35b-a28365fd1601
+        - f3d8a2c1-9e47-4b6a-8d1f-2c7e9a4b5f10
         questId: ELDRAN_MISSION13
         debugLogs: 1
     - rid: 5290829725662445798
@@ -150,6 +151,9 @@ MonoBehaviour:
         logoFadeOutSeconds: 1.25
         cameraReturnFadeSeconds: 0.3
         cameraReturnHoldSeconds: 0.2
+        closeDemoAfterLogo: 0
+        closeDemoTargetScene: Credits
+        closeDemoLoadingOverlayScene: 
     - rid: 5290829725662445804
       type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
@@ -195,3 +199,18 @@ MonoBehaviour:
         outputs:
         - 683b23e6-c1ac-40d0-91eb-1dde84f1526d
         eventKey: CH_Cap5_BACK_1
+    - rid: 5290829725662445807
+      type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Reabrir puertas del castillo (fin mision 13)
+        chapter: Cap. 6
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: f3d8a2c1-9e47-4b6a-8d1f-2c7e9a4b5f10
+        position: {x: 4597.08, y: 4384}
+        outputs:
+        - 18293a97-824e-4a42-b35b-a28365fd1601
+        eventKey: OPEN_THE_DOORS
