@@ -59,6 +59,16 @@ public class ActiveCharacterSwapper : MonoBehaviour
     // Temporizador para verificar periódicamente si el Will NPC sigue al jugador
     private float _willFollowCheckTimer;
 
+    // Cámara principal cacheada (regla: nunca Camera.main por frame). Se refresca si muere.
+    private Camera _mainCamCached;
+
+    // Ticks consecutivos (de 0.5s) en los que Will está dentro del encuadre de la cámara pero
+    // ninguno de sus renderers se está renderizando. 2+ = estado anómalo confirmado.
+    private int _willInvisibleStrikes;
+
+    // Contador de ticks para el latido de diagnóstico 🫀 (cada 5 ticks de 0.5s = ~2.5s).
+    private int _willDiagTick;
+
     #region Lifecycle
     private void Awake()
     {
@@ -165,6 +175,132 @@ public class ActiveCharacterSwapper : MonoBehaviour
         if (hadDisabled)
             Debug.LogWarning("[ActiveCharacterSwapper] Will NPC tenía renderers desactivados fuera de la ventana de ReassertWillVisibilityNextFrames — reactivados por la red de seguridad periódica (0.5s).");
 #endif
+
+        DiagnoseAndHealWillVisibility();
+    }
+
+    /// <summary>
+    /// Detector + autocuración del "Will invisible" residual (secuela de INC-050 que las medidas
+    /// de SpawnWillNpc no llegaban a cubrir en todos los casos, p.ej. dejar a Will anclado en un
+    /// botón en modo Libre y volver con otro personaje).
+    ///
+    /// Condición anómala: el punto de pecho de Will está dentro del encuadre de la cámara, a
+    /// distancia razonable, con renderers activos y enabled... y aun así NINGUNO se está
+    /// renderizando (Renderer.isVisible == false en todos) durante 2 ticks seguidos (~1s).
+    /// Un objeto en pantalla que lleva 1s sin renderizarse no es culling legítimo: es
+    /// exactamente el estado "atascado" que se curaba seleccionando el GO en la Hierarchy.
+    ///
+    /// Curación según la clase de fallo detectada:
+    ///  - Renderers activos pero nunca visibles → apagar y reencender Renderer.enabled. A
+    ///    diferencia de leer .bounds (lo que ya hacíamos y no bastaba), el toggle fuerza el
+    ///    des-registro y re-registro del renderer en el sistema de culling, que es lo mismo que
+    ///    consigue la selección en la Hierarchy. Se acompaña de Animator.Update(0f) para
+    ///    garantizar pose real antes del siguiente test de visibilidad.
+    ///  - Ningún renderer activo+enabled (partes del modelo desactivadas por alguien) →
+    ///    reaplicar la apariencia de Will vía su ModularAutoBuilder, como hace SpawnWillNpc.
+    ///
+    /// Siempre deja un log [🩺] con el estado detectado: si el bug reaparece, ese log nos dice
+    /// exactamente qué clase de fallo fue y con qué números.
+    /// Gateado por el tick de 0.5s de Update — no corre por frame.
+    /// </summary>
+    private void DiagnoseAndHealWillVisibility()
+    {
+        if (_willNpcInstance == null) return;
+
+        if (_mainCamCached == null || !_mainCamCached.isActiveAndEnabled)
+            _mainCamCached = Camera.main;
+        var cam = _mainCamCached;
+        if (cam == null) return;
+
+        Vector3 chest = _willNpcInstance.transform.position + Vector3.up * 1.2f;
+        Vector3 vp = cam.WorldToViewportPoint(chest);
+        float dist = Vector3.Distance(cam.transform.position, chest);
+        bool enEncuadre = vp.z > 0f && vp.x > 0.08f && vp.x < 0.92f && vp.y > 0.08f && vp.y < 0.92f;
+
+        bool algunoVisible = false;
+        bool algunoActivoYEncendido = false;
+        int activos = 0;
+        int visibles = 0;
+        var renderers = _willNpcInstance.GetComponentsInChildren<Renderer>(true);
+        foreach (var r in renderers)
+        {
+            if (r == null || !r.gameObject.activeInHierarchy || !r.enabled) continue;
+            algunoActivoYEncendido = true;
+            activos++;
+            // Nota editor: isVisible también cuenta la Scene View. Si la Scene View está
+            // renderizando a Will, este detector no salta — probar con la Scene View cerrada
+            // (Game view maximizado) o en build para una lectura fiable.
+            if (r.isVisible) { algunoVisible = true; visibles++; }
+        }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // 🫀 Latido de diagnóstico (cada ~2.5s mientras exista el clon): foto del estado real
+        // de Will aunque no salte ninguna anomalía. Cuando el jugador reporte "Will invisible",
+        // estas líneas dicen DÓNDE está Will de verdad (¿bajo el suelo? ¿desplazado del botón?),
+        // a qué distancia de la cámara, y cuántos renderers se están renderizando — distingue
+        // "no se renderiza" de "está en otro sitio" sin depender de reproducirlo con el inspector.
+        _willDiagTick++;
+        if (_willDiagTick >= 5)
+        {
+            _willDiagTick = 0;
+            var diagAgent = _willNpcInstance.GetComponent<NavMeshAgent>();
+            Debug.Log($"[ActiveCharacterSwapper] 🫀 WillNPC pos={_willNpcInstance.transform.position} " +
+                $"distCam={dist:F1}m enEncuadre={enEncuadre} vp=({vp.x:F2},{vp.y:F2},{vp.z:F2}) " +
+                $"renderers activos={activos}/{renderers.Length} visibles={visibles} " +
+                $"pinned={_willNpcInstance.NPCManager?.Context?.IsPinnedByParty.ToString() ?? "?"} " +
+                $"estado={_willNpcInstance.NPCManager?.Brain?.CurrentState?.StateName ?? "?"} " +
+                $"onNavMesh={(diagAgent != null && diagAgent.isOnNavMesh)}");
+        }
+#endif
+
+        // Solo evaluar la anomalía cuando Will debería verse sí o sí: bien dentro del encuadre
+        // y a <60m. Fuera de encuadre, isVisible=false es culling legítimo y no significa nada.
+        if (!enEncuadre || dist > 60f) { _willInvisibleStrikes = 0; return; }
+        if (algunoVisible) { _willInvisibleStrikes = 0; return; }
+
+        _willInvisibleStrikes++;
+        if (_willInvisibleStrikes < 2) return;
+        _willInvisibleStrikes = 0;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        var agent = _willNpcInstance.GetComponent<NavMeshAgent>();
+        Debug.LogWarning($"[ActiveCharacterSwapper] 🩺 Will NPC en encuadre pero SIN renderizar durante ~1s — " +
+            $"clase={(algunoActivoYEncendido ? "renderers activos atascados en culling" : "partes del modelo desactivadas")}, " +
+            $"renderersActivos={activos}/{renderers.Length}, pos={_willNpcInstance.transform.position}, dist={dist:F1}m, " +
+            $"viewport=({vp.x:F2},{vp.y:F2},{vp.z:F2}), onNavMesh={(agent != null && agent.isOnNavMesh)}. Aplicando autocuración.");
+#endif
+
+        if (!algunoActivoYEncendido)
+        {
+            // Clase B: alguien desactivó las partes del modelo. Reaplicar apariencia de Will.
+            var registryHeal = CharacterAppearanceRegistry.Instance;
+            var npcBuilder = _willNpcInstance.GetComponentInChildren<ModularAutoBuilder>(true);
+            var app = registryHeal != null ? registryHeal.GetAppearance(PartyControlManager.CharacterSlot.Will) : null;
+            if (npcBuilder != null && app != null && app.Count > 0)
+            {
+                npcBuilder.DeactivateAllCategories();
+                npcBuilder.ApplySelection(app);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.LogWarning($"[ActiveCharacterSwapper] 🩺 Apariencia de Will reaplicada al NPC ({app.Count} partes).");
+#endif
+            }
+        }
+        else
+        {
+            // Clase A: renderers correctos pero el sistema de culling nunca los da por visibles.
+            // Toggle enabled = des-registro + re-registro en culling (equivale a la "cura" de
+            // seleccionar el GO en la Hierarchy, pero desde código).
+            foreach (var r in renderers)
+            {
+                if (r == null || !r.gameObject.activeInHierarchy || !r.enabled) continue;
+                r.enabled = false;
+                r.enabled = true;
+                if (r is SkinnedMeshRenderer smr)
+                    smr.updateWhenOffscreen = true;
+            }
+            var anim = _willNpcInstance.GetComponentInChildren<Animator>(true);
+            if (anim != null) anim.Update(0f);
+        }
     }
     #endregion
 

@@ -359,11 +359,33 @@
                 },
                 {
                     "name": "",
+                    "id": "f7b8a0c1-5e2d-4a6b-9c3f-1d8e7a4b2c60",
+                    "path": "<Keyboard>/leftCtrl",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "LT",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "6c2bda18-6bb4-4f10-a862-a2b5d2c46800",
                     "path": "<Gamepad>/rightTrigger",
                     "interactions": "",
                     "processors": "",
                     "groups": "Gamepad",
+                    "action": "RT",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "0a9d2b3c-6f1e-4d5a-8b7c-2e9f0a3d5c71",
+                    "path": "<Keyboard>/leftCtrl",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
                     "action": "RT",
                     "isComposite": false,
                     "isPartOfComposite": false
