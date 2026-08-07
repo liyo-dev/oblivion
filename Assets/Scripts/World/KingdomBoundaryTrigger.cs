@@ -1,4 +1,3 @@
-using System.Collections;
 using UnityEngine;
 
 /// <summary>
@@ -11,10 +10,18 @@ using UnityEngine;
 /// trigger + filtro por tag "Player" + emisión de señal narrativa.
 ///
 /// Bloqueo físico: igual que DayOnlyInspectionTrigger, adquiere el lock de movimiento
-/// (PlayerLockService) justo antes de emitir el evento y lo libera un frame después,
-/// como puente hasta que el sistema narrativo (diálogo/cinemática) tome el control
-/// con su propio PushMode(ActionMode.Cinematic). Sin esto el jugador seguía moviéndose
-/// libremente mientras el grafo procesaba el evento.
+/// (PlayerLockService) justo antes de emitir el evento, como puente hasta que el sistema
+/// narrativo (diálogo/cinemática) tome el control con su propio PushMode(ActionMode.Cinematic).
+/// Sin esto el jugador seguía moviéndose libremente mientras el grafo procesaba el evento.
+///
+/// FIX (Agosto 2026): el puente ya NO se libera a los "un frame después" a ciegas — eso dejaba
+/// una ventana en la que el freeze se soltaba antes de que el grafo llegara de verdad a empujar
+/// ActionMode.Cinematic (NarrativeRunner.RunSubGraph cede como mínimo 1 frame por cada nodo
+/// intermedio entre el WaitCustomEventNode que consume este evento y el nodo que realmente
+/// bloquea, aunque cada uno resuelva al instante). Ahora usa
+/// PlayerLockService.AcquireBridgeUntilCinematic(), que espera a que Cinematic esté realmente
+/// activo (con un timeout de seguridad) desde una corrutina alojada en el propio
+/// PlayerLockService (persistente), no en este trigger.
 /// </summary>
 [RequireComponent(typeof(Collider))]
 public sealed class KingdomBoundaryTrigger : MonoBehaviour
@@ -25,22 +32,15 @@ public sealed class KingdomBoundaryTrigger : MonoBehaviour
     [Tooltip("Si está marcado, el trigger solo se dispara una vez por sesión.")]
     public bool singleUse = true;
 
+    [Tooltip("Si se asigna, delega el freeze en TriggerPlayerStop (modo Parar) en vez de la " +
+             "implementación propia de este script. Dejar vacío para el comportamiento anterior.")]
+    public TriggerPlayerStop playerStop;
+
     bool _fired;
-    bool _lockAcquired;
 
     void Reset()
     {
         GetComponent<Collider>().isTrigger = true;
-    }
-
-    void OnDisable()
-    {
-        ReleaseLock();
-    }
-
-    void OnDestroy()
-    {
-        ReleaseLock();
     }
 
     void OnTriggerEnter(Collider other)
@@ -68,14 +68,21 @@ public sealed class KingdomBoundaryTrigger : MonoBehaviour
 
         _fired = true;
 
-        // Adquirir lock ANTES de emitir el evento: puente hasta que el sistema narrativo
-        // (diálogo/cinemática) tome el control con su propio PushMode. Mismo patrón que
-        // DayOnlyInspectionTrigger.OnTriggerEnter.
-        var lockService = PlayerLockService.Instance;
-        if (lockService != null)
+        if (playerStop != null)
         {
-            lockService.Acquire(this);
-            _lockAcquired = true;
+            // Delega en el sistema central (modo Parar) el mismo puente: freeze ahora, liberado
+            // en cuanto ActionMode.Cinematic esté realmente activo (ver TriggerPlayerStop.
+            // IniciarParadaMomentanea / PlayerLockService.AcquireBridgeUntilCinematic).
+            playerStop.IniciarParadaMomentanea();
+        }
+        else
+        {
+            // Comportamiento anterior: adquirir lock ANTES de emitir el evento, puente hasta que
+            // el sistema narrativo (diálogo/cinemática) tome el control con su propio PushMode.
+            // Mismo patrón que DayOnlyInspectionTrigger.OnTriggerEnter. La espera/liberación vive
+            // en PlayerLockService (persistente), no en este componente — ver comentario de clase.
+            var lockService = PlayerLockService.Instance;
+            lockService?.AcquireBridgeUntilCinematic(this);
         }
 
         signals.RaiseCustom(eventKey, $"[KingdomBoundaryTrigger] {name}");
@@ -83,22 +90,5 @@ public sealed class KingdomBoundaryTrigger : MonoBehaviour
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"[KingdomBoundaryTrigger] Límite del Reino cruzado. Evento '{eventKey}' emitido.");
 #endif
-
-        StartCoroutine(ReleaseLockNextFrame());
-    }
-
-    IEnumerator ReleaseLockNextFrame()
-    {
-        yield return null;
-        ReleaseLock();
-    }
-
-    void ReleaseLock()
-    {
-        if (_lockAcquired && PlayerLockService.HasInstance)
-        {
-            PlayerLockService.Instance.Release(this);
-            _lockAcquired = false;
-        }
     }
 }

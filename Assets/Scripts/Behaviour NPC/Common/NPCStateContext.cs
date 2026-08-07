@@ -59,6 +59,20 @@ namespace Game.NPC.Common
         /// </summary>
         public bool HasShelterOrigin { get; set; }
 
+        /// <summary>
+        /// Última posición conocida del NPC sobre el área caminable del NavMesh, justo antes de
+        /// que SeekShelterState empezara un tramo de aproximación manual (fuera de NavMesh) hacia
+        /// el punto exacto de un NPCShelterPoint. Muchos árboles tienen el hueco no-transitable
+        /// de su bakeo mucho más grande que el tronco (cubre toda la copa), así que el punto de
+        /// refugio cae fuera del NavMesh aunque no haya ningún obstáculo físico real ahí.
+        /// ReturnFromShelterState usa este punto para sacar al NPC por el mismo camino "a mano"
+        /// antes de reengancharlo al NavMeshAgent. Ver NPCStateBase.BeginManualApproach.
+        /// </summary>
+        public Vector3 ShelterEdgePosition { get; set; }
+
+        /// <summary>True mientras ShelterEdgePosition contenga un valor válido (ver arriba).</summary>
+        public bool HasShelterEdgePosition { get; set; }
+
         public NPCStateContext(NPCBrain brain, Transform transform, NavMeshAgent agent,
             NPCSimpleAnimator animator, Animator unityAnimator, Rigidbody rigidbody)
         {

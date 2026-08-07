@@ -212,8 +212,8 @@ namespace Core
         controls.GamePlay.DPadRight.performed += HandleDpadRight;
         controls.GamePlay.Interact.performed += HandleInteract;
         controls.GamePlay.Start.performed += HandleStart;
-        controls.GamePlay.Strafe.performed += HandleLeftShoulder;
-        controls.GamePlay.FlyToggle.performed += HandleRightShoulder;
+        controls.GamePlay.ShoulderLeft.performed += HandleLeftShoulder;
+        controls.GamePlay.ShoulderRight.performed += HandleRightShoulder;
     }
 
     private static void UnsubscribeInputEvents()
@@ -231,8 +231,8 @@ namespace Core
         _boundControls.GamePlay.DPadRight.performed -= HandleDpadRight;
         _boundControls.GamePlay.Interact.performed -= HandleInteract;
         _boundControls.GamePlay.Start.performed -= HandleStart;
-        _boundControls.GamePlay.Strafe.performed -= HandleLeftShoulder;
-        _boundControls.GamePlay.FlyToggle.performed -= HandleRightShoulder;
+        _boundControls.GamePlay.ShoulderLeft.performed -= HandleLeftShoulder;
+        _boundControls.GamePlay.ShoulderRight.performed -= HandleRightShoulder;
 
         _boundControls = null;
     }
@@ -790,6 +790,13 @@ namespace Core
                 if (y != null && y.wasPressedThisFrame)
                     return true;
             }
+
+            // Teclado: Q = magia especial (equivalente a Y/Triangle). Ver mapeo en
+            // PlayerControls.inputactions (acción AttackMagicNorth), pero se lee aquí
+            // directamente porque esta clase no consume esa acción del asset.
+            var kb = Keyboard.current;
+            if (kb != null && kb.qKey.wasPressedThisFrame)
+                return true;
 #endif
 
             return false;
@@ -819,6 +826,11 @@ namespace Core
                 if (x != null && x.wasPressedThisFrame)
                     return true;
             }
+
+            // Ratón: clic izquierdo = magia slot izquierdo (equivalente a West/Square).
+            var mouse = Mouse.current;
+            if (mouse != null && mouse.leftButton.wasPressedThisFrame)
+                return true;
 #endif
 
             return false;
@@ -853,6 +865,11 @@ namespace Core
                 if (b != null && b.wasPressedThisFrame)
                     return true;
             }
+
+            // Ratón: clic derecho = magia slot derecho (equivalente a East/Circle).
+            var mouse = Mouse.current;
+            if (mouse != null && mouse.rightButton.wasPressedThisFrame)
+                return true;
 #endif
 
             return false;
@@ -888,6 +905,10 @@ namespace Core
                 if (x != null && x.isPressed)
                     return true;
             }
+
+            var mouse = Mouse.current;
+            if (mouse != null && mouse.leftButton.isPressed)
+                return true;
 #endif
 
             return false;
@@ -917,6 +938,10 @@ namespace Core
                 if (x != null && x.wasReleasedThisFrame)
                     return true;
             }
+
+            var mouse = Mouse.current;
+            if (mouse != null && mouse.leftButton.wasReleasedThisFrame)
+                return true;
 #endif
 
             return false;
@@ -952,6 +977,10 @@ namespace Core
                 if (b != null && b.isPressed)
                     return true;
             }
+
+            var mouse = Mouse.current;
+            if (mouse != null && mouse.rightButton.isPressed)
+                return true;
 #endif
 
             return false;
@@ -986,6 +1015,10 @@ namespace Core
                 if (b != null && b.wasReleasedThisFrame)
                     return true;
             }
+
+            var mouse = Mouse.current;
+            if (mouse != null && mouse.rightButton.wasReleasedThisFrame)
+                return true;
 #endif
 
             return false;
@@ -1056,22 +1089,25 @@ namespace Core
     }
 
     /// <summary>
-    /// Lee si el botón de strafe fue presionado este frame.
+    /// Lee si el gatillo izquierdo (LB/L1/L) fue presionado este frame.
+    /// Hoy sin uso funcional en el movimiento del personaje (ver StrafeInput() en vThirdPersonInput,
+    /// la llamada a cc.Strafe() está comentada); el ciclo de objetivo/pestaña real pasa por
+    /// HandleLeftShoulder vía el evento OnInput, no por esta propiedad.
     /// Respeta supresión de gameplay.
     /// </summary>
-    public static bool StrafePressed
+    public static bool ShoulderLeftPressed
     {
         get
         {
             if (IsGameplaySuppressed())
                 return false;
 
-            if (Controls != null && Controls.GamePlay.Strafe.triggered)
+            if (Controls != null && Controls.GamePlay.ShoulderLeft.triggered)
                 return true;
 
 #if ENABLE_INPUT_SYSTEM
             var gp = GetGamepad();
-            if (gp != null && gp.rightShoulder.wasPressedThisFrame)
+            if (gp != null && gp.leftShoulder.wasPressedThisFrame)
                 return true;
 #endif
 

@@ -58,7 +58,7 @@
         },
         {
             "id": "EVT_09",
-            "text": "[EN] ¡Qué interesante!"
+            "text": "How interesting!"
         },
         {
             "id": "EVT_10",
@@ -66,7 +66,7 @@
         },
         {
             "id": "EVT_11",
-            "text": "[EN] ¡Will! Usala contra el demonio, presiona <sprite name=\"interactable_x\"> y derrotale."
+            "text": "Will! Use it against the demon, press <sprite name=\"interactable_x\"> and defeat him."
         },
         {
             "id": "EVT_AWAKEN_01",

@@ -714,7 +714,7 @@ namespace Game.NPC.Modules
                             // ✅ VALIDACIÓN 1: Verificar que está en NavMesh
                             if (!_agent.isOnNavMesh)
                             {
-                                Debug.LogError($"[Lifecycle] ❌ {name} NO está en NavMesh! No puede huir. Posición: {transform.position}");
+                                Debug.LogWarning($"[Lifecycle] ⚠️ {name} NO está en NavMesh! No puede huir. Posición: {transform.position}");
                                 if (NavMesh.SamplePosition(transform.position, out NavMeshHit repoHit, 2f, NavMesh.AllAreas))
                                 {
                                     transform.position = repoHit.position;
@@ -723,7 +723,7 @@ namespace Game.NPC.Modules
                                 }
                                 else
                                 {
-                                    Debug.LogError($"[Lifecycle] ❌ No se pudo recolocar {name} en NavMesh - se aplicará fallback de desaparición");
+                                    Debug.LogWarning($"[Lifecycle] ⚠️ No se pudo recolocar {name} en NavMesh - se aplicará fallback de desaparición");
                                 }
                             }
 
@@ -739,11 +739,11 @@ namespace Game.NPC.Modules
 
                                 if (!_agent.Warp(transform.position))
                                 {
-                                    Debug.LogError($"[Lifecycle] ❌ {name} no pudo hacer Warp a {transform.position} - se aplicará fallback de desaparición");
+                                    Debug.LogWarning($"[Lifecycle] ⚠️ {name} no pudo hacer Warp a {transform.position} - se aplicará fallback de desaparición");
                                 }
                                 else if (!TryResolveReachableDestination(_agent, fleePos, out Vector3 resolvedFleePos))
                                 {
-                                    Debug.LogError($"[Lifecycle] ❌ {name} no encontró destino alcanzable para huida cerca de {fleePos}");
+                                    Debug.LogWarning($"[Lifecycle] ⚠️ {name} no encontró destino alcanzable para huida cerca de {fleePos}");
                                 }
                                 else
                                 {
@@ -815,7 +815,7 @@ namespace Game.NPC.Modules
                                     }
                                     else
                                     {
-                                        Debug.LogError($"[Lifecycle] ❌ {name} no puede calcular path hacia {fleePos}! Status: {(_agent.hasPath ? _agent.path.status.ToString() : "NO PATH")}");
+                                        Debug.LogWarning($"[Lifecycle] ⚠️ {name} no puede calcular path hacia {fleePos}! Status: {(_agent.hasPath ? _agent.path.status.ToString() : "NO PATH")}");
                                     }
                                 }
 

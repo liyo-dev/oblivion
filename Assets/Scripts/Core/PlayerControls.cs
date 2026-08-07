@@ -147,7 +147,7 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""Strafe"",
+                    ""name"": ""ShoulderLeft"",
                     ""type"": ""Button"",
                     ""id"": ""1bbd8391-51b9-4b88-94a8-b2b498ddfe7a"",
                     ""expectedControlType"": """",
@@ -165,7 +165,7 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": true
                 },
                 {
-                    ""name"": ""FlyToggle"",
+                    ""name"": ""ShoulderRight"",
                     ""type"": ""Button"",
                     ""id"": ""99774a5d-36c4-4222-b41a-89b409be0c23"",
                     ""expectedControlType"": """",
@@ -318,7 +318,7 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""Strafe"",
+                    ""action"": ""ShoulderLeft"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -351,7 +351,7 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""FlyToggle"",
+                    ""action"": ""ShoulderRight"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -451,6 +451,259 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": ""Gamepad"",
                     ""action"": ""RT"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""Keyboard"",
+                    ""id"": ""8098b803-1833-47db-abfe-acf8bb3afaf7"",
+                    ""path"": ""2DVector"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""up"",
+                    ""id"": ""3c669a67-beeb-4ade-8963-345229e3daf5"",
+                    ""path"": ""<Keyboard>/w"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""up"",
+                    ""id"": ""52184490-ec7c-4f46-b179-88cf47166d69"",
+                    ""path"": ""<Keyboard>/upArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""down"",
+                    ""id"": ""6a21e5c0-2dd1-48b6-8f07-4960efed2185"",
+                    ""path"": ""<Keyboard>/s"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""down"",
+                    ""id"": ""2c34d6bc-4dec-42c8-88c0-119af606e7b6"",
+                    ""path"": ""<Keyboard>/downArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""left"",
+                    ""id"": ""a17dd960-b650-41b0-8218-1e8647db37e6"",
+                    ""path"": ""<Keyboard>/a"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""left"",
+                    ""id"": ""39928f11-8a7b-4dd5-b69b-e6e31a1e0e14"",
+                    ""path"": ""<Keyboard>/leftArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""right"",
+                    ""id"": ""862cf2ac-789a-44df-966c-345a08b4d7c7"",
+                    ""path"": ""<Keyboard>/d"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""right"",
+                    ""id"": ""5f1da603-0189-4048-90e4-0e470ee9bb37"",
+                    ""path"": ""<Keyboard>/rightArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""9da88a90-0daa-4b80-8eeb-8472adc1d879"",
+                    ""path"": ""<Keyboard>/space"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Jump"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""6326858d-ba2f-4955-82ce-b1670ba54c68"",
+                    ""path"": ""<Mouse>/leftButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""AttackMagicWest"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""664f21e5-a2a0-453b-874f-dc6fbbaefb5d"",
+                    ""path"": ""<Keyboard>/q"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""AttackMagicNorth"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""d0b30479-48cd-4067-9509-c61a145d18a2"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""AttackMagicEast"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""8f200751-a9ea-4a70-a78b-a8eb3c7278a7"",
+                    ""path"": ""<Keyboard>/leftShift"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Sprint"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""c8e70614-8bb5-42f7-866b-9f6743f2a49d"",
+                    ""path"": ""<Mouse>/scroll/down"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""ShoulderLeft"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""e555b660-563f-419c-a6f3-c1b4c9a80f33"",
+                    ""path"": ""<Mouse>/delta"",
+                    ""interactions"": """",
+                    ""processors"": ""scaleVector2(x=0.04,y=0.04)"",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""CameraLook"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""966eee3d-0e10-4764-a2c7-a250f79d5a7d"",
+                    ""path"": ""<Mouse>/scroll/up"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""ShoulderRight"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""ef75a546-6571-4a26-b26b-e5a47ba309c6"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Interact"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""fbf157f6-f966-45c8-b11d-09cfbd7a7da1"",
+                    ""path"": ""<Keyboard>/j"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""DPadUp"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""3de80b78-b448-428f-9138-62acf8d48675"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Start"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""c87c0cf8-7cea-4548-95f9-a44c507df6f1"",
+                    ""path"": ""<Keyboard>/g"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""DPadDown"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""25b2549f-b0af-4fd2-b149-575df19b1b3a"",
+                    ""path"": ""<Keyboard>/comma"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""DPadLeft"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""a0c7c812-83b7-42e6-a51a-3c2d8a2fb267"",
+                    ""path"": ""<Keyboard>/period"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""DPadRight"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -847,11 +1100,55 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
+                    ""id"": ""f368e668-fc29-4d0a-a723-43abecf4e040"",
+                    ""path"": ""<Keyboard>/enter"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Submit"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""8e43cdf4-4ae0-4ad5-9fc7-80ee8539427c"",
+                    ""path"": ""<Keyboard>/numpadEnter"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Submit"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""2653ca09-2ce2-4338-a3d0-d5b1e340df86"",
+                    ""path"": ""<Keyboard>/space"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Submit"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
                     ""id"": ""6de3f9f7-cdad-44f8-b7e3-a36d5674b5b5"",
                     ""path"": ""<Gamepad>/buttonEast"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": ""Keyboard&Mouse;Gamepad;Touch;Joystick;XR"",
+                    ""action"": ""Cancel"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""855dc5fa-ba4a-4561-a630-90e6e410515c"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
                     ""action"": ""Cancel"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
@@ -1013,7 +1310,35 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             ]
         }
     ],
-    ""controlSchemes"": []
+    ""controlSchemes"": [
+        {
+            ""name"": ""Gamepad"",
+            ""bindingGroup"": ""Gamepad"",
+            ""devices"": [
+                {
+                    ""devicePath"": ""<Gamepad>"",
+                    ""isOptional"": false,
+                    ""isOR"": false
+                }
+            ]
+        },
+        {
+            ""name"": ""Keyboard&Mouse"",
+            ""bindingGroup"": ""Keyboard&Mouse"",
+            ""devices"": [
+                {
+                    ""devicePath"": ""<Keyboard>"",
+                    ""isOptional"": false,
+                    ""isOR"": false
+                },
+                {
+                    ""devicePath"": ""<Mouse>"",
+                    ""isOptional"": false,
+                    ""isOR"": false
+                }
+            ]
+        }
+    ]
 }");
         // GamePlay
         m_GamePlay = asset.FindActionMap("GamePlay", throwIfNotFound: true);
@@ -1023,9 +1348,9 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         m_GamePlay_AttackMagicNorth = m_GamePlay.FindAction("AttackMagicNorth", throwIfNotFound: true);
         m_GamePlay_AttackMagicEast = m_GamePlay.FindAction("AttackMagicEast", throwIfNotFound: true);
         m_GamePlay_Sprint = m_GamePlay.FindAction("Sprint", throwIfNotFound: true);
-        m_GamePlay_Strafe = m_GamePlay.FindAction("Strafe", throwIfNotFound: true);
+        m_GamePlay_ShoulderLeft = m_GamePlay.FindAction("ShoulderLeft", throwIfNotFound: true);
         m_GamePlay_CameraLook = m_GamePlay.FindAction("CameraLook", throwIfNotFound: true);
-        m_GamePlay_FlyToggle = m_GamePlay.FindAction("FlyToggle", throwIfNotFound: true);
+        m_GamePlay_ShoulderRight = m_GamePlay.FindAction("ShoulderRight", throwIfNotFound: true);
         m_GamePlay_FlyThrust = m_GamePlay.FindAction("FlyThrust", throwIfNotFound: true);
         m_GamePlay_Interact = m_GamePlay.FindAction("Interact", throwIfNotFound: true);
         m_GamePlay_DPadUp = m_GamePlay.FindAction("DPadUp", throwIfNotFound: true);
@@ -1136,9 +1461,9 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
     private readonly InputAction m_GamePlay_AttackMagicNorth;
     private readonly InputAction m_GamePlay_AttackMagicEast;
     private readonly InputAction m_GamePlay_Sprint;
-    private readonly InputAction m_GamePlay_Strafe;
+    private readonly InputAction m_GamePlay_ShoulderLeft;
     private readonly InputAction m_GamePlay_CameraLook;
-    private readonly InputAction m_GamePlay_FlyToggle;
+    private readonly InputAction m_GamePlay_ShoulderRight;
     private readonly InputAction m_GamePlay_FlyThrust;
     private readonly InputAction m_GamePlay_Interact;
     private readonly InputAction m_GamePlay_DPadUp;
@@ -1184,17 +1509,17 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// </summary>
         public InputAction @Sprint => m_Wrapper.m_GamePlay_Sprint;
         /// <summary>
-        /// Provides access to the underlying input action "GamePlay/Strafe".
+        /// Provides access to the underlying input action "GamePlay/ShoulderLeft".
         /// </summary>
-        public InputAction @Strafe => m_Wrapper.m_GamePlay_Strafe;
+        public InputAction @ShoulderLeft => m_Wrapper.m_GamePlay_ShoulderLeft;
         /// <summary>
         /// Provides access to the underlying input action "GamePlay/CameraLook".
         /// </summary>
         public InputAction @CameraLook => m_Wrapper.m_GamePlay_CameraLook;
         /// <summary>
-        /// Provides access to the underlying input action "GamePlay/FlyToggle".
+        /// Provides access to the underlying input action "GamePlay/ShoulderRight".
         /// </summary>
-        public InputAction @FlyToggle => m_Wrapper.m_GamePlay_FlyToggle;
+        public InputAction @ShoulderRight => m_Wrapper.m_GamePlay_ShoulderRight;
         /// <summary>
         /// Provides access to the underlying input action "GamePlay/FlyThrust".
         /// </summary>
@@ -1275,15 +1600,15 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @Sprint.started += instance.OnSprint;
             @Sprint.performed += instance.OnSprint;
             @Sprint.canceled += instance.OnSprint;
-            @Strafe.started += instance.OnStrafe;
-            @Strafe.performed += instance.OnStrafe;
-            @Strafe.canceled += instance.OnStrafe;
+            @ShoulderLeft.started += instance.OnShoulderLeft;
+            @ShoulderLeft.performed += instance.OnShoulderLeft;
+            @ShoulderLeft.canceled += instance.OnShoulderLeft;
             @CameraLook.started += instance.OnCameraLook;
             @CameraLook.performed += instance.OnCameraLook;
             @CameraLook.canceled += instance.OnCameraLook;
-            @FlyToggle.started += instance.OnFlyToggle;
-            @FlyToggle.performed += instance.OnFlyToggle;
-            @FlyToggle.canceled += instance.OnFlyToggle;
+            @ShoulderRight.started += instance.OnShoulderRight;
+            @ShoulderRight.performed += instance.OnShoulderRight;
+            @ShoulderRight.canceled += instance.OnShoulderRight;
             @FlyThrust.started += instance.OnFlyThrust;
             @FlyThrust.performed += instance.OnFlyThrust;
             @FlyThrust.canceled += instance.OnFlyThrust;
@@ -1340,15 +1665,15 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @Sprint.started -= instance.OnSprint;
             @Sprint.performed -= instance.OnSprint;
             @Sprint.canceled -= instance.OnSprint;
-            @Strafe.started -= instance.OnStrafe;
-            @Strafe.performed -= instance.OnStrafe;
-            @Strafe.canceled -= instance.OnStrafe;
+            @ShoulderLeft.started -= instance.OnShoulderLeft;
+            @ShoulderLeft.performed -= instance.OnShoulderLeft;
+            @ShoulderLeft.canceled -= instance.OnShoulderLeft;
             @CameraLook.started -= instance.OnCameraLook;
             @CameraLook.performed -= instance.OnCameraLook;
             @CameraLook.canceled -= instance.OnCameraLook;
-            @FlyToggle.started -= instance.OnFlyToggle;
-            @FlyToggle.performed -= instance.OnFlyToggle;
-            @FlyToggle.canceled -= instance.OnFlyToggle;
+            @ShoulderRight.started -= instance.OnShoulderRight;
+            @ShoulderRight.performed -= instance.OnShoulderRight;
+            @ShoulderRight.canceled -= instance.OnShoulderRight;
             @FlyThrust.started -= instance.OnFlyThrust;
             @FlyThrust.performed -= instance.OnFlyThrust;
             @FlyThrust.canceled -= instance.OnFlyThrust;
@@ -1626,6 +1951,32 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
     /// Provides a new <see cref="UIActions" /> instance referencing this action map.
     /// </summary>
     public UIActions @UI => new UIActions(this);
+    private int m_GamepadSchemeIndex = -1;
+    /// <summary>
+    /// Provides access to the input control scheme.
+    /// </summary>
+    /// <seealso cref="UnityEngine.InputSystem.InputControlScheme" />
+    public InputControlScheme GamepadScheme
+    {
+        get
+        {
+            if (m_GamepadSchemeIndex == -1) m_GamepadSchemeIndex = asset.FindControlSchemeIndex("Gamepad");
+            return asset.controlSchemes[m_GamepadSchemeIndex];
+        }
+    }
+    private int m_KeyboardMouseSchemeIndex = -1;
+    /// <summary>
+    /// Provides access to the input control scheme.
+    /// </summary>
+    /// <seealso cref="UnityEngine.InputSystem.InputControlScheme" />
+    public InputControlScheme KeyboardMouseScheme
+    {
+        get
+        {
+            if (m_KeyboardMouseSchemeIndex == -1) m_KeyboardMouseSchemeIndex = asset.FindControlSchemeIndex("Keyboard&Mouse");
+            return asset.controlSchemes[m_KeyboardMouseSchemeIndex];
+        }
+    }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "GamePlay" which allows adding and removing callbacks.
     /// </summary>
@@ -1676,12 +2027,12 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnSprint(InputAction.CallbackContext context);
         /// <summary>
-        /// Method invoked when associated input action "Strafe" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// Method invoked when associated input action "ShoulderLeft" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
         /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnStrafe(InputAction.CallbackContext context);
+        void OnShoulderLeft(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "CameraLook" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
@@ -1690,12 +2041,12 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnCameraLook(InputAction.CallbackContext context);
         /// <summary>
-        /// Method invoked when associated input action "FlyToggle" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// Method invoked when associated input action "ShoulderRight" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
         /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnFlyToggle(InputAction.CallbackContext context);
+        void OnShoulderRight(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "FlyThrust" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>

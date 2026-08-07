@@ -266,7 +266,7 @@ namespace Game.NPC
             }
             
             _members.Add(member);
-            member.OnJoinedParty(this);
+            member.OnJoinedParty(this, isRestore);
             
             Debug.Log($"[PlayerParty] ✨✨✨ {member.DisplayName} se unió al equipo [{MemberCount}/{maxPartySize}] - PartyConfig: {(member.PartyConfig != null ? "✅" : "❌")}, autoJoinCombat: {member.PartyConfig?.autoJoinPlayerCombat}");
             
@@ -445,28 +445,7 @@ namespace Game.NPC
             Vector3 playerRight = Vector3.Cross(Vector3.up, playerForward).normalized;
             
             // Recopilar miembros que deben posicionarse
-            var hiddenNpc = ActiveCharacterSwapper.Instance?.HiddenNpc;
-            var membersToPosition = new List<NPCPartyMember>();
-            foreach (var member in _members)
-            {
-                if (member == null || !member.IsActiveInParty || member.PartyConfig == null) continue;
-                if (member == hiddenNpc) continue;
-                // FIX: en modo Libre (IsPinnedByParty) el miembro está disuelto y no debe
-                // teletransportarse para posicionarse en un diálogo — antes esto se saltaba
-                // y un simple mensaje de "bloqueado" (p.ej. RoomExitBlocker en el agua) reagrupaba
-                // al equipo entero aunque el jugador hubiera ido por libre.
-                if (member.NPCManager?.Context?.IsPinnedByParty == true)
-                {
-                    Log($"  ↳ {member.DisplayName}: anclado (modo Libre), no se reposiciona para diálogo");
-                    continue;
-                }
-                if (!member.PartyConfig.posicionarseDuranteDialogos)
-                {
-                    Log($"  ↳ {member.DisplayName}: posicionamiento desactivado");
-                    continue;
-                }
-                membersToPosition.Add(member);
-            }
+            var membersToPosition = CollectMembersForDialoguePositioning();
 
             int n = membersToPosition.Count;
             if (n == 0) return;
@@ -508,7 +487,113 @@ namespace Game.NPC
                 PlaceMemberInDialogueFormation(membersToPosition[rightCount + i], offset, radius, npcTarget, thetaDeg);
             }
         }
-        
+
+        /// <summary>
+        /// Recopila los miembros que deben reposicionarse para un diálogo, aplicando los mismos
+        /// filtros que siempre: activos, no ocultos por character swap, no anclados en modo Libre
+        /// (IsPinnedByParty) y con posicionamiento habilitado en su PartyConfig.
+        /// </summary>
+        private List<NPCPartyMember> CollectMembersForDialoguePositioning()
+        {
+            var hiddenNpc = ActiveCharacterSwapper.Instance?.HiddenNpc;
+            var membersToPosition = new List<NPCPartyMember>();
+            foreach (var member in _members)
+            {
+                if (member == null || !member.IsActiveInParty || member.PartyConfig == null) continue;
+                if (member == hiddenNpc) continue;
+                // FIX: en modo Libre (IsPinnedByParty) el miembro está disuelto y no debe
+                // teletransportarse para posicionarse en un diálogo — antes esto se saltaba
+                // y un simple mensaje de "bloqueado" (p.ej. RoomExitBlocker en el agua) reagrupaba
+                // al equipo entero aunque el jugador hubiera ido por libre.
+                if (member.NPCManager?.Context?.IsPinnedByParty == true)
+                {
+                    Log($"  ↳ {member.DisplayName}: anclado (modo Libre), no se reposiciona para diálogo");
+                    continue;
+                }
+                if (!member.PartyConfig.posicionarseDuranteDialogos)
+                {
+                    Log($"  ↳ {member.DisplayName}: posicionamiento desactivado");
+                    continue;
+                }
+                membersToPosition.Add(member);
+            }
+            return membersToPosition;
+        }
+
+        /// <summary>
+        /// Variante para DIÁLOGOS GRUPALES con cámara cinematográfica fija ("escenario teatral").
+        /// A diferencia de PositionMembersForDialogue (dos arcos, uno a cada lado del player),
+        /// aquí los compañeros se colocan en un ÚNICO arco en el lado del eje player↔NPC OPUESTO
+        /// a la cámara. Así nadie queda entre la cámara y el grupo dando la espalda al plano
+        /// (bug de referencia: Eldran en primer plano, de espaldas, tapando la conversación).
+        /// La llama DialogueCinematicController.StartCinematic DESPUÉS de calcular la dirección
+        /// base de la cámara grupal (_groupCamBaseDir), que es fija durante todo el diálogo.
+        /// </summary>
+        /// <param name="npcTarget">NPC con quien se habla (define el eje y la orientación inicial)</param>
+        /// <param name="cameraDir">Dirección horizontal grupo → cámara (normalizada o no)</param>
+        public void PositionMembersForGroupDialogue(Transform npcTarget, Vector3 cameraDir)
+        {
+            if (_playerTransform == null || _members.Count == 0)
+                return;
+
+            // Rotar al player hacia el NPC (igual que en el posicionamiento 1:1)
+            Vector3 playerForward = _playerTransform.forward;
+            if (npcTarget != null)
+            {
+                Vector3 toNpc = npcTarget.position - _playerTransform.position;
+                toNpc.y = 0;
+                if (toNpc.sqrMagnitude > 0.01f)
+                {
+                    playerForward = toNpc.normalized;
+                    _playerTransform.rotation = Quaternion.LookRotation(playerForward);
+                }
+            }
+
+            Vector3 playerRight = Vector3.Cross(Vector3.up, playerForward).normalized;
+
+            var membersToPosition = CollectMembersForDialoguePositioning();
+            int n = membersToPosition.Count;
+            if (n == 0) return;
+
+            // ¿En qué lado del eje player→NPC queda la cámara? Los compañeros van al contrario.
+            cameraDir.y = 0f;
+            float sideDot = Vector3.Dot(cameraDir.normalized, playerRight);
+
+            // Caso degenerado: cámara casi alineada con el eje player↔NPC (p.ej. fallback
+            // "detrás del player" cuando ambos laterales están obstruidos). No hay un lado
+            // "opuesto" claro y el arco trasero único quedaría delante de la cámara → usar la
+            // formación clásica de dos arcos laterales, que ya evita la zona detrás del player.
+            if (Mathf.Abs(sideDot) < 0.25f)
+            {
+                Log("📍 Formación grupal: cámara alineada con el eje player-NPC → usando formación lateral clásica");
+                PositionMembersForDialogue(npcTarget);
+                return;
+            }
+
+            bool cameraOnRight = sideDot >= 0f;
+
+            // Mismo convenio angular que PositionMembersForDialogue:
+            //   θ=0°   → derecha pura del player
+            //   θ=90°  → directamente detrás del player (se sigue evitando)
+            //   θ=180° → izquierda pura
+            // Arco único de 60° en el lado libre → semicírculo abierto hacia la cámara:
+            // todos de cara al plano, con hueco entre compañeros (~1.2m a radio 2.5m).
+            const float radius = 2.5f;
+            float arcMin = cameraOnRight ? 110f : 10f;
+            float arcMax = cameraOnRight ? 170f : 70f;
+
+            Log($"📍 Formación grupal ({n} compañeros): cámara al lado {(cameraOnRight ? "derecho" : "izquierdo")} → arco en el lado {(cameraOnRight ? "izquierdo" : "derecho")} θ∈[{arcMin:F0}°,{arcMax:F0}°]");
+
+            for (int i = 0; i < n; i++)
+            {
+                float t        = n == 1 ? 0.5f : (float)i / (n - 1);
+                float thetaDeg = Mathf.Lerp(arcMin, arcMax, t);
+                float thetaRad = thetaDeg * Mathf.Deg2Rad;
+                Vector3 offset = playerRight * Mathf.Cos(thetaRad) - playerForward * Mathf.Sin(thetaRad);
+                PlaceMemberInDialogueFormation(membersToPosition[i], offset, radius, npcTarget, thetaDeg);
+            }
+        }
+
         // Capas que cuentan como posible obstrucción entre el player y una posición de formación de
         // diálogo: Default (la mayoría de la geometría estática del mundo, incluidas muchas puertas
         // que no tienen capa propia), Interactable (puertas/objetos con raycast de interacción propio)

@@ -419,8 +419,17 @@ public class DialogueManager : MonoBehaviour
             _currentNpcDialogueCharacterId = null;
 
         // Posicionar party members ANTES de iniciar la cámara cinematográfica
-        // para que estén en su sitio cuando la cámara capture las posiciones iniciales
-        if (Game.NPC.PlayerParty.HasInstance)
+        // para que estén en su sitio cuando la cámara capture las posiciones iniciales.
+        // EXCEPCIÓN: en diálogos GRUPALES con cámara cinematográfica, el posicionamiento lo hace
+        // DialogueCinematicController.StartCinematic (PositionMembersForGroupDialogue), porque
+        // necesita conocer primero el lado de la cámara para formar el semicírculo en el lado
+        // opuesto y que ningún compañero tape el plano de espaldas.
+        // (misma condición que activa StartCinematic en StartDialogue(asset): cámara activada,
+        // NPC real y controller vivo — si no se cumple, se mantiene el posicionamiento genérico)
+        bool groupStagingHandledByCinematic = asset != null && asset.isGroupConversation
+            && useCinematicCamera && DialogueCinematicController.Instance != null
+            && npc != null && IsActualNPC(npc);
+        if (!groupStagingHandledByCinematic && Game.NPC.PlayerParty.HasInstance)
         {
             Game.NPC.PlayerParty.Instance.PositionMembersForDialogue(npc);
         }

@@ -25,7 +25,7 @@ namespace Invector.vCharacterController
         private static System.Reflection.PropertyInfo cameraLookProp;
         private static System.Reflection.PropertyInfo sprintHeldProp;
         private static System.Reflection.PropertyInfo jumpPressedProp;
-        private static System.Reflection.PropertyInfo strafePressedProp;
+        private static System.Reflection.PropertyInfo shoulderLeftPressedProp;
         private static System.Reflection.PropertyInfo attackMagicLeftPressedProp;
         private static System.Reflection.PropertyInfo attackMagicRightPressedProp;
         private static System.Reflection.PropertyInfo attackMagicSpecialPressedProp;
@@ -49,7 +49,7 @@ namespace Invector.vCharacterController
         private Vector2 cameraInput;
         private bool jumpPressed;
         private bool sprintHeld;
-        private bool strafePressed;
+        private bool shoulderLeftPressed;
 
         protected virtual void Awake()
         {
@@ -76,7 +76,7 @@ namespace Invector.vCharacterController
                 cameraLookProp = gamepadInputReaderType.GetProperty("CameraLook", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
                 sprintHeldProp = gamepadInputReaderType.GetProperty("SprintHeld", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
                 jumpPressedProp = gamepadInputReaderType.GetProperty("JumpPressed", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                strafePressedProp = gamepadInputReaderType.GetProperty("StrafePressed", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                shoulderLeftPressedProp = gamepadInputReaderType.GetProperty("ShoulderLeftPressed", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
                 attackMagicLeftPressedProp = gamepadInputReaderType.GetProperty("AttackMagicLeftPressed", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
                 attackMagicRightPressedProp = gamepadInputReaderType.GetProperty("AttackMagicRightPressed", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
                 attackMagicSpecialPressedProp = gamepadInputReaderType.GetProperty("AttackMagicSpecialPressed", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
@@ -160,9 +160,9 @@ namespace Invector.vCharacterController
                 if (CanJump() && jumpPressedProp != null && (bool)jumpPressedProp.GetValue(null))
                     jumpPressed = true;
                 
-                // Strafe toggle
-                if (strafePressedProp != null && (bool)strafePressedProp.GetValue(null))
-                    strafePressed = true;
+                // Gatillo izquierdo (LB/L1/L) — hoy sin acción de movimiento asociada, ver StrafeInput() más abajo
+                if (shoulderLeftPressedProp != null && (bool)shoulderLeftPressedProp.GetValue(null))
+                    shoulderLeftPressed = true;
                 
                 // Magia (respeta supresión y validación)
                 if (CanMagic() && cc != null)
@@ -319,10 +319,10 @@ namespace Invector.vCharacterController
 
         protected virtual void StrafeInput()
         {
-            if (strafePressed)
+            if (shoulderLeftPressed)
             {
                 //cc.Strafe();
-                strafePressed = false;
+                shoulderLeftPressed = false;
             }
         }
 

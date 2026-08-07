@@ -125,6 +125,10 @@ public class HudToastService : MonoBehaviour
     // ────────────────────────────────────────────────────────────────────────
     #region Internals
 
+    // Nota: cada paso comprueba MenuManager.AnyOpen() (pausa o cualquier otro menú) y, si hay
+    // uno abierto, se congela con el toast invisible en vez de seguir avanzando/desvaneciendo.
+    // Así el toast reaparece igual que estaba al cerrar el menú, en vez de quedar flotando por
+    // encima de él o consumir su tiempo de vida mientras está tapado.
     private IEnumerator ToastRoutine(float duration)
     {
         _panel.SetActive(true);
@@ -134,18 +138,43 @@ public class HudToastService : MonoBehaviour
         float t = 0f;
         while (t < 1f)
         {
+            if (MenuManager.AnyOpen())
+            {
+                _panelGroup.alpha = 0f;
+                yield return null;
+                continue;
+            }
             t += Time.unscaledDeltaTime / 0.25f;
             _panelGroup.alpha = Mathf.Clamp01(t);
             yield return null;
         }
 
-        // Esperar
-        yield return new WaitForSecondsRealtime(duration);
+        // Esperar (oculto y congelado mientras haya un menú abierto)
+        bool wasMenuOpen = false;
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            bool menuOpen = MenuManager.AnyOpen();
+            if (menuOpen != wasMenuOpen)
+            {
+                _panelGroup.alpha = menuOpen ? 0f : 1f;
+                wasMenuOpen = menuOpen;
+            }
+            if (!menuOpen)
+                elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
 
         // Fade out
         t = 1f;
         while (t > 0f)
         {
+            if (MenuManager.AnyOpen())
+            {
+                _panelGroup.alpha = 0f;
+                yield return null;
+                continue;
+            }
             t -= Time.unscaledDeltaTime / 0.35f;
             _panelGroup.alpha = Mathf.Clamp01(t);
             yield return null;

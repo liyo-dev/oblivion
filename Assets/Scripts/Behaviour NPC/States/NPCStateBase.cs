@@ -79,6 +79,80 @@ namespace Game.NPC.States
         }
 
         // =================================================================================
+        // 🌳 APROXIMACIÓN MANUAL FUERA DEL NAVMESH (refugio bajo copas de árbol)
+        // =================================================================================
+        //
+        // Muchos árboles tienen su malla completa (tronco + copa) marcada como Navigation
+        // Static, y el NavMesh se bakea con Render Meshes: como la copa suele colgar cerca del
+        // suelo, el hueco no-transitable que se talla cubre todo el radio de la copa, no solo el
+        // tronco. Un NPCShelterPoint colocado "bien adentro" del árbol cae entonces siempre fuera
+        // del área caminable, y el NavMeshAgent solo puede llegar hasta el borde de ese hueco
+        // (justo fuera del árbol) por muy cerca que se coloque el punto real. Arreglarlo por
+        // NavMesh/colliders significaría retocar árbol por árbol en el editor (son muchos).
+        //
+        // En su lugar: cuando el NavMeshAgent ya no puede acercarse más, se completa el último
+        // tramo moviendo el transform a mano — no hay ningún obstáculo físico real bajo la copa,
+        // solo el hueco del bakeo. SeekShelterState hace esto al llegar; ReturnFromShelterState
+        // lo hace a la inversa para volver a enganchar al NPC al NavMeshAgent antes de reanudar
+        // el pathfinding normal. Ver NPCStateContext.ShelterEdgePosition.
+
+        protected void BeginManualApproach(Common.NPCStateContext context)
+        {
+            var agent = context.Agent;
+            if (agent == null) return;
+
+            if (agent.isOnNavMesh)
+            {
+                agent.isStopped = true;
+                agent.ResetPath();
+            }
+            agent.velocity = Vector3.zero;
+            agent.nextPosition = context.Transform.position;
+            agent.updatePosition = false;
+            agent.updateRotation = false;
+        }
+
+        protected void EndManualApproach(Common.NPCStateContext context)
+        {
+            var agent = context.Agent;
+            if (agent == null) return;
+
+            agent.velocity = Vector3.zero;
+            agent.nextPosition = context.Transform.position;
+            agent.updatePosition = true;
+            agent.updateRotation = true;
+        }
+
+        /// <summary>
+        /// Da un paso de la aproximación manual hacia target: mueve el transform directamente y
+        /// gira/anima al NPC a mano (SyncWithNavMeshAgent de NPCSimpleAnimator no hace nada
+        /// mientras el agente esté fuera del NavMesh, así que hay que encargarse aquí). Devuelve
+        /// true en cuanto llega.
+        /// </summary>
+        protected bool ManualApproachStep(Common.NPCStateContext context, Vector3 target, float speed)
+        {
+            Transform t = context.Transform;
+            Vector3 next = Vector3.MoveTowards(t.position, target, Mathf.Max(0.01f, speed) * Time.deltaTime);
+            t.position = next;
+
+            Vector3 remaining = target - next;
+            Vector3 dir = remaining;
+            dir.y = 0f;
+            if (dir.sqrMagnitude > 0.0001f)
+            {
+                Quaternion look = Quaternion.LookRotation(dir.normalized, Vector3.up);
+                float turnSpeed = (context.Agent != null && context.Agent.angularSpeed > 1f)
+                    ? context.Agent.angularSpeed : 360f;
+                t.rotation = Quaternion.RotateTowards(t.rotation, look, turnSpeed * Time.deltaTime);
+            }
+
+            context.Animator?.SetMovementSpeed(1f);
+
+            const float arriveThreshold = 0.05f;
+            return remaining.sqrMagnitude <= arriveThreshold * arriveThreshold;
+        }
+
+        // =================================================================================
         // 🗣️ ENCUENTROS SOCIALES (compartido entre WanderState e IdleState)
         // =================================================================================
 

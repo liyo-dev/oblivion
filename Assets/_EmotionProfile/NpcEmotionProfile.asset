@@ -20,32 +20,36 @@ MonoBehaviour:
     bodyAnimStateName: HeadNod01
   - emotion: 2
     eyeMeshName: Eye10
-    mouthMeshName: Mouth01
+    mouthMeshName: Mouth05
     bodyAnimStateName: Cry01
   - emotion: 3
-    eyeMeshName: Eye03
+    eyeMeshName: Eye04
     mouthMeshName: Mouth05
-    bodyAnimStateName: Angry01
+    bodyAnimStateName: Angry02
   - emotion: 0
-    eyeMeshName: Eye05
-    mouthMeshName: Mouth07
+    eyeMeshName: Eye07
+    mouthMeshName: Mouth02
     bodyAnimStateName: Idle02
   - emotion: 4
     eyeMeshName: Eye05
-    mouthMeshName: Mouth12
+    mouthMeshName: Mouth07
     bodyAnimStateName: SenseSomethingStart_NoWeapon
   - emotion: 5
-    eyeMeshName: Eye10
-    mouthMeshName: Mouth05
+    eyeMeshName: Eye09
+    mouthMeshName: Mouth08
     bodyAnimStateName: Fear01
   - emotion: 7
     eyeMeshName: Eye09
     mouthMeshName: Mouth12
-    bodyAnimStateName: 
+    bodyAnimStateName: IdleWounded01
   - emotion: 8
+    eyeMeshName: Eye09
+    mouthMeshName: Mouth06
+    bodyAnimStateName: Talk03
+  - emotion: 6
     eyeMeshName: Eye07
-    mouthMeshName: Mouth10
-    bodyAnimStateName: HeadNod01
+    mouthMeshName: Mouth11
+    bodyAnimStateName: InteractWithPeople_NoWeapon
   neutralBodyAnims:
   - Talk01
   - Talk02

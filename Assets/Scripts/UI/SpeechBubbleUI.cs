@@ -51,6 +51,9 @@ public class SpeechBubbleUI : MonoBehaviour
     bool _isShowing;
     Coroutine _autoHideRoutine;
 
+    // Oculto temporalmente porque hay un menú (pausa, equipo, tienda...) abierto encima.
+    bool _hiddenByMenu;
+
     // Caché de componentes de animación: evita GetComponentInChildren repetido
     readonly Dictionary<Transform, Animator> _animatorCache = new();
     readonly Dictionary<Transform, NPCSimpleAnimator> _npcAnimCache = new();
@@ -75,8 +78,21 @@ public class SpeechBubbleUI : MonoBehaviour
         _bubbleRect.localScale = Vector3.zero;
     }
 
-    void OnEnable()  => SceneManager.sceneLoaded += OnSceneLoaded;
-    void OnDisable() => SceneManager.sceneLoaded -= OnSceneLoaded;
+    void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+        // Mismo sistema que ya usan BossHealthBar/MinimapController: ocultarse mientras
+        // hay un menú abierto (pausa incluida) y restaurarse al cerrar el último.
+        MenuManager.MenuOpened += OnMenuOpened;
+        MenuManager.MenuClosed += OnMenuClosed;
+    }
+
+    void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+        MenuManager.MenuOpened -= OnMenuOpened;
+        MenuManager.MenuClosed -= OnMenuClosed;
+    }
 
     void OnSceneLoaded(Scene s, LoadSceneMode m) => _cam = Camera.main;
 
@@ -194,6 +210,31 @@ public class SpeechBubbleUI : MonoBehaviour
         _bubbleRect.DOScale(Vector3.zero, _popOutDuration)
                    .SetEase(Ease.InBack)
                    .SetUpdate(true);
+    }
+
+    // ── MenuManager (pausa / cualquier menú) ────────────────────────────────────
+
+    /// <summary>Oculta el bocadillo mientras haya un menú (pausa incluida) abierto encima.</summary>
+    void OnMenuOpened(MenuKind kind)
+    {
+        if (!_isShowing || _hiddenByMenu || _rootGroup == null) return;
+        _hiddenByMenu = true;
+        _rootGroup.DOKill();
+        _rootGroup.DOFade(0f, 0.15f).SetUpdate(true);
+        _rootGroup.blocksRaycasts = false;
+    }
+
+    /// <summary>Restaura el bocadillo al cerrarse el último menú abierto, si seguía en pantalla.</summary>
+    void OnMenuClosed(MenuKind kind)
+    {
+        if (!_hiddenByMenu) return;
+        if (MenuManager.AnyOpen()) return; // todavía queda otro menú abierto
+        _hiddenByMenu = false;
+
+        if (!_isShowing || _rootGroup == null) return; // se ocultó por otro motivo mientras tanto
+        _rootGroup.DOKill();
+        _rootGroup.DOFade(1f, 0.2f).SetUpdate(true);
+        _rootGroup.blocksRaycasts = false; // este bocadillo nunca bloquea clics, ver Awake
     }
 
     // ── Interno ───────────────────────────────────────────────────────────────

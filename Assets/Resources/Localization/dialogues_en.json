@@ -714,51 +714,51 @@
         },
         {
             "key": "DLG_KING_08",
-            "value": "[EN] Alto ahí, ¿dónde creeis que vais?"
+            "value": "Halt! Where do you think you're going?"
         },
         {
             "key": "DLG_KING_09",
-            "value": "[EN] Mierda"
+            "value": "Damn it."
         },
         {
             "key": "DLG_KING_10",
-            "value": "[EN] Como no haga algo ahora estoy perdido."
+            "value": "If I don't do something now, I'm done for."
         },
         {
             "key": "DLG_KING_11",
-            "value": "[EN] No me puedo creer lo que acaba de pasar..."
+            "value": "I can't believe what just happened..."
         },
         {
             "key": "DLG_KING_12",
-            "value": "[EN] Es lo que tratabamos de decirte..."
+            "value": "That's what we were trying to tell you..."
         },
         {
             "key": "DLG_KING_13",
-            "value": "[EN] Disculpad que no os escuché..."
+            "value": "Forgive me, I didn't listen to you..."
         },
         {
             "key": "DLG_KING_14",
-            "value": "[EN] Creo que a cambio de lo que habéis hecho por mi podemos olvidar el tema de la montaña....Creo que a cambio de lo que habéis hecho por mi podemos olvidar el tema de la montaña...."
+            "value": "I think that in exchange for what you've done for me, we can forget about the whole mountain thing..."
         },
         {
             "key": "DLG_KING_15",
-            "value": "[EN]Lo que si os voy a pedir es que no comentéis nada por el Reino de este tema..."
+            "value": "What I will ask of you is that you don't mention any of this around the Kingdom..."
         },
         {
             "key": "DLG_KING_16",
-            "value": "[EN] Tranquilo no diremos nada..."
+            "value": "Don't worry, we won't say a word..."
         },
         {
             "key": "DLG_KING_17",
-            "value": "[EN] No se preocupe su majestad. Nos encargaremos de averiguar qué está pasando."
+            "value": "Don't worry, Your Majesty. We'll take care of finding out what's going on."
         },
         {
             "key": "DLG_KING_18",
-            "value": "[EN] Aceptad este hechizo como muestra de agradecimiento."
+            "value": "Accept this spell as a token of my gratitude."
         },
         {
             "key": "DLG_KING_19",
-            "value": "[EN] Chicos os espero en las afueras del Reino. Reunios conmigo cuando estéis preparados. "
+            "value": "I'll be waiting for you on the outskirts of the Kingdom. Meet me there when you're ready."
         },
         {
             "key": "DLG_LEONARDO_01",
@@ -866,7 +866,7 @@
         },
         {
             "key": "DLG_NIÑOPEZ_CARACOLA_TURNIN_02",
-            "value": "[EN] Te doy a cambio este complemento que yo no lo uso."
+            "value": "In exchange, I'll give you this accessory — I don't use it."
         },
         {
             "key": "DLG_NIÑOPEZ_TURNIN_01",
@@ -1122,7 +1122,7 @@
         },
         {
             "key": "QUEST_ELDRAN_MISSION12_DESC_02",
-            "value": "[EN] Habla con el Rey."
+            "value": "Talk to the King."
         }
     ]
 }

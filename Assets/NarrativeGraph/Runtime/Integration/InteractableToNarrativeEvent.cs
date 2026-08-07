@@ -12,6 +12,12 @@ public class InteractableToNarrativeEvent : MonoBehaviour
     [Tooltip("Enviar automáticamente al iniciar")]
     public bool sendNow = false;
 
+    [Header("Congelar al jugador (opcional)")]
+    [Tooltip("Si se asigna, delega en TriggerPlayerStop cómo afecta este evento al jugador " +
+             "(Parar = freeze total hasta que el grafo/diálogo tome el control; ver esa clase). " +
+             "Dejar vacío para el comportamiento anterior: no toca al jugador, solo emite el evento.")]
+    public TriggerPlayerStop playerStop;
+
     void Awake()
     {
         ResolveSignals();
@@ -72,6 +78,11 @@ public class InteractableToNarrativeEvent : MonoBehaviour
 #endif
             return;
         }
+
+        // Congelar al jugador ANTES de emitir, como puente hasta que el grafo/diálogo tome el
+        // control con su propio PushMode(ActionMode.Cinematic). Sin efecto si playerStop es null
+        // o su modo no incluye Parar. Mismo patrón que KingdomBoundaryTrigger/DayOnlyInspectionTrigger.
+        playerStop?.IniciarParadaMomentanea();
 
         _signals.RaiseCustom(eventKey, name);
         Debug.Log($"[InteractableToNarrativeEvent] Emite '{eventKey}' → signals #{_signals.GetEntityId()}");

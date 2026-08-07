@@ -179,7 +179,7 @@ public class PrologueDreamSequencer : CinematicSequencerBase
     [SerializeField] private float flashShakeIntensity  = 0.12f;
 
     [Header("Fase E — Preparación mutua, luego lanzamiento uno hacia el otro")]
-    [Tooltip("Cuánto se mantiene el gesto de preparación EN BUCLE (tiempo real) — magoOscuroLoadClip/willLoadClip se reinician automáticamente cada vez que terminan, hasta cumplir esta duración. El hechizo aparece en la mano DURANTE este tiempo (ver openingVfxDelay/willVfxDelay) y es ese mismo el que sale disparado al terminar.")]
+    [Tooltip("Cuánto se mantiene el gesto de preparación EN BUCLE (tiempo real) — magoOscuroLoadClip/willLoadClip se reinician automáticamente cada vez que terminan, hasta cumplir esta duración. Durante este tiempo solo se ve la POSE: el VFX del hechizo no se instancia hasta soltarlo al terminar (SpawnAndLaunchMutualVfx), a la vez para los dos.")]
     [SerializeField] private float mutualPreparationHoldDuration = 0.5f;
     [Tooltip("Animación de SOLTAR el hechizo del Mago Oscuro, al terminar la preparación — sustituye al gesto de magoOscuroLoadClip en bucle. Si se deja vacío, se usa el gesto normal de magoOscuroAnimState/magoOscuroAnimLayer.")]
     [SerializeField] private AnimationClip magoOscuroReleaseClip;
@@ -954,10 +954,12 @@ public class PrologueDreamSequencer : CinematicSequencerBase
         yield return FeedbackService.ScreenFadeAsync(Color.black, fadeToBlackDuration, fadeIn: false);
 
         // Empiezan a preparar el hechizo YA, nada más revelarse — antes se quedaban en idle
-        // durante todo el plano cerrado y los flashes, porque el bucle de carga no arrancaba hasta
+        // durante todo el plano cerrado y los flashes, porque el bucle de pose no arrancaba hasta
         // después (bug reportado: "hay una fase donde aparecen en idle y deberían estar
         // preparando el hechizo"). El bucle se corta explícitamente en Co_MutualCastAndBlackout,
-        // cuando toca soltar el hechizo.
+        // cuando toca soltar el hechizo. Solo se ve la POSE durante toda esta fase — el VFX del
+        // hechizo no se instancia aquí, aparece recién en Co_MutualCastAndBlackout, a la vez para
+        // los dos (ver comentario en BeginMutualPreparation).
         BeginMutualPreparation();
 
         // Plano muy cerrado, de perfil, ocupando casi toda la pantalla, borroso — "no se distingue
@@ -984,13 +986,18 @@ public class PrologueDreamSequencer : CinematicSequencerBase
         yield return Co_Collision();
     }
 
-    /// Arranca el bucle de carga del hechizo para ambos actores — mismo patrón que las Fases B/D
-    /// (clip crudo vía Playables + VFX de carga siguiendo la mano), pero SIN límite de tiempo: el
-    /// bucle sigue corriendo (totalDuration = float.MaxValue) hasta que Co_MutualCastAndBlackout lo
-    /// corta explícitamente vía _magoPrepLoopRoutine/_willPrepLoopRoutine. Así se les ve "cargando"
-    /// durante TODO el tramo cerrado — blur, flashes y zoom out — en vez de quedarse en idle hasta
-    /// el último momento. Si les asignas el MISMO AnimationClip a magoOscuroLoadClip y willLoadClip,
-    /// hacen literalmente el mismo gesto.
+    /// Arranca el bucle de la POSE de preparación para ambos actores — mismo patrón que las Fases
+    /// B/D (clip crudo vía Playables), pero SIN límite de tiempo: el bucle sigue corriendo
+    /// (totalDuration = float.MaxValue) hasta que Co_MutualCastAndBlackout lo corta explícitamente
+    /// vía _magoPrepLoopRoutine/_willPrepLoopRoutine. Así se les ve "preparando" durante TODO el
+    /// tramo cerrado — blur, flashes y zoom out — en vez de quedarse en idle hasta el último
+    /// momento. Si les asignas el MISMO AnimationClip a magoOscuroLoadClip y willLoadClip, hacen
+    /// literalmente el mismo gesto.
+    ///
+    /// A propósito, esta fase NO instancia el VFX del hechizo — antes sí lo hacía (con
+    /// openingVfxDelay/willVfxDelay) y se veía "cargando" en la mano durante todo este tramo, pero
+    /// queda más limpio que solo se vea la pose de preparación y el hechizo aparezca de golpe al
+    /// soltarlo, los dos a la vez (spawn + lanzamiento en Co_MutualCastAndBlackout).
     private void BeginMutualPreparation()
     {
         if (magoOscuroLoadClip != null)
@@ -1014,12 +1021,6 @@ public class PrologueDreamSequencer : CinematicSequencerBase
             _willAnimator.SetLayerWeight(willOriginalAnimLayer, 1f);
             _willAnimator.Play(willOriginalAnimState, willOriginalAnimLayer, 0f);
         }
-
-        // El hechizo aparece cargando en la mano de cada uno desde este mismo primer plano. Ya no
-        // hace falta clampar el delay contra mutualPreparationHoldDuration (SafeVfxDelay) — el
-        // bucle dura hasta que se corta explícitamente, un margen mucho mayor que antes.
-        StartCoroutine(Co_SpawnChargingVfxDelayed(openingVfxDelay));
-        StartCoroutine(Co_SpawnWillChargingVfxDelayed(willVfxDelay));
     }
 
     /// AnimationPlayableUtilities.PlayClip no repite el clip solo — un AnimationClipPlayable no
@@ -1041,11 +1042,10 @@ public class PrologueDreamSequencer : CinematicSequencerBase
     }
 
     /// Ambos actores disparan hacia el punto medio entre los dos — el Mago Oscuro desde la
-    /// izquierda, Will desde la derecha, y explotan en el centro. Es el MISMO hechizo que ya
-    /// estaba cargando en su mano (BeginMutualPreparation) el que sale disparado: primero se corta
-    /// la corrutina que lo seguía pegado a la mano, y ese mismo GameObject es el que viaja al
-    /// centro — no se instancia uno nuevo. Si por lo que sea no llegó a cargar (VFX sin asignar,
-    /// delay mal ajustado), cae de vuelta a instanciar lightImpactVfx/darkImpactVfx como antes.
+    /// izquierda, Will desde la derecha, y explotan en el centro. El hechizo NO estaba cargando en
+    /// la mano durante la preparación (esa fase es solo pose, ver BeginMutualPreparation): se
+    /// instancia AQUÍ MISMO, en el instante exacto en que se suelta, a la vez para los dos
+    /// (SpawnAndLaunchMutualVfx), y sale disparado directo hacia el centro.
     private IEnumerator Co_MutualCastAndBlackout()
     {
         if (_magoInstance == null || _willInstance == null) yield break;
@@ -1083,33 +1083,13 @@ public class PrologueDreamSequencer : CinematicSequencerBase
         // la rotación durante la preparación.
         FaceEachOther();
 
-        // Deja de seguir la mano — a partir de aquí la posición la controla Co_TravelToPoint.
+        // Ya no hace falta cortar un seguimiento de mano previo — el hechizo no existía hasta este
+        // instante (ver SpawnAndLaunchMutualVfx). Se limpian las corrutinas solo por si acaso quedó
+        // alguna viva de un ciclo anterior.
         if (_magoVfxTrackRoutine != null) { StopCoroutine(_magoVfxTrackRoutine); _magoVfxTrackRoutine = null; }
         if (_willVfxTrackRoutine != null) { StopCoroutine(_willVfxTrackRoutine); _willVfxTrackRoutine = null; }
 
-        if (_magoChargingVfxInstance != null)
-        {
-            StartCoroutine(Co_TravelToPoint(_magoChargingVfxInstance.transform, _magoChargingVfxInstance.transform.position, collisionPoint, mutualCastTravelDuration));
-        }
-        else if (darkImpactVfx != null)
-        {
-            Transform hand = GetHandBone(_magoAnimator);
-            Vector3 spawnPos = hand != null ? hand.position : _magoInstance.transform.position + Vector3.up * 1.4f;
-            _magoChargingVfxInstance = Instantiate(darkImpactVfx, spawnPos, Quaternion.identity);
-            StartCoroutine(Co_TravelToPoint(_magoChargingVfxInstance.transform, spawnPos, collisionPoint, mutualCastTravelDuration));
-        }
-
-        if (_willChargingVfxInstance != null)
-        {
-            StartCoroutine(Co_TravelToPoint(_willChargingVfxInstance.transform, _willChargingVfxInstance.transform.position, collisionPoint, mutualCastTravelDuration));
-        }
-        else if (lightImpactVfx != null)
-        {
-            Transform hand = GetHandBone(_willAnimator);
-            Vector3 spawnPos = hand != null ? hand.position : _willInstance.transform.position + Vector3.up * 1.4f;
-            _willChargingVfxInstance = Instantiate(lightImpactVfx, spawnPos, Quaternion.identity);
-            StartCoroutine(Co_TravelToPoint(_willChargingVfxInstance.transform, spawnPos, collisionPoint, mutualCastTravelDuration));
-        }
+        SpawnAndLaunchMutualVfx(collisionPoint);
 
         // Tensión creciente mientras los dos hechizos se acercan el uno al otro — "más tensión,
         // todo tiembla" pero ahora desde los dos lados a la vez.
@@ -1132,6 +1112,50 @@ public class PrologueDreamSequencer : CinematicSequencerBase
         if (_magoChargingVfxInstance != null) { Destroy(_magoChargingVfxInstance); _magoChargingVfxInstance = null; }
         if (_willChargingVfxInstance != null) { Destroy(_willChargingVfxInstance); _willChargingVfxInstance = null; }
         SetActorsVisible(false);
+    }
+
+    /// Instancia el hechizo de cada uno EN ESTE INSTANTE — no antes — y lo lanza directo al punto
+    /// de colisión. Antes se instanciaba ya en BeginMutualPreparation y se le veía "cargando" en la
+    /// mano durante todo el plano cerrado y el zoom out; ahora solo se ve la pose de preparación
+    /// hasta este momento, en el que aparece y sale disparado para los dos a la vez. Usa el mismo
+    /// prefab "de carga" (magoOscuroLoadVfx/willLoadVfx) que antes seguía la mano; si no está
+    /// asignado, cae de vuelta a darkImpactVfx/lightImpactVfx como fallback.
+    private void SpawnAndLaunchMutualVfx(Vector3 collisionPoint)
+    {
+        if (magoOscuroLoadVfx != null && _magoAnimator != null)
+        {
+            Transform hand = GetHandBone(_magoAnimator);
+            Vector3 spawnPos = hand != null
+                ? hand.position + magoOscuroLoadVfxOffset
+                : _magoAnimator.transform.position + Vector3.up * 1.2f + magoOscuroLoadVfxOffset;
+            _magoChargingVfxInstance = Instantiate(magoOscuroLoadVfx, spawnPos, Quaternion.identity, _stageRoot);
+            PlaySpellInstantiate();
+            StartCoroutine(Co_TravelToPoint(_magoChargingVfxInstance.transform, spawnPos, collisionPoint, mutualCastTravelDuration));
+        }
+        else if (darkImpactVfx != null)
+        {
+            Transform hand = GetHandBone(_magoAnimator);
+            Vector3 spawnPos = hand != null ? hand.position : _magoInstance.transform.position + Vector3.up * 1.4f;
+            _magoChargingVfxInstance = Instantiate(darkImpactVfx, spawnPos, Quaternion.identity);
+            StartCoroutine(Co_TravelToPoint(_magoChargingVfxInstance.transform, spawnPos, collisionPoint, mutualCastTravelDuration));
+        }
+
+        if (willLoadVfx != null && _willAnimator != null)
+        {
+            Transform hand = GetHandBone(_willAnimator);
+            Vector3 spawnPos = hand != null
+                ? hand.position + willLoadVfxOffset
+                : _willAnimator.transform.position + Vector3.up * 1.2f + willLoadVfxOffset;
+            _willChargingVfxInstance = Instantiate(willLoadVfx, spawnPos, Quaternion.identity, _stageRoot);
+            StartCoroutine(Co_TravelToPoint(_willChargingVfxInstance.transform, spawnPos, collisionPoint, mutualCastTravelDuration));
+        }
+        else if (lightImpactVfx != null)
+        {
+            Transform hand = GetHandBone(_willAnimator);
+            Vector3 spawnPos = hand != null ? hand.position : _willInstance.transform.position + Vector3.up * 1.4f;
+            _willChargingVfxInstance = Instantiate(lightImpactVfx, spawnPos, Quaternion.identity);
+            StartCoroutine(Co_TravelToPoint(_willChargingVfxInstance.transform, spawnPos, collisionPoint, mutualCastTravelDuration));
+        }
     }
 
     private static IEnumerator Co_TravelToPoint(Transform vfx, Vector3 from, Vector3 to, float duration)

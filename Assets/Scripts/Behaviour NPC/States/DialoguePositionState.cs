@@ -22,7 +22,23 @@ namespace Game.NPC.States
         private bool _hasReachedPosition;
         private bool _hasTeleported;
         private float _originalStoppingDistance;
-        
+
+        // Override dinámico del objetivo de mirada: en diálogos grupales,
+        // DialogueCinematicController lo actualiza en cada línea para que el compañero
+        // gire hacia quien está hablando (player, NPC principal u otro compañero).
+        // null → comportamiento por defecto (mirar al _npcTarget del diálogo).
+        private Transform _lookTargetOverride;
+
+        /// <summary>
+        /// Cambia dinámicamente hacia quién mira el compañero mientras está en posición de
+        /// diálogo. Pasar null para volver al objetivo por defecto (el NPC del diálogo).
+        /// La rotación es suave (ROTATION_SPEED) porque la aplica RotateTowardsTargetSmooth.
+        /// </summary>
+        public void SetLookTargetOverride(Transform target)
+        {
+            _lookTargetOverride = target;
+        }
+
         private const float ARRIVAL_THRESHOLD = 0.5f;  // Distancia para considerar que llegó
         private const float ROTATION_SPEED = 360f;     // Grados por segundo para rotación suave
 
@@ -178,8 +194,13 @@ namespace Game.NPC.States
         private void RotateTowardsTargetSmooth(NPCStateContext context)
         {
             Vector3 targetDir = Vector3.zero;
-            
-            if (_npcTarget != null)
+
+            // Prioridad: speaker actual (diálogo grupal) → NPC del diálogo → player
+            if (_lookTargetOverride != null && _lookTargetOverride != context.Transform)
+            {
+                targetDir = (_lookTargetOverride.position - context.Transform.position).normalized;
+            }
+            else if (_npcTarget != null)
             {
                 targetDir = (_npcTarget.position - context.Transform.position).normalized;
             }

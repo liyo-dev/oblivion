@@ -94,6 +94,21 @@ public class DialogueCinematicController : MonoBehaviour
     //     del speaker, se oculta su renderer (mismo patrón que HideNonSpeakingPartyMembers) hasta
     //     que deje de bloquear. Esta es la garantía real: aunque el congelado falle o llegue tarde,
     //     nunca se ve a un personaje tapando la cámara en primerísimo plano.
+    //
+    // Incidencia (Agosto 2026): "el NPC que habla desaparece, tapado por algo, y coincide siempre
+    // con el turno de hablar". Causa real: la capa reactiva (2) solo trataba como intruso a un
+    // collider si su root ya estaba en _bystanderRootTransforms (un NPC ambiental fichado por la
+    // capa 1). Objetos de escenario que NO son NPCs — típicamente una puerta abriéndose/cerrándose
+    // junto a la conversación — nunca entraban en esa lista, así que si la hoja de la puerta
+    // empezaba a moverse DESPUÉS de fijar el plano (CalculateCameraPosition solo evita obstrucciones
+    // que ya existían en ESE instante, no vuelve a comprobar mientras la línea sigue en pantalla),
+    // terminaba cruzándose en la línea cámara→cara sin que nada la detectara. Encima, si no había
+    // ningún NPC ambiental cerca (caso típico: solo player + NPC + puerta en la sala),
+    // _bystanderRootTransforms.Count era 0 y CheckAndHideCameraIntruders ni siquiera llegaba a
+    // lanzar el SphereCast — la red de seguridad estaba deshabilitada del todo en esos diálogos.
+    // Fix: la capa reactiva ya no depende de la lista de bystanders fichados; cualquier collider
+    // que se cruce en esa línea (que no sea el propio speaker/player/NPC/party) se trata como
+    // intruso, sea o no un NPC conocido.
     private readonly List<Game.NPC.NPCBehaviourManagerV2> _nearbyBystanderBuffer = new List<Game.NPC.NPCBehaviourManagerV2>();
     private readonly HashSet<Game.NPC.NPCBehaviourManagerV2> _frozenBystanders = new HashSet<Game.NPC.NPCBehaviourManagerV2>();
     private readonly HashSet<Transform> _bystanderRootTransforms = new HashSet<Transform>();
@@ -114,6 +129,12 @@ public class DialogueCinematicController : MonoBehaviour
 
     // Máscara de colisión para obstrucciones de cámara (cacheada en Awake)
     private int _camObstructionMask;
+
+    // Buffer cacheado para los probes de cámara grupal (evita alloc por SphereCastNonAlloc).
+    // Los personajes comparten capa Default con la geometría, así que los probes deben
+    // descartar hits contra cualquier root con NPCSimpleAnimator (mismo criterio que
+    // PlayerParty.FindClearDialogueFormationPosition): un compañero de pie no es una pared.
+    private readonly RaycastHit[] _groupCamProbeBuffer = new RaycastHit[16];
 
     // ✅ Sistema de tracking de speakers para cambios de cámara
     private string currentSpeakerId;     // ID del speaker actual (speakerNameId o "Player")
@@ -153,10 +174,16 @@ public class DialogueCinematicController : MonoBehaviour
     private readonly List<Renderer> _hiddenPartyRenderers = new List<Renderer>();
     private readonly List<bool> _hiddenPartyRenderersOrigState = new List<bool>();
 
-    // Rotación suave del player en modo grupal
+    // Rotación suave del player y del NPC principal en modo grupal (mirar al speaker)
     private Coroutine _playerRotationCoroutine;
+    private Coroutine _npcRotationCoroutine;
     [Tooltip("Duración de la rotación suave del player hacia el interlocutor en modo grupal")]
     [SerializeField] private float groupPlayerRotationDuration = 0.35f;
+
+    // ── Head-look (mirada de cabeza estilo IK) en modo grupal ──
+    // Componentes DialogueHeadLook añadidos bajo demanda a los participantes; cacheados
+    // para no hacer GetComponent por línea. Se limpian (fade out) al terminar la cinemática.
+    private readonly Dictionary<Transform, DialogueHeadLook> _headLookCache = new Dictionary<Transform, DialogueHeadLook>();
 
     void Awake()
     {
@@ -555,6 +582,16 @@ public class DialogueCinematicController : MonoBehaviour
                 _groupCamBaseDir = Vector3.back;
             }
 
+            // ✅ ESCENARIO TEATRAL: recolocar a los compañeros en un semicírculo en el lado
+            // OPUESTO a la cámara, ahora que ya sabemos dónde va a estar (_groupCamBaseDir).
+            // Sustituye al posicionamiento genérico de dos arcos (que DialogueManager se salta
+            // en diálogos grupales): aquel no conocía la cámara y podía dejar a un compañero
+            // entre la cámara y el grupo, de espaldas, tapando el plano entero (bug de Eldran).
+            if (Game.NPC.PlayerParty.HasInstance)
+            {
+                Game.NPC.PlayerParty.Instance.PositionMembersForGroupDialogue(currentNPC, _groupCamBaseDir);
+            }
+
             // Calcular centro del grupo para orientar a los participantes
             Vector3 initGroupCenter = currentPlayer.position + currentNPC.position;
             int initCount = 2;
@@ -770,12 +807,20 @@ public class DialogueCinematicController : MonoBehaviour
         ShowPlayer();
         ShowNPC();
         
-        // Limpiar rotación suave del player si estaba en progreso
+        // Limpiar rotaciones suaves (player y NPC) si estaban en progreso
         if (_playerRotationCoroutine != null)
         {
             StopCoroutine(_playerRotationCoroutine);
             _playerRotationCoroutine = null;
         }
+        if (_npcRotationCoroutine != null)
+        {
+            StopCoroutine(_npcRotationCoroutine);
+            _npcRotationCoroutine = null;
+        }
+
+        // Apagar el head-look de todos los participantes (fade out suave hacia la pose animada)
+        ClearAllHeadLooks();
 
         // Limpiar efectos cinematográficos si estaban activos
         if (_effectActive)
@@ -1060,14 +1105,18 @@ public class DialogueCinematicController : MonoBehaviour
     }
 
     /// <summary>
-    /// Capa reactiva (red de seguridad): comprueba si algún NPC ambiental conocido (de
-    /// <see cref="_bystanderRootTransforms"/>) se ha metido entre la cámara y la cara de quien
-    /// habla, y si es así oculta sus renderers hasta que deje de bloquear. Garantiza que, aunque
-    /// el congelado preventivo falle o llegue tarde, nunca se vea a un personaje tapando la cámara.
+    /// Capa reactiva (red de seguridad): comprueba si CUALQUIER collider —NPC ambiental, puerta,
+    /// mobiliario animado, lo que sea— se ha metido entre la cámara y la cara de quien habla, y si
+    /// es así oculta sus renderers hasta que deje de bloquear. Garantiza que, aunque el congelado
+    /// preventivo de bystanders (que solo cubre NPCs) falle, llegue tarde, o directamente no
+    /// aplique porque el intruso no es un NPC, nunca se vea a alguien tapando la cámara.
+    /// Antes de Agosto 2026 esto solo miraba <see cref="_bystanderRootTransforms"/> y ni siquiera
+    /// se ejecutaba si no había NPCs ambientales fichados cerca — ver comentario de contexto más
+    /// arriba para el bug real que causaba (puertas cruzándose en cámara sin ser detectadas).
     /// </summary>
     private void CheckAndHideCameraIntruders()
     {
-        if (currentPlayer == null || _bystanderRootTransforms.Count == 0)
+        if (currentPlayer == null)
         {
             // Nada que vigilar: si había intrusos ocultos de un chequeo anterior, restaurarlos.
             if (_hiddenIntruders.Count > 0) RestoreAllHiddenIntruders();
@@ -1100,8 +1149,12 @@ public class DialogueCinematicController : MonoBehaviour
 
             Transform root = col.transform.root;
             if (root == focusTarget || root == currentPlayer || root == currentNPC) continue;
-            if (!_bystanderRootTransforms.Contains(root)) continue; // solo NPCs ambientales conocidos
+            if (IsPartyMember(root)) continue; // ya gestionados por HideNonSpeakingPartyMembers
 
+            // Cualquier otro collider en la línea cámara→cara es un intruso: sea un NPC ambiental
+            // ya fichado o no (puerta, cofre, mobiliario...), se oculta igual. CalculateCameraPosition
+            // ya garantizó que no había nada aquí al fijar el plano, así que si algo aparece ahora es,
+            // por definición, un objeto que se ha movido durante la línea — el caso que se nos escapaba.
             _frameIntruders.Add(root);
         }
 
@@ -1194,6 +1247,12 @@ public class DialogueCinematicController : MonoBehaviour
                         currentSpeaker = preSpeakerTransform;
                 }
             }
+
+            // ── MIRADAS EN MODO GRUPAL ──
+            // Los personajes que escuchan giran hacia quien habla (y el que habla, hacia su
+            // interlocutor natural), como en una conversación real.
+            if (_isGroupConversation)
+                UpdateGroupFacing();
 
             // ── EFECTOS CINEMATOGRÁFICOS (CloseUp siempre activo) ──
             // El sistema de cortes de cámara por modo grupal/1:1 fue retirado a favor de esto
@@ -1571,12 +1630,13 @@ public class DialogueCinematicController : MonoBehaviour
                 Vector3 horizontalDir = new Vector3(baseDir.x, 0f, baseDir.z).normalized;
 
                 // SphereCast para verificar que no hay obstrucciones entre el grupo y la cámara
+                // (ignorando personajes: comparten capa Default pero no son paredes)
                 float usableHorizontalDist = horizontalDist;
-                if (Physics.SphereCast(rayOrigin, groupCameraProbeRadius, horizontalDir,
-                    out RaycastHit hit, horizontalDist, _camObstructionMask, QueryTriggerInteraction.Ignore))
+                float freeDist = GroupCameraFreeDistance(rayOrigin, horizontalDir, horizontalDist);
+                if (freeDist < horizontalDist)
                 {
                     // Nunca colocar la cámara más allá de la obstrucción
-                    usableHorizontalDist = hit.distance - 0.5f;
+                    usableHorizontalDist = freeDist - 0.5f;
                     if (usableHorizontalDist < groupMinClearance)
                     {
                         // Pared demasiado cerca: compensar subiendo la cámara para ver por encima
@@ -1907,44 +1967,56 @@ public class DialogueCinematicController : MonoBehaviour
         }
 
         /// <summary>
+        /// Distancia libre desde origin en dirección dir (SphereCast) ignorando personajes:
+        /// player, NPCs y compañeros comparten capa Default con la geometría, pero un personaje
+        /// de pie no debe contar como "pared" al elegir el lado de la cámara grupal — se movería
+        /// o quedará recolocado por la formación semicircular. Identificación por
+        /// NPCSimpleAnimator en el root (mismo criterio que DialogueManager.IsActualNPC).
+        /// </summary>
+        private float GroupCameraFreeDistance(Vector3 origin, Vector3 dir, float maxDist)
+        {
+            int count = Physics.SphereCastNonAlloc(origin, groupCameraProbeRadius, dir,
+                _groupCamProbeBuffer, maxDist, _camObstructionMask, QueryTriggerInteraction.Ignore);
+
+            float free = maxDist;
+            for (int i = 0; i < count; i++)
+            {
+                var hit = _groupCamProbeBuffer[i];
+                if (hit.collider == null) continue;
+
+                Transform root = hit.collider.transform.root;
+                if (root.GetComponent<NPCSimpleAnimator>() != null) continue; // personaje, no obstrucción
+
+                if (hit.distance < free) free = hit.distance;
+            }
+            return free;
+        }
+
+        /// <summary>
         /// Evalúa ambos lados perpendiculares al eje player-NPC y devuelve la dirección
         /// con más espacio libre (raycast). Combina la perpendicular elegida con un sesgo
         /// de profundidad (0.3 × playerToNpc) para obtener la vista 3/4.
         /// </summary>
         private Vector3 PickBestGroupCameraDirection(Vector3 perpendicular, Vector3 playerToNpc)
         {
-            // Evaluar distancia libre en ambas direcciones perpendiculares
+            // Evaluar distancia libre en ambas direcciones perpendiculares (ignorando personajes:
+            // antes un compañero parado en el probe podía "obstruir" un lado y forzar la cámara
+            // justo hacia el lado donde estaba otro compañero)
             Vector3 origin = (currentPlayer.position + currentNPC.position) * 0.5f + Vector3.up * groupLookAtHeight;
             float probeDistance = groupCameraDistance * 1.2f;
 
             Vector3 dirA = (perpendicular + playerToNpc * 0.3f).normalized;
             Vector3 dirB = (-perpendicular + playerToNpc * 0.3f).normalized;
 
-            float freeA = probeDistance;
-            float freeB = probeDistance;
-
-            if (Physics.SphereCast(origin, groupCameraProbeRadius, dirA, out RaycastHit hitA,
-                probeDistance, _camObstructionMask, QueryTriggerInteraction.Ignore))
-            {
-                freeA = hitA.distance;
-            }
-            if (Physics.SphereCast(origin, groupCameraProbeRadius, dirB, out RaycastHit hitB,
-                probeDistance, _camObstructionMask, QueryTriggerInteraction.Ignore))
-            {
-                freeB = hitB.distance;
-            }
+            float freeA = GroupCameraFreeDistance(origin, dirA, probeDistance);
+            float freeB = GroupCameraFreeDistance(origin, dirB, probeDistance);
 
             // Si ambas están muy obstruidas, intentar dirección opuesta al NPC (detrás del player)
             float minRequired = groupCameraDistance * Mathf.Cos(groupElevationAngle * Mathf.Deg2Rad);
             if (freeA < minRequired && freeB < minRequired)
             {
                 Vector3 fallback = (-playerToNpc).normalized;
-                float freeFallback = probeDistance;
-                if (Physics.SphereCast(origin, groupCameraProbeRadius, fallback, out RaycastHit hitF,
-                    probeDistance, _camObstructionMask, QueryTriggerInteraction.Ignore))
-                {
-                    freeFallback = hitF.distance;
-                }
+                float freeFallback = GroupCameraFreeDistance(origin, fallback, probeDistance);
                 if (freeFallback > freeA && freeFallback > freeB)
                 {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -2068,10 +2140,25 @@ public class DialogueCinematicController : MonoBehaviour
     }
     
     /// <summary>
-    /// Verifica si un transform es un party member
+    /// Verifica si un transform es un party member.
+    ///
+    /// FIX "Will desaparece en diálogos": el NPC clonado de Will (ActiveCharacterSwapper.SpawnWillNpc)
+    /// nunca pasa por NPCPartyMember.JoinParty() a propósito — se puppetea directamente desde
+    /// ActiveCharacterSwapper, no vive en PlayerParty.Instance.Members — así que antes de este fix
+    /// era invisible para este chequeo. Eso hacía que CheckAndHideCameraIntruders lo tratara como un
+    /// intruso cualquiera (puerta, mueble...) y le apagara los renderers en cuanto se cruzaba entre la
+    /// cámara de diálogo y la cara de quien habla (cosa frecuente: te sigue de cerca como IA), y que
+    /// RescanAndFreezeBystanders le congelara el NavMeshAgent como "viandante de fondo". La ventana de
+    /// 0.5s de la red de seguridad de ActiveCharacterSwapper (EnsureWillNpcVisible) no daba abasto
+    /// contra estos sistemas re-ocultándolo en cada chequeo mientras siguiera estorbando en cámara.
     /// </summary>
     private bool IsPartyMember(Transform t)
     {
+        if (t == null) return false;
+
+        var willNpc = ActiveCharacterSwapper.Instance != null ? ActiveCharacterSwapper.Instance.WillNpcInstance : null;
+        if (willNpc != null && willNpc.transform == t) return true;
+
         if (!Game.NPC.PlayerParty.HasInstance) return false;
 
         foreach (var m in Game.NPC.PlayerParty.Instance.Members)
@@ -2103,28 +2190,94 @@ public class DialogueCinematicController : MonoBehaviour
     }
 
     /// <summary>
-    /// En modo grupal, rota suavemente al player para que mire al interlocutor.
-    /// Si el player habla → mira al NPC principal.
-    /// Si otro habla → el player mira al speaker actual.
+    /// En modo grupal, hace que todos los participantes miren a quien habla en esta línea:
+    /// - Los que ESCUCHAN giran hacia el speaker actual (player, NPC principal o compañero).
+    /// - El que HABLA gira hacia su interlocutor natural: el player habla al NPC, el NPC al
+    ///   player, y un compañero vuelve a su objetivo por defecto (el NPC del diálogo).
+    /// Dos capas, como en los AAA: giro de CUERPO (player/NPC con corrutina suave; compañeros
+    /// vía el override de mirada de su DialoguePositionState) + giro de CABEZA anticipado
+    /// (DialogueHeadLook, estilo IK: la cabeza apunta al speaker antes y con más rango que el
+    /// cuerpo, aplicado en LateUpdate sobre los huesos head/neck_01 encima de la animación).
+    /// Se llama desde OnDialogueLineAdvanced, así que el giro ocurre al cambiar de línea.
     /// </summary>
-    private void RotatePlayerInGroup(DialogueLine line)
+    private void UpdateGroupFacing()
     {
-        if (currentPlayer == null) return;
+        if (currentSpeaker == null) return;
 
-        // El player siempre mira al NPC externo, no al speaker activo.
-        // Perseguir al speaker produce un giro brusco cada vez que cambia quien habla.
-        Transform lookTarget = currentNPC;
-        if (lookTarget == null || lookTarget == currentPlayer) return;
+        // Compañeros del party: mirar al speaker (el propio speaker limpia su override)
+        if (Game.NPC.PlayerParty.HasInstance)
+        {
+            foreach (var m in Game.NPC.PlayerParty.Instance.Members)
+            {
+                if (m == null || !m.IsActiveInParty) continue;
+                bool isSpeaker = m.transform == currentSpeaker;
+                m.SetDialogueLookTarget(isSpeaker ? null : currentSpeaker);
+                // Cabeza: el compañero que habla mira al NPC del diálogo; los demás, al speaker
+                SetHeadLook(m.transform, isSpeaker ? currentNPC : currentSpeaker);
+            }
+        }
 
-        Vector3 dir = lookTarget.position - currentPlayer.position;
+        // Player: mira al speaker; si el speaker es él, mira al NPC principal
+        Transform playerLook = (currentSpeaker == currentPlayer) ? currentNPC : currentSpeaker;
+        StartSmoothFace(currentPlayer, playerLook, ref _playerRotationCoroutine);
+        SetHeadLook(currentPlayer, playerLook);
+
+        // NPC principal: mira al speaker; si el speaker es él, mira al player
+        Transform npcLook = (currentSpeaker == currentNPC) ? currentPlayer : currentSpeaker;
+        StartSmoothFace(currentNPC, npcLook, ref _npcRotationCoroutine);
+        SetHeadLook(currentNPC, npcLook);
+    }
+
+    /// <summary>
+    /// Lanza (o relanza) una rotación suave de 'who' para encarar a 'target' en el plano horizontal.
+    /// </summary>
+    private void StartSmoothFace(Transform who, Transform target, ref Coroutine handle)
+    {
+        if (who == null || target == null || who == target) return;
+
+        Vector3 dir = target.position - who.position;
         dir.y = 0f;
         if (dir.sqrMagnitude < 0.01f) return;
 
-        Quaternion targetRot = Quaternion.LookRotation(dir);
+        if (handle != null)
+            StopCoroutine(handle);
+        handle = StartCoroutine(SmoothRotate(who, Quaternion.LookRotation(dir), groupPlayerRotationDuration));
+    }
 
-        if (_playerRotationCoroutine != null)
-            StopCoroutine(_playerRotationCoroutine);
-        _playerRotationCoroutine = StartCoroutine(SmoothRotate(currentPlayer, targetRot, groupPlayerRotationDuration));
+    /// <summary>
+    /// Asigna el objetivo de mirada de cabeza (head-look) a un participante, añadiendo el
+    /// componente DialogueHeadLook bajo demanda la primera vez (y cacheándolo). El componente
+    /// aplica la rotación en LateUpdate sobre los huesos head/neck_01, encima de la animación,
+    /// con límites de ángulo y fade de peso — no necesita rigs ni assets adicionales.
+    /// </summary>
+    private void SetHeadLook(Transform who, Transform target)
+    {
+        if (who == null) return;
+        if (who == target) target = null; // nunca mirarse a uno mismo
+
+        if (!_headLookCache.TryGetValue(who, out var headLook) || headLook == null)
+        {
+            headLook = who.GetComponent<DialogueHeadLook>();
+            if (headLook == null)
+                headLook = who.gameObject.AddComponent<DialogueHeadLook>();
+            _headLookCache[who] = headLook;
+        }
+
+        headLook.SetTarget(target);
+    }
+
+    /// <summary>
+    /// Apaga (fade out) el head-look de todos los participantes cacheados. Se llama al terminar
+    /// la cinemática; los componentes quedan dormidos (coste cero) hasta el próximo diálogo grupal.
+    /// </summary>
+    private void ClearAllHeadLooks()
+    {
+        foreach (var kvp in _headLookCache)
+        {
+            if (kvp.Value != null)
+                kvp.Value.SetTarget(null);
+        }
+        _headLookCache.Clear();
     }
 
     private IEnumerator SmoothRotate(Transform target, Quaternion endRot, float duration)
@@ -2140,7 +2293,8 @@ public class DialogueCinematicController : MonoBehaviour
             yield return null;
         }
         target.rotation = endRot;
-        _playerRotationCoroutine = null;
+        // NOTA: no se anula aquí el handle (hay dos: player y NPC); StopCoroutine sobre una
+        // corrutina ya terminada es un no-op seguro, así que el handle "caducado" no hace daño.
     }
 
     /// <summary>

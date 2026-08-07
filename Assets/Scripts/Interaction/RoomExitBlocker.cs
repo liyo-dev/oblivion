@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -11,6 +10,17 @@ public enum RequirementMode
     SpecificQuestsCompleted
 }
 
+/// <summary>
+/// Bloquea el paso del jugador hasta que se cumpla un requisito de misión. Dos mecanismos EN
+/// PARALELO, no uno u otro:
+/// 1) Collider sólido/trigger (como antes): bloqueo físico normal, funciona bien para paredes,
+///    puertas y habitaciones normales.
+/// 2) Freeze total (PlayerLockService) mientras el jugador esté tocando la zona bloqueada: el
+///    jugador deja de responder a CUALQUIER input, sin importar si el collider consigue pararlo
+///    físicamente o no. Es la garantía de verdad — no depende de que la forma/posición del
+///    collider sea la correcta (el del agua, por ejemplo, comparte forma con la malla visual y su
+///    geometría no es fiable como muro).
+/// </summary>
 [RequireComponent(typeof(Collider))]
 public class RoomExitBlocker : MonoBehaviour
 {
@@ -39,6 +49,7 @@ public class RoomExitBlocker : MonoBehaviour
     private bool _subscribed;
     private bool _isShowingMessage;
     private Coroutine _waitCoroutine;
+    private bool _stopLockHeld;
 
     void Awake()
     {
@@ -75,7 +86,13 @@ public class RoomExitBlocker : MonoBehaviour
                 qm.OnQuestsChanged -= OnQuestsChanged;
             _subscribed = false;
         }
+
+        // Nunca dejar al jugador congelado si este GameObject se desactiva mientras el lock
+        // sigue activo (cambio de escena, quest completada que desactiva el trigger, etc.).
+        ReleaseStopLock();
     }
+
+    void OnDestroy() => ReleaseStopLock();
 
     private IEnumerator WaitAndSubscribe()
     {
@@ -98,9 +115,12 @@ public class RoomExitBlocker : MonoBehaviour
         _isBlocked = !RequirementSatisfied();
         ApplyColliderState();
 
+        // Si deja de estar bloqueado mientras el jugador lo estaba tocando, soltar el freeze ya.
+        if (!_isBlocked)
+            ReleaseStopLock();
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        if (debugLogs)
-            Debug.Log($"[RoomExitBlocker:{gameObject.name}] → {(_isBlocked ? "BLOQUEADO" : "DESBLOQUEADO")}");
+        Debug.Log($"[RoomExitBlocker:{gameObject.name}] → {(_isBlocked ? "BLOQUEADO" : "DESBLOQUEADO")}");
 #endif
     }
 
@@ -114,16 +134,89 @@ public class RoomExitBlocker : MonoBehaviour
             _col.isTrigger = shouldBeTrigger;
     }
 
+    // Cubrimos las cuatro variantes (Trigger/Collision × Enter/Exit) porque no sabemos de
+    // antemano si el collider va a conseguir quedar en modo sólido (Collision) o si por lo que
+    // sea sigue siendo trigger (Trigger) — el freeze tiene que activarse en cualquiera de los dos
+    // casos, no solo en el que "debería" pasar.
+
     private void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Player")) return;
-        if (_isBlocked) TryShowMessage();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[RoomExitBlocker:{gameObject.name}] OnTriggerEnter de Player. _isBlocked={_isBlocked}");
+#endif
+        if (!_isBlocked) return;
+
+        TryShowMessage();
+        AcquireStopLock();
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (!other.CompareTag("Player")) return;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[RoomExitBlocker:{gameObject.name}] OnTriggerExit de Player.");
+#endif
+        ReleaseStopLock();
     }
 
     private void OnCollisionEnter(Collision collision)
     {
         if (!collision.gameObject.CompareTag("Player")) return;
-        if (_isBlocked) TryShowMessage();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[RoomExitBlocker:{gameObject.name}] OnCollisionEnter de Player. _isBlocked={_isBlocked}");
+#endif
+        if (!_isBlocked) return;
+
+        TryShowMessage();
+        AcquireStopLock();
+    }
+
+    private void OnCollisionExit(Collision collision)
+    {
+        if (!collision.gameObject.CompareTag("Player")) return;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[RoomExitBlocker:{gameObject.name}] OnCollisionExit de Player.");
+#endif
+        ReleaseStopLock();
+    }
+
+    /// <summary>
+    /// Congela al jugador POR COMPLETO (no responde a ningún input) mientras esté tocando la zona
+    /// bloqueada. Directo, sin corrutinas ni temporizadores: se adquiere en el momento del
+    /// contacto y se suelta en el momento en que deja de tocarla (OnTriggerExit/OnCollisionExit)
+    /// o en que deja de estar bloqueada (EvaluateAndApplyState). Idempotente.
+    /// </summary>
+    private void AcquireStopLock()
+    {
+        if (_stopLockHeld) return;
+
+        var lockService = PlayerLockService.Instance;
+        if (lockService == null)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning($"[RoomExitBlocker:{gameObject.name}] PlayerLockService.Instance es null — no se pudo congelar al jugador.");
+#endif
+            return;
+        }
+
+        lockService.Acquire(this);
+        _stopLockHeld = true;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[RoomExitBlocker:{gameObject.name}] ⛔ Jugador congelado (zona bloqueada).");
+#endif
+    }
+
+    private void ReleaseStopLock()
+    {
+        if (!_stopLockHeld) return;
+
+        if (PlayerLockService.HasInstance)
+            PlayerLockService.Instance.Release(this);
+        _stopLockHeld = false;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[RoomExitBlocker:{gameObject.name}] ✅ Jugador liberado.");
+#endif
     }
 
     private void TryShowMessage()

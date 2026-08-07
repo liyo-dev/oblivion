@@ -77,11 +77,24 @@ namespace Sendero.Core.Feedback
             
             if (mainCamera == null)
             {
+                // Fallback: en Awake() la cámara puede no existir todavía (este componente
+                // vive en el FeedbackService, que es DontDestroyOnLoad y se instancia de forma
+                // perezosa), o la cámara de la escena anterior fue destruida al descargarla
+                // (multi-escena aditiva). Reintentamos aquí en vez de depender solo de Awake.
+                mainCamera = Camera.main;
+                if (mainCamera != null)
+                {
+                    _originalFieldOfView = mainCamera.fieldOfView;
+                }
+            }
+
+            if (mainCamera == null)
+            {
                 if (showDebugLogs)
                     Debug.LogError("[DeathCameraEffect] Main camera no encontrada");
                 return;
             }
-            
+
             if (_currentEffect != null)
             {
                 StopCoroutine(_currentEffect);

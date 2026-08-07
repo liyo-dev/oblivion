@@ -5,6 +5,11 @@ using UnityEngine;
 /// (a) Mostrar un popup de lore directamente (si loreConfig está asignado), y/o
 /// (b) Disparar un evento personalizado en el grafo narrativo (si narrativeEventKey está asignado).
 /// Registra el ID en seenLorePopupIds para no repetirse entre sesiones.
+///
+/// Este trigger NO debe detener ni bloquear al jugador en ningún caso: se limita a lanzar el
+/// evento/popup y seguir. Si el nodo del grafo que reacciona a narrativeEventKey necesita congelar
+/// al jugador (diálogo, cinemática...), es ESE nodo quien debe encargarse de su propio
+/// PushMode(ActionMode.Cinematic) / PlayerLockService — no este trigger genérico de disparo.
 /// </summary>
 [RequireComponent(typeof(Collider))]
 public class LorePopupPoint : MonoBehaviour

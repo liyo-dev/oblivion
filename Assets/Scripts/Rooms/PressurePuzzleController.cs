@@ -6,25 +6,32 @@ public class PressurePuzzleController : MonoBehaviour
     public RoomGoal roomGoal;
     public DoorGate exitDoor;
 
+    [Header("Audio")]
+    [Tooltip("Clave SFX que se reproduce al completar el puzzle. Vacío = sin sonido.")]
+    [SerializeField] private string solvedSfxKey = "puzzle_done";
+
     void Awake()
     {
         if (plates == null || plates.Length == 0)
             plates = GetComponentsInChildren<PressurePlate>(true);
-        CheckSolved();
+        // Sin SFX en el chequeo inicial: si la sala ya estaba resuelta al cargar, no debe sonar
+        CheckSolved(playSfx: false);
     }
 
     // Llamado por las placas vía SendMessageUpwards
     void OnPlateStateChanged(PressurePlate _)
     {
-        CheckSolved();
+        CheckSolved(playSfx: true);
     }
 
-    void CheckSolved()
+    void CheckSolved(bool playSfx)
     {
         foreach (var p in plates)
             if (p && !p.isPressed) return;
 
         // todas pulsadas
+        if (playSfx && !string.IsNullOrEmpty(solvedSfxKey))
+            AudioService.Instance?.PlaySFX(solvedSfxKey, worldPosition: transform.position);
         roomGoal?.MarkCleared();
         exitDoor?.Open();
         enabled = false;

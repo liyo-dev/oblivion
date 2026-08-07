@@ -21,11 +21,56 @@ namespace Game.NPC.States
         public override string StateName => "ReturnFromShelter";
 
         private bool _destinationSet;
+        private bool _manualExitActive;
 
         public override void OnEnter(NPCStateContext context)
         {
             base.OnEnter(context);
 
+            _manualExitActive = false;
+
+            if (context.HasShelterEdgePosition)
+            {
+                // El NPC quedó posicionado fuera del área caminable del NavMesh (bajo la copa de
+                // un árbol, ver SeekShelterState / NPCStateBase.BeginManualApproach). Antes de
+                // poder usar el NavMeshAgent para el camino de vuelta hay que sacarlo primero,
+                // caminando a mano hasta el borde del NavMesh por el que entró.
+                BeginManualApproach(context);
+                _manualExitActive = true;
+                return;
+            }
+
+            StartNormalReturn(context);
+        }
+
+        public override void OnUpdate(NPCStateContext context)
+        {
+            base.OnUpdate(context);
+
+            if (!_manualExitActive) return;
+
+            float speed = context.Config?.walkSpeed ?? 1.5f;
+            if (ManualApproachStep(context, context.ShelterEdgePosition, speed))
+            {
+                EndManualApproach(context);
+                context.HasShelterEdgePosition = false;
+                _manualExitActive = false;
+                StartNormalReturn(context);
+            }
+        }
+
+        public override void OnExit(NPCStateContext context)
+        {
+            if (_manualExitActive)
+            {
+                EndManualApproach(context);
+                _manualExitActive = false;
+            }
+            base.OnExit(context);
+        }
+
+        private void StartNormalReturn(NPCStateContext context)
+        {
             if (context.Agent != null && context.Agent.isOnNavMesh)
             {
                 float speed = context.Config?.walkSpeed ?? 1.5f;
@@ -54,6 +99,9 @@ namespace Game.NPC.States
             // Ha vuelto a llover a mitad de camino: dar media vuelta hacia el refugio otra vez.
             if (context.ShouldSeekShelter)
                 return new SeekShelterState();
+
+            if (_manualExitActive)
+                return null; // todavía saliendo a mano de bajo el árbol, ver OnUpdate
 
             if (!_destinationSet)
             {

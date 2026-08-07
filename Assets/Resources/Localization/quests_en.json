@@ -46,27 +46,27 @@
         },
         {
             "key": "QUEST_ELDRAN_MISSION11_DESC",
-            "value": "[EN] Vuelve por donde has venido y sal del castillo."
+            "value": "Go back the way you came and leave the castle."
         },
         {
             "key": "QUEST_ELDRAN_MISSION11_NAME",
-            "value": "[EN] Sal del castillo"
+            "value": "Leave the Castle"
         },
         {
             "key": "QUEST_ELDRAN_MISSION12_DESC",
-            "value": "[EN] Usa a todo el equipo para derrotar al demonio."
+            "value": "Use the whole party to defeat the demon."
         },
         {
             "key": "QUEST_ELDRAN_MISSION12_NAME",
-            "value": "[EN] Derrota al demonio de nuevo."
+            "value": "Defeat the Demon Again"
         },
         {
             "key": "QUEST_ELDRAN_MISSION13_DESC",
-            "value": "[EN] Reúnete con Eldran en las afueras del Reino. "
+            "value": "Meet Eldran on the outskirts of the Kingdom."
         },
         {
             "key": "QUEST_ELDRAN_MISSION13_NAME",
-            "value": "[EN] Nos vemos fuera."
+            "value": "See You Outside"
         },
         {
             "key": "QUEST_ELDRAN_MISSION14_DESC",

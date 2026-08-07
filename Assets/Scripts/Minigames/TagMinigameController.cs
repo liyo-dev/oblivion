@@ -2381,6 +2381,17 @@ public class TagMinigameController : MonoBehaviour
         isRunning = false;
         isTeleporting = false;
 
+        // FIX: a diferencia de StopMinigame() y WinMinigame(), esta ruta de fallo recargaba
+        // la escena sin liberar el bloqueo de WillOnlyMomentManager. Si el minijuego requería
+        // Will (requiresWill=true), el cambio de personaje quedaba bloqueado de forma
+        // PERMANENTE para el resto de la sesión — incluso tras recargar partida, porque
+        // WillOnlyMomentManager es un singleton persistente (DontDestroyOnLoad) y nada volvía
+        // a llamar ExitMoment() para este momento. Bug de referencia: tras ser "atrapado" en un
+        // minijuego con requiresWill, el DPad de cambio de personaje dejaba de responder para
+        // siempre, incluso en partidas totalmente distintas cargadas después.
+        if (requiresWill)
+            WillOnlyMomentManager.Instance?.ExitMoment(minigameId);
+
         if (chaser) chaser.StopChasing();
         HideAllProtectionIcons();
 
@@ -2398,6 +2409,11 @@ public class TagMinigameController : MonoBehaviour
 
         isRunning = false;
         isTeleporting = false;
+
+        // FIX: mismo leak que en RestartAfterCaught (ver comentario ahí) — liberar el momento
+        // Will-only también en la derrota por tiempo agotado.
+        if (requiresWill)
+            WillOnlyMomentManager.Instance?.ExitMoment(minigameId);
 
         if (chaser) chaser.StopChasing();
 

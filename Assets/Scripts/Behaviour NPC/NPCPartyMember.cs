@@ -416,6 +416,21 @@ namespace Game.NPC
         }
         
         /// <summary>
+        /// En diálogos grupales: cambia hacia quién mira este compañero mientras mantiene su
+        /// posición de diálogo. La usa DialogueCinematicController en cada línea para que los
+        /// personajes se miren entre ellos cuando se contestan. Pasar null para volver al
+        /// objetivo por defecto (el NPC del diálogo). No hace nada si el compañero no está
+        /// en DialoguePositionState (p.ej. anclado en modo Libre o en combate).
+        /// </summary>
+        public void SetDialogueLookTarget(Transform target)
+        {
+            if (_npcManager?.Brain?.CurrentState is Game.NPC.States.DialoguePositionState dialogueState)
+            {
+                dialogueState.SetLookTargetOverride(target);
+            }
+        }
+
+        /// <summary>
         /// Libera al NPC del posicionamiento de diálogo y vuelve a seguir al player.
         /// </summary>
         public void ReleaseDialoguePosition()
@@ -438,11 +453,26 @@ namespace Game.NPC
         /// <summary>
         /// Llamado cuando se ha añadido exitosamente al equipo.
         /// </summary>
-        internal void OnJoinedParty(PlayerParty party)
+        /// <param name="isRestore">
+        /// True cuando el join viene de restaurar una partida guardada (ver JoinParty). En ese caso
+        /// NUNCA se debe leer PartyControlManager.ActiveSlot para fijar _joinedForSlot: PlayerParty
+        /// restaura los miembros desde OnProfileReady, suscrito en su Awake (execution order -500),
+        /// mientras que PartyControlManager.HandleProfileReady —que resetea _activeIndex a Will,
+        /// "al cargar partida siempre se arranca como Will"— se suscribe en su Start (-200) y por
+        /// tanto se ejecuta DESPUÉS en la invocación del mismo evento. Sin este parámetro, un
+        /// miembro restaurado podía heredar el _activeIndex TODAVÍA SIN RESETEAR de la sesión
+        /// anterior (p.ej. si el jugador murió controlando a Estela, _activeIndex seguía en Estela
+        /// en el momento del restore) y quedar mal etiquetado con _joinedForSlot=Estela aunque la
+        /// partida recién cargada arranca en Will. Ese etiquetado erróneo podía provocar que
+        /// ActiveCharacterSwapper.SwitchCharacter desvinculara compañeros del equipo al cambiar de
+        /// personaje sin motivo (ver comentario "5b. Desvincular compañeros..." en ese archivo).
+        /// </param>
+        internal void OnJoinedParty(PlayerParty party, bool isRestore = false)
         {
             // Registrar el slot activo en el momento del join.
             // Will (slot 1) → null (miembro compartido). Liam/Estela → ese slot específico.
-            var activeSlot = PartyControlManager.Instance?.ActiveSlot;
+            // Al restaurar una partida no existe todavía un "personaje activo en vivo": siempre null.
+            var activeSlot = isRestore ? null : PartyControlManager.Instance?.ActiveSlot;
             _joinedForSlot = (activeSlot.HasValue && activeSlot.Value != PartyControlManager.CharacterSlot.Will)
                 ? activeSlot
                 : null;

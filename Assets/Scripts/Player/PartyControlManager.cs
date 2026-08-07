@@ -291,6 +291,16 @@ public class PartyControlManager : MonoBehaviour
         PlayerParty.OnPartyChanged -= TryRestoreSavedSlot;
         _pendingSlotToRestore = -1;
 
+        // FIX: WillOnlyMomentManager es DontDestroyOnLoad y su bloqueo de switching (_activeMoments)
+        // no se limpiaba nunca al cargar partida. Si un TagMinigameController con requiresWill=true
+        // se interrumpía sin pasar por WinMinigame()/StopMinigame() (p.ej. el jugador moría en combate
+        // durante el minijuego, o cualquier otra ruta no contemplada), el momento quedaba "activo" para
+        // siempre — el cambio de personaje se bloqueaba de forma permanente en TODAS las partidas
+        // cargadas después, incluida una completamente distinta. ClearAllMoments() ya existía para
+        // este propósito exacto (su propio comentario dice "útil al cargar escenas o reiniciar el
+        // estado del juego") pero nunca se llamaba desde ningún sitio.
+        WillOnlyMomentManager.Instance?.ClearAllMoments();
+
         // Al cargar partida siempre se arranca como Will
         _activeIndex = (int)CharacterSlot.Will;
         ActiveCharacterSwapper.Instance?.ResetState();

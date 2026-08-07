@@ -10,6 +10,10 @@ public class PuzzleTorchGateController : MonoBehaviour
     [Header("Lógica")]
     public int requiredLit = 2;        // cuántas encendidas para abrir
 
+    [Header("Audio")]
+    [Tooltip("Clave SFX que se reproduce al completar el puzzle. Vacío = sin sonido.")]
+    [SerializeField] private string solvedSfxKey = "puzzle_done";
+
     int currentLit;
 
     void Awake()
@@ -21,7 +25,8 @@ public class PuzzleTorchGateController : MonoBehaviour
             if (t.isLit) currentLit++;
             t.onTorchToggled += OnTorchToggled;
         }
-        CheckSolved();
+        // Sin SFX en el chequeo inicial: si la sala ya estaba resuelta al cargar, no debe sonar
+        CheckSolved(playSfx: false);
     }
 
     void OnDestroy()
@@ -32,13 +37,15 @@ public class PuzzleTorchGateController : MonoBehaviour
     void OnTorchToggled(bool nowLit)
     {
         currentLit += nowLit ? 1 : -1;
-        CheckSolved();
+        CheckSolved(playSfx: true);
     }
 
-    void CheckSolved()
+    void CheckSolved(bool playSfx)
     {
         if (currentLit >= requiredLit)
         {
+            if (playSfx && !string.IsNullOrEmpty(solvedSfxKey))
+                AudioService.Instance?.PlaySFX(solvedSfxKey, worldPosition: transform.position);
             roomGoal?.MarkCleared();
             if (exitDoor) exitDoor.Open();
             enabled = false;

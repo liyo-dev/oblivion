@@ -40,6 +40,8 @@ public class AbilityUnlockPopupUI : MonoBehaviour
     // True si ShowPopup() ya preparó los textos/flag pero difirió AnimateIn() porque la intro de
     // un boss estaba ocultando la UI persistente (ver SceneBoundUI.BeginBossIntro/EndBossIntro).
     private bool _awaitingBossIntroEnd;
+    // Oculto temporalmente porque hay un menú (pausa, equipo, tienda...) abierto encima.
+    private bool _hiddenByMenu;
 
     const string AbilityFlagPrefix = "ABILITY_POPUP_ID:";
     const string AbilityKeyFlagPrefix = "ABILITY_POPUP_KEY:";
@@ -59,6 +61,10 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         UnlockService.OnAbilityUnlockedKey += HandleAbilityUnlockedKey;
         UnlockService.OnSpellUnlocked += HandleSpellUnlocked;
         SceneBoundUI.OnBossIntroEnded += HandleBossIntroEnded;
+        // Mismo sistema que ya usan BossHealthBar/MinimapController: ocultarse mientras
+        // hay un menú abierto (pausa incluida) y restaurarse al cerrar el último.
+        MenuManager.MenuOpened += OnMenuOpened;
+        MenuManager.MenuClosed += OnMenuClosed;
         ReloadShownFlags();
     }
 
@@ -69,6 +75,8 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         UnlockService.OnAbilityUnlockedKey -= HandleAbilityUnlockedKey;
         UnlockService.OnSpellUnlocked -= HandleSpellUnlocked;
         SceneBoundUI.OnBossIntroEnded -= HandleBossIntroEnded;
+        MenuManager.MenuOpened -= OnMenuOpened;
+        MenuManager.MenuClosed -= OnMenuClosed;
     }
 
     void OnDestroy()
@@ -179,6 +187,31 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         if (!_awaitingBossIntroEnd) return;
         _awaitingBossIntroEnd = false;
         AnimateIn();
+    }
+
+    // ── MenuManager (pausa / cualquier menú) ────────────────────────────────────
+
+    /// <summary>Oculta el popup mientras haya un menú (pausa incluida) abierto encima.</summary>
+    private void OnMenuOpened(MenuKind kind)
+    {
+        if (!_isShowing || _hiddenByMenu || popupCanvasGroup == null) return;
+        _hiddenByMenu = true;
+        popupCanvasGroup.DOKill();
+        popupCanvasGroup.DOFade(0f, 0.15f).SetUpdate(true);
+        popupCanvasGroup.blocksRaycasts = false;
+    }
+
+    /// <summary>Restaura el popup al cerrarse el último menú abierto, si seguía en pantalla.</summary>
+    private void OnMenuClosed(MenuKind kind)
+    {
+        if (!_hiddenByMenu) return;
+        if (MenuManager.AnyOpen()) return; // todavía queda otro menú abierto
+        _hiddenByMenu = false;
+
+        if (!_isShowing || popupCanvasGroup == null) return; // se auto-cerró mientras estaba oculto
+        popupCanvasGroup.DOKill();
+        popupCanvasGroup.DOFade(1f, 0.2f).SetUpdate(true);
+        popupCanvasGroup.blocksRaycasts = true;
     }
 
     private void SetTexts(string title, string description, Sprite icon)

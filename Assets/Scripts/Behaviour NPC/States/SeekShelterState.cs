@@ -27,6 +27,16 @@ namespace Game.NPC.States
 
         private const float MaxSearchDistance = 25f;
 
+        // Distancia por debajo de la cual se considera que ya se llegó al punto real (aunque el
+        // NavMeshAgent haya redondeado ligeramente al punto más cercano del NavMesh).
+        private const float ArrivedAtRealPointThreshold = 0.15f;
+
+        // Tope de seguridad para la aproximación manual fuera del NavMesh (ver
+        // NPCStateBase.BeginManualApproach). Si el punto real está más lejos que esto del borde
+        // del NavMesh, algo va raro (punto mal colocado / geometría rara) y es más seguro
+        // quedarse en el borde que caminar a ciegas sin comprobación de obstáculos.
+        private const float MaxManualApproachDistance = 4f;
+
         // Probabilidad de que este NPC, en concreto, decida sentarse en vez de quedarse de pie.
         private const float SitChance = 0.35f;
 
@@ -45,13 +55,23 @@ namespace Game.NPC.States
         private bool _arrived;
         private bool _isSitter;
         private float _nextGestureTimer;
+        private bool _manualApproachActive;
 
         public override void OnEnter(NPCStateContext context)
         {
             base.OnEnter(context);
 
             _arrived = false;
+            _manualApproachActive = false;
             context.CurrentShelter = null;
+            context.HasShelterEdgePosition = false;
+
+            // Por si venimos de un tramo de aproximación manual interrumpido a medias (ver
+            // BeginManualApproach): asegurar que el agente vuelve a estar bajo control normal
+            // del NavMesh antes de intentar fijar un nuevo destino.
+            EndManualApproach(context);
+            if (context.Agent != null && !context.Agent.isOnNavMesh)
+                NavMeshAgentUtility.EnsureAgentOnNavMesh(context.Agent, context.Transform.position, 5f);
 
             if (!NPCShelterPoint.TryFindNearest(context.Transform.position, null, MaxSearchDistance, out _shelterPoint))
             {
@@ -86,8 +106,39 @@ namespace Game.NPC.States
 
             if (!_arrived)
             {
+                if (_manualApproachActive)
+                {
+                    float approachSpeed = context.Config?.walkSpeed ?? 1.5f;
+                    if (ManualApproachStep(context, _shelterPoint.InteractionPosition, approachSpeed))
+                        Arrive(context);
+                    return;
+                }
+
                 if (HasReachedDestination(context))
-                    Arrive(context);
+                {
+                    Vector3 truePos = _shelterPoint.InteractionPosition;
+                    float offDist = Vector3.Distance(context.Transform.position, truePos);
+
+                    if (offDist <= ArrivedAtRealPointThreshold)
+                    {
+                        Arrive(context);
+                    }
+                    else if (offDist <= MaxManualApproachDistance)
+                    {
+                        // El NavMeshAgent ha llegado al borde del área caminable, pero el punto
+                        // real sigue más adentro (típico bajo copas de árbol, ver
+                        // NPCStateBase.BeginManualApproach): completar el resto a mano.
+                        context.ShelterEdgePosition    = context.Transform.position;
+                        context.HasShelterEdgePosition = true;
+                        BeginManualApproach(context);
+                        _manualApproachActive = true;
+                    }
+                    else
+                    {
+                        context.LogWarning($"[{StateName}] Punto de refugio a {offDist:F1}m del borde del NavMesh (máximo {MaxManualApproachDistance}m). Quedándose en el borde.");
+                        Arrive(context);
+                    }
+                }
                 return;
             }
 
@@ -109,6 +160,12 @@ namespace Game.NPC.States
 
         public override void OnExit(NPCStateContext context)
         {
+            if (_manualApproachActive)
+            {
+                EndManualApproach(context);
+                _manualApproachActive = false;
+            }
+
             if (_shelterPoint != null)
                 _shelterPoint.Release(context.Transform);
 
@@ -130,7 +187,7 @@ namespace Game.NPC.States
             if (!context.ShouldSeekShelter)
                 return new ReturnFromShelterState();
 
-            if (!_arrived && IsPathBlocked(context))
+            if (!_arrived && !_manualApproachActive && IsPathBlocked(context))
                 return new IdleState();
 
             return null;
@@ -140,6 +197,11 @@ namespace Game.NPC.States
         {
             if (!_shelterPoint.TryOccupy(context.Transform))
             {
+                if (_manualApproachActive)
+                {
+                    EndManualApproach(context);
+                    _manualApproachActive = false;
+                }
                 // Otro NPC ocupó el punto justo antes de que llegáramos: buscar otro desde aquí.
                 context.Brain?.ChangeState(new SeekShelterState());
                 return;
@@ -147,6 +209,12 @@ namespace Game.NPC.States
 
             _arrived = true;
             context.CurrentShelter = _shelterPoint;
+
+            if (_manualApproachActive)
+            {
+                EndManualApproach(context);
+                _manualApproachActive = false;
+            }
 
             StopMovement(context);
 

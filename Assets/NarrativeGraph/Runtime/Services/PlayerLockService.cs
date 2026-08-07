@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -113,6 +114,61 @@ public class PlayerLockService : MonoBehaviour
             Debug.Log("[PlayerLockService] ✅ Todos los locks liberados - Reactivando movimiento del jugador");
             ReleaseHardLock();
         }
+    }
+
+    /// <summary>
+    /// Atajo para el patrón "puente de un trigger hasta que el sistema narrativo tome el
+    /// control": adquiere el lock YA (freeze inmediato) y lo libera en cuanto
+    /// ActionMode.Cinematic esté activo en PlayerActionManager, o tras maxFramesSafety frames
+    /// si el grafo nunca llega a empujar ese modo (para no dejar al jugador congelado para
+    /// siempre por un evento sin nodo de bloqueo después, o un WaitCustomEventNode que tarda
+    /// varios frames en encadenar hasta el nodo que realmente hace PushMode).
+    ///
+    /// FIX (Agosto 2026): antes cada trigger (KingdomBoundaryTrigger, TriggerPlayerStop.
+    /// IniciarParadaMomentanea) liberaba su propio lock "un frame después" con una corrutina
+    /// alojada en SU PROPIO GameObject. Dos problemas:
+    /// 1) El grafo narrativo (NarrativeRunner.RunSubGraph) avanza nodo a nodo mediante
+    ///    `yield return new WaitUntil(...)`, que SIEMPRE cede como mínimo 1 frame por nodo aunque
+    ///    ese nodo resuelva su `ready` de forma síncrona. Si entre el WaitCustomEventNode que
+    ///    consume el evento del trigger y el nodo que hace PushMode(ActionMode.Cinematic)
+    ///    (LockPlayerNode, o el LockCinematic() interno de un CinematicSequencerBase) hay más de
+    ///    un salto, el freeze de "1 frame fijo" se soltaba ANTES de que el grafo tomara el
+    ///    control real — el jugador recuperaba el movimiento libre durante uno o más frames y
+    ///    quedaba mal ubicado para la secuencia.
+    /// 2) Triggers con DestroyElement=1 en OnTriggerEnter_Event (EXIT_FROM_WOODS_ESTELA,
+    ///    FUEGO_FATUO) destruían su propio GameObject el mismo frame en que emitían el evento;
+    ///    al destruirse, la corrutina "liberar el siguiente frame" (alojada en ese mismo objeto)
+    ///    se abortaba y el lock se soltaba en el acto vía OnDestroy(), sin ni siquiera llegar a
+    ///    esperar ese frame.
+    /// Alojar la corrutina aquí (PlayerLockService es DontDestroyOnLoad) resuelve ambos: sobrevive
+    /// a que el trigger que la pidió se destruya, y espera de verdad a que Cinematic esté activo
+    /// en vez de asumir que 1 frame siempre alcanza.
+    /// </summary>
+    public void AcquireBridgeUntilCinematic(object owner, int maxFramesSafety = 60)
+    {
+        Acquire(owner);
+        StartCoroutine(Co_ReleaseWhenCinematicOrTimeout(owner, maxFramesSafety));
+    }
+
+    IEnumerator Co_ReleaseWhenCinematicOrTimeout(object owner, int maxFramesSafety)
+    {
+        var pam = ServiceLocator.Get<PlayerActionManager>(logIfMissing: false);
+        int frames = 0;
+        yield return null; // como mínimo 1 frame, igual que el comportamiento anterior
+        while (frames < maxFramesSafety && (pam == null || !pam.IsInMode(ActionMode.Cinematic)))
+        {
+            frames++;
+            yield return null;
+        }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (pam != null && !pam.IsInMode(ActionMode.Cinematic))
+        {
+            Debug.LogWarning($"[PlayerLockService] Puente de {owner?.GetType().Name ?? "null"} liberado por timeout " +
+                              $"({maxFramesSafety} frames) sin que el grafo narrativo activara ActionMode.Cinematic. " +
+                              "¿Falta un LockPlayerNode/CinematicSequencerBase tras el WaitCustomEventNode de este evento?");
+        }
+#endif
+        Release(owner);
     }
 
     void ApplyHardLock()
@@ -277,7 +333,24 @@ public class PlayerLockService : MonoBehaviour
         if (_instance == this)
         {
             _instance = null;
-            _isShuttingDown = true;
+            // FIX (Agosto 2026): antes esto ponía _isShuttingDown = true también aquí. Pero
+            // _isShuttingDown solo se resetea a false en Awake() — y si _isShuttingDown es true,
+            // Instance devuelve _instance (ya null) SIN crear uno nuevo. Resultado: si este
+            // singleton (DontDestroyOnLoad) se destruía por CUALQUIER motivo que no fuera un
+            // cierre real de la aplicación (un bug en otro sitio, un caso límite de recarga de
+            // escena en modo testeo, etc.), _isShuttingDown quedaba atascado en true para el
+            // resto de la sesión — nadie volvía a poder resetearlo porque Awake() nunca se
+            // volvía a ejecutar (nada crea una instancia nueva mientras el flag esté activo).
+            // A partir de ahí, PlayerLockService.Instance devolvía null en silencio (sin logs, sin
+            // errores — cada `lockService?.Acquire(...)` de cada trigger del juego se convertía en
+            // un no-op) y NINGÚN freeze de jugador volvía a funcionar en lo que quedaba de partida.
+            // Esto es lo que estaba pasando: KingdomBoundaryTrigger llamaba a
+            // AcquireBridgeUntilCinematic() correctamente, pero Instance ya devolvía null, así que
+            // el freeze nunca llegaba a intentarse. Ahora _isShuttingDown solo se marca en
+            // OnApplicationQuit() (cierre real), que es el único caso que el comentario de más
+            // arriba (evitar el warning "Some objects were not cleaned up") necesitaba cubrir.
+            // Así, si el singleton se destruye por cualquier otro motivo, Instance puede
+            // recrearlo la próxima vez que se necesite en vez de quedar inutilizado para siempre.
         }
     }
 
