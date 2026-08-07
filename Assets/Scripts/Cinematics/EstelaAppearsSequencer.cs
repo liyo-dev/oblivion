@@ -559,6 +559,7 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
 
         FaceTarget(warrior, _estelaTransform);
         warriorAnim?.PlayDefendHit();
+        AudioService.Instance?.PlaySFX("EstelaAppears_ShieldBlock", 1f, warrior.position);
 
         if (_warriorShieldVFX != null)
         {
@@ -698,7 +699,10 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
         _estelaEmotion?.SetEmotion(NPCEmotion.Happy);
 
         if (!string.IsNullOrEmpty(_bowAnim))
+        {
             _estelaSimpleAnim?.PlaySocialGesture(_bowAnim);
+            AudioService.Instance?.PlaySFX("EstelaAppears_Bow", 0.6f, _estelaTransform.position);
+        }
 
         yield return new WaitForSeconds(_bowDuration);
     }
@@ -791,6 +795,7 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
             var vfx = Instantiate(_spiderImpactVFX, position, Quaternion.identity);
             Destroy(vfx, _vfxLifetime);
         }
+        AudioService.Instance?.PlaySFX("EstelaAppears_SpiderKill", 1f, position);
 
         if (_spiderObjects != null && index < _spiderObjects.Length && _spiderObjects[index] != null)
             _spiderObjects[index].SetActive(false);
@@ -835,6 +840,7 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
         }
 
         _estelaSimpleAnim?.PlaySpellCast();
+        AudioService.Instance?.PlaySFX("EstelaAppears_FireShot", 1f, spawnPos);
 
         var go = Instantiate(_bolaFuego.prefab, spawnPos, Quaternion.LookRotation(dir));
 

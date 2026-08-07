@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
 using Sendero.UI;
+using Sendero.Core.Feedback;
 
 [Serializable]
 public struct DramaticStylePreset
@@ -158,6 +159,29 @@ public class DramaticTextOverlayUI : MonoBehaviour
         _playRoutine = StartCoroutine(RunSequence(config, onComplete));
     }
 
+    /// <summary>
+    /// Activa solo los efectos visuales de "modo sueño" (nebulosa + chispas), sin reproducir
+    /// ninguna frase. Pensado para cinemáticas ajenas a este overlay que necesitan el mismo fondo
+    /// onírico pero llevan su propio timing/texto (o ninguno) — ej. PrologueDreamSequencer.
+    /// </summary>
+    public void StartDreamVisuals()
+    {
+        gameObject.SetActive(true);
+        _dreamBackground?.StartDream();
+        _dreamSparkles?.StartSparkles();
+    }
+
+    /// <summary>
+    /// Detiene los efectos activados por StartDreamVisuals(). No desactiva el overlay si hay una
+    /// secuencia de frases en curso (Play/RunSequence gestiona su propio ciclo de vida).
+    /// </summary>
+    public void StopDreamVisuals()
+    {
+        _dreamBackground?.StopDream();
+        _dreamSparkles?.StopSparkles();
+        if (!_isPlaying) gameObject.SetActive(false);
+    }
+
     /// <summary>Detiene la secuencia y oculta el overlay inmediatamente.</summary>
     public void ForceStop()
     {
@@ -218,14 +242,24 @@ public class DramaticTextOverlayUI : MonoBehaviour
                 bool nextFullBlack = i < config.phrases.Length - 1 && config.phrases[i + 1].background == DramaticTextBackground.FullBlack;
                 bool currentFullBlack = current.background == DramaticTextBackground.FullBlack;
 
+                // FIX: si nos llaman con la pantalla ya cubierta por el overlay de FeedbackService
+                // (ej: una cinemática que terminó con Co_EndCinematicStayBlack y nos pasa el
+                // testigo, como PrologueDreamSequencer → DramaticTextNode), la frase 0 haciendo su
+                // fade-in normal desde alpha=0 exponía durante entryDuration lo que hubiera detrás
+                // (la escena/cámara de gameplay ya reactivada) antes de que este overlay llegara a
+                // opacidad completa. Tratarla como "ya estamos en negro" evita ese hueco — solo
+                // aplica si además el fondo de esta frase es FullBlack (si no, no cubriría la
+                // pantalla igual y sí queremos ver el fade real).
+                bool screenAlreadyCovered = i == 0 && currentFullBlack && FeedbackService.IsScreenFaded;
+
                 // Si venimos de FullBlack y la actual también lo es, no hacer fade de entrada.
                 // KingdomHearts tiene su propia gestión de visibilidad (vértices en alpha=0),
                 // por eso nunca salta aunque la pantalla ya esté en negro.
-                bool skipEntry = prevFullBlack && currentFullBlack
+                bool skipEntry = (prevFullBlack || screenAlreadyCovered) && currentFullBlack
                                  && current.entryAnim != DramaticEntryAnimation.KingdomHearts;
                 bool skipExit  = currentFullBlack && nextFullBlack;
 
-                yield return ShowPhrase(current, skipEntry, skipExit);
+                yield return ShowPhrase(current, skipEntry, skipExit, screenAlreadyCovered);
 
                 if (i < config.phrases.Length - 1 && config.pauseBetween > 0f)
                     yield return new WaitForSecondsRealtime(config.pauseBetween);
@@ -247,7 +281,8 @@ public class DramaticTextOverlayUI : MonoBehaviour
         onComplete?.Invoke();
     }
 
-    IEnumerator ShowPhrase(DramaticPhrase phrase, bool skipEntry = false, bool skipExit = false)
+    IEnumerator ShowPhrase(DramaticPhrase phrase, bool skipEntry = false, bool skipExit = false,
+                           bool releaseScreenFadeOnOpaque = false)
     {
         if (_label == null || _textContainer == null || _rootGroup == null)
         {
@@ -282,10 +317,23 @@ public class DramaticTextOverlayUI : MonoBehaviour
             _textContainer.anchoredPosition = basePos;
             _rootGroup.alpha = 1f;
             _rootGroup.blocksRaycasts = true;
+
+            // Justo aquí nuestro propio fondo opaco ya cubre la pantalla (SetBackground se llamó
+            // arriba, y con el CanvasGroup a alpha=1 por fin se ve) — soltamos el overlay de
+            // FeedbackService en el mismo instante, sin que se note (algo ya lo está tapando). Así,
+            // si esta secuencia termina más tarde con su propio fade out, revela limpio en vez de
+            // dejar el negro de FeedbackService pegado para siempre por detrás (ver comentario en
+            // RunSequence sobre screenAlreadyCovered).
+            if (releaseScreenFadeOnOpaque)
+                FeedbackService.SetScreenFadeImmediate(Color.clear);
         }
         else
         {
-            yield return EntryAnimation(phrase.entryAnim, text, preset, basePos);
+            // KingdomHearts nunca "salta" el entry (el letreo carácter a carácter es el contenido),
+            // pero si screenAlreadyCovered viene true, su fondo opaco igualmente cubre la pantalla
+            // en cuanto arranca (ver KingdomHeartsRoutine) — propagamos el flag para soltar el
+            // overlay de FeedbackService en ese instante, igual que en la rama skipEntry de arriba.
+            yield return EntryAnimation(phrase.entryAnim, text, preset, basePos, releaseScreenFadeOnOpaque);
         }
 
         float holdDuration = phrase.waitForAudio && phrase.voiceClip != null
@@ -332,7 +380,8 @@ public class DramaticTextOverlayUI : MonoBehaviour
 
     // ── Animaciones de entrada ────────────────────────────────────────────
 
-    IEnumerator EntryAnimation(DramaticEntryAnimation anim, string text, DramaticStylePreset preset, Vector2 basePos)
+    IEnumerator EntryAnimation(DramaticEntryAnimation anim, string text, DramaticStylePreset preset, Vector2 basePos,
+                               bool releaseScreenFadeOnOpaque = false)
     {
         _rootGroup.blocksRaycasts = true;
 
@@ -402,7 +451,7 @@ public class DramaticTextOverlayUI : MonoBehaviour
                 break;
 
             case DramaticEntryAnimation.KingdomHearts:
-                yield return KingdomHeartsRoutine(text, preset, basePos);
+                yield return KingdomHeartsRoutine(text, preset, basePos, releaseScreenFadeOnOpaque);
                 break;
         }
     }
@@ -458,7 +507,8 @@ public class DramaticTextOverlayUI : MonoBehaviour
 
     // ── Kingdom Hearts ────────────────────────────────────────────────────
 
-    IEnumerator KingdomHeartsRoutine(string text, DramaticStylePreset preset, Vector2 basePos)
+    IEnumerator KingdomHeartsRoutine(string text, DramaticStylePreset preset, Vector2 basePos,
+                                      bool releaseScreenFadeOnOpaque = false)
     {
         // El color real se bake en los vértices; el label queda en blanco para no teñir.
         _label.color = Color.white;
@@ -469,6 +519,12 @@ public class DramaticTextOverlayUI : MonoBehaviour
         _textContainer.localScale = Vector3.one * _khContainerZoom;
         _rootGroup.alpha = 1f;
         _rootGroup.blocksRaycasts = true;
+
+        // El fondo (SetBackground, llamado antes en ShowPhrase) ya es opaco en cuanto el
+        // CanvasGroup pasa a alpha=1 arriba, aunque el letreo carácter a carácter tarde más —
+        // mismo momento que la rama skipEntry de ShowPhrase, ver comentario en RunSequence.
+        if (releaseScreenFadeOnOpaque)
+            FeedbackService.SetScreenFadeImmediate(Color.clear);
 
         var textInfo = _label.textInfo;
         int charCount = textInfo.characterCount;

@@ -4928,5 +4928,5 @@ MonoBehaviour:
     m_Bits: 4294967295
   lifetime: 8
   pickupVFX: {fileID: 0}
-  pickupSFXKey: 
-  bounceSFXKey: 
+  pickupSFXKey: Coin
+  bounceSFXKey: Orb_Bounce

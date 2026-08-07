@@ -1113,8 +1113,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 309883819032871456}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.046213184, y: -0.032138206, z: -0.07363081, w: 0.99569577}
-  m_LocalPosition: {x: -0.12635477, y: -0.012277692, z: -0.0019062745}
+  m_LocalRotation: {x: 0.046213448, y: -0.032142073, z: -0.07363098, w: 0.9956956}
+  m_LocalPosition: {x: -0.12635478, y: -0.0122776935, z: -0.0019062747}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1569,8 +1569,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 701795779005566707}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.011350092, y: 0.09356025, z: 0.9935367, w: 0.06326589}
-  m_LocalPosition: {x: 0.02983256, y: 0.019494114, z: 0.09407054}
+  m_LocalRotation: {x: 0.011345031, y: 0.093560845, z: 0.9935369, w: 0.06326331}
+  m_LocalPosition: {x: 0.029832568, y: 0.019494288, z: 0.09407066}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -4271,7 +4271,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &2565669848064650075
 Transform:
   m_ObjectHideFlags: 0
@@ -6915,7 +6915,7 @@ Transform:
   m_GameObject: {fileID: 2950604682586933629}
   serializedVersion: 2
   m_LocalRotation: {x: 0.06337457, y: 0.6914814, z: -0.061121456, w: 0.71700865}
-  m_LocalPosition: {x: 0.014950827, y: 0.00003775952, z: 0.3276144}
+  m_LocalPosition: {x: 0.014949799, y: 0.000037968137, z: 0.32761443}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -8020,8 +8020,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3258219086598625941}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.08975248, y: -0.027121529, z: -0.101694986, w: -0.9903874}
-  m_LocalPosition: {x: 0.13925652, y: -0.006012166, z: -0.0027789874}
+  m_LocalRotation: {x: 0.08975235, y: -0.027122691, z: -0.10169266, w: -0.99038756}
+  m_LocalPosition: {x: 0.13925627, y: -0.0060124863, z: -0.0027772384}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -9699,8 +9699,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3931434250142218664}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.11039427, y: -0.14601748, z: -0.0705853, w: 0.9805661}
-  m_LocalPosition: {x: 0.12712738, y: 0.011118921, z: 0.00039596765}
+  m_LocalRotation: {x: 0.11039401, y: -0.14602062, z: -0.07058331, w: 0.9805658}
+  m_LocalPosition: {x: 0.12712754, y: 0.011118935, z: 0.00039596815}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -12494,7 +12494,6 @@ MonoBehaviour:
   updatesPerSecond: 10
   mustBeOnScreen: 1
   screenEdgePadding: 0.03
-  autoTargetByLayer: 1
   requireDamageableAlive: 1
   enableMarker: 1
   markerPrefab: {fileID: 6257368771293304010, guid: 0a8d3d2e80c7acf42880b491ab93fce0, type: 3}
@@ -12528,6 +12527,8 @@ MonoBehaviour:
   specialOrigin: {fileID: 551697587970401536}
   ignoreCasterColliders: 1
   instigatorOverride: {fileID: 4951141271202639922}
+  flyingSpeedMultiplier: 1.5
+  sprintSpeedMultiplier: 1.3
 --- !u!114 &6903908210425150239
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12564,10 +12565,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealthSystem
   invulnerabilityDuration: 1
   godMode: 0
-  enableHealthRegen: 1
-  healthRegenPerSecond: 3
-  healthRegenDelayAfterDamage: 2
-  healthRegenNotifyEpsilon: 0.01
   damageAnimationNames:
   - TakeDamage
   - TakeDamage_2
@@ -12608,9 +12605,9 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  damageSound: {fileID: 0}
-  healSound: {fileID: 0}
-  deathSound: {fileID: 0}
+  damageSoundKey: Player_Damage
+  healSoundKey: Player_Heal
+  deathSoundKey: Player_Death
   OnHealthChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -12642,13 +12639,11 @@ MonoBehaviour:
   pickupStateName: CarryStart_NoWeapon
   carryMoveStateName: CarryMoveIdle_NoWeapon
   throwStateName: CarryThrow_NoWeapon
-  locomotionStateName: Locomotion
   animatorLayer: 1
   transitionDuration: 0.2
   attachDelay: 0.5
   throwAnimationDuration: 0.3
   dropCooldown: 0.5
-  dropOnInteract: 1
 --- !u!114 &8599661016629616348
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12736,7 +12731,6 @@ MonoBehaviour:
   launchForwardImpulse: 3
   climbUpState: ClimbUp_RM_NoWeapon
   climbDownState: ClimbDown_RM_NoWeapon
-  climbIdleState: ClimbIdle_RM_NoWeapon
   climbAnimatorLayer: 0
   debugLogs: 0
   forceGroundedWhileClimbing: 1
@@ -12920,6 +12914,13 @@ MonoBehaviour:
   layerFadeDuration: 0.3
   victoryAnimationDuration: 3
   victorySfxKey: Npc_Battle_Victory
+  enableVictoryCamera: 1
+  victoryCamDistance: 2.8
+  victoryCamHeight: 1.6
+  victoryCamYawOffsetDeg: -35
+  victoryCamLookHeight: 1.3
+  victoryCamFOV: 38
+  victoryCamBlendSeconds: 0.4
   debugMode: 1
 --- !u!114 &4479948751999106379
 MonoBehaviour:
@@ -13024,7 +13025,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b3eeeb28580644a4fb443fda6a34f28c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.Player.FootstepHandler
-  _animator: {fileID: 0}
+  _animator: {fileID: 6005525575959977289}
   _groundLayer:
     serializedVersion: 2
     m_Bits: 1024
@@ -13032,6 +13033,9 @@ MonoBehaviour:
   _descentSpeedThreshold: 0.08
   _groundProximityThreshold: 0.2
   _minStepDistance: 0.35
+  _dustVfxPrefab: {fileID: 5610010966355794069, guid: de6677742b4849eeb27b0eeb6d434560, type: 3}
+  _dustInputMagnitudeThreshold: 0.6
+  _dustLifetime: 1.5
 --- !u!114 &4916995738179263480
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -22298,8 +22302,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8442355064877624095}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.122317776, y: 0.1272914, z: -0.047521852, w: 0.9831465}
-  m_LocalPosition: {x: 0.029832777, y: -0.0141516775, z: -0.09502113}
+  m_LocalRotation: {x: -0.12231768, y: 0.1272935, z: -0.047521845, w: 0.9831462}
+  m_LocalPosition: {x: 0.029832814, y: -0.014151562, z: -0.09502162}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -23299,8 +23303,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8930941970780406972}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.052879225, y: 0.028201036, z: 0.13828167, w: 0.98857814}
-  m_LocalPosition: {x: -0.13856633, y: 0.005982763, z: 0.0027648404}
+  m_LocalRotation: {x: -0.05288067, y: 0.028199807, z: 0.13827947, w: 0.9885784}
+  m_LocalPosition: {x: -0.13856629, y: 0.0059828972, z: 0.0027636166}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

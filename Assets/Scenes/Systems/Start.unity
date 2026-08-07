@@ -988,7 +988,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &109416901
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6859,7 +6859,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &751717854
 Transform:
   m_ObjectHideFlags: 0
@@ -11166,8 +11166,8 @@ MonoBehaviour:
   teleportVfxPrefab: {fileID: 7053385775836331393, guid: 354b6251e950209409c75ab984acf000, type: 3}
   vfxDuration: 1.5
   teleportDelayAfterVfx: 0.5
-  teleportStartSfx: {fileID: 0}
-  teleportEndSfx: {fileID: 0}
+  teleportStartSfxKey: Teleport_Start
+  teleportEndSfxKey: Teleport_End
   teleportUI: {fileID: 0}
 --- !u!1 &1389356913
 GameObject:

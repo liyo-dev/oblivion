@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.SceneManagement;
+using Game.Player;
 
 [DisallowMultipleComponent]
 public sealed class AudioService : MonoBehaviour
@@ -110,6 +111,12 @@ public sealed class AudioService : MonoBehaviour
         // Escenas
         SceneManager.sceneLoaded   += OnSceneLoaded;
 
+        // Pisadas del jugador: FootstepHandler detecta la pisada (huesos de los pies) y solo
+        // levanta un evento — el propio AudioService es quien decide qué suena, igual que con las
+        // señales del grafo narrativo. Antes nadie escuchaba este evento y las pisadas eran mudas
+        // (StarWorldFootprintPool solo generaba la huella visual).
+        FootstepHandler.OnFootstep += HandlePlayerFootstep;
+
         // Señales (incluye inactivos)
         _signals = DefaultNarrativeSignals.Instance
                    ?? ServiceLocator.Get<DefaultNarrativeSignals>(false)
@@ -129,6 +136,7 @@ public sealed class AudioService : MonoBehaviour
     void OnDestroy()
     {
         SceneManager.sceneLoaded   -= OnSceneLoaded;
+        FootstepHandler.OnFootstep -= HandlePlayerFootstep;
 
         if (_signals != null)
         {
@@ -918,6 +926,10 @@ public sealed class AudioService : MonoBehaviour
         _footstepIndex = (_footstepIndex + 1) % 5; // Alterna entre 0-4
         PlaySFX(key, volume, worldPosition);
     }
+
+    /// Handler de FootstepHandler.OnFootstep (ver suscripción en Awake). worldPos ya viene
+    /// calculado por FootstepHandler (punto de impacto del raycast al suelo bajo el pie).
+    void HandlePlayerFootstep(Vector3 worldPos) => PlayFootstep(1f, worldPos);
     
     /// <summary>
     /// Reproduce un spell SFX por número.

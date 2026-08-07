@@ -170,7 +170,14 @@ public class MountainSequencer : CinematicSequencerBase
         // ── Fase 3: Impacto ───────────────────────────────────────────────────
         yield return Co_Impact();
 
-        yield return Co_EndCinematicWithTransition(() =>
+        // FIX parpadeo montaña→enfoque: antes se usaba Co_EndCinematicWithTransition, que revela
+        // gameplay al terminar la cinemática. El grafo narrativo encadena MOUNTAIN_DONE con un
+        // FocusCameraNode (focusId MOUNTAIN_EXPLOSION_EVENT) que vuelve a cortar la cámara casi
+        // de inmediato, así que el jugador veía un salto a modo gameplay de por medio antes del
+        // enfoque a la montaña. Mismo patrón que ya usa LiamGolemSummonSequencer para encadenar
+        // con BossIntroPresentation: quedarse en negro y dejar que el sistema siguiente
+        // (FocusCameraNode, ver FeedbackService.IsScreenFaded ahí) revele él mismo.
+        yield return Co_EndCinematicStayBlack(() =>
         {
             RestoreMusic();
             UnfreezeEstela();
@@ -347,6 +354,8 @@ public class MountainSequencer : CinematicSequencerBase
         yield return new WaitForSeconds(_mountainImpactDelay);
         FeedbackService.ScreenFlash(new Color(1f, 0.35f, 0.05f, 0.75f), 0.9f);
         FeedbackService.CameraShake(0.6f, 1.0f);
+        AudioService.Instance?.PlaySFX("Mountain_Impact", 1f,
+            _mountainTarget != null ? _mountainTarget.position : transform.position);
     }
 
     // ── Helpers — Estela congelada ────────────────────────────────────────────
@@ -404,6 +413,7 @@ public class MountainSequencer : CinematicSequencerBase
         }
 
         _estelaSimpleAnim?.PlaySpellCast();
+        AudioService.Instance?.PlaySFX("Mountain_FireShot", 1f, spawnPos);
 
         var go = Instantiate(_bolaFuego.prefab, spawnPos, Quaternion.LookRotation(dir));
 

@@ -100,6 +100,8 @@ public class DialogueCinematicController : MonoBehaviour
     private float _bystanderRescanTimer;
 
     private readonly RaycastHit[] _intruderHitsBuffer = new RaycastHit[8];
+    // Buffer para la verificación de "cámara embebida" (ver CameraPositionIsEmbedded)
+    private readonly Collider[] _camEmbedCheckBuffer = new Collider[8];
     private readonly HashSet<Transform> _hiddenIntruders = new HashSet<Transform>();
     private readonly HashSet<Transform> _frameIntruders = new HashSet<Transform>();
     private readonly List<Transform> _intrudersToRestoreBuffer = new List<Transform>();
@@ -1844,12 +1846,64 @@ public class DialogueCinematicController : MonoBehaviour
                 }
             }
 
+            // ── Verificación lateral final: cámara "encajada" en un vano (puerta, dos pilares...) ──
+            // El SphereCast de arriba solo viaja en línea recta cabeza→cámara, así que si el vano
+            // es más estrecho que el hueco entre sus marcos, la línea puede pasar limpia (sin hit)
+            // aunque los marcos queden pegados a la cámara por los lados, fuera de esa línea recta.
+            // Resultado real reportado: plano de diálogo con los dos marcos de una puerta ocupando
+            // los bordes del encuadre, totalmente desenfocados en primer plano, tapando al speaker.
+            // Aquí no seguimos una línea: comprobamos solape puro (OverlapSphere) en la posición
+            // final y, si la cámara está literalmente dentro de un collider que no es el propio
+            // speaker/player/NPC/party, la alejamos en pasos cortos hasta liberarse (tope de
+            // seguridad para no huir indefinidamente si la sala entera es estrecha).
+            {
+                const int maxLateralBackoffSteps = 6;
+                const float lateralBackoffStep = 0.2f;
+                Vector3 escapeDir = camPos - target.position;
+                escapeDir.y = 0f;
+                if (escapeDir.sqrMagnitude > 0.0001f)
+                {
+                    escapeDir.Normalize();
+                    float embedCheckRadius = dialogueCameraSelfClearance * 0.6f;
+                    int lateralSteps = 0;
+                    while (lateralSteps < maxLateralBackoffSteps && CameraPositionIsEmbedded(camPos, embedCheckRadius, target))
+                    {
+                        camPos += escapeDir * lateralBackoffStep;
+                        lateralSteps++;
+                    }
+                    if (showDebugInfo && lateralSteps > 0)
+                        Debug.Log($"[DialogueCinematicController] 📷 Cámara encajada en vano - {lateralSteps} paso(s) de retroceso lateral");
+                }
+            }
+
             if (showDebugInfo)
             {
                 Debug.Log($"[DialogueCinematicController] Shot {shot.shotType}: Target={target.name}, CamPos={camPos}, TargetPos={basePos}");
             }
 
             return camPos;
+        }
+
+        /// <summary>
+        /// Comprueba si <paramref name="pos"/> se solapa con geometría sólida que no sea el propio
+        /// speaker/player/NPC principal/party (ver comentario en el bloque que la llama, dentro de
+        /// CalculateCameraPosition). Usa OverlapSphereNonAlloc sobre el buffer cacheado
+        /// _camEmbedCheckBuffer para no allocar.
+        /// </summary>
+        private bool CameraPositionIsEmbedded(Vector3 pos, float radius, Transform target)
+        {
+            int count = Physics.OverlapSphereNonAlloc(pos, radius, _camEmbedCheckBuffer,
+                _camObstructionMask, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < count; i++)
+            {
+                var col = _camEmbedCheckBuffer[i];
+                if (col == null) continue;
+                Transform root = col.transform.root;
+                if (root == target || root == currentPlayer || root == currentNPC) continue;
+                if (IsPartyMember(root)) continue;
+                return true;
+            }
+            return false;
         }
 
         /// <summary>

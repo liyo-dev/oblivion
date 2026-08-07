@@ -199,6 +199,10 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
         if (_petalDecorPrefabs == null || _petalDecorPrefabs.Length == 0) return;
         if (VfxPoolService.Instance == null) return;
 
+        // Viento suave de ambiente acompañando la decoración de pétalos — sutil, no un efecto
+        // puntual como una explosión, solo para que la escena no quede completamente muda.
+        AudioService.Instance?.PlaySFX("ReinoExit_PetalAmbience", 0.35f);
+
         if (_petalSpawnPoints != null && _petalSpawnPoints.Length > 0)
         {
             for (int i = 0; i < _petalSpawnPoints.Length; i++)

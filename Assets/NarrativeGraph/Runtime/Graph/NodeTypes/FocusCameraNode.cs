@@ -1,11 +1,18 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using Sendero.Core.Feedback;
 
 /// <summary>
 /// Corta la cámara del jugador al CameraFocusPoint indicado, aguanta holdDuration segundos
-/// y corta de vuelta. Bloquea la vThirdPersonCamera durante el efecto y manipula
-/// Camera.main directamente (igual que DeathCameraEffect).
+/// y corta de vuelta. Bloquea la vThirdPersonCamera durante el efecto (vía CameraDirectorService)
+/// y manipula Camera.main directamente (igual que DeathCameraEffect).
+///
+/// Si este nodo se ejecuta justo después de una cinemática que terminó con
+/// Co_EndCinematicStayBlack (pantalla cubierta a propósito para no revelar gameplay de por
+/// medio), este nodo detecta FeedbackService.IsScreenFaded y es él quien revela, cortando la
+/// cámara mientras la pantalla sigue tapada. Si la pantalla no está cubierta (uso normal, en
+/// medio del gameplay visible), el nodo se comporta exactamente igual que antes.
 ///
 /// Opcionalmente aplica zoom in → hold → zoom out cambiando el FOV de la cámara.
 /// </summary>
@@ -17,6 +24,10 @@ public sealed class FocusCameraNode : NarrativeNode
 
     [Tooltip("Segundos que la cámara permanece en el punto de foco.")]
     public float holdDuration = 3f;
+
+    [Header("Reaparición (solo si la pantalla llega cubierta desde una cinemática)")]
+    [Tooltip("Duración del fundido de reaparición si este nodo recibe la pantalla ya cubierta (ej: tras Co_EndCinematicStayBlack). Si la pantalla no está cubierta no se aplica ningún fundido.")]
+    public float revealFadeDuration = 0.3f;
 
     [Tooltip("Si true, el grafo espera a que acabe el ciclo. Si false, avanza inmediatamente (fire & forget).")]
     public bool waitForCompletion = true;
@@ -82,8 +93,14 @@ public sealed class FocusCameraNode : NarrativeNode
         bool fogWasEnabled = RenderSettings.fog;
         RenderSettings.fog = false;
 
-        vThirdPersonCamera.lockCameraForCinematic = true;
+        CameraDirectorService.Claim(this);
         cam.transform.SetPositionAndRotation(target.transform.position, target.transform.rotation);
+
+        // Si venimos de una cinemática que se quedó en negro a propósito (Co_EndCinematicStayBlack),
+        // el corte de arriba ya ocurrió con la pantalla tapada: revelamos nosotros en vez de dejar
+        // que se vea un frame de gameplay antes de este enfoque.
+        if (FeedbackService.IsScreenFaded && revealFadeDuration > 0f)
+            yield return FeedbackService.ScreenFadeAsync(Color.black, revealFadeDuration, fadeIn: false);
 
         // Esperar un frame para que el nuevo transform se procese
         yield return null;
@@ -130,7 +147,7 @@ public sealed class FocusCameraNode : NarrativeNode
 
         // --- CUT OUT ---
         RenderSettings.fog = fogWasEnabled;
-        vThirdPersonCamera.lockCameraForCinematic = false;
+        CameraDirectorService.Release(this);
         if (dayNight != null && dayNightWasEnabled) dayNight.enabled = true;
 
         done?.Invoke();

@@ -16,8 +16,8 @@ public class TorchInteract : MonoBehaviour
     [Tooltip("Si está activo, destruimos el proyectil al encender.")]
     public bool consumeProjectileOnHit = true;
 
-    [Header("Audio (opcional)")]
-    public AudioSource sfxIgnite;
+    [Header("Audio (clave del Audio Graph Profile)")]
+    public string sfxIgniteKey = "Torch_Ignite";
 
     public System.Action<bool> onTorchToggled;
 
@@ -29,7 +29,7 @@ public class TorchInteract : MonoBehaviour
         if (isLit) return;
         isLit = true;
         ApplyVisuals();
-        if (sfxIgnite) sfxIgnite.Play();
+        if (!string.IsNullOrWhiteSpace(sfxIgniteKey)) AudioService.Instance?.PlaySFX(sfxIgniteKey, 1f, transform.position);
         onTorchToggled?.Invoke(isLit);
     }
 

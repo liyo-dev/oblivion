@@ -11,6 +11,11 @@ using Sendero.Core.Feedback;
 [DisallowMultipleComponent]
 public class LiamCrystalBallSequencer : CinematicSequencerBase
 {
+    // loopId propio para AudioService.PlayLoopingSFX/StopLoopingSFX. LiamGolemSummonSequencer usa
+    // el mismo loopId ("CrystalBallPulse") para su propia bola de cristal (idéntico mecanismo
+    // visual) — como son secuencias mutuamente excluyentes nunca coinciden en el tiempo.
+    private const string CrystalPulseLoopId = "CrystalBallPulse";
+
     [Header("Personajes")]
     [SerializeField] private Transform liamTransform;
     [Tooltip("Transform del jugador para que la cámara de visión lo siga.")]
@@ -210,6 +215,7 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
     {
         base.OnDestroy();
         _visionPulsing = false;
+        AudioService.Instance?.StopLoopingSFX(CrystalPulseLoopId);
         DestroyEvilOverlay();
         crystalVisionCamera?.Deactivate();
         crystalBallParticles?.Stop();
@@ -245,6 +251,7 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
         yield return new WaitUntil(() => line1Done);
 
         FeedbackService.ScreenFlash(evilFlashColor, evilFlashDuration);
+        AudioService.Instance?.PlaySFX("CrystalBall_EvilPulse", 1f, liamTransform.position);
 
         // ── Fase 3: Mismo plano — segunda revelación ──────────────────────────
         if (emotionLine2 != NPCEmotion.None)
@@ -258,6 +265,7 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
         yield return new WaitUntil(() => line2Done);
 
         FeedbackService.ScreenFlash(evilFlashColor, evilFlashDuration);
+        AudioService.Instance?.PlaySFX("CrystalBall_EvilPulse", 1f, liamTransform.position);
 
         // ── Fase 4: Primer plano del rostro — risa final ──────────────────────
         _cinematicCamera.Cut(camShotLiamFace);
@@ -357,12 +365,14 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
         crystalBallRenderer.SetPropertyBlock(_mpb);
 
         crystalBallParticles?.Play();
+        AudioService.Instance?.PlaySFX("CrystalBall_Activate", 1f, crystalBallRenderer.transform.position);
         StartCoroutine(Co_PulseCrystalVision());
     }
 
     private IEnumerator Co_PulseCrystalVision()
     {
         _visionPulsing = true;
+        AudioService.Instance?.PlayLoopingSFX(CrystalPulseLoopId, "CrystalBall_PulseLoop", 0.5f);
         while (_visionPulsing)
         {
             float t = (Mathf.Sin(Time.time * pulseFrequency * Mathf.PI * 2f) + 1f) * 0.5f;
@@ -382,6 +392,9 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
 
         _visionPulsing = false;
         yield return null; // deja que el loop de pulso salga antes de leer el color
+
+        AudioService.Instance?.StopLoopingSFX(CrystalPulseLoopId, 0.3f);
+        AudioService.Instance?.PlaySFX("CrystalBall_Deactivate", 1f, crystalBallRenderer.transform.position);
 
         crystalBallParticles?.Stop();
 

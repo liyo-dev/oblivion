@@ -120,6 +120,15 @@ public class StarAwakeningSequencer : CinematicSequencerBase
              "con la animación también en cámara lenta. Debe coincidir con el frame de release de MagicRight.")]
     [SerializeField] private float castAnimDelay            = 0.3f;
 
+    [Header("Tensión — shake progresivo mientras el proyectil se acerca")]
+    [Tooltip("Intensidad de shake nada más aparecer el proyectil (sutil).")]
+    [SerializeField] private float approachShakeMin         = 0.02f;
+    [Tooltip("Intensidad de shake justo antes del impacto/panic input (más fuerte que el impacto en sí sería un error, mantener por debajo).")]
+    [SerializeField] private float approachShakeMax         = 0.15f;
+    [Tooltip("Segundos reales que tarda en ir de min a max.")]
+    [SerializeField] private float approachShakeRampSeconds = 4f;
+    [SerializeField] private float approachShakeInterval    = 0.15f;
+
     // ── Estado ────────────────────────────────────────────────────────────────
 
     private SlowMotionFireProjectile _activeProjectile;
@@ -172,12 +181,19 @@ public class StarAwakeningSequencer : CinematicSequencerBase
         _collisionTriggered = false;
         _sequenceFailed     = false;
 
-        yield return Co_BeginCinematicWithTransition(camShotEldran);
+        // FIX: FaceTarget se aplica en el cut point (pantalla cubierta por la transición de
+        // entrada), igual que el teleport de Will a willAnchor en Fase 1. Antes se llamaba
+        // después de que Co_BeginCinematicWithTransition devolviera el control, es decir con la
+        // pantalla ya revelada y camShotEldran a la vista: el giro instantáneo (sin interpolar)
+        // de Will se veía en pantalla como un salto brusco que enseñaba su nuca justo antes de
+        // que Eldran dijera "¡Will, cuidado!".
+        yield return Co_BeginCinematicWithTransition(camShotEldran, () =>
+        {
+            if (willTransform != null && companionTransform != null)
+                FaceTarget(willTransform, companionTransform.position);
+        });
 
         // ── Fase 0: Música + Eldran lanza la advertencia ──────────────────────
-        if (willTransform != null && companionTransform != null)
-            FaceTarget(willTransform, companionTransform.position);
-
         yield return Co_PreDialogue();
 
         // ── Fase 1: Slow-motion + spawn proyectil + Will reacciona ────────────
@@ -213,8 +229,10 @@ public class StarAwakeningSequencer : CinematicSequencerBase
         }
 
         _activeProjectile = Instantiate(incomingProjectilePrefab, spawnPos, spawnRot);
+        AudioService.Instance?.PlaySFX("Star_ProjectileIncoming", 1f, spawnPos);
         _activeProjectile.Launch(launchTarget);
         _activeProjectile.OnHitByPlayerFireball += OnPhysicsCollision;
+        StartCoroutine(Co_ApproachTension());
 
         // Corte mientras la pantalla está negra: Will de perfil, listo para ver el giro
         _cinematicCamera.Cut(camShotWillProfile);
@@ -370,6 +388,7 @@ public class StarAwakeningSequencer : CinematicSequencerBase
             willAnimator.SetLayerWeight(willUpperBodyLayer, 1f);
             willAnimator.Play(castAnimState, willUpperBodyLayer);
         }
+        AudioService.Instance?.PlaySFX("Star_SpellCast", 1f, willTransform.position);
 
         if (castAnimDelay > 0f)
             yield return new WaitForSeconds(castAnimDelay);
@@ -429,6 +448,10 @@ public class StarAwakeningSequencer : CinematicSequencerBase
     {
         if (playerSpawner != null) playerSpawner.enabled = true;
 
+        // Reusa el stinger de "denegado" de la UI como sonido de fallo del panic input — no hace
+        // falta un clip dedicado solo para este momento.
+        AudioService.Instance?.PlaySFX("ui_denied");
+
         yield return FeedbackService.ScreenFadeAsync(Color.black, fadeToBlackDuration, fadeIn: true);
 
         if (_activeProjectile != null)
@@ -462,6 +485,22 @@ public class StarAwakeningSequencer : CinematicSequencerBase
             yield return null;
         }
         Time.timeScale = 1f;
+    }
+
+    // Shake sutil y creciente mientras el proyectil está en vuelo (spawn → impacto/panic input),
+    // para que la amenaza se sienta acercarse en vez de que el único golpe de cámara sea el de la
+    // explosión final. Se corta solo cuando el proyectil deja de existir o la secuencia resuelve.
+    private IEnumerator Co_ApproachTension()
+    {
+        float elapsedRealtime = 0f;
+        while (_activeProjectile != null && !_collisionTriggered && !_sequenceFailed)
+        {
+            elapsedRealtime += approachShakeInterval;
+            float k = Mathf.Clamp01(elapsedRealtime / approachShakeRampSeconds);
+            float intensity = Mathf.Lerp(approachShakeMin, approachShakeMax, k);
+            FeedbackService.CameraShake(intensity, approachShakeInterval * 1.5f);
+            yield return new WaitForSecondsRealtime(approachShakeInterval);
+        }
     }
 
     private static IEnumerator Co_TurnTowards(Transform character, Vector3 targetPos, float duration)
@@ -522,6 +561,7 @@ public class StarAwakeningSequencer : CinematicSequencerBase
 
         if (explosionVFX != null)
             VfxPoolService.Instance.Play(explosionVFX, pos, Quaternion.identity, 3f);
+        AudioService.Instance?.PlaySFX("Star_Collision", 1f, pos);
 
         if (_activeProjectile != null)
         {

@@ -234,7 +234,10 @@
 
         public static void SetVfxProvider(IVfxProvider provider) => _vfxProvider = provider;
 
-        // SFX puntuales
+        // SFX puntuales — LEGACY: acepta un AudioClip directo y por tanto NO pasa por
+        // AudioGraphProfile. No usar en código nuevo: usar AudioService.Instance.PlaySFX(eventKey, ...)
+        // con una clave registrada en Assets/_AUDIOPROFILE/AudioGraphProfile.asset (ver ejemplo en
+        // Assets/Scripts/Teleport/TeleportSystem.cs). Se mantiene solo por compatibilidad.
         public static void PlaySfx(AudioClip clip, Vector3 position, float volume = 1f)
         {
             if (!clip) return;

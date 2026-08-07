@@ -91,6 +91,9 @@ namespace Sendero.UI
         private CanvasGroup _canvasGroup;
         private Tween _currentFadeTween;
         private bool _isVisible = true;
+        // Contador de referencias: cuántos sistemas han pedido ocultar el HUD y aún no lo han
+        // liberado. Ver comentario en HideHUD()/ShowHUD().
+        private int _hideRequestCount = 0;
         
         // Estado actual de los slots
         private Dictionary<MagicSlot, SlotState> _slotStates = new Dictionary<MagicSlot, SlotState>();
@@ -128,6 +131,7 @@ namespace Sendero.UI
             // Asegurar que empieza visible
             _canvasGroup.alpha = 1f;
             _isVisible = true;
+            _hideRequestCount = 0;
 
             // FIX: este Canvas también lleva un SceneBoundUI (para ocultarse/mostrarse según la
             // escena activa), y SceneBoundUI.BeginBossIntro/EndBossIntro operan sobre el MISMO
@@ -732,22 +736,33 @@ namespace Sendero.UI
         }
         
         /// <summary>
-        /// Oculta el HUD con un fade suave usando DOTween
+        /// Oculta el HUD con un fade suave usando DOTween.
+        /// FIX: 7 sistemas independientes (DialogueManager, CinematicSequencerBase,
+        /// SimpleCinematicDirector, BossIntroPresentation, DramaticTextOverlayUI,
+        /// PlayerEquipmentMenuController, DialogueCinematicController) llaman a HideHUD/ShowHUD
+        /// sobre este mismo singleton sin coordinarse entre sí. Con el booleano _isVisible antiguo,
+        /// si el sistema A ocultaba el HUD y luego el sistema B (anidado, ej. un bocadillo dentro de
+        /// una cinemática) hacía su propio Show antes de que A terminara, el HUD reaparecía a mitad
+        /// de secuencia y nada volvía a ocultarlo hasta el EndCinematic() de A — el bug de "el HUD
+        /// se queda/reaparece en las secuencias". _hideRequestCount convierte esto en un contador de
+        /// referencias: el HUD solo se muestra cuando TODOS los que pidieron ocultarlo han pedido
+        /// mostrarlo de vuelta. La firma pública no cambia, así que ningún call site necesita tocarse.
         /// </summary>
         public void HideHUD(float duration = -1f)
         {
-            if (!_isVisible) return; // Ya está oculto
-            
+            _hideRequestCount++;
+            if (!_isVisible) return; // Ya está oculto (por este u otro sistema)
+
             _isVisible = false;
             float useDuration = duration > 0 ? duration : fadeDuration;
-            
+
             // Matar tween anterior si existe
             _currentFadeTween?.Kill();
-            
+
             // Si _canvasGroup es null, intentar obtenerlo
             if (_canvasGroup == null) _canvasGroup = GetComponent<CanvasGroup>();
             if (_canvasGroup == null) return; // Si sigue siendo null, salir
-            
+
             // Fade out suave
             _currentFadeTween = _canvasGroup.DOFade(0f, useDuration)
                 .SetEase(Ease.OutQuad)
@@ -761,28 +776,31 @@ namespace Sendero.UI
                     }
                 });
         }
-        
+
         /// <summary>
-        /// Muestra el HUD con un fade suave usando DOTween
+        /// Muestra el HUD con un fade suave usando DOTween. Ver comentario de HideHUD(): solo
+        /// revela el HUD de verdad cuando ningún otro sistema sigue reclamándolo oculto.
         /// </summary>
         public void ShowHUD(float duration = -1f)
         {
+            if (_hideRequestCount > 0) _hideRequestCount--;
+            if (_hideRequestCount > 0) return; // Otro sistema todavía lo quiere oculto
             if (_isVisible) return; // Ya está visible
-            
+
             _isVisible = true;
             float useDuration = duration > 0 ? duration : fadeDuration;
-            
+
             // Matar tween anterior si existe
             _currentFadeTween?.Kill();
-            
+
             // Si _canvasGroup es null, intentar obtenerlo
             if (_canvasGroup == null) _canvasGroup = GetComponent<CanvasGroup>();
             if (_canvasGroup == null) return; // Si sigue siendo null, salir
-            
+
             // Restaurar interactividad antes del fade in
             _canvasGroup.interactable = true;
             _canvasGroup.blocksRaycasts = true;
-            
+
             // Fade in suave
             _currentFadeTween = _canvasGroup.DOFade(1f, useDuration)
                 .SetEase(Ease.InQuad)

@@ -38,9 +38,8 @@ public class BossIntroPresentation : MonoBehaviour
     [Tooltip("Activa si el boss está en interior: fuerza fondo negro en su cámara.")]
     [SerializeField] private bool isIndoor = false;
 
-    [Header("Audio")]
-    [SerializeField] private AudioClip bossRoarClip;
-    [SerializeField] private AudioSource audioSource;
+    [Header("Audio (clave del Audio Graph Profile)")]
+    [SerializeField] private string bossRoarSfxKey = "Boss_Roar";
 
     // Campos legacy — mantenidos para escenas ya configuradas; ya no se usan en el flujo principal
     [Header("(Legacy) Boss Name Canvas")]
@@ -120,11 +119,10 @@ public class BossIntroPresentation : MonoBehaviour
             }
 
             // 5. Roar y efectos de cámara
-            if (bossRoarClip != null)
+            if (!string.IsNullOrWhiteSpace(bossRoarSfxKey) && AudioService.Instance != null)
             {
-                if (audioSource != null) audioSource.PlayOneShot(bossRoarClip);
-                else AudioSource.PlayClipAtPoint(bossRoarClip,
-                    bossTransform != null ? bossTransform.position : transform.position);
+                Vector3 roarPos = bossTransform != null ? bossTransform.position : transform.position;
+                AudioService.Instance.PlaySFX(bossRoarSfxKey, 1f, roarPos);
             }
 
             float elapsed  = 0f;

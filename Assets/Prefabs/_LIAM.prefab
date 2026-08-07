@@ -7826,7 +7826,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b3eeeb28580644a4fb443fda6a34f28c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.Player.FootstepHandler
-  _animator: {fileID: 0}
+  _animator: {fileID: 2417327061361703840}
   _groundLayer:
     serializedVersion: 2
     m_Bits: 1024
@@ -7834,6 +7834,9 @@ MonoBehaviour:
   _descentSpeedThreshold: 0.08
   _groundProximityThreshold: 0.2
   _minStepDistance: 0.35
+  _dustVfxPrefab: {fileID: 5610010966355794069, guid: de6677742b4849eeb27b0eeb6d434560, type: 3}
+  _dustInputMagnitudeThreshold: 0.6
+  _dustLifetime: 1.5
 --- !u!1 &3341901564085152908
 GameObject:
   m_ObjectHideFlags: 0

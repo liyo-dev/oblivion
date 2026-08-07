@@ -63,7 +63,7 @@ MonoBehaviour:
   impactVFX: {fileID: 0}
   despawnVFX: {fileID: 0}
   vfxLifetime: 3
-  castSFXKey: 
-  impactSFXKey: 
+  castSFXKey: Levitation_Cast
+  impactSFXKey: Levitation_Impact
   slotType: 0
   attackIcon: {fileID: 21300000, guid: 1704c7cdd1802f0448577afeeb7f2a03, type: 3}

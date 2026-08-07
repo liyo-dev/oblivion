@@ -10,6 +10,10 @@ using Sendero.Core.Feedback;
 [DisallowMultipleComponent]
 public class LiamGolemSummonSequencer : CinematicSequencerBase
 {
+    // Mismo loopId que LiamCrystalBallSequencer para el pulso de la bola de cristal (idéntico
+    // mecanismo visual) — nunca coinciden en el tiempo, son secuencias mutuamente excluyentes.
+    private const string CrystalPulseLoopId = "CrystalBallPulse";
+
     [Header("Personaje — Liam")]
     [SerializeField] private Transform _liamTransform;
 
@@ -196,6 +200,7 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
     {
         base.OnDestroy();
         _visionPulsing = false;
+        AudioService.Instance?.StopLoopingSFX(CrystalPulseLoopId);
         _crystalVisionCamera?.Deactivate();
         _crystalBallParticles?.Stop();
         if (_crystalBallRenderer != null)
@@ -236,6 +241,8 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
         _magicCircleVFX?.Play();
         _bodyAuraVFX?.Play();
         FeedbackService.ScreenFlash(_summonFlashColor, _summonFlashFadeOut);
+        AudioService.Instance?.PlaySFX("GolemSummon_Invoke", 1f,
+            _liamTransform != null ? _liamTransform.position : transform.position);
 
         _liamEmotion?.SetEmotion(_emotionLine2);
 
@@ -304,12 +311,14 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
         _crystalBallRenderer.SetPropertyBlock(_mpb);
 
         _crystalBallParticles?.Play();
+        AudioService.Instance?.PlaySFX("CrystalBall_Activate", 1f, _crystalBallRenderer.transform.position);
         StartCoroutine(Co_PulseCrystalVision());
     }
 
     private IEnumerator Co_PulseCrystalVision()
     {
         _visionPulsing = true;
+        AudioService.Instance?.PlayLoopingSFX(CrystalPulseLoopId, "CrystalBall_PulseLoop", 0.5f);
         while (_visionPulsing)
         {
             float t = (Mathf.Sin(Time.time * _pulseFrequency * Mathf.PI * 2f) + 1f) * 0.5f;
@@ -329,6 +338,9 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
 
         _visionPulsing = false;
         yield return null; // deja que el loop de pulso salga antes de leer el color
+
+        AudioService.Instance?.StopLoopingSFX(CrystalPulseLoopId, 0.3f);
+        AudioService.Instance?.PlaySFX("CrystalBall_Deactivate", 1f, _crystalBallRenderer.transform.position);
 
         _crystalBallParticles?.Stop();
 

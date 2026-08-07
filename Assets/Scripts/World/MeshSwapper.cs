@@ -41,8 +41,8 @@ namespace Game.World
         [Tooltip("Offset de posición para los efectos (respecto al target)")]
         [SerializeField] private Vector3 effectsPositionOffset = Vector3.zero;
         
-        [Tooltip("Audio a reproducir al cambiar")]
-        [SerializeField] private AudioSource audioOnSwap;
+        [Tooltip("Clave del Audio Graph Profile a reproducir al cambiar")]
+        [SerializeField] private string audioOnSwapKey = "Mesh_Swap_Break";
         
         [Header("Persistencia")]
         [Tooltip("ID único para guardar el estado (vacío = no persistir)")]
@@ -215,9 +215,9 @@ namespace Game.World
                 }
             }
 
-            if (audioOnSwap != null)
+            if (!string.IsNullOrWhiteSpace(audioOnSwapKey))
             {
-                audioOnSwap.Play();
+                AudioService.Instance?.PlaySFX(audioOnSwapKey, 1f, transform.position);
             }
         }
 

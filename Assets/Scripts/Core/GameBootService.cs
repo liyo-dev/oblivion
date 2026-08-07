@@ -208,7 +208,7 @@ public class GameBootService : MonoBehaviour
     public static void ResetTransientSessionState()
     {
         GameState.ResetAll();
-        vThirdPersonCamera.lockCameraForCinematic = false;
+        CameraDirectorService.ForceResetState();
         Game.Cinematics.SimpleCinematicDirector.ForceResetStaticState();
         TeleportService.ForceResetTransitionLock();
     }

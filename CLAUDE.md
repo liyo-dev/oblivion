@@ -41,6 +41,13 @@ private readonly Collider[] _buffer = new Collider[32];
 int count = Physics.OverlapSphereNonAlloc(pos, radius, _buffer, layerMask);
 ```
 
+**Distinguir personajes de geometría en raycasts/obstrucciones:** los personajes (player, NPCs, party members) no tienen una capa propia — todos viven en `Default` junto con la mayoría de la geometría estática del mundo (confirmado en `Prefabs/_LIAM.prefab`, todo a `m_Layer: 0`). Por eso la capa sola no sirve para que un raycast de "¿hay pared/puerta en medio?" ignore a los personajes. Usar `NPCSimpleAnimator` como marcador fiable: lo tiene el player y TODOS los NPCs (mismo criterio que ya usa `DialogueManager.IsActualNPC`), y ningún objeto de escenario (puertas, muebles, props). Patrón:
+```csharp
+Transform root = hit.collider.transform.root;
+if (root.GetComponent<NPCSimpleAnimator>() != null) continue; // es un personaje, no una obstrucción
+```
+Ejemplo real: `PlayerParty.FindClearDialogueFormationPosition` — evita teletransportar a un party member al otro lado de una puerta cerrada al posicionarlo para un diálogo (bug: NPC hablando desde detrás de una puerta, cámara pegada a la hoja).
+
 **Logging:**
 ```csharp
 // Todo Debug.Log de diagnóstico bajo:

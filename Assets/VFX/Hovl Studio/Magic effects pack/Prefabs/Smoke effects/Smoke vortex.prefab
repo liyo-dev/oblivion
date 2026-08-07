@@ -9754,8 +9754,8 @@ MonoBehaviour:
   baseDamage: 10
   hitEffectPrefab: {fileID: 1845955007268882, guid: 67a684e320da6e7439421a07e3fa265c, type: 3}
   usePhysicsMovement: 1
-  spawnSFXKey: 
-  impactSFXKey: 
+  spawnSFXKey: SmokeVortex_Spawn
+  impactSFXKey: Impact1
 --- !u!114 &8345969703081286086
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9778,4 +9778,4 @@ MonoBehaviour:
   targetLayers:
     serializedVersion: 2
     m_Bits: 8
-  impactSFXKey: 
+  impactSFXKey: Impact1

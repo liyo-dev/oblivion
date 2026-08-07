@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 /// <summary>
@@ -8,6 +9,12 @@ using UnityEngine;
 ///
 /// Sigue el mismo patrón que PortalTrigger/OnTriggerEnter_Event: Collider en modo
 /// trigger + filtro por tag "Player" + emisión de señal narrativa.
+///
+/// Bloqueo físico: igual que DayOnlyInspectionTrigger, adquiere el lock de movimiento
+/// (PlayerLockService) justo antes de emitir el evento y lo libera un frame después,
+/// como puente hasta que el sistema narrativo (diálogo/cinemática) tome el control
+/// con su propio PushMode(ActionMode.Cinematic). Sin esto el jugador seguía moviéndose
+/// libremente mientras el grafo procesaba el evento.
 /// </summary>
 [RequireComponent(typeof(Collider))]
 public sealed class KingdomBoundaryTrigger : MonoBehaviour
@@ -19,10 +26,21 @@ public sealed class KingdomBoundaryTrigger : MonoBehaviour
     public bool singleUse = true;
 
     bool _fired;
+    bool _lockAcquired;
 
     void Reset()
     {
         GetComponent<Collider>().isTrigger = true;
+    }
+
+    void OnDisable()
+    {
+        ReleaseLock();
+    }
+
+    void OnDestroy()
+    {
+        ReleaseLock();
     }
 
     void OnTriggerEnter(Collider other)
@@ -49,10 +67,38 @@ public sealed class KingdomBoundaryTrigger : MonoBehaviour
         }
 
         _fired = true;
+
+        // Adquirir lock ANTES de emitir el evento: puente hasta que el sistema narrativo
+        // (diálogo/cinemática) tome el control con su propio PushMode. Mismo patrón que
+        // DayOnlyInspectionTrigger.OnTriggerEnter.
+        var lockService = PlayerLockService.Instance;
+        if (lockService != null)
+        {
+            lockService.Acquire(this);
+            _lockAcquired = true;
+        }
+
         signals.RaiseCustom(eventKey, $"[KingdomBoundaryTrigger] {name}");
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"[KingdomBoundaryTrigger] Límite del Reino cruzado. Evento '{eventKey}' emitido.");
 #endif
+
+        StartCoroutine(ReleaseLockNextFrame());
+    }
+
+    IEnumerator ReleaseLockNextFrame()
+    {
+        yield return null;
+        ReleaseLock();
+    }
+
+    void ReleaseLock()
+    {
+        if (_lockAcquired && PlayerLockService.HasInstance)
+        {
+            PlayerLockService.Instance.Release(this);
+            _lockAcquired = false;
+        }
     }
 }

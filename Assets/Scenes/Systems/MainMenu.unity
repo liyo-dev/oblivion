@@ -3024,7 +3024,7 @@ MonoBehaviour:
   buttonPanel: {fileID: 758483933}
   settingsMenu: {fileID: 442465677}
   nextSceneContinue: MainWorld
-  nextSceneNewGame: Prologo
+  nextSceneNewGame: SplashScreen
   loadingOverlayScene: LoadingScreen
   fadeOverride: {fileID: 11400000, guid: c9f7b34f761c5c342ada8a4b2ab7a716, type: 2}
   fadeDelay: 0

@@ -19,7 +19,7 @@ MonoBehaviour:
   playerAnimationTrigger: MagicSpecial
   companionAnimationTrigger: MagicSpecial
   vfxPrefab: {fileID: 8240083682830294036, guid: 3eebe64e41953e842b2d3509bf070d1b, type: 3}
-  castSFXKey: 
+  castSFXKey: SpecialAttack_Estela
   vfxLifetime: 3
   damageDelay: 0.4
   damage: 80

@@ -79,6 +79,28 @@ public class AerialKnockbackReceiver : MonoBehaviour
     // CheckGroundDistance en vThirdPersonMotor.cs.
     private float _groundProbeRadius = 0.3f;
 
+    // Chequeo de obstrucción horizontal del arco: sin esto, el lanzamiento mueve al jugador de
+    // forma puramente cinemática (Rigidbody.MovePosition/CharacterController.Move sobre una
+    // posición ya calculada, ver comentario de clase) y puede empujarlo DENTRO de un collider
+    // sólido que tenga detrás en vez de detenerse ante él — por ejemplo el collider de un
+    // RoomExitBlocker bloqueado (una quest gate, como la que exige ayudar al niño pez antes de
+    // entrar al agua: mientras está bloqueada su collider es sólido, no trigger). El síntoma es
+    // exactamente "el choque de hechizos no me lanza por el aire, me mete en el suelo/geometría" y,
+    // si el gate estaba detrás, dispara además el mensaje de bloqueo de esa quest al solaparse con
+    // su collider. Se usa "todo" como máscara y se filtra en el propio chequeo, porque personajes y
+    // geometría estática comparten la layer "Default" en este proyecto y no se pueden separar por
+    // layer (mismo criterio que PlayerParty.FindClearDialogueFormationPosition, ver CLAUDE.md §2).
+    private LayerMask _obstructionMask;
+    private float _obstructionProbeHeight = 1f;
+
+    // Buffer del SphereCast de obstrucción (regla del proyecto: nunca alloc en runtime, ver
+    // MagicProjectil.cs). Se usa la variante *NonAlloc* y, sobre todo, la variante "All": con la
+    // variante de un solo resultado el propio collider del jugador (el sphere-cast arranca
+    // solapándolo, está justo en el origin) siempre habría sido el hit más cercano y habría tapado
+    // cualquier obstáculo real detrás; con el buffer se recorren todos los hits y se descartan los
+    // que sean personajes (ver ClampLaunchDistance).
+    private readonly RaycastHit[] _obstructionHitsBuffer = new RaycastHit[8];
+
     public bool IsLaunching => _isLaunching;
 
     void Awake()
@@ -100,7 +122,12 @@ public class AerialKnockbackReceiver : MonoBehaviour
 
         var capsule = GetComponent<CapsuleCollider>() ?? GetComponentInChildren<CapsuleCollider>();
         if (capsule != null)
+        {
             _groundProbeRadius = Mathf.Max(0.15f, capsule.radius * 0.9f);
+            _obstructionProbeHeight = capsule.center.y > 0f ? capsule.center.y : capsule.height * 0.5f;
+        }
+
+        _obstructionMask = ~0;
     }
 
     /// <summary>
@@ -163,6 +190,12 @@ public class AerialKnockbackReceiver : MonoBehaviour
         flatDir.y = 0f;
         if (flatDir.sqrMagnitude < 0.0001f) flatDir = -transform.forward;
         flatDir.Normalize();
+
+        // Recortar la distancia si hay geometría sólida (pared, puerta, quest gate bloqueada...) en
+        // el camino del arco: ver comentario de _obstructionMask. Sin esto la trayectoria se calcula
+        // a ciegas y puede terminar empujando al jugador dentro de un collider sólido.
+        Vector3 obstructionOrigin = transform.position + Vector3.up * _obstructionProbeHeight;
+        distance = ClampLaunchDistance(obstructionOrigin, flatDir, distance);
 
         Vector3 startPos = transform.position;
         Vector3 lastIntendedPos = startPos;
@@ -322,6 +355,52 @@ public class AerialKnockbackReceiver : MonoBehaviour
         }
 
         return _lastGroundY;
+    }
+
+    /// <summary>
+    /// Recorta la distancia horizontal solicitada si hay un collider sólido en el camino (ver
+    /// comentario de _obstructionMask). Ignora triggers (QueryTriggerInteraction.Ignore) y también
+    /// ignora impactos contra otros personajes: NPCs y player comparten la layer "Default" con la
+    /// geometría estática, así que se filtran por el marcador NPCSimpleAnimator (mismo criterio que
+    /// PlayerParty.FindClearDialogueFormationPosition) en vez de por layer. Usa la variante "All"
+    /// (NonAlloc) precisamente porque el propio collider del jugador está en el origin del cast y
+    /// sería el hit más cercano con la variante de un solo resultado, tapando cualquier obstáculo
+    /// real que hubiera detrás.
+    /// </summary>
+    private float ClampLaunchDistance(Vector3 origin, Vector3 direction, float requestedDistance)
+    {
+        if (requestedDistance <= 0f) return requestedDistance;
+
+        int count = Physics.SphereCastNonAlloc(origin, _groundProbeRadius, direction, _obstructionHitsBuffer, requestedDistance, _obstructionMask, QueryTriggerInteraction.Ignore);
+        if (count <= 0) return requestedDistance;
+
+        bool foundObstruction = false;
+        float closestDistance = requestedDistance;
+        string hitName = null;
+
+        for (int i = 0; i < count; i++)
+        {
+            RaycastHit hit = _obstructionHitsBuffer[i];
+            Transform root = hit.collider.transform.root;
+            if (root.GetComponent<NPCSimpleAnimator>() != null)
+                continue; // es un personaje (incluye al propio jugador), no un obstáculo real
+
+            if (hit.distance < closestDistance)
+            {
+                closestDistance = hit.distance;
+                foundObstruction = true;
+                hitName = hit.collider.name;
+            }
+        }
+
+        if (!foundObstruction) return requestedDistance;
+
+        float clamped = Mathf.Max(0f, closestDistance - GroundSkin);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[AerialKnockbackReceiver] Obstrucción detectada en el arco ('{hitName}'), distancia recortada de {requestedDistance:F2}m a {clamped:F2}m.");
+#endif
+        return clamped;
     }
 
 #if UNITY_EDITOR

@@ -29,8 +29,8 @@ public class TeleportSystem : MonoBehaviour
     [SerializeField] private float teleportDelayAfterVfx = 0.5f;
     
     [Header("Audio")]
-    [SerializeField] private AudioClip teleportStartSfx;
-    [SerializeField] private AudioClip teleportEndSfx;
+    [SerializeField] private string teleportStartSfxKey = "Teleport_Start";
+    [SerializeField] private string teleportEndSfxKey = "Teleport_End";
     
     [Header("UI")]
     [SerializeField] private TeleportUI teleportUI;
@@ -181,8 +181,8 @@ public class TeleportSystem : MonoBehaviour
         }
 
         // Reproducir SFX de inicio
-        if (teleportStartSfx != null)
-            FeedbackService.PlaySfx(teleportStartSfx, player.transform.position);
+        if (!string.IsNullOrWhiteSpace(teleportStartSfxKey))
+            AudioService.Instance?.PlaySFX(teleportStartSfxKey, 1f, player.transform.position);
 
         // Instanciar VFX
         GameObject vfxInstance = null;
@@ -213,8 +213,8 @@ public class TeleportSystem : MonoBehaviour
 
         // Reproducir SFX de llegada
         PlayerService.TryGetPlayer(out player, allowSceneLookup: true);
-        if (teleportEndSfx != null && player != null)
-            FeedbackService.PlaySfx(teleportEndSfx, player.transform.position);
+        if (!string.IsNullOrWhiteSpace(teleportEndSfxKey) && player != null)
+            AudioService.Instance?.PlaySFX(teleportEndSfxKey, 1f, player.transform.position);
 
         // Restaurar vThirdPersonInput ahora que la transición ha terminado
         if (_hasBlockedMovement && tpi != null)

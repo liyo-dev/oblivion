@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 2357736}
   - component: {fileID: 6487894}
   - component: {fileID: 7107461006886720199}
-  - component: {fileID: 1454719825075674050}
+  - component: {fileID: 2791550923341302273}
   m_Layer: 0
   m_Name: Tree02_d01
   m_TagString: Untagged
@@ -132,7 +132,7 @@ MonoBehaviour:
   interactionPoint: {fileID: 8011920592622817276}
   overrideFacing: 1
   capacity: 3
---- !u!208 &1454719825075674050
+--- !u!208 &2791550923341302273
 NavMeshObstacle:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -158,7 +158,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8011920592622817276}
   m_Layer: 0
-  m_Name: lluvia
+  m_Name: shelterPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -173,7 +173,7 @@ Transform:
   m_GameObject: {fileID: 469660852712095958}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.6630911, y: -0.13077635, z: -0.6630558}
+  m_LocalPosition: {x: 0.6630911, y: -1, z: -0.66}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

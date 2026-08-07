@@ -71,11 +71,31 @@ public abstract class CinematicSequencerBase : MonoBehaviour
     // BossIntroPresentation.PlayIntroduction() (try/finally que garantiza la restauración).
     private bool _cinematicLocked;
 
+    // FIX (Agosto 2026): guarda contra solapamiento. Si la señal de entrada se dispara dos veces
+    // seguidas (p. ej. un bucle de reintento del grafo narrativo que reenvía la señal antes de que
+    // el jugador termine el intento anterior — bug reproducido con AWAKEN_FAILED/AWAKEN_START en
+    // StarAwakeningSequencer), dos Co_Sequence() concurrentes llaman ambos a LockCinematic() pero
+    // EndCinematic() solo restaura una vez (por el guard de _cinematicLocked de más abajo): el
+    // segundo Push de ActionMode.Cinematic se queda sin su Pop y el jugador se queda pillado en
+    // modo Cinematic en vez de volver al gameplay. Ignorar la señal mientras ya hay una secuencia
+    // en curso mantiene Push/Pop siempre equilibrados sin importar cuántas veces dispare el grafo.
+    private bool _sequenceRunning;
+
     // ── Ciclo de vida Unity ───────────────────────────────────────────────────
 
     protected virtual void Awake()
     {
-        _signalInHandler = () => StartCoroutine(Co_SequenceGuarded());
+        _signalInHandler = () =>
+        {
+            if (_sequenceRunning)
+            {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.LogWarning($"[CinematicSequencerBase] {GetType().Name}: señal de entrada '{_signalIn}' recibida mientras la secuencia ya está en curso — ignorada para evitar solapamiento y un Push/Pop de ActionMode.Cinematic desbalanceado.");
+#endif
+                return;
+            }
+            StartCoroutine(Co_SequenceGuarded());
+        };
         DefaultNarrativeSignals.EnsureInstance().OnCustom(_signalIn, _signalInHandler);
     }
 
@@ -83,12 +103,14 @@ public abstract class CinematicSequencerBase : MonoBehaviour
     /// aunque la subclase termine de forma anómala (excepción o destrucción del objeto).
     private IEnumerator Co_SequenceGuarded()
     {
+        _sequenceRunning = true;
         try
         {
             yield return Co_Sequence();
         }
         finally
         {
+            _sequenceRunning = false;
             if (_cinematicLocked)
             {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -116,7 +138,11 @@ public abstract class CinematicSequencerBase : MonoBehaviour
     {
         _cinematicLocked = true;
         s_activeSequenceCount++;
-        _actionManager.PushMode(ActionMode.Cinematic);
+        ResolveActionManager()?.PushMode(ActionMode.Cinematic);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (PlayerHUDV2.Instance == null)
+            Debug.LogWarning($"[CinematicSequencerBase] {GetType().Name}: PlayerHUDV2.Instance es null al bloquear la cinemática — el HUD no se ocultará (fallo silencioso con ?.).");
+#endif
         PlayerHUDV2.Instance?.HideHUD();
         MinimapController.Instance?.SetHiddenByCinematic(true);
         // FIX INC-058: el icono del período del día (HUD) también debe ocultarse durante secuencias.
@@ -128,7 +154,10 @@ public abstract class CinematicSequencerBase : MonoBehaviour
     {
         MusicRule = _audioProfile?.GetSequenceRule(_sequenceMusicId);
         if (_interiorAnchor != null) EnvironmentController.Instance?.BeginCinematicOverride();
-        _cinematicCamera.Activate();
+        // Null-safe: secuencias que no transcurren en el mundo (ej. PrologueDreamSequencer, un
+        // "sueño" fuera de cualquier localización real) no necesitan controlar la cámara de mundo
+        // y no asignan _cinematicCamera en el Inspector.
+        _cinematicCamera?.Activate();
     }
 
     /// Restaura el estado de gameplay: cancela shakes, desactiva la cámara, muestra el HUD/minimapa y desbloquea input.
@@ -139,13 +168,27 @@ public abstract class CinematicSequencerBase : MonoBehaviour
         s_activeSequenceCount = Mathf.Max(0, s_activeSequenceCount - 1);
 
         FeedbackService.CancelAllShakes();
-        _cinematicCamera.Deactivate();
+        _cinematicCamera?.Deactivate();
         PlayerHUDV2.Instance?.ShowHUD();
         MinimapController.Instance?.SetHiddenByCinematic(false);
         // FIX INC-058: restaurar el icono del período del día al terminar la secuencia.
         TimeOfDayIndicator.Instance?.Show();
-        _actionManager.PopMode(ActionMode.Cinematic);
+        ResolveActionManager()?.PopMode(ActionMode.Cinematic);
         if (_interiorAnchor != null) EnvironmentController.Instance?.EndCinematicOverride();
+    }
+
+    /// Devuelve _actionManager si está asignado en el Inspector; si no, lo resuelve vía
+    /// ServiceLocator (y lo cachea ahí mismo para las siguientes llamadas). Esto permite que
+    /// secuencias que no viven junto al jugador en la escena (ej. PrologueDreamSequencer, que no
+    /// transcurre en ningún lugar del mundo) no necesiten arrastrar la referencia a mano — antes,
+    /// dejarla vacía provocaba un NullReferenceException aquí mismo que abortaba la coroutine sin
+    /// restaurar nada ni levantar la señal de salida: la pantalla se quedaba en negro para siempre
+    /// y el grafo narrativo nunca avanzaba tras el WaitCustomEventNode correspondiente.
+    private PlayerActionManager ResolveActionManager()
+    {
+        if (_actionManager == null)
+            _actionManager = ServiceLocator.Get<PlayerActionManager>(logIfMissing: false);
+        return _actionManager;
     }
 
     // ── Transiciones ─────────────────────────────────────────────────────────

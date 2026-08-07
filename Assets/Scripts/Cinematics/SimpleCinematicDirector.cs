@@ -127,8 +127,8 @@ namespace Game.Cinematics
         [Tooltip("Lista de objetos a instanciar, cada uno con su propia configuración.")]
         public List<CinematicSpawnerEntry> objectsToSpawn = new List<CinematicSpawnerEntry>();
 
-        [Header("6. Audio (Opcional)")]
-        public AudioClip audioClip;
+        [Header("6. Audio (Opcional — clave del Audio Graph Profile)")]
+        public string audioSfxKey;
         public float volume = 1f;
 
         [Header("7. Diálogo (Bloqueante)")]
@@ -218,7 +218,7 @@ namespace Game.Cinematics
             CleanupGraphs(true);
             Time.timeScale = 1f;
             IsAnyCinematicPlaying = false;
-            vThirdPersonCamera.lockCameraForCinematic = false;
+            CameraDirectorService.Release(this);
             if (EnvironmentController.Instance != null && EnvironmentController.Instance.IsCinematicOverrideActive)
                 EnvironmentController.Instance.EndCinematicOverride();
         }
@@ -229,9 +229,8 @@ namespace Game.Cinematics
             Time.timeScale = 1f;
             if (IsAnyCinematicPlaying) IsAnyCinematicPlaying = false;
 
-            // Asegurar que liberamos la cámara
-            if (vThirdPersonCamera.lockCameraForCinematic)
-                vThirdPersonCamera.lockCameraForCinematic = false;
+            // Asegurar que liberamos la cámara (Release() ya es un no-op seguro si no somos el owner actual)
+            CameraDirectorService.Release(this);
 
             // Liberar el override cinemático si estaba activo (evita que el entorno quede en estado incorrecto)
             if (EnvironmentController.Instance != null && EnvironmentController.Instance.IsCinematicOverrideActive)
@@ -311,8 +310,8 @@ namespace Game.Cinematics
             Debug.Log($"[Cinematic] Iniciando secuencia con {steps.Count} pasos.");
             IsAnyCinematicPlaying = true;
             
-            // Bloquear vThirdPersonCamera
-            vThirdPersonCamera.lockCameraForCinematic = true;
+            // Bloquear vThirdPersonCamera (vía CameraDirectorService, ver CameraDirectorService.cs)
+            CameraDirectorService.Claim(this);
 
             // --- INICIO ---
             onCinematicStart?.Invoke();
@@ -629,9 +628,9 @@ namespace Game.Cinematics
                 }
 
                 // 6. Audio
-                if (step.audioClip != null)
+                if (!string.IsNullOrWhiteSpace(step.audioSfxKey) && AudioService.Instance != null)
                 {
-                    AudioSource.PlayClipAtPoint(step.audioClip, Camera.main.transform.position, step.volume);
+                    AudioService.Instance.PlaySFX(step.audioSfxKey, step.volume, Camera.main.transform.position);
                 }
 
                 // 7. Animación
@@ -749,8 +748,8 @@ namespace Game.Cinematics
             Time.timeScale = 1f; // Restaurar tiempo
             IsAnyCinematicPlaying = false;
             
-            // Liberar vThirdPersonCamera
-            vThirdPersonCamera.lockCameraForCinematic = false;
+            // Liberar vThirdPersonCamera (vía CameraDirectorService)
+            CameraDirectorService.Release(this);
 
             // Mostrar HUD usando ServiceLocator
             if (hideHUD)

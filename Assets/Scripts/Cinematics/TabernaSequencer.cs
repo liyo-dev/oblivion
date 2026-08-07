@@ -377,6 +377,7 @@ public class TabernaSequencer : CinematicSequencerBase
     {
         // Cámara ya en _shotEstela desde la fase anterior
         FeedbackService.CameraShake(0.15f, 0.5f);
+        AudioService.Instance?.PlaySFX("Taberna_StomachRumble", 1f, _estelaTransform.position);
         yield return new WaitForSeconds(0.3f);
 
         _estelaEmotion?.SetEmotion(_emotionEstela02);
@@ -396,6 +397,7 @@ public class TabernaSequencer : CinematicSequencerBase
         yield return FeedbackService.ScreenFadeAsync(Color.black, _foodFadeDuration, fadeIn: true);
         foreach (var obj in _foodObjects)
             if (obj != null) obj.SetActive(true);
+        AudioService.Instance?.PlaySFX("Taberna_FoodArrives", 1f, _estelaTransform.position);
         yield return FeedbackService.ScreenFadeAsync(Color.black, _foodFadeDuration, fadeIn: false);
 
         _cinematicCamera.Cut(_shotEstela);
@@ -438,6 +440,7 @@ public class TabernaSequencer : CinematicSequencerBase
         while (true)
         {
             _estelaSimpleAnim?.PlaySocialGesture(_animEstelaEat);
+            AudioService.Instance?.PlaySFX("Taberna_EatLoop", 0.8f, _estelaTransform.position);
             yield return new WaitForSeconds(_eatRepeatInterval);
         }
     }
@@ -596,6 +599,7 @@ public class TabernaSequencer : CinematicSequencerBase
         // ── Primer plano con slow motion ──────────────────────────────────────
         if (_estelaRageAuraVFX != null)
             _rageAuraVFXInstance = Instantiate(_estelaRageAuraVFX, _estelaTransform.position, _estelaTransform.rotation, _estelaTransform);
+        AudioService.Instance?.PlaySFX("Taberna_RageAura", 1f, _estelaTransform.position);
 
         Time.timeScale      = _slowMotionScale;
         Time.fixedDeltaTime = 0.02f * _slowMotionScale;
@@ -620,6 +624,7 @@ public class TabernaSequencer : CinematicSequencerBase
         _liamSimpleAnim?.PlaySocialGesture(_animLiamDodge);
         FeedbackService.ScreenFlash(new Color(0.8f, 0.9f, 1f, 0.5f), 0.5f);
         FeedbackService.CameraShake(0.3f, 0.6f);
+        AudioService.Instance?.PlaySFX("Taberna_Lightning", 1f, _estelaTransform.position);
     }
 
     // ══════════════════════════════════════════════════════════════════════════

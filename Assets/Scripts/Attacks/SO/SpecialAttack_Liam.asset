@@ -19,7 +19,7 @@ MonoBehaviour:
   playerAnimationTrigger: MagicSpecial
   companionAnimationTrigger: MagicSpecial
   vfxPrefab: {fileID: 4262623056482241364, guid: b7001a552767ee943852979358986930, type: 3}
-  castSFXKey: 
+  castSFXKey: SpecialAttack_Liam
   vfxLifetime: 3
   damageDelay: 0.4
   damage: 80

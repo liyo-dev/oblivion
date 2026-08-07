@@ -50,15 +50,14 @@ public class CameraFocusPoint : MonoBehaviour
             yield break;
         }
 
-        bool wasLocked = vThirdPersonCamera.lockCameraForCinematic;
-        vThirdPersonCamera.lockCameraForCinematic = true;
+        CameraDirectorService.Claim(this);
         cam.transform.SetPositionAndRotation(transform.position, transform.rotation);
 
         Debug.Log($"[CameraFocusPoint] Probando plano '{focusId}' durante {testHoldSeconds}s.");
 
         yield return new WaitForSecondsRealtime(testHoldSeconds);
 
-        vThirdPersonCamera.lockCameraForCinematic = wasLocked;
+        CameraDirectorService.Release(this);
     }
 #endif
 }

@@ -13,31 +13,6 @@ MonoBehaviour:
   m_Name: DramaticText_Prolog
   m_EditorClassIdentifier: Assembly-CSharp::DramaticPhraseConfig
   phrases:
-  - text: "Rend\xEDos ante m\xED"
-    textId:
-    style: 1
-    background: 2
-    entryAnim: 6
-    exitAnim: 0
-    duration: 3
-    voiceClip: {fileID: 0}
-    waitForAudio: 0
-    positionOffset: {x: 0, y: 0}
-    useMovement: 1
-    moveTo: {x: 0, y: 0}
-    disableDreamTextEffect: 1
-  - text: Deja en paz a mi pueblo...
-    textId: 
-    style: 0
-    background: 2
-    entryAnim: 6
-    exitAnim: 0
-    duration: 4
-    voiceClip: {fileID: 0}
-    waitForAudio: 0
-    positionOffset: {x: 0, y: 0}
-    useMovement: 1
-    moveTo: {x: 0, y: 0}
   - text: "Will, \xA1DESPIERTA!"
     textId: 
     style: 2
@@ -50,5 +25,6 @@ MonoBehaviour:
     positionOffset: {x: 0, y: 0}
     useMovement: 1
     moveTo: {x: 0, y: 0}
+    disableDreamTextEffect: 0
   pauseBetween: 0.15
   dreamMode: 1

@@ -28,21 +28,26 @@ public class CinematicCameraDriver : MonoBehaviour
     // ── API pública ───────────────────────────────────────────────────────────
 
     /// Congela vThirdPersonCamera y toma control de la cámara.
+    /// Pasa por CameraDirectorService (en vez de tocar el flag directamente) para que, si el
+    /// sistema que suelta la cámara justo antes todavía está en su ventana de gracia de
+    /// liberación, este Activate() coalesque con ese handoff sin que vThirdPersonCamera llegue
+    /// a meter un frame de gameplay en medio.
     public void Activate()
     {
         if (_active) return;
         _active = true;
-        vThirdPersonCamera.lockCameraForCinematic = true;
+        CameraDirectorService.Claim(this);
     }
 
-    /// Libera vThirdPersonCamera y devuelve el control al juego.
+    /// Libera la cámara y devuelve el control al juego (con la ventana de gracia de
+    /// CameraDirectorService, no al instante).
     public void Deactivate()
     {
         if (!_active) return;
         _active = false;
         StopFollow();
         KillTweens();
-        vThirdPersonCamera.lockCameraForCinematic = false;
+        CameraDirectorService.Release(this);
     }
 
     /// Corte instantáneo: mueve la cámara al shot point sin transición.
@@ -145,6 +150,6 @@ public class CinematicCameraDriver : MonoBehaviour
     {
         KillTweens();
         if (_active)
-            vThirdPersonCamera.lockCameraForCinematic = false;
+            CameraDirectorService.Release(this);
     }
 }

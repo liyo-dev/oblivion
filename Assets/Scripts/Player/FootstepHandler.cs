@@ -6,6 +6,9 @@ namespace Game.Player
     /// <summary>
     /// Detecta pisadas monitorizando la velocidad vertical de los huesos de los pies (Humanoid rig).
     /// No requiere Animation Events ni modificar los clips. Añadir al GameObject raíz del personaje.
+    /// También dispara opcionalmente un VFX de polvo en el pie cuando el personaje está corriendo
+    /// o esprintando (lectura de "InputMagnitude" en el Animator, igual criterio que SprintVFXController
+    /// y NPCSimpleAnimator: 0 = quieto, ~0.5 = caminar, ~1.0 = correr, >1.05 = sprint).
     /// </summary>
     public class FootstepHandler : MonoBehaviour
     {
@@ -23,6 +26,17 @@ namespace Game.Player
 
         [Tooltip("Distancia mínima que debe recorrer el personaje desde la última pisada para generar una nueva huella. Evita el parpadeo en idle.")]
         [SerializeField] private float _minStepDistance = 0.35f;
+
+        [Header("Polvo en los pies (correr/sprint)")]
+        [Tooltip("Prefab del VFX de polvo. Si se deja vacío, no se genera polvo (solo huellas/sonido).")]
+        [SerializeField] private GameObject _dustVfxPrefab;
+
+        [Tooltip("Umbral de InputMagnitude a partir del cual se considera que el personaje corre. Por debajo (caminando, ~0.5) no se genera polvo.")]
+        [SerializeField] private float _dustInputMagnitudeThreshold = 0.6f;
+
+        [SerializeField] private float _dustLifetime = 1.5f;
+
+        private static readonly int HashInputMagnitude = Animator.StringToHash("InputMagnitude");
 
         private Transform _leftFoot;
         private Transform _rightFoot;
@@ -99,6 +113,18 @@ namespace Game.Player
             _lastStepRootPos = rootPos;
             _hasStep = true;
             OnFootstep?.Invoke(groundPos);
+            TrySpawnDust(groundPos);
+        }
+
+        private void TrySpawnDust(Vector3 groundPos)
+        {
+            if (_dustVfxPrefab == null || _animator == null) return;
+
+            float inputMag = _animator.GetFloat(HashInputMagnitude);
+            if (inputMag < _dustInputMagnitudeThreshold) return; // caminando o quieto: sin polvo
+
+            if (VfxPoolService.Instance != null)
+                VfxPoolService.Instance.Play(_dustVfxPrefab, groundPos, Quaternion.identity, _dustLifetime);
         }
 
 #if UNITY_EDITOR

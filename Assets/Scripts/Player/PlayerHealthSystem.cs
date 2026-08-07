@@ -42,10 +42,10 @@ public class PlayerHealthSystem : MonoBehaviour
     [SerializeField] private float knockbackDuration = 0.2f;
     [SerializeField] private AnimationCurve knockbackCurve = new AnimationCurve(new Keyframe(0, 1), new Keyframe(1, 0));
     
-    [Header("Audio")]
-    [SerializeField] private AudioClip damageSound;
-    [SerializeField] private AudioClip healSound;
-    [SerializeField] private AudioClip deathSound;
+    [Header("Audio (claves del Audio Graph Profile)")]
+    [SerializeField] private string damageSoundKey = "Player_Damage";
+    [SerializeField] private string healSoundKey = "Player_Heal";
+    [SerializeField] private string deathSoundKey = "Player_Death";
     
     [Header("Eventos")]
     public UnityEvent<float> OnHealthChanged; // healthPercentage (0-1)
@@ -60,7 +60,6 @@ public class PlayerHealthSystem : MonoBehaviour
     
     // Componentes
     private Animator _animator;
-    private AudioSource _audioSource;
     private Renderer[] _renderers;
     private Material[] _originalMaterials;
 
@@ -104,17 +103,7 @@ public class PlayerHealthSystem : MonoBehaviour
     void Awake()
     {
         _animator = GetComponent<Animator>();
-        _audioSource = GetComponent<AudioSource>();
-        
-        // Auto-fix: Agregar AudioSource si falta
-        if (_audioSource == null)
-        {
-            Debug.Log($"[PlayerHealthSystem] ℹ️ No se encontró AudioSource - Agregando uno automáticamente.");
-            _audioSource = gameObject.AddComponent<AudioSource>();
-            _audioSource.spatialBlend = 1f; // 3D sound by default
-            _audioSource.playOnAwake = false;
-        }
-        
+
         // Obtener renderers para efectos visuales
         _renderers = GetComponentsInChildren<Renderer>();
         CacheOriginalMaterials();
@@ -401,7 +390,7 @@ public class PlayerHealthSystem : MonoBehaviour
         try
         {
             TriggerAnimation(deathAnimationName);
-            PlaySound(deathSound);
+            PlaySound(deathSoundKey);
         }
         catch (Exception e)
         {
@@ -473,7 +462,7 @@ public class PlayerHealthSystem : MonoBehaviour
     {
         StartDamageFlash();
         SpawnVFX(damageVFX);
-        PlaySound(damageSound);
+        PlaySound(damageSoundKey);
         
         if (enableCameraShake)
         {
@@ -484,7 +473,7 @@ public class PlayerHealthSystem : MonoBehaviour
     private void PlayHealEffects()
     {
         SpawnVFX(healVFX);
-        PlaySound(healSound);
+        PlaySound(healSoundKey);
     }
     
     private void StartDamageFlash()
@@ -634,11 +623,11 @@ public class PlayerHealthSystem : MonoBehaviour
         }
     }
     
-    private void PlaySound(AudioClip clip)
+    private void PlaySound(string sfxKey)
     {
-        if (clip != null && _audioSource != null)
+        if (!string.IsNullOrWhiteSpace(sfxKey))
         {
-            _audioSource.PlayOneShot(clip);
+            AudioService.Instance?.PlaySFX(sfxKey, 1f, transform.position);
         }
     }
     

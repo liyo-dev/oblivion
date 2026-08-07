@@ -509,11 +509,21 @@ namespace Game.NPC
             }
         }
         
-        // Capas que cuentan como obstrucción real entre el player y una posición de formación de
-        // diálogo: Default, Interactable (las puertas usan esta capa para el raycast de interacción)
+        // Capas que cuentan como posible obstrucción entre el player y una posición de formación de
+        // diálogo: Default (la mayoría de la geometría estática del mundo, incluidas muchas puertas
+        // que no tienen capa propia), Interactable (puertas/objetos con raycast de interacción propio)
         // y Obstacle. NavMesh.SamplePosition solo garantiza que el punto es NavMesh válido, no que
         // esté en la misma habitación que el jugador o al mismo lado de una puerta cerrada.
+        //
+        // IMPORTANTE: los personajes (player, NPCs, party members) también viven en Default —no hay
+        // una capa "Character" separada (confirmado en Prefabs/_LIAM.prefab, m_Layer: 0)—, así que la
+        // capa sola no basta para distinguir "pared" de "persona". Por eso el propio jugador, el NPC
+        // con el que se habla y los demás party members se excluyen explícitamente por Transform.root,
+        // no por capa.
         private const int DialoguePositionObstructionMask = (1 << 0) | (1 << 8) | (1 << 15);
+
+        // Buffer cacheado para el raycast de obstrucción (evita alloc por cada compañero posicionado)
+        private readonly RaycastHit[] _dialogueObstructionBuffer = new RaycastHit[8];
 
         private void PlaceMemberInDialogueFormation(NPCPartyMember member, Vector3 dirOffset, float radius, Transform npcTarget, float thetaDeg)
         {
@@ -537,6 +547,11 @@ namespace Game.NPC
         /// candidata del arco de diálogo. Si la hay, recorta el radio hasta justo antes del
         /// obstáculo en esa misma dirección, en vez de teletransportar al compañero al otro lado
         /// (p.ej. dentro de la habitación contigua, si el arco caía sobre una puerta cerrada).
+        /// Ignora impactos contra cualquier personaje (player, party members, NPCs ambientales):
+        /// todos comparten capa Default con la geometría del mundo, pero se identifican de forma
+        /// fiable por tener <see cref="NPCSimpleAnimator"/> — el mismo componente que
+        /// DialogueManager.IsActualNPC usa como "el único que comparten TODOS los NPCs" (y que
+        /// también lleva el player). Ningún objeto de escenario (puerta, mueble, etc.) lo tiene.
         /// Bug de referencia: Liam apareciendo hablando desde detrás de una puerta cerrada
         /// mientras el player quedaba delante, con la cámara de diálogo pegada a la hoja de la puerta.
         /// </summary>
@@ -545,11 +560,31 @@ namespace Game.NPC
             Vector3 playerPos = _playerTransform.position;
             Vector3 chestOrigin = playerPos + Vector3.up * 1f;
 
-            if (Physics.Raycast(chestOrigin, dirOffset, out RaycastHit obstructionHit, radius,
-                DialoguePositionObstructionMask, QueryTriggerInteraction.Ignore))
+            int hitCount = Physics.RaycastNonAlloc(chestOrigin, dirOffset, _dialogueObstructionBuffer, radius,
+                DialoguePositionObstructionMask, QueryTriggerInteraction.Ignore);
+
+            float closestDist = float.MaxValue;
+            Collider closestCollider = null;
+
+            for (int i = 0; i < hitCount; i++)
             {
-                float clearDist = Mathf.Max(obstructionHit.distance - 0.3f, 0.8f);
-                Log($"  ↳ Obstrucción detectada ({obstructionHit.collider.name}) en el arco de diálogo - radio recortado a {clearDist:F1}m");
+                var candidate = _dialogueObstructionBuffer[i];
+                if (candidate.collider == null) continue;
+
+                Transform root = candidate.collider.transform.root;
+                if (root.GetComponent<NPCSimpleAnimator>() != null) continue; // es un personaje, no una obstrucción
+
+                if (candidate.distance < closestDist)
+                {
+                    closestDist = candidate.distance;
+                    closestCollider = candidate.collider;
+                }
+            }
+
+            if (closestCollider != null)
+            {
+                float clearDist = Mathf.Max(closestDist - 0.3f, 0.8f);
+                Log($"  ↳ Obstrucción detectada ({closestCollider.name}) en el arco de diálogo - radio recortado a {clearDist:F1}m");
                 return playerPos + dirOffset * clearDist;
             }
 

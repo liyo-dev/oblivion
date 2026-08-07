@@ -132,7 +132,7 @@ public sealed class PlayerSwimmingController : MonoBehaviour
                 ForceAnimatorGrounded();
             }
         }
-        else if (hasSurface && ShouldEnter(surfaceY))
+        else if (hasSurface && ShouldEnter(surfaceY) && (_actionManager == null || _actionManager.CanSwim()))
         {
             EnterSwimming(surfaceY);
             MaintainBuoyancy(surfaceY);
@@ -293,6 +293,16 @@ public sealed class PlayerSwimmingController : MonoBehaviour
     {
         if (_isSwimming)
             return;
+
+        // Gate de habilidad: si el nado no está desbloqueado (PlayerAbilities.swim),
+        // no se entra en modo nado. Se perdió al migrar TryEnterSwimming() desde
+        // PlayerActionManager en el refactor de nado (commit 63e9abe8e).
+        if (_actionManager != null && !_actionManager.CanSwim())
+        {
+            if (debugLogs)
+                Debug.Log("[PlayerSwimmingController] Entrada al agua bloqueada: nado no desbloqueado.");
+            return;
+        }
 
         _isSwimming = true;
         _rememberedSurfaceY = surfaceY;

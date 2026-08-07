@@ -88,6 +88,16 @@ public class DialogueCameraController : MonoBehaviour
     {
         if (!enableDialogueCamera || npcTransform == null) return;
 
+        // FIX: este método reposiciona la cámara en LateUpdate() más abajo, pero eso no servía
+        // de nada si vThirdPersonCamera seguía siguiendo al jugador en modo gameplay normal: el
+        // único candado que de verdad detiene su CameraMovement() en FixedUpdate es el estático
+        // lockCameraForCinematic, no el campo lockCamera (que es solo un debug/alineación que
+        // nadie lee) que este controlador ponía antes. Sin reclamar el candado real, cuando el
+        // diálogo (llevado por DialogueCinematicController) soltaba la cámara, el seguimiento
+        // normal de gameplay ganaba la partida a este LateUpdate() y el jugador veía la cámara
+        // "atascada" en modo normal mientras el NPC se alejaba fuera de cuadro sin que se notara.
+        CameraDirectorService.Claim(this);
+
         // Cancelar transición de vuelta si estaba en curso
         if (transitionCoroutine != null)
         {
@@ -125,6 +135,9 @@ public class DialogueCameraController : MonoBehaviour
     public void StartDialogueCamera(Transform npcTransform)
     {
         if (!enableDialogueCamera || npcTransform == null || isInDialogueMode) return;
+
+        // Ver comentario en FocusOnNPC: reclamar el candado real, no solo el flag de debug.
+        CameraDirectorService.Claim(this);
 
         // Buscar el player usando PlayerService
         GameObject playerObj = PlayerService.Player;
@@ -200,6 +213,11 @@ public class DialogueCameraController : MonoBehaviour
 
         if (showDebugLogs)
             Debug.Log("[DialogueCameraController] Finalizando cámara de diálogo");
+
+        // Soltar el candado real (ver comentario en FocusOnNPC). Con la ventana de gracia de
+        // CameraDirectorService: si justo después otro sistema reclama la cámara, no se llega
+        // a ver un frame de vThirdPersonCamera en modo gameplay de por medio.
+        CameraDirectorService.Release(this);
 
         if (thirdPersonCamera != null)
         {

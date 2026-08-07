@@ -16,6 +16,27 @@ public class NarrativeRunner : MonoBehaviour
     NarrativeContext _ctx;
     NarrativeNode _current;
 
+    // FIX (Agosto 2026): generación activa por nodo-fork. Cada vez que un fork se (re)lanza —ya sea
+    // la primera vez, al reanudar tras una recarga, o al re-forkear en vivo por un bucle de
+    // reintento (ej. AWAKEN_START/AWAKEN_FAILED en StarAwakeningSequencer, ver comentario en
+    // RunSubGraph)— se incrementa el contador de esa guid. Las ramas que quedan de una generación
+    // anterior se descartan en cuanto se detectan obsoletas, en vez de seguir avanzando y duplicar
+    // el tramo de éxito si el evento que esperaban (p. ej. AWAKEN_DONE) termina llegando igualmente
+    // para una rama ya abandonada. Vive solo en memoria: no necesita persistir porque una recarga
+    // reconstruye los forks desde cero vía RelaunchForkBranches, que también bombea su propia
+    // generación nueva.
+    readonly Dictionary<string, int> _forkGeneration = new();
+
+    int BumpForkGeneration(string forkGuid)
+    {
+        int gen = _forkGeneration.TryGetValue(forkGuid, out var v) ? v + 1 : 1;
+        _forkGeneration[forkGuid] = gen;
+        return gen;
+    }
+
+    bool IsForkGenerationStale(string forkGuid, int gen)
+        => _forkGeneration.TryGetValue(forkGuid, out var current) && current != gen;
+
     // ✅ API pública para acceder al nodo actual y su estado
     public NarrativeNode CurrentNode => _current;
     public bool IsCurrentNodeBlockingSave => _current != null && _current.blockSaving;
@@ -232,6 +253,7 @@ public class NarrativeRunner : MonoBehaviour
         // Primera vez: limpiar currentNodeGuid y marcar fork activo
         Blackboard.Set("__currentNodeGuid", string.Empty);
         Blackboard.Set(forkKey, true);
+        int gen = BumpForkGeneration(forkGuid);
 
         for (int i = 0; i < outs.Count; i++)
         {
@@ -243,7 +265,7 @@ public class NarrativeRunner : MonoBehaviour
                 Debug.LogError($"[Narrative] Fork: no existe nodo guid={guid}.");
                 continue;
             }
-            StartCoroutine(RunSubGraph(node, forkGuid, i));
+            StartCoroutine(RunSubGraph(node, forkGuid, i, gen));
         }
     }
 
@@ -253,6 +275,7 @@ public class NarrativeRunner : MonoBehaviour
     /// </summary>
     void RelaunchForkBranches(string forkGuid, List<string> branchStartGuids)
     {
+        int gen = BumpForkGeneration(forkGuid);
         for (int i = 0; i < branchStartGuids.Count; i++)
         {
             var branchStartGuid = branchStartGuids[i];
@@ -282,7 +305,7 @@ public class NarrativeRunner : MonoBehaviour
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[NarrativeRunner] Fork '{forkGuid}' rama {i}: reanudando desde {resumeNode.GetType().Name} ({resumeGuid}).");
 #endif
-            StartCoroutine(RunSubGraph(resumeNode, forkGuid, i));
+            StartCoroutine(RunSubGraph(resumeNode, forkGuid, i, gen));
         }
     }
 
@@ -301,7 +324,7 @@ public class NarrativeRunner : MonoBehaviour
     /// Ejecuta una rama de nodos secuencialmente a partir de 'start'.
     /// Rastrea el progreso en el blackboard para permitir guardar y reanudar.
     /// </summary>
-    System.Collections.IEnumerator RunSubGraph(NarrativeNode start, string forkGuid, int branchIndex)
+    System.Collections.IEnumerator RunSubGraph(NarrativeNode start, string forkGuid, int branchIndex, int forkGeneration = 0)
     {
         bool track = !string.IsNullOrEmpty(forkGuid) && branchIndex >= 0;
         var node = start;
@@ -373,6 +396,21 @@ public class NarrativeRunner : MonoBehaviour
 
             yield return new WaitUntil(() => ready);
 
+            // FIX (Agosto 2026): si este fork se re-lanzó con una generación más nueva mientras esta
+            // rama esperaba (bucle de reintento que re-entra en el mismo nodo fork — ver comentario
+            // en el bloque "revisitado en vivo" más abajo), esta rama es de una generación obsoleta.
+            // Descartarla evita ejecutar dos veces el tramo de éxito (ej. UnlockAbilitiesNode →
+            // StartQuestNode → StartBattleNode) si el evento que esperaba (ej. AWAKEN_DONE) termina
+            // llegando igualmente para una rama ya abandonada.
+            if (forkGeneration != 0 && IsForkGenerationStale(forkGuid, forkGeneration))
+            {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.Log($"[NarrativeRunner] SubGraph[{branchIndex}] del fork '{forkGuid}' (gen {forkGeneration}) obsoleta tras un reintento — descartando avance.");
+#endif
+                if (track) Blackboard.Set($"__fork_{forkGuid}_{branchIndex}_node", "__DONE__");
+                yield break;
+            }
+
             var outs = node.outputs;
             if (outs == null || outs.Count == 0)
             {
@@ -399,17 +437,20 @@ public class NarrativeRunner : MonoBehaviour
                 continue;
             }
 
-            // Fork anidado — primera vez
+            // Fork anidado — primera vez (también el punto de llegada cuando el bloque de arriba
+            // resetea nfKey por ser un "revisitado en vivo": se re-forkea limpio con una generación
+            // nueva, invalidando las ramas hermanas que quedaron colgadas de la generación anterior).
             var nfKey = $"__forked_{node.guid}";
             Blackboard.Set(nfKey, true);
             // Mantener puntero al nodo fork para poder reanudar en recargas futuras
             if (track) Blackboard.Set($"__fork_{forkGuid}_{branchIndex}_node", node.guid);
+            int nestedGen = BumpForkGeneration(node.guid);
             for (int ni = 0; ni < outs.Count; ni++)
             {
                 var gid = outs[ni];
                 if (string.IsNullOrEmpty(gid)) continue;
                 var n = graph.FindNode(gid);
-                if (n != null) StartCoroutine(RunSubGraph(n, node.guid, ni));
+                if (n != null) StartCoroutine(RunSubGraph(n, node.guid, ni, nestedGen));
             }
             yield break;
         }

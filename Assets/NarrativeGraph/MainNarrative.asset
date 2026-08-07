@@ -70,7 +70,6 @@ MonoBehaviour:
   - rid: 5290829092219519135
   - rid: 5290829092219519136
   - rid: 5290829092219519137
-  - rid: 5290829367972724901
   - rid: 5290829367972724959
   - rid: 5290829367972724960
   - rid: 5290829367972725004
@@ -92,11 +91,62 @@ MonoBehaviour:
   - rid: 5290829545210380758
   - rid: 5290829545210380759
   - rid: 5290829713765302404
+  - rid: 648455816183546019
+  - rid: 648455816183546020
+  - rid: 648455816183546051
   applicableSceneNames:
   - MainWorld
   references:
     version: 2
     RefIds:
+    - rid: 648455816183546019
+      type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: PrologueDreamSequencer
+        chapter: Cap. 1
+        blockSaving: 1
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 4794540e-3cae-4f08-a60f-7b8d8a549e16
+        position: {x: -683, y: -1276}
+        outputs:
+        - d1242d3b-21d7-4552-b70a-e85c85d51d28
+        eventKey: PROLOGUE_DREAM_START
+    - rid: 648455816183546020
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: PrologueDreamSequencer
+        chapter: Cap. 1
+        blockSaving: 1
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: d1242d3b-21d7-4552-b70a-e85c85d51d28
+        position: {x: -232, y: -1276}
+        outputs:
+        - 5392a394-78e5-47e8-9bd7-02971597e6f2
+        eventKey: PROLOGUE_DREAM_DONE
+    - rid: 648455816183546051
+      type: {class: DramaticTextNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: PrologueDreamSequencer
+        chapter: Cap. 1
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 5392a394-78e5-47e8-9bd7-02971597e6f2
+        position: {x: 197, y: -1282}
+        outputs:
+        - 7c58aa94-40ce-449a-826a-ee71e079172d
+        config: {fileID: 11400000, guid: 4f5bc1f242806ed4cb58a981bc5d5b7f, type: 2}
+        waitForCompletion: 1
+        restoreSceneMusicWhenDone: 1
+        restoreMusicFade: 2
     - rid: 857239824104947715
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
@@ -823,24 +873,6 @@ MonoBehaviour:
         steps: 
         completeQuest: 0
         logWarnings: 1
-    - rid: 5290829367972724901
-      type: {class: DramaticTextNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: Recuerdos prologo
-        chapter: Cap. 1
-        blockSaving: 1
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: d85aab6f-a9f2-4fd5-9527-0f710ff20e69
-        position: {x: -249, y: -997}
-        outputs:
-        - 7c58aa94-40ce-449a-826a-ee71e079172d
-        config: {fileID: 11400000, guid: 4f5bc1f242806ed4cb58a981bc5d5b7f, type: 2}
-        waitForCompletion: 1
-        restoreSceneMusicWhenDone: 1
-        restoreMusicFade: 2
     - rid: 5290829367972724959
       type: {class: ShowSpeechBubbleNode, ns: , asm: Assembly-CSharp}
       data:
@@ -852,7 +884,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 6f0c236c-9cf3-44bc-a968-f5ad724c845a
-        position: {x: 597, y: -997}
+        position: {x: 1039, y: -1276}
         outputs:
         - 0decf071-45b8-40e6-8d60-d1fcce1643e4
         targetTag: Player
@@ -873,7 +905,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 7c58aa94-40ce-449a-826a-ee71e079172d
-        position: {x: 216, y: -997}
+        position: {x: 658, y: -1276}
         outputs:
         - 6f0c236c-9cf3-44bc-a968-f5ad724c845a
         action: 0
@@ -891,7 +923,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 0decf071-45b8-40e6-8d60-d1fcce1643e4
-        position: {x: 986, y: -997}
+        position: {x: 1428, y: -1276}
         outputs: []
         action: 0
         text: "Usa el Joystick para mover a Will. Inspecciona la habitaci\xF3n."
@@ -1197,10 +1229,10 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 83efb3b4-a261-43b9-b5e2-56c03b1cec4f
-        position: {x: -950, y: -693}
+        position: {x: -906, y: -596}
         outputs:
         - 78455749-f638-46de-a00c-c00cb1e61e5d
-        - d85aab6f-a9f2-4fd5-9527-0f710ff20e69
+        - 4794540e-3cae-4f08-a60f-7b8d8a549e16
     - rid: 5623891431555334813
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
@@ -1300,6 +1332,7 @@ MonoBehaviour:
         - 5d259d98-0364-4a7b-93b7-a36bdabcd27f
         focusId: MOUNTAIN_EXPLOSION_EVENT
         holdDuration: 3
+        revealFadeDuration: 0.3
         waitForCompletion: 1
         zoomFactor: 1
         zoomInDuration: 0.3

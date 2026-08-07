@@ -93,7 +93,7 @@ public sealed class KingdomExitTransitionNode : NarrativeNode
             var focusPoint = FindFocusPoint(landscapeFocusId);
             if (focusPoint != null)
             {
-                vThirdPersonCamera.lockCameraForCinematic = true;
+                CameraDirectorService.Claim(this);
                 cam.transform.SetPositionAndRotation(focusPoint.transform.position, focusPoint.transform.rotation);
                 cameraCut = true;
             }
@@ -163,7 +163,7 @@ public sealed class KingdomExitTransitionNode : NarrativeNode
         audio?.SetVolume(AudioBus.Sfx, previousSfxVolume);
 
         if (cameraCut)
-            vThirdPersonCamera.lockCameraForCinematic = false;
+            CameraDirectorService.Release(this);
 
         pam?.PopMode(ActionMode.Cinematic);
 
