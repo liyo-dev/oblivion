@@ -219,7 +219,7 @@ MonoBehaviour:
       amount: 1
       stepConditionId: QUEST_ELDRAN_MISSION5_STEP_01
       stepIndex: -1
-      consumeOnComplete: 1
+      consumeOnComplete: 0
     requiredWardrobeItems: []
     requiredPartyMembers: []
     requiredCharacter: -1

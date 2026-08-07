@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: LlamaAstral
   m_EditorClassIdentifier: Assembly-CSharp::MagicSpellSO
   spellId: 1
+  displayNameId: SPELL_LLAMA_ASTRAL_NAME
   displayName: Llama Astral
   kind: 0
   element: 0

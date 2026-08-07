@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: IT_PocionVida
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemId: pocionHP
+  displayNameId: ITEM_POCIONVIDA_NAME
   displayName: "Poci\xF3n de vida"
   icon: {fileID: 21300000, guid: 2b902819d200c94469e07fc47938c4ad, type: 3}
   usableFromInventory: 1
@@ -22,6 +23,7 @@ MonoBehaviour:
     quantity: 0
     amount: 25
     consumeEvenIfNoChange: 0
+  useDescriptionId: ITEM_POCIONVIDA_DESC
   useDescription: "Poci\xF3n que recupera vida al consumirla. Recupera 25 HP."
   usageKind: 0
   buyPrice: 10

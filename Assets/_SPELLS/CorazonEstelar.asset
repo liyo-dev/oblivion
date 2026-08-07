@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: CorazonEstelar
   m_EditorClassIdentifier: Assembly-CSharp::MagicSpellSO
   spellId: 3
+  displayNameId: SPELL_CORAZON_ESTELAR_NAME
   displayName: "Coraz\xF3n Estelar"
   kind: 1
   element: 3

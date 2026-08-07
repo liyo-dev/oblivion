@@ -91,7 +91,7 @@ public class LorePopupUI : MonoBehaviour
     IEnumerator RunSequence(LorePopupConfig config, Action onClosed)
     {
         if (config.delay > 0f)
-            yield return new WaitForSecondsRealtime(config.delay);
+            yield return WaitRealtimeUnlessPaused(config.delay);
 
         // Abrir popup con primera entrada
         DisplayEntry(config.entries[0]);
@@ -108,7 +108,7 @@ public class LorePopupUI : MonoBehaviour
             }
 
             float dur = Mathf.Max(config.entries[i].duration, 0.5f);
-            yield return new WaitForSecondsRealtime(dur);
+            yield return WaitRealtimeUnlessPaused(dur);
         }
 
         _isOpen = false;
@@ -116,6 +116,23 @@ public class LorePopupUI : MonoBehaviour
 
         yield return StartCoroutine(AnimateOutRoutine());
         onClosed?.Invoke();
+    }
+
+    /// <summary>
+    /// Espera en tiempo real (inmune a hit-stops/slowmo con timeScale parcial), pero
+    /// se congela mientras el juego está realmente en pausa (Time.timeScale == 0f,
+    /// como al abrir el menú de equipo/inventario o la tienda). Sin esto el lore
+    /// seguía avanzando y cerrándose solo mientras el resto del juego estaba parado.
+    /// </summary>
+    IEnumerator WaitRealtimeUnlessPaused(float seconds)
+    {
+        float elapsed = 0f;
+        while (elapsed < seconds)
+        {
+            if (Time.timeScale > 0f)
+                elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
     }
 
     void StopSequence()

@@ -49,7 +49,7 @@ public class ShopItemCard : MonoBehaviour
             Debug.LogWarning("[ShopItemCard] iconImage es null");
         
         if (nameText != null)
-            nameText.text = item.displayName;
+            nameText.text = item.GetLocalizedName();
         else
             Debug.LogWarning("[ShopItemCard] nameText es null");
         
@@ -64,7 +64,13 @@ public class ShopItemCard : MonoBehaviour
         if (stockText != null)
         {
             if (entry.limitedStock)
-                stockText.text = entry.HasStock ? "Disponible" : "Agotado";
+            {
+                string key = entry.HasStock ? "SHOP_ITEM_AVAILABLE" : "SHOP_STOCK_OUT";
+                string fallback = entry.HasStock ? "Disponible" : "Agotado";
+                stockText.text = LocalizationManager.Instance != null
+                    ? LocalizationManager.Instance.Get(key, fallback)
+                    : fallback;
+            }
             else
                 stockText.text = "";
         }

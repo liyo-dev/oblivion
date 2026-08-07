@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: IT_Chest25Coin
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemId: chest25coin
+  displayNameId: ITEM_CHEST25COIN_NAME
   displayName: Cofre
   icon: {fileID: 0}
   usableFromInventory: 0

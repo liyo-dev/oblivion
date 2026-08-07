@@ -350,15 +350,15 @@
         },
         {
             "key": "WAIT_FOR_DAY",
-            "value": ""
+            "value": "Rest and wait until dawn?"
         },
         {
             "key": "WAIT_FOR_DAY_QUEST",
-            "value": ""
+            "value": "It must be daytime to inspect this area."
         },
         {
             "key": "WAIT_FOR_NIGHT",
-            "value": ""
+            "value": "Rest and wait until nightfall?"
         },
         {
             "key": "WATER_ENTER_NEEDS",
@@ -367,6 +367,370 @@
         {
             "key": "WOODS_EXIT_BLOCKED",
             "value": "I should talk to that guard."
+        },
+        {
+            "key": "SHOP_PRICE_LABEL",
+            "value": "Price: {0} 💰"
+        },
+        {
+            "key": "SHOP_STOCK_IN_STOCK",
+            "value": "In stock"
+        },
+        {
+            "key": "SHOP_STOCK_OUT",
+            "value": "Out of stock"
+        },
+        {
+            "key": "SHOP_STOCK_UNLIMITED",
+            "value": "Unlimited stock"
+        },
+        {
+            "key": "SHOP_SELL_NOT_IMPLEMENTED",
+            "value": "Selling isn't implemented yet."
+        },
+        {
+            "key": "SHOP_PURCHASE_SUCCESS",
+            "value": "Purchased!"
+        },
+        {
+            "key": "SHOP_PURCHASE_FAILED",
+            "value": "Couldn't complete the purchase."
+        },
+        {
+            "key": "SHOP_MSG_INVALID_SELECTION",
+            "value": "Invalid selection."
+        },
+        {
+            "key": "SHOP_MSG_ITEM_UNAVAILABLE",
+            "value": "Item unavailable."
+        },
+        {
+            "key": "SHOP_MSG_OUT_OF_STOCK",
+            "value": "Product out of stock."
+        },
+        {
+            "key": "SHOP_MSG_NOT_ENOUGH_CURRENCY",
+            "value": "You don't have enough coins."
+        },
+        {
+            "key": "SHOP_MSG_INVALID_ITEM",
+            "value": "Invalid item."
+        },
+        {
+            "key": "SHOP_MSG_NOT_ENOUGH_QUANTITY",
+            "value": "You don't have enough of that item."
+        },
+        {
+            "key": "SHOP_MSG_NO_INVENTORY",
+            "value": "No inventory configured."
+        },
+        {
+            "key": "SHOP_MSG_NO_CURRENCY_ITEM",
+            "value": "No currency item has been assigned."
+        },
+        {
+            "key": "QUEST_MENU_HEADER_MAIN",
+            "value": "Missions (main)"
+        },
+        {
+            "key": "QUEST_MENU_HEADER_VISIBLE",
+            "value": "Visible missions ({0})"
+        },
+        {
+            "key": "QUEST_MENU_HEADER_HIDDEN",
+            "value": "Hidden missions ({0})"
+        },
+        {
+            "key": "COMMON_NONE",
+            "value": "None"
+        },
+        {
+            "key": "ABILITIES_LEVEL_LABEL",
+            "value": "Level: {0}"
+        },
+        {
+            "key": "ABILITIES_MANA_LABEL",
+            "value": "Mana: {0}/{1}"
+        },
+        {
+            "key": "INVENTORY_UNAVAILABLE",
+            "value": "Inventory unavailable"
+        },
+        {
+            "key": "INVENTORY_EMPTY",
+            "value": "Empty inventory"
+        },
+        {
+            "key": "INVENTORY_SELECT_ITEM",
+            "value": "Select an item"
+        },
+        {
+            "key": "INVENTORY_NO_DESCRIPTION",
+            "value": "No description."
+        },
+        {
+            "key": "INVENTORY_QUANTITY_LABEL",
+            "value": "Quantity: {0}"
+        },
+        {
+            "key": "HUD_FOLLOW_PROMPT_FOLLOW",
+            "value": "Follow me"
+        },
+        {
+            "key": "HUD_FOLLOW_PROMPT_STOP",
+            "value": "Stop following"
+        },
+        {
+            "key": "UI_DESPLAZAMIENTO",
+            "value": "Movement"
+        },
+        {
+            "key": "UI_SELECCION",
+            "value": "Selection"
+        },
+        {
+            "key": "UI_CANCELAR_SALIR",
+            "value": "Cancel / Exit"
+        },
+        {
+            "key": "UI_SALIR_MENU",
+            "value": "Exit to menu"
+        },
+        {
+            "key": "UI_USAR",
+            "value": "Use"
+        },
+        {
+            "key": "SPLASH_PRESENTA",
+            "value": "Presents"
+        },
+        {
+            "key": "SPELL_AURA_ESTELAR_NAME",
+            "value": "Stellar Aura"
+        },
+        {
+            "key": "SPELL_BOLA_FUEGO_NAME",
+            "value": "Fireball"
+        },
+        {
+            "key": "SPELL_BOLA_PRISMA_NAME",
+            "value": "Prism Ball"
+        },
+        {
+            "key": "SPELL_CORAZON_ESTELAR_NAME",
+            "value": "Stellar Heart"
+        },
+        {
+            "key": "SPELL_LEVITATION_NAME",
+            "value": "Levitation"
+        },
+        {
+            "key": "SPELL_LLAMA_ASTRAL_NAME",
+            "value": "Astral Flame"
+        },
+        {
+            "key": "SPELL_TORNADO_NAME",
+            "value": "Cycloneburst"
+        },
+        {
+            "key": "SPELL_DAMAGE_LABEL",
+            "value": "Damage: {0}"
+        },
+        {
+            "key": "SPELL_MANA_COST_LABEL",
+            "value": "Mana cost: {0}"
+        },
+        {
+            "key": "SPELL_COOLDOWN_LABEL",
+            "value": "Cooldown: {0}s"
+        },
+        {
+            "key": "SPELL_UNASSIGNED",
+            "value": "Unassigned."
+        },
+        {
+            "key": "SPELL_UNASSIGNED_SHORT",
+            "value": "Unassigned"
+        },
+        {
+            "key": "SPELL_NO_INFO",
+            "value": "Spell with no information."
+        },
+        {
+            "key": "SPELL_SELECT_SPELL_HINT",
+            "value": "Select a spell with A or cancel with B."
+        },
+        {
+            "key": "SPELL_SELECT_SLOT_HINT",
+            "value": "Select a slot with A or cancel with B."
+        },
+        {
+            "key": "SPELL_ASSIGN_HINT",
+            "value": "Press A on a spell, then choose the slot to assign it to."
+        },
+        {
+            "key": "ITEM_AC04_ANGELEARS_NAME",
+            "value": "Angel Ears"
+        },
+        {
+            "key": "ITEM_AC04_ANGELEARS_DESC",
+            "value": "Angel ears."
+        },
+        {
+            "key": "ITEM_AC04_BUNNYEARS_NAME",
+            "value": "Bunny Ears"
+        },
+        {
+            "key": "ITEM_AC04_BUNNYEARS_DESC",
+            "value": "Bunny ears."
+        },
+        {
+            "key": "ITEM_ALGAS_NAME",
+            "value": "Seaweed"
+        },
+        {
+            "key": "ITEM_BOOTS_NAME",
+            "value": "Boots"
+        },
+        {
+            "key": "ITEM_CARACOLA_NAME",
+            "value": "Seashell"
+        },
+        {
+            "key": "ITEM_CHEST25COIN_NAME",
+            "value": "Chest"
+        },
+        {
+            "key": "ITEM_CLOAK01_NAME",
+            "value": "Beginner Mage Cloak"
+        },
+        {
+            "key": "ITEM_CLOAK01_DESC",
+            "value": "A mage cloak worn by beginners."
+        },
+        {
+            "key": "ITEM_COIN_NAME",
+            "value": "Coin"
+        },
+        {
+            "key": "ITEM_KEY_NAME",
+            "value": "Key"
+        },
+        {
+            "key": "ITEM_KEY_DESC",
+            "value": "A key that might come in handy."
+        },
+        {
+            "key": "ITEM_POCIONMAGIA_NAME",
+            "value": "Magic Potion"
+        },
+        {
+            "key": "ITEM_POCIONMAGIA_DESC",
+            "value": "A potion that restores magic when consumed. Restores 25 MP."
+        },
+        {
+            "key": "ITEM_POCIONVIDA_NAME",
+            "value": "Health Potion"
+        },
+        {
+            "key": "ITEM_POCIONVIDA_DESC",
+            "value": "A potion that restores health when consumed. Restores 25 HP."
+        },
+        {
+            "key": "WARDROBE_BODY05_NAME",
+            "value": "Villager clothes"
+        },
+        {
+            "key": "WARDROBE_BODY05_DESC",
+            "value": "Villager clothes description."
+        },
+        {
+            "key": "WARDROBE_CLOAK01_NAME",
+            "value": "Expert mage cloak."
+        },
+        {
+            "key": "WARDROBE_CLOAK01_DESC",
+            "value": "A magic cloak worn by the most powerful mages."
+        },
+        {
+            "key": "WARDROBE_CLOAK02_NAME",
+            "value": "Beginner mage cloak."
+        },
+        {
+            "key": "WARDROBE_CLOAK02_DESC",
+            "value": "A magic cloak used by mages starting out on their adventure."
+        },
+        {
+            "key": "WARDROBE_CLOAK03_NAME",
+            "value": "Advanced mage cloak."
+        },
+        {
+            "key": "WARDROBE_CLOAK03_DESC",
+            "value": "A magic cloak worn by mages who have mastered magic."
+        },
+        {
+            "key": "SETTINGS_TITLE",
+            "value": "Settings"
+        },
+        {
+            "key": "SETTINGS_INVERT_LOOK_GROUND",
+            "value": "Invert Y axis (ground)"
+        },
+        {
+            "key": "SETTINGS_SFX_VOLUME",
+            "value": "SFX Volume"
+        },
+        {
+            "key": "SETTINGS_MUSIC_VOLUME",
+            "value": "Music Volume"
+        },
+        {
+            "key": "SETTINGS_CAMERA_CONTROLS",
+            "value": "Camera / Controls"
+        },
+        {
+            "key": "SETTINGS_GENERAL",
+            "value": "General"
+        },
+        {
+            "key": "SETTINGS_FULLSCREEN",
+            "value": "Fullscreen"
+        },
+        {
+            "key": "SETTINGS_MASTER_VOLUME",
+            "value": "Master Volume"
+        },
+        {
+            "key": "SETTINGS_VIBRATION",
+            "value": "Vibration"
+        },
+        {
+            "key": "SETTINGS_LANGUAGE",
+            "value": "Language"
+        },
+        {
+            "key": "SETTINGS_AUDIO",
+            "value": "Audio"
+        },
+        {
+            "key": "SETTINGS_CAMERA_SENSITIVITY",
+            "value": "Camera Sensitivity"
+        },
+        {
+            "key": "SETTINGS_INVERT_LOOK_FLIGHT",
+            "value": "Invert Y axis (flight)"
+        },
+        {
+            "key": "SHOP_BUY_BUTTON",
+            "value": "BUY"
+        },
+        {
+            "key": "SHOP_SELL_BUTTON",
+            "value": "SELL"
+        },
+        {
+            "key": "SHOP_ITEM_AVAILABLE",
+            "value": "Available"
         }
     ]
 }

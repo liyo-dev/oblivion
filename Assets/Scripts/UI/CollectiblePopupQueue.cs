@@ -217,7 +217,7 @@ public class CollectiblePopupQueue : MonoBehaviour
         // Crear un ItemData efímero para reutilizar el flujo de popups existente
         var temp = ScriptableObject.CreateInstance<ItemData>();
         temp.itemId = $"WARDROBE:{wardrobeItem.WardrobeId}";
-        temp.displayName = wardrobeItem.DisplayName;
+        temp.displayName = wardrobeItem.GetLocalizedDisplayName();
         temp.icon = wardrobeItem.Icon;
 
         SpawnPopup(temp, amount);

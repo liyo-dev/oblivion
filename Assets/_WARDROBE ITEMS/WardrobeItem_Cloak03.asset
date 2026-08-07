@@ -15,6 +15,8 @@ MonoBehaviour:
   wardrobeId: Cloak03
   category: 1
   partName: Cloak03
+  displayNameId: WARDROBE_CLOAK03_NAME
   displayName: Capa de mago avanzado.
+  descriptionId: WARDROBE_CLOAK03_DESC
   description: "Capa m\xE1gica que portan los magos que dominan la magia."
   icon: {fileID: 21300000, guid: fd1ab85e76cbb15418d8a761a8790a50, type: 3}

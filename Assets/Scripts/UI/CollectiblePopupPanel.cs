@@ -65,7 +65,7 @@ public class CollectiblePopupPanel : MonoBehaviour
         if (item != null)
         {
             if (nameText == null) Debug.LogWarning("[CollectiblePopupPanel] nameText is not assigned on prefab.");
-            else nameText.text = item.displayName;
+            else nameText.text = item.GetLocalizedName();
 
             if (iconImage == null) Debug.LogWarning("[CollectiblePopupPanel] iconImage is not assigned on prefab.");
             else iconImage.sprite = item.icon;

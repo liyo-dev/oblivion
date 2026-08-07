@@ -50,20 +50,20 @@ public class ShopController : MonoBehaviour
         message = null;
         if (!IsValidIndex(index))
         {
-            message = "Selección inválida.";
+            message = Loc("SHOP_MSG_INVALID_SELECTION", "Selección inválida.");
             return false;
         }
 
         var entry = stock[index];
         if (entry == null || entry.item == null)
         {
-            message = "Item no disponible.";
+            message = Loc("SHOP_MSG_ITEM_UNAVAILABLE", "Item no disponible.");
             return false;
         }
 
         if (!entry.HasStock)
         {
-            message = "Producto agotado.";
+            message = Loc("SHOP_MSG_OUT_OF_STOCK", "Producto agotado.");
             return false;
         }
 
@@ -72,10 +72,10 @@ public class ShopController : MonoBehaviour
 
         int price = entry.GetBuyPrice();
         Debug.Log($"[ShopController] TryBuy: item={entry.item.displayName}, precio={price}, buyPriceOverride={entry.buyPriceOverride}, item.buyPrice={entry.item.buyPrice}");
-        
+
         if (price > 0 && !HasCurrency(price))
         {
-            message = "No tienes suficientes monedas.";
+            message = Loc("SHOP_MSG_NOT_ENOUGH_CURRENCY", "No tienes suficientes monedas.");
             return false;
         }
 
@@ -94,7 +94,7 @@ public class ShopController : MonoBehaviour
         message = null;
         if (item == null)
         {
-            message = "Item inválido.";
+            message = Loc("SHOP_MSG_INVALID_ITEM", "Item inválido.");
             return false;
         }
 
@@ -105,7 +105,7 @@ public class ShopController : MonoBehaviour
 
         if (!playerInventory.TryConsume(item, amount, true))
         {
-            message = "No tienes suficiente cantidad.";
+            message = Loc("SHOP_MSG_NOT_ENOUGH_QUANTITY", "No tienes suficiente cantidad.");
             return false;
         }
 
@@ -131,19 +131,22 @@ public class ShopController : MonoBehaviour
 
         if (playerInventory == null)
         {
-            message = "No hay inventario configurado.";
+            message = Loc("SHOP_MSG_NO_INVENTORY", "No hay inventario configurado.");
             Debug.LogError("[ShopController] No se pudo encontrar Inventory del jugador");
             return false;
         }
         if (currencyItem == null)
         {
-            message = "No se ha asignado item de monedas.";
+            message = Loc("SHOP_MSG_NO_CURRENCY_ITEM", "No se ha asignado item de monedas.");
             Debug.LogError("[ShopController] currencyItem no está asignado en el inspector");
             return false;
         }
         message = null;
         return true;
     }
+
+    static string Loc(string key, string fallback) =>
+        LocalizationManager.Instance != null ? LocalizationManager.Instance.Get(key, fallback) : fallback;
 
     bool IsValidIndex(int index) => index >= 0 && index < stock.Count;
 

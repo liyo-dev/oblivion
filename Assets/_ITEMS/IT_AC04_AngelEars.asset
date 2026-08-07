@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: IT_AC04_AngelEars
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemId: AC04_AngelEars
+  displayNameId: ITEM_AC04_ANGELEARS_NAME
   displayName: "Orejas de \xC1ngel"
   icon: {fileID: 21300000, guid: 593a38c2606840c4b98db10990d04728, type: 3}
   usableFromInventory: 0
@@ -22,6 +23,7 @@ MonoBehaviour:
     quantity: 1
     amount: 0
     consumeEvenIfNoChange: 0
+  useDescriptionId: ITEM_AC04_ANGELEARS_DESC
   useDescription: "Orejas de \xC1ngel."
   usageKind: 2
   buyPrice: 100

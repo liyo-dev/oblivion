@@ -1140,6 +1140,21 @@ public sealed class AudioService : MonoBehaviour
     public bool IsBattleActive => _battleActive;
 
     /// <summary>
+    /// Fuerza el fin de cualquier estado de batalla pendiente (flag _battleActive + stack de
+    /// música). Necesario en salidas anómalas del combate (Game Over) donde nunca se llega a
+    /// llamar a EndBattleById/RestoreAfterBattle/OnBattleWonRestoreMusic porque el jugador
+    /// murió en vez de ganar. Sin esto, _battleActive se queda a true indefinidamente —
+    /// AudioService es DontDestroyOnLoad y sobrevive al viaje Game Over → MainMenu → Continuar—
+    /// y AmbientZone.TransitionToZoneMusic/RestorePreviousMusic usan IsBattleActive como guard
+    /// para no pisar música de combate, bloqueando la música de zona para siempre tras morir.
+    /// </summary>
+    public void ForceEndBattleState()
+    {
+        _musicStack.Clear();
+        _battleActive = false;
+    }
+
+    /// <summary>
     /// Activa o desactiva el loop de las dos fuentes de música. Útil para temas que deben sonar
     /// una sola vez y terminar (p.ej. el tema de créditos, ver CreditsSceneController), en vez de
     /// heredar el loop=true por defecto que usa la música de ambiente/gameplay.

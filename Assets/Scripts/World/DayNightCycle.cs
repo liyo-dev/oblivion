@@ -339,6 +339,12 @@ public class DayNightCycle : MonoBehaviour
         _rainDarkenAmount = 0f;
         _rainDarkenCoroutine = null;
         _preStormSkybox = null;
+        // Corta el loop de ambiente de lluvia (ver ActivateRain/BeginRainFadeOut). Sin esto, al
+        // desactivarse este componente (p.ej. escena descargada al ir al menú principal) el SFX de
+        // lluvia sigue sonando porque vive en una fuente dedicada de AudioService, en la escena
+        // persistente 'Start' — no se para solo al desaparecer esta escena. Corte inmediato (sin
+        // fade) porque la escena ya se está descargando.
+        AudioService.Instance?.StopLoopingSFX(RainWeatherSfxLoopId);
         if (_cameraOverrideActive && _mainCamera != null)
         {
             _mainCamera.clearFlags = _preStormClearFlags;

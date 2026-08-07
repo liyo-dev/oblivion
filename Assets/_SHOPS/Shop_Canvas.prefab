@@ -224,6 +224,7 @@ GameObject:
   - component: {fileID: 3481239520759487715}
   - component: {fileID: 4746519102708805990}
   - component: {fileID: 204360703108350151}
+  - component: {fileID: 904802347336818196}
   m_Layer: 5
   m_Name: Text
   m_TagString: Untagged
@@ -292,6 +293,19 @@ MonoBehaviour:
     m_VerticalOverflow: 0
     m_LineSpacing: 1
   m_Text: COMPRAR
+--- !u!114 &904802347336818196
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1580792284657643034}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
+  key: SHOP_BUY_BUTTON
 --- !u!1 &2224792585590367673
 GameObject:
   m_ObjectHideFlags: 0
@@ -1749,6 +1763,7 @@ GameObject:
   - component: {fileID: 5303017288148337307}
   - component: {fileID: 422042925442721739}
   - component: {fileID: 8303137627910700488}
+  - component: {fileID: 175687538449978226}
   m_Layer: 5
   m_Name: Text
   m_TagString: Untagged
@@ -1817,3 +1832,16 @@ MonoBehaviour:
     m_VerticalOverflow: 0
     m_LineSpacing: 1
   m_Text: VENDER
+--- !u!114 &175687538449978226
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9079026854177363169}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
+  key: SHOP_SELL_BUTTON

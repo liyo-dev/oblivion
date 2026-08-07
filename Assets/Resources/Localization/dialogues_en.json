@@ -114,11 +114,11 @@
         },
         {
             "key": "DG_AMIGOELDRAN_BEFORE",
-            "value": ""
+            "value": "Hello there, I can see you have ranged magic."
         },
         {
             "key": "DG_AMIGOELDRAN_TURNIN",
-            "value": ""
+            "value": "Excuse me, can I help you?"
         },
         {
             "key": "DG_LIAM_ARRESTO_01",
@@ -138,67 +138,67 @@
         },
         {
             "key": "DG_LIBROHECHIZOS_01",
-            "value": ""
+            "value": "Excuse me, are you Eldran's friend? He sent us, we need your help."
         },
         {
             "key": "DG_LIBROHECHIZOS_02",
-            "value": ""
+            "value": "Eldran? What is my old friend up to now..."
         },
         {
             "key": "DG_LIBROHECHIZOS_03",
-            "value": ""
+            "value": "We know you have information about the Book of Forbidden Spells."
         },
         {
             "key": "DG_LIBROHECHIZOS_04",
-            "value": ""
+            "value": "Quiet, boy! Don't say that out loud..."
         },
         {
             "key": "DG_LIBROHECHIZOS_05",
-            "value": ""
+            "value": "Do you know how dangerous what you're asking is?"
         },
         {
             "key": "DG_LIBROHECHIZOS_06",
-            "value": ""
+            "value": "Yes, we know, but it's more dangerous to do nothing and let them keep attacking the Kingdom..."
         },
         {
             "key": "DG_LIBROHECHIZOS_07",
-            "value": ""
+            "value": "They've attacked the Kingdom?"
         },
         {
             "key": "DG_LIBROHECHIZOS_08",
-            "value": ""
+            "value": "Yes... and if we don't do something, who knows what might happen..."
         },
         {
             "key": "DG_LIBROHECHIZOS_09",
-            "value": ""
+            "value": "Well, all I know is that it's guarded by a guardian. At the end of the Rocky Path there are some Ruins..."
         },
         {
             "key": "DG_LIBROHECHIZOS_10",
-            "value": ""
+            "value": "It's said that a guardian there watches over an important book of spells, but no one has ever managed to get it, and little by little people stopped visiting the temple."
         },
         {
             "key": "DG_LIBROHECHIZOS_11",
-            "value": ""
+            "value": "Sorry, what are you talking about? I was just thinking about going to that tavern over there and I lost track..."
         },
         {
             "key": "DG_LIBROHECHIZOS_12",
-            "value": ""
+            "value": "Forgive her... the poor thing can't help it..."
         },
         {
             "key": "DG_LIBROHECHIZOS_13",
-            "value": ""
+            "value": "What was that, Liam? You feel like eating a fireball?"
         },
         {
             "key": "DG_LIBROHECHIZOS_14",
-            "value": ""
+            "value": "Don't start again..."
         },
         {
             "key": "DG_LIBROHECHIZOS_15",
-            "value": ""
+            "value": "He started it."
         },
         {
             "key": "DG_LIBROHECHIZOS_16",
-            "value": ""
+            "value": "Mi mi mi mi..."
         },
         {
             "key": "DLG_AMIGAPEZ_01",
@@ -274,59 +274,59 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION13_TURNIN_01",
-            "value": ""
+            "value": "Well, we can finally breathe easy... though I have to admit that was a very convenient coincidence"
         },
         {
             "key": "DLG_ELDRAN_MISSION13_TURNIN_01_02",
-            "value": ""
+            "value": "Too convenient if you ask me. That demon attacked at just the right time to save our necks. It almost seemed tamed."
         },
         {
             "key": "DLG_ELDRAN_MISSION13_TURNIN_01_03",
-            "value": ""
+            "value": "T-the Kingdom is under attack, it was only a matter of time before they reached the castle. What matters is that we're free now and the King trusts us."
         },
         {
             "key": "DLG_ELDRAN_MISSION13_TURNIN_02",
-            "value": ""
+            "value": "Liam's right, we've been lucky, let's make the most of it. So Liam, what do we need to do to reach the Path?"
         },
         {
             "key": "DLG_ELDRAN_MISSION13_TURNIN_03",
-            "value": ""
+            "value": "Well, to open the portal we need an ancient book of spells..."
         },
         {
             "key": "DLG_ELDRAN_MISSION13_TURNIN_04",
-            "value": ""
+            "value": "But I don't know its location."
         },
         {
             "key": "DLG_ELDRAN_MISSION13_TURNIN_05",
-            "value": ""
+            "value": "Maybe a friend of mine can lend us a hand."
         },
         {
             "key": "DLG_ELDRAN_MISSION13_TURNIN_06",
-            "value": ""
+            "value": "Besides, he lives nearby. Right in the next village."
         },
         {
             "key": "DLG_ELDRAN_MISSION13_TURNIN_07",
-            "value": ""
+            "value": "So we look for the old geezer, find the book, and open the portal?"
         },
         {
             "key": "DLG_ELDRAN_MISSION13_TURNIN_08",
-            "value": ""
+            "value": "Yeah, something like that, Estela..."
         },
         {
             "key": "DLG_ELDRAN_MISSION13_TURNIN_09",
-            "value": ""
+            "value": "Be careful. I'll be around the Kingdom as always..."
         },
         {
             "key": "DLG_ELDRAN_MISSION13_TURNIN_10",
-            "value": ""
+            "value": "This is where our paths split. Will, I hope you can find answers in the Path."
         },
         {
             "key": "DLG_ELDRAN_MISSION13_TURNIN_11",
-            "value": ""
+            "value": "Are we going or what? Let Operation Ostrich 2.0 begin!"
         },
         {
             "key": "DLG_ELDRAN_MISSION13_TURNIN_12",
-            "value": ""
+            "value": "Confirmed. She's silly."
         },
         {
             "key": "DLG_ELDRAN_MISSION2_INPROGRESS_01",
@@ -506,15 +506,15 @@
         },
         {
             "key": "DLG_ESTELA_BOSQUE_03",
-            "value": ""
+            "value": "By the way, you're not planning on walking back, are you?"
         },
         {
             "key": "DLG_ESTELA_BOSQUE_04",
-            "value": ""
+            "value": "At that save point you can now use teleport by pressing the <sprite name=\"interactable_y\"> button"
         },
         {
             "key": "DLG_ESTELA_BOSQUE_05",
-            "value": ""
+            "value": "And now, thanks to me, you can also switch characters. Press <sprite name=\"interactable_dpad\"> to the right to switch."
         },
         {
             "key": "DLG_ESTELA_PRISION_00",
@@ -562,59 +562,59 @@
         },
         {
             "key": "DLG_ESTELA_PRISION_11",
-            "value": ""
+            "value": "Why 'ostrich'?"
         },
         {
             "key": "DLG_ESTELA_PRISION_12",
-            "value": ""
+            "value": "This girl is silly"
         },
         {
             "key": "DLG_FUEGO_FATUO_01",
-            "value": ""
+            "value": "Please, help me!"
         },
         {
             "key": "DLG_FUEGO_FATUO_02",
-            "value": ""
+            "value": "What's wrong? Calm down."
         },
         {
             "key": "DLG_FUEGO_FATUO_03",
-            "value": ""
+            "value": "It turns out it's impossible to cross to the other side to reach the village at night..."
         },
         {
             "key": "DLG_FUEGO_FATUO_04",
-            "value": ""
+            "value": "A strange being appears, and just when you think you're about to arrive, suddenly you're back at the entrance."
         },
         {
             "key": "DLG_FUEGO_FATUO_05",
-            "value": ""
+            "value": "There are a lot of people who work during the day and need to get back home, and they're trapped."
         },
         {
             "key": "DLG_FUEGO_FATUO_06",
-            "value": ""
+            "value": "We were just heading that way."
         },
         {
             "key": "DLG_FUEGO_FATUO_07",
-            "value": ""
+            "value": "Don't worry, we'll help you with that strange being."
         },
         {
             "key": "DLG_FUEGO_FATUO_08",
-            "value": ""
+            "value": "Thank you so much! Come see me if you manage it, I'll give you something in return..."
         },
         {
             "key": "DLG_FUEGO_FATUO_09",
-            "value": ""
+            "value": "Well, since we have to wait for nightfall, how about I go get some supplies?"
         },
         {
             "key": "DLG_FUEGO_FATUO_10",
-            "value": ""
+            "value": "Will, what do you say you and I scout the path, so when night falls we already know what it's like"
         },
         {
             "key": "DLG_FUEGO_FATUO_11",
-            "value": ""
+            "value": "Perfect. Estela, see you in a bit, here at the entrance."
         },
         {
             "key": "DLG_FUEGO_FATUO_12",
-            "value": ""
+            "value": "Will, once the party splits up, you can now walk up to Estela or me and ask us to follow you."
         },
         {
             "key": "DLG_GUARD_01",
@@ -794,11 +794,11 @@
         },
         {
             "key": "DLG_LETY_VICKY_ALERT_03",
-            "value": ""
+            "value": "By the way, kid, whenever you want to change your attack focus..."
         },
         {
             "key": "DLG_LETY_VICKY_ALERT_04",
-            "value": ""
+            "value": "You can press <sprite name=\"interactable_rb\"> or <sprite name=\"interactable_lb\">"
         },
         {
             "key": "DLG_LETY_VICKY_DEFEATED",
@@ -1022,47 +1022,47 @@
         },
         {
             "key": "LORE_CELDA_1",
-            "value": ""
+            "value": "You! This is all your fault! I was about to eat and you had to come and ruin it! If you hadn't interrupted, we wouldn't be in this pigsty."
         },
         {
             "key": "LORE_CELDA_10",
-            "value": ""
+            "value": "Will, why don't you check if there's something that can open that door?"
         },
         {
             "key": "LORE_CELDA_11",
-            "value": ""
+            "value": "Now you can use the split party function, so each of us can handle a task."
         },
         {
             "key": "LORE_CELDA_12",
-            "value": ""
+            "value": "Press  <sprite name=\"interactable_dpad\"> down to join or split up the party."
         },
         {
             "key": "LORE_CELDA_3",
-            "value": ""
+            "value": "Stop crying over a plate of food. "
         },
         {
             "key": "LORE_CELDA_4",
-            "value": ""
+            "value": "Okay, calm down... Liam, why don't you finish telling us about the Path? "
         },
         {
             "key": "LORE_CELDA_5",
-            "value": ""
+            "value": "The Path is nothing more than a portal that leads to a world located somewhere among the stars."
         },
         {
             "key": "LORE_CELDA_6",
-            "value": ""
+            "value": "Inside that world you'll have to pass certain trials. One for each person who enters."
         },
         {
             "key": "LORE_CELDA_7",
-            "value": ""
+            "value": "If all the trials are passed, the Path can grant each person a wish at the end."
         },
         {
             "key": "LORE_CELDA_8",
-            "value": ""
+            "value": "I think that's super interesting. "
         },
         {
             "key": "LORE_CELDA_9",
-            "value": ""
+            "value": "Well, first things first, let's get out of here. We can't waste time with demons roaming the Kingdom."
         },
         {
             "key": "LORE_ESCOLTA_GUARDIA_1",
@@ -1110,11 +1110,11 @@
         },
         {
             "key": "LORE_WILL_LIAM_01",
-            "value": ""
+            "value": "Hey Will, have you always been with Eldran?"
         },
         {
             "key": "LORE_WILL_LIAM_02",
-            "value": ""
+            "value": "Well, for as long as I can remember, yes..."
         },
         {
             "key": "LORE_WILL_LIAM_03",

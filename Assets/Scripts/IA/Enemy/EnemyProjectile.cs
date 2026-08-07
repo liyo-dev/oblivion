@@ -26,6 +26,9 @@ public class EnemyProjectile : MonoBehaviour
     private Vector3 direction;
     private float damage;
     private bool initialized = false;
+
+    /// <summary>Daño configurado de este proyectil (usado p. ej. por ProjectileCollisionHandler al sumar daños en un choque de hechizos).</summary>
+    public float Damage => damage;
     private bool hasHit = false;
     private float _spawnTime;
     private Rigidbody rb;

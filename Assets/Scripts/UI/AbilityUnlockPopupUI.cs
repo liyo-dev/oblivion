@@ -37,6 +37,9 @@ public class AbilityUnlockPopupUI : MonoBehaviour
     private bool _flagsLoaded;
     private Coroutine _autoDismissCoroutine;
     private bool _isShowing;
+    // True si ShowPopup() ya preparó los textos/flag pero difirió AnimateIn() porque la intro de
+    // un boss estaba ocultando la UI persistente (ver SceneBoundUI.BeginBossIntro/EndBossIntro).
+    private bool _awaitingBossIntroEnd;
 
     const string AbilityFlagPrefix = "ABILITY_POPUP_ID:";
     const string AbilityKeyFlagPrefix = "ABILITY_POPUP_KEY:";
@@ -55,6 +58,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         UnlockService.OnAbilityUnlocked += HandleAbilityUnlocked;
         UnlockService.OnAbilityUnlockedKey += HandleAbilityUnlockedKey;
         UnlockService.OnSpellUnlocked += HandleSpellUnlocked;
+        SceneBoundUI.OnBossIntroEnded += HandleBossIntroEnded;
         ReloadShownFlags();
     }
 
@@ -64,6 +68,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         UnlockService.OnAbilityUnlocked -= HandleAbilityUnlocked;
         UnlockService.OnAbilityUnlockedKey -= HandleAbilityUnlockedKey;
         UnlockService.OnSpellUnlocked -= HandleSpellUnlocked;
+        SceneBoundUI.OnBossIntroEnded -= HandleBossIntroEnded;
     }
 
     void OnDestroy()
@@ -156,6 +161,23 @@ public class AbilityUnlockPopupUI : MonoBehaviour
             SetTexts(p.title, p.description, p.icon);
         }
 
+        if (SceneBoundUI.IsBossIntroActive)
+        {
+            // No animar durante la intro del boss: BeginBossIntro la dejaría a alpha 0 igualmente
+            // y el timer de AutoDismiss() correría en tiempo real mientras el popup es invisible.
+            // Esperar a OnBossIntroEnded para que aparezca ya con la escena/diálogo normal en marcha.
+            _awaitingBossIntroEnd = true;
+            GameLog.Log("AbilityUnlockPopupUI", "Intro de boss activa: difiriendo popup hasta que termine.");
+            return;
+        }
+
+        AnimateIn();
+    }
+
+    private void HandleBossIntroEnded()
+    {
+        if (!_awaitingBossIntroEnd) return;
+        _awaitingBossIntroEnd = false;
         AnimateIn();
     }
 

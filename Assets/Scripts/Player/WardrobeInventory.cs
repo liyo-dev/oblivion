@@ -160,8 +160,8 @@ public class WardrobeInventory : MonoBehaviour
         {
             category = item.Category,
             partName = item.PartName,
-            displayName = item.DisplayName,
-            description = item.Description,
+            displayName = item.GetLocalizedDisplayName(),
+            description = item.GetLocalizedDescription(),
             icon = item.Icon,
             wardrobeId = item.WardrobeId
         };

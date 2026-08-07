@@ -328,12 +328,22 @@ public class AmbientZone : MonoBehaviour
         }
     }
 
-    private void StopGroundMist()
+    private void StopGroundMist(bool reparent = true)
     {
         if (groundMistPS == null) return;
 
-        var restoreParent = _mistOriginalParent != null ? _mistOriginalParent : transform;
-        groundMistPS.transform.SetParent(restoreParent, true);
+        // reparent=false durante OnDestroy: la zona (y por tanto su Transform, usado como
+        // destino de reparenting cuando _mistOriginalParent es null) puede estar siendo
+        // destruida en ese mismo instante (descarga de escena / cierre de la app). Llamar a
+        // SetParent contra un GameObject que se está destruyendo lanza
+        // "Cannot set the parent of the GameObject X while its new parent Y is being destroyed"
+        // y puede tirar el juego. En destrucción no tiene sentido reparentar: el propio
+        // groundMistPS va a desaparecer con la escena.
+        if (reparent)
+        {
+            var restoreParent = _mistOriginalParent != null ? _mistOriginalParent : transform;
+            groundMistPS.transform.SetParent(restoreParent, true);
+        }
         _mistOriginalParent = null;
 
         // StopEmitting: las partículas ya emitidas se desvanecen solas por su lifetime
@@ -609,7 +619,7 @@ public class AmbientZone : MonoBehaviour
         {
             _currentActiveZone = null;
             _playerTransform = null;
-            StopGroundMist();
+            StopGroundMist(reparent: false);
             StopFootFog();
             HideCameraOverlay();
             RestoreDefaultsImmediate();

@@ -367,6 +367,370 @@
         {
             "key": "WOODS_EXIT_BLOCKED",
             "value": "Debería hablar con ese guarda."
+        },
+        {
+            "key": "SHOP_PRICE_LABEL",
+            "value": "Precio: {0} 💰"
+        },
+        {
+            "key": "SHOP_STOCK_IN_STOCK",
+            "value": "En stock"
+        },
+        {
+            "key": "SHOP_STOCK_OUT",
+            "value": "Agotado"
+        },
+        {
+            "key": "SHOP_STOCK_UNLIMITED",
+            "value": "Stock ilimitado"
+        },
+        {
+            "key": "SHOP_SELL_NOT_IMPLEMENTED",
+            "value": "Función de venta no implementada aún."
+        },
+        {
+            "key": "SHOP_PURCHASE_SUCCESS",
+            "value": "¡Comprado!"
+        },
+        {
+            "key": "SHOP_PURCHASE_FAILED",
+            "value": "No se pudo comprar."
+        },
+        {
+            "key": "SHOP_MSG_INVALID_SELECTION",
+            "value": "Selección inválida."
+        },
+        {
+            "key": "SHOP_MSG_ITEM_UNAVAILABLE",
+            "value": "Item no disponible."
+        },
+        {
+            "key": "SHOP_MSG_OUT_OF_STOCK",
+            "value": "Producto agotado."
+        },
+        {
+            "key": "SHOP_MSG_NOT_ENOUGH_CURRENCY",
+            "value": "No tienes suficientes monedas."
+        },
+        {
+            "key": "SHOP_MSG_INVALID_ITEM",
+            "value": "Item inválido."
+        },
+        {
+            "key": "SHOP_MSG_NOT_ENOUGH_QUANTITY",
+            "value": "No tienes suficiente cantidad."
+        },
+        {
+            "key": "SHOP_MSG_NO_INVENTORY",
+            "value": "No hay inventario configurado."
+        },
+        {
+            "key": "SHOP_MSG_NO_CURRENCY_ITEM",
+            "value": "No se ha asignado item de monedas."
+        },
+        {
+            "key": "QUEST_MENU_HEADER_MAIN",
+            "value": "Misiones (principal)"
+        },
+        {
+            "key": "QUEST_MENU_HEADER_VISIBLE",
+            "value": "Misiones visibles ({0})"
+        },
+        {
+            "key": "QUEST_MENU_HEADER_HIDDEN",
+            "value": "Misiones ocultas ({0})"
+        },
+        {
+            "key": "COMMON_NONE",
+            "value": "Ninguno"
+        },
+        {
+            "key": "ABILITIES_LEVEL_LABEL",
+            "value": "Nivel: {0}"
+        },
+        {
+            "key": "ABILITIES_MANA_LABEL",
+            "value": "Maná: {0}/{1}"
+        },
+        {
+            "key": "INVENTORY_UNAVAILABLE",
+            "value": "Inventario no disponible"
+        },
+        {
+            "key": "INVENTORY_EMPTY",
+            "value": "Inventario vacío"
+        },
+        {
+            "key": "INVENTORY_SELECT_ITEM",
+            "value": "Selecciona un objeto"
+        },
+        {
+            "key": "INVENTORY_NO_DESCRIPTION",
+            "value": "Sin descripción."
+        },
+        {
+            "key": "INVENTORY_QUANTITY_LABEL",
+            "value": "Cantidad: {0}"
+        },
+        {
+            "key": "HUD_FOLLOW_PROMPT_FOLLOW",
+            "value": "Sígueme"
+        },
+        {
+            "key": "HUD_FOLLOW_PROMPT_STOP",
+            "value": "Dejar de seguir"
+        },
+        {
+            "key": "UI_DESPLAZAMIENTO",
+            "value": "Desplazamiento"
+        },
+        {
+            "key": "UI_SELECCION",
+            "value": "Selección"
+        },
+        {
+            "key": "UI_CANCELAR_SALIR",
+            "value": "Cancelar / Salir"
+        },
+        {
+            "key": "UI_SALIR_MENU",
+            "value": "Salir al menú"
+        },
+        {
+            "key": "UI_USAR",
+            "value": "Usar"
+        },
+        {
+            "key": "SPLASH_PRESENTA",
+            "value": "Presenta"
+        },
+        {
+            "key": "SPELL_AURA_ESTELAR_NAME",
+            "value": "Aura Estelar"
+        },
+        {
+            "key": "SPELL_BOLA_FUEGO_NAME",
+            "value": "Bola de Fuego"
+        },
+        {
+            "key": "SPELL_BOLA_PRISMA_NAME",
+            "value": "Bola Prisma"
+        },
+        {
+            "key": "SPELL_CORAZON_ESTELAR_NAME",
+            "value": "Corazón Estelar"
+        },
+        {
+            "key": "SPELL_LEVITATION_NAME",
+            "value": "Levitación"
+        },
+        {
+            "key": "SPELL_LLAMA_ASTRAL_NAME",
+            "value": "Llama Astral"
+        },
+        {
+            "key": "SPELL_TORNADO_NAME",
+            "value": "Tornado"
+        },
+        {
+            "key": "SPELL_DAMAGE_LABEL",
+            "value": "Daño: {0}"
+        },
+        {
+            "key": "SPELL_MANA_COST_LABEL",
+            "value": "Coste de maná: {0}"
+        },
+        {
+            "key": "SPELL_COOLDOWN_LABEL",
+            "value": "Cooldown: {0}s"
+        },
+        {
+            "key": "SPELL_UNASSIGNED",
+            "value": "Sin asignar."
+        },
+        {
+            "key": "SPELL_UNASSIGNED_SHORT",
+            "value": "Sin asignar"
+        },
+        {
+            "key": "SPELL_NO_INFO",
+            "value": "Hechizo sin información."
+        },
+        {
+            "key": "SPELL_SELECT_SPELL_HINT",
+            "value": "Selecciona un hechizo con A o cancela con B."
+        },
+        {
+            "key": "SPELL_SELECT_SLOT_HINT",
+            "value": "Selecciona un slot con A o cancela con B."
+        },
+        {
+            "key": "SPELL_ASSIGN_HINT",
+            "value": "Pulsa A sobre un hechizo y luego escoge el slot al que asignarlo."
+        },
+        {
+            "key": "ITEM_AC04_ANGELEARS_NAME",
+            "value": "Orejas de Ángel"
+        },
+        {
+            "key": "ITEM_AC04_ANGELEARS_DESC",
+            "value": "Orejas de Ángel."
+        },
+        {
+            "key": "ITEM_AC04_BUNNYEARS_NAME",
+            "value": "Orejas de Conejo"
+        },
+        {
+            "key": "ITEM_AC04_BUNNYEARS_DESC",
+            "value": "Orejas de Conejo."
+        },
+        {
+            "key": "ITEM_ALGAS_NAME",
+            "value": "Algas"
+        },
+        {
+            "key": "ITEM_BOOTS_NAME",
+            "value": "Botas"
+        },
+        {
+            "key": "ITEM_CARACOLA_NAME",
+            "value": "Caracola"
+        },
+        {
+            "key": "ITEM_CHEST25COIN_NAME",
+            "value": "Cofre"
+        },
+        {
+            "key": "ITEM_CLOAK01_NAME",
+            "value": "Capa de Mago Principiante"
+        },
+        {
+            "key": "ITEM_CLOAK01_DESC",
+            "value": "Capa de Mago utilizada por los principiantes."
+        },
+        {
+            "key": "ITEM_COIN_NAME",
+            "value": "Moneda"
+        },
+        {
+            "key": "ITEM_KEY_NAME",
+            "value": "Llave"
+        },
+        {
+            "key": "ITEM_KEY_DESC",
+            "value": "Llave que podría ser útil."
+        },
+        {
+            "key": "ITEM_POCIONMAGIA_NAME",
+            "value": "Poción de magia"
+        },
+        {
+            "key": "ITEM_POCIONMAGIA_DESC",
+            "value": "Poción que recupera magia al consumirla. Recupera 25 MP."
+        },
+        {
+            "key": "ITEM_POCIONVIDA_NAME",
+            "value": "Poción de vida"
+        },
+        {
+            "key": "ITEM_POCIONVIDA_DESC",
+            "value": "Poción que recupera vida al consumirla. Recupera 25 HP."
+        },
+        {
+            "key": "WARDROBE_BODY05_NAME",
+            "value": "Ropa de aldeano"
+        },
+        {
+            "key": "WARDROBE_BODY05_DESC",
+            "value": "Descripción ropa de aldeano."
+        },
+        {
+            "key": "WARDROBE_CLOAK01_NAME",
+            "value": "Capa de mago experto."
+        },
+        {
+            "key": "WARDROBE_CLOAK01_DESC",
+            "value": "Capa mágica que portan los magos más poderosos."
+        },
+        {
+            "key": "WARDROBE_CLOAK02_NAME",
+            "value": "Capa de mago de principiante."
+        },
+        {
+            "key": "WARDROBE_CLOAK02_DESC",
+            "value": "Capa mágica usada por magos que comienzan su aventura."
+        },
+        {
+            "key": "WARDROBE_CLOAK03_NAME",
+            "value": "Capa de mago avanzado."
+        },
+        {
+            "key": "WARDROBE_CLOAK03_DESC",
+            "value": "Capa mágica que portan los magos que dominan la magia."
+        },
+        {
+            "key": "SETTINGS_TITLE",
+            "value": "Ajustes"
+        },
+        {
+            "key": "SETTINGS_INVERT_LOOK_GROUND",
+            "value": "Invertir eje Y (suelo)"
+        },
+        {
+            "key": "SETTINGS_SFX_VOLUME",
+            "value": "Volumen SFX"
+        },
+        {
+            "key": "SETTINGS_MUSIC_VOLUME",
+            "value": "Volumen música"
+        },
+        {
+            "key": "SETTINGS_CAMERA_CONTROLS",
+            "value": "Cámara / Controles"
+        },
+        {
+            "key": "SETTINGS_GENERAL",
+            "value": "General"
+        },
+        {
+            "key": "SETTINGS_FULLSCREEN",
+            "value": "Pantalla completa"
+        },
+        {
+            "key": "SETTINGS_MASTER_VOLUME",
+            "value": "Volumen general"
+        },
+        {
+            "key": "SETTINGS_VIBRATION",
+            "value": "Vibración"
+        },
+        {
+            "key": "SETTINGS_LANGUAGE",
+            "value": "Idioma"
+        },
+        {
+            "key": "SETTINGS_AUDIO",
+            "value": "Audio"
+        },
+        {
+            "key": "SETTINGS_CAMERA_SENSITIVITY",
+            "value": "Sensibilidad cámara"
+        },
+        {
+            "key": "SETTINGS_INVERT_LOOK_FLIGHT",
+            "value": "Invertir eje Y (vuelo)"
+        },
+        {
+            "key": "SHOP_BUY_BUTTON",
+            "value": "COMPRAR"
+        },
+        {
+            "key": "SHOP_SELL_BUTTON",
+            "value": "VENDER"
+        },
+        {
+            "key": "SHOP_ITEM_AVAILABLE",
+            "value": "Disponible"
         }
     ]
 }

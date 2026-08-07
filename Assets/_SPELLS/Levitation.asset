@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Levitation
   m_EditorClassIdentifier: Assembly-CSharp::MagicSpellSO
   spellId: 4
+  displayNameId: SPELL_LEVITATION_NAME
   displayName: Levitation
   kind: 2
   element: 4

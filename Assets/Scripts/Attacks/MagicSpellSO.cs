@@ -6,9 +6,19 @@ public class MagicSpellSO : ScriptableObject
     [Header("Identidad")]
     [Tooltip("ID único del hechizo para identificarlo en el sistema.")]
     public SpellId    spellId      = SpellId.None;
+    [Tooltip("ID de localización para el nombre (ej: 'SPELL_BOLA_FUEGO_NAME'). Si está vacío, usa displayName.")]
+    public string     displayNameId;
     public string     displayName = "Fireball";
-    public MagicKind  kind        = MagicKind.Projectile; 
-    public MagicElement element   = MagicElement.Fire;  
+    public MagicKind  kind        = MagicKind.Projectile;
+    public MagicElement element   = MagicElement.Fire;
+
+    /// <summary>Obtiene el nombre localizado del hechizo (usa displayNameId si está definido).</summary>
+    public string GetLocalizedName()
+    {
+        if (!string.IsNullOrEmpty(displayNameId) && LocalizationManager.Instance != null)
+            return LocalizationManager.Instance.Get(displayNameId, displayName);
+        return displayName;
+    }
     [Header("Prefab en vuelo")]
     public GameObject prefab;
     

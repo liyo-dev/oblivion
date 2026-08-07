@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: IT_Key
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemId: key
+  displayNameId: ITEM_KEY_NAME
   displayName: Llave
   icon: {fileID: 21300000, guid: 44f25f2d590c4c549a997a9a763eec1f, type: 3}
   usableFromInventory: 1
@@ -22,6 +23,7 @@ MonoBehaviour:
     quantity: 0
     amount: 0
     consumeEvenIfNoChange: 0
+  useDescriptionId: ITEM_KEY_DESC
   useDescription: "Llave que podr\xEDa ser \xFAtil."
   usageKind: 0
   buyPrice: 10

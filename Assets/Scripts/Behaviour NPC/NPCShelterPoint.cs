@@ -3,8 +3,10 @@ using UnityEngine;
 using UnityEngine.AI;
 
 /// <summary>
-/// Tipo de refugio: bajo un árbol/porche exterior (el NPC se queda ahí parado) o puerta de una
-/// casa (el NPC "entra" y se desactiva hasta que deje de llover). Ver SeekShelterState.
+/// Tipo de refugio: bajo un árbol/porche exterior o en la puerta de una casa. Ambos se comportan
+/// igual (el NPC se queda ahí, de pie o sentado, hasta que deje de llover) — es solo una etiqueta
+/// para poder distinguirlos en el editor o filtrar por tipo si hiciera falta más adelante. Ver
+/// SeekShelterState.
 /// </summary>
 public enum NPCShelterType
 {

@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: IT_Algas
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemId: algas
+  displayNameId: ITEM_ALGAS_NAME
   displayName: Algas
   icon: {fileID: 21300000, guid: a5e1b7c4df5376f4cb776648b96d3be4, type: 3}
   usableFromInventory: 0

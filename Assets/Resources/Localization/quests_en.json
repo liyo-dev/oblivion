@@ -10,15 +10,15 @@
         },
         {
             "key": "FUEGOFATUO_DESC_01",
-            "value": ""
+            "value": "Gather supplies with Estela"
         },
         {
             "key": "FUEGOFATUO_DESC_02",
-            "value": ""
+            "value": "Scout the area with Will and Liam"
         },
         {
             "key": "FUEGOFATUO_NAME",
-            "value": ""
+            "value": "Something's happening in the forest at night"
         },
         {
             "key": "Q_NIÑOPEZ",
@@ -70,23 +70,23 @@
         },
         {
             "key": "QUEST_ELDRAN_MISSION14_DESC",
-            "value": ""
+            "value": "Find Eldran's friend in the neighboring village."
         },
         {
             "key": "QUEST_ELDRAN_MISSION14_NAME",
-            "value": ""
+            "value": "Operation Ostrich 2.0"
         },
         {
             "key": "QUEST_ELDRAN_MISSION15_DESC",
-            "value": ""
+            "value": "Find the forgotten temple."
         },
         {
             "key": "QUEST_ELDRAN_MISSION15_DESC_01",
-            "value": ""
+            "value": "Find the book of forbidden spells."
         },
         {
             "key": "QUEST_ELDRAN_MISSION15_NAME",
-            "value": ""
+            "value": "The Forgotten Temple"
         },
         {
             "key": "QUEST_ELDRAN_MISSION2_DESC",

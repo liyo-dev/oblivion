@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: AuraEstelar
   m_EditorClassIdentifier: Assembly-CSharp::MagicSpellSO
   spellId: 5
+  displayNameId: SPELL_AURA_ESTELAR_NAME
   displayName: Aura Estelar
   kind: 0
   element: 2

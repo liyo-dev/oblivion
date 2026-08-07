@@ -50,6 +50,9 @@ public class MagicProjectile : MonoBehaviour
 
     Vector3 _spawnPos;
     float   _spawnTime;
+
+    /// <summary>Daño configurado de este proyectil (usado p. ej. por ProjectileCollisionHandler al sumar daños en un choque de hechizos).</summary>
+    public float Damage => _cfg.damage;
     
     // Buffer reutilizable para AOE
     private Collider[] _aoeHitBuffer = new Collider[32];

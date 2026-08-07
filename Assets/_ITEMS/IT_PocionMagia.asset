@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: IT_PocionMagia
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemId: pocionMP
+  displayNameId: ITEM_POCIONMAGIA_NAME
   displayName: "Poci\xF3n de magia"
   icon: {fileID: 21300000, guid: 7aabe620bc4fc6c48bfdd6b81dcd64d7, type: 3}
   usableFromInventory: 1
@@ -22,6 +23,7 @@ MonoBehaviour:
     quantity: 1
     amount: 25
     consumeEvenIfNoChange: 0
+  useDescriptionId: ITEM_POCIONMAGIA_DESC
   useDescription: "Poci\xF3n que recupera magia al consumirla. Recupera 25 MP."
   usageKind: 0
   buyPrice: 10

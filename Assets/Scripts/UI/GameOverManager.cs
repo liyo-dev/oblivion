@@ -205,6 +205,15 @@ public class GameOverManager : MonoBehaviour
         // (INC: "de pronto hay dos Will" tras un Game Over).
         ActiveCharacterSwapper.Instance?.ResetState();
 
+        // 1c. Limpiar estado de combate huérfano: si el jugador murió en batalla, nunca se
+        // llega a EndBattleById/RestoreAfterBattle/OnBattleWonRestoreMusic (esas rutas son solo
+        // para victoria), así que AudioService._battleActive y ActiveCombatRegistry se quedaban
+        // "encendidos" para siempre (ambos sobreviven al viaje a MainMenu). Efecto observado:
+        // tras morir, volver a cargar partida y entrar en una AmbientZone, la música de zona no
+        // sonaba porque AmbientZone.TransitionToZoneMusic ve IsBattleActive/Count>0 y aborta.
+        AudioService.Instance?.ForceEndBattleState();
+        ActiveCombatRegistry.ClearAll();
+
         // 2. Reproducir música/SFX de Game Over
         PlayGameOverAudio();
 

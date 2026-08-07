@@ -71,6 +71,12 @@ public class BossIntroPresentation : MonoBehaviour
 
         if (PlayerLockService.HasInstance) PlayerLockService.Instance.Acquire(this);
 
+        // Reclamar el candado de cámara (ver CameraDirectorService): evita que vThirdPersonCamera
+        // retome el control de gameplay durante los SetActive() de cámara de esta presentación, y
+        // deja la puerta abierta a que el siguiente sistema de cámara (p.ej. DialogueCameraController
+        // al enfocar a Eldran) coalesca el handoff en vez de dejar un hueco de gameplay visible.
+        CameraDirectorService.Claim(this);
+
         // Ocultar toda la UI persistente (SceneBoundUI) con fade
         SceneBoundUI.BeginBossIntro(0.25f);
         // FIX: el HUD principal (PlayerHUDV2) queda excluido del snapshot genérico de
@@ -166,6 +172,11 @@ public class BossIntroPresentation : MonoBehaviour
             PlayerHUDV2.Instance?.ShowHUD(0.35f);
 
             if (PlayerLockService.HasInstance) PlayerLockService.Instance.Release(this);
+
+            // Soltar el candado de cámara con ventana de gracia (CameraDirectorService.ReleaseGraceSeconds):
+            // si el siguiente sistema reclama la cámara dentro de esa ventana, vThirdPersonCamera nunca
+            // llega a recuperar el control de gameplay entre la intro del boss y el siguiente corte.
+            CameraDirectorService.Release(this);
 
             _isPlaying = false;
         }

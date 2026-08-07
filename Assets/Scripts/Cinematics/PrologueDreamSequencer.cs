@@ -379,6 +379,22 @@ public class PrologueDreamSequencer : CinematicSequencerBase
         // ninguna IA — igual que el NavMeshAgent, se desactiva entero.
         var behaviourManager = actor.GetComponentInChildren<Game.NPC.NPCBehaviourManagerV2>(true);
         if (behaviourManager != null) behaviourManager.enabled = false;
+
+        // CAUSA REAL de "siguen mirando a cámara en la Fase E": NPCSimpleAnimator (el único
+        // responsable de animación del NPC, ver su propio comentario de cabecera) tiene su PROPIO
+        // LateUpdate() con rotación suave hacia un `_targetRotation` interno
+        // (`ApplySmoothRotation()`), completamente independiente de NPCBehaviourManagerV2. Ese
+        // `_targetRotation` se congela en Awake() con la rotación de spawn (Quaternion.identity,
+        // porque Instantiate() se llama con esa rotación) — ANTES de que FaceCameraFlat()/
+        // FaceEachOther() toquen el transform. Resultado: cada frame, NPCSimpleAnimator tira la
+        // rotación de vuelta hacia esa `Quaternion.identity` COMPARTIDA por los dos actores (mismo
+        // target para Mago y Will), peleando contra las asignaciones de este sequencer — de ahí que
+        // ambos acaben con la misma orientación de cara a cámara en vez de mirarse de perfil.
+        // Deshabilitar NavMeshAgent/NPCBehaviourManagerV2 no basta: hace falta este componente
+        // aparte. NPCSimpleAnimator ya expone DisableAutoRotation() para exactamente este caso
+        // ("útil durante diálogos cuando otro sistema controla la rotación").
+        var simpleAnimator = actor.GetComponentInChildren<NPCSimpleAnimator>(true);
+        if (simpleAnimator != null) simpleAnimator.DisableAutoRotation();
     }
 
     private static void FaceCameraFlat(GameObject actor, Vector3 camPos)

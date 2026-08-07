@@ -1838,7 +1838,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (_inventory == null)
             {
                 ClearList();
-                UpdateEmptyState("Inventario no disponible");
+                UpdateEmptyState(LocalizationManager.Instance != null
+                    ? LocalizationManager.Instance.Get("INVENTORY_UNAVAILABLE", "Inventario no disponible")
+                    : "Inventario no disponible");
                 return;
             }
 
@@ -1910,7 +1912,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             UpdateRowVisuals();
 
             if (_rows.Count == 0)
-                UpdateEmptyState("Inventario vacío");
+                UpdateEmptyState(LocalizationManager.Instance != null
+                    ? LocalizationManager.Instance.Get("INVENTORY_EMPTY", "Inventario vacío")
+                    : "Inventario vacío");
         }
 
         void HandleRowActivated(InventoryRowWidget widget, ItemData item, bool focus)
@@ -1998,20 +2002,32 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             if (_selectedItem == null)
             {
-                UpdateEmptyState("Selecciona un objeto");
+                UpdateEmptyState(LocalizationManager.Instance != null
+                    ? LocalizationManager.Instance.Get("INVENTORY_SELECT_ITEM", "Selecciona un objeto")
+                    : "Selecciona un objeto");
                 return;
             }
 
             if (_ui.itemName != null)
-                _ui.itemName.text = _selectedItem.displayName;
+                _ui.itemName.text = _selectedItem.GetLocalizedName();
 
             if (_ui.itemDescription != null)
-                _ui.itemDescription.text = string.IsNullOrEmpty(_selectedItem.useDescription) ? "Sin descripción." : _selectedItem.useDescription;
+            {
+                string localizedDesc = _selectedItem.GetLocalizedDescription();
+                _ui.itemDescription.text = string.IsNullOrEmpty(localizedDesc)
+                    ? (LocalizationManager.Instance != null
+                        ? LocalizationManager.Instance.Get("INVENTORY_NO_DESCRIPTION", "Sin descripción.")
+                        : "Sin descripción.")
+                    : localizedDesc;
+            }
 
             if (_ui.itemCount != null)
             {
                 int count = _inventory != null ? _inventory.Count(_selectedItem.itemId) : 0;
-                _ui.itemCount.text = $"Cantidad: {count}";
+                string countFmt = LocalizationManager.Instance != null
+                    ? LocalizationManager.Instance.Get("INVENTORY_QUANTITY_LABEL", "Cantidad: {0}")
+                    : "Cantidad: {0}";
+                _ui.itemCount.text = string.Format(countFmt, count);
             }
 
             if (_ui.useButton != null)
@@ -2448,6 +2464,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     class SpellView
     {
+        static string Loc(string key, string fallback) =>
+            LocalizationManager.Instance != null ? LocalizationManager.Instance.Get(key, fallback) : fallback;
+
         enum FocusArea
         {
             Slots,
@@ -2893,31 +2912,34 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
             if (id == SpellId.None)
             {
-                description = "Sin asignar.";
+                description = Loc("SPELL_UNASSIGNED", "Sin asignar.");
             }
             else
             {
                 var spell = GetSpellAsset(id);
                 if (spell == null)
                 {
-                    description = "Hechizo sin información.";
+                    description = Loc("SPELL_NO_INFO", "Hechizo sin información.");
                 }
                 else
                 {
-                    description = $"{spell.displayName}\nDaño: {spell.damage}\nCoste de maná: {spell.manaCost}\nCooldown: {spell.cooldown:F2}s";
+                    string damageLabel = string.Format(Loc("SPELL_DAMAGE_LABEL", "Daño: {0}"), spell.damage);
+                    string manaLabel = string.Format(Loc("SPELL_MANA_COST_LABEL", "Coste de maná: {0}"), spell.manaCost);
+                    string cooldownLabel = string.Format(Loc("SPELL_COOLDOWN_LABEL", "Cooldown: {0}s"), spell.cooldown.ToString("F2"));
+                    description = $"{spell.GetLocalizedName()}\n{damageLabel}\n{manaLabel}\n{cooldownLabel}";
                 }
             }
 
             switch (_assignmentMode)
             {
                 case AssignmentMode.WaitingForSpellSelection:
-                    description += "\nSelecciona un hechizo con A o cancela con B.";
+                    description += "\n" + Loc("SPELL_SELECT_SPELL_HINT", "Selecciona un hechizo con A o cancela con B.");
                     break;
                 case AssignmentMode.WaitingForSlotSelection:
-                    description += "\nSelecciona un slot con A o cancela con B.";
+                    description += "\n" + Loc("SPELL_SELECT_SLOT_HINT", "Selecciona un slot con A o cancela con B.");
                     break;
                 default:
-                    description += "\nPulsa A sobre un hechizo y luego escoge el slot al que asignarlo.";
+                    description += "\n" + Loc("SPELL_ASSIGN_HINT", "Pulsa A sobre un hechizo y luego escoge el slot al que asignarlo.");
                     break;
             }
 
@@ -3083,9 +3105,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         string ResolveName(SpellId id)
         {
-            if (id == SpellId.None) return "Sin asignar";
+            if (id == SpellId.None) return Loc("SPELL_UNASSIGNED_SHORT", "Sin asignar");
             var spell = GetSpellAsset(id);
-            return spell != null ? spell.displayName : id.ToString();
+            return spell != null ? spell.GetLocalizedName() : id.ToString();
         }
 
         MagicSpellSO GetSpellAsset(SpellId id)
@@ -3769,7 +3791,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         string ResolveDisplayName(PartCategory category, string partName)
         {
-            if (string.IsNullOrEmpty(partName)) return "Sin asignar";
+            if (string.IsNullOrEmpty(partName))
+            {
+                return LocalizationManager.Instance != null
+                    ? LocalizationManager.Instance.Get("SPELL_UNASSIGNED_SHORT", "Sin asignar")
+                    : "Sin asignar";
+            }
             if (_wardrobe != null && _wardrobe.TryGetEntry(category, partName, out var entry))
             {
                 return string.IsNullOrEmpty(entry.displayName) ? partName : entry.displayName;

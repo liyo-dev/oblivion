@@ -57,44 +57,7 @@ MonoBehaviour:
       alertIconDuration: 0
       alertIconOffset: {x: 0, y: 0, z: 0}
       sendNarrativeEvent: 0
-      narrativeEventKey: 
-      sendEventOnStart: 0
-    - actionType: 1
-      dialogue: {fileID: 0}
-      speechBubbleText: 
-      isThoughtBubble: 0
-      speechBubbleDuration: 3
-      speechBubblePrefabOverride: {fileID: 0}
-      waitForBubble: 1
-      targetAnchorName: 
-      targetTransform: {fileID: 0}
-      moveToRandomPoint: 1
-      randomMoveMinRadius: 5
-      randomMoveMaxRadius: 15
-      disappearOnArrival: 1
-      disappearTransition: {fileID: 11400000, guid: d641980330b54c243a644222c797e582, type: 2}
-      moveTeamMembers: 1
-      maxMovementDuration: 2
-      turnAroundOnArrival: 0
-      waitForPlayer: 0
-      maxPlayerDistance: 0
-      resumePlayerDistance: 0
-      animationTrigger: 
-      animationClip: {fileID: 0}
-      animationDuration: 0
-      questToStart: {fileID: 0}
-      combatConfig: {fileID: 11400000, guid: 91555e401bb636b408b41e91dd8efdd5, type: 2}
-      combatTarget: {fileID: 0}
-      sendEventOnDefeat: 0
-      defeatEventKey: 
-      sendDefeatEventBeforeDeath: 0
-      waitDuration: 0
-      showAlertIcon: 0
-      alertIconPrefab: {fileID: 0}
-      alertIconDuration: 0
-      alertIconOffset: {x: 0, y: 0, z: 0}
-      sendNarrativeEvent: 0
-      narrativeEventKey: 
+      narrativeEventKey:
       sendEventOnStart: 0
     singleUse: 1
     autoStartOnDetection: 1

@@ -251,9 +251,12 @@ public class PlayerAbilitiesUI : MonoBehaviour
         // Actualizar nivel
         if (levelText != null)
         {
-            levelText.text = $"Nivel: {preset.level}";
+            string levelFmt = LocalizationManager.Instance != null
+                ? LocalizationManager.Instance.Get("ABILITIES_LEVEL_LABEL", "Nivel: {0}")
+                : "Nivel: {0}";
+            levelText.text = string.Format(levelFmt, preset.level);
         }
-        
+
         // Actualizar maná
         if (manaText != null)
         {
@@ -266,13 +269,16 @@ public class PlayerAbilitiesUI : MonoBehaviour
             {
                 // Mostrar/actualizar el texto de maná según el ManaPool si existe, o según el preset
                 manaText.gameObject.SetActive(true);
+                string manaFmt = LocalizationManager.Instance != null
+                    ? LocalizationManager.Instance.Get("ABILITIES_MANA_LABEL", "Maná: {0}/{1}")
+                    : "Maná: {0}/{1}";
                 if (_manaPool != null)
                 {
-                    manaText.text = $"Maná: {_manaPool.Current:0}/{_manaPool.Max:0}";
+                    manaText.text = string.Format(manaFmt, _manaPool.Current.ToString("0"), _manaPool.Max.ToString("0"));
                 }
                 else
                 {
-                    manaText.text = $"Maná: {preset.currentMP:0}/{preset.maxMP:0}";
+                    manaText.text = string.Format(manaFmt, preset.currentMP.ToString("0"), preset.maxMP.ToString("0"));
                 }
             }
         }

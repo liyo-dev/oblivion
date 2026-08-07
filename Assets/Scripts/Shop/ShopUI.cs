@@ -518,23 +518,36 @@ public class ShopUI : MonoBehaviour
             detailIcon.sprite = item.icon;
         
         if (detailName != null)
-            detailName.text = item.displayName;
-        
+            detailName.text = item.GetLocalizedName();
+
         if (detailDescription != null)
-            detailDescription.text = item.useDescription;
+            detailDescription.text = item.GetLocalizedDescription();
         
         if (detailPrice != null)
         {
             int price = _selectedEntry.GetBuyPrice();
-            detailPrice.text = $"Precio: {price} 💰";
+            string priceFormat = LocalizationManager.Instance != null
+                ? LocalizationManager.Instance.Get("SHOP_PRICE_LABEL", "Precio: {0} 💰")
+                : "Precio: {0} 💰";
+            detailPrice.text = string.Format(priceFormat, price);
         }
-        
+
         if (detailStock != null)
         {
             if (_selectedEntry.limitedStock)
-                detailStock.text = _selectedEntry.HasStock ? "En stock" : "Agotado";
+            {
+                string key = _selectedEntry.HasStock ? "SHOP_STOCK_IN_STOCK" : "SHOP_STOCK_OUT";
+                string fallback = _selectedEntry.HasStock ? "En stock" : "Agotado";
+                detailStock.text = LocalizationManager.Instance != null
+                    ? LocalizationManager.Instance.Get(key, fallback)
+                    : fallback;
+            }
             else
-                detailStock.text = "Stock ilimitado";
+            {
+                detailStock.text = LocalizationManager.Instance != null
+                    ? LocalizationManager.Instance.Get("SHOP_STOCK_UNLIMITED", "Stock ilimitado")
+                    : "Stock ilimitado";
+            }
         }
         
         // El botón permanece deshabilitado hasta que se haga focus en él con Submit
@@ -572,7 +585,11 @@ public class ShopUI : MonoBehaviour
     {
         // TODO: Implementar venta de items del inventario
         if (messageText != null)
-            messageText.text = "Función de venta no implementada aún.";
+        {
+            messageText.text = LocalizationManager.Instance != null
+                ? LocalizationManager.Instance.Get("SHOP_SELL_NOT_IMPLEMENTED", "Función de venta no implementada aún.")
+                : "Función de venta no implementada aún.";
+        }
     }
 
     void ClearMessage(bool force = false)
@@ -715,9 +732,19 @@ public class ShopUI : MonoBehaviour
         var success = shopController.TryBuy(_selectedIndex, out string message);
 
         if (success)
-            ShowMessage(string.IsNullOrEmpty(message) ? "¡Comprado!" : message, successMessageColor, pulseCurrency: true);
+        {
+            string fallback = LocalizationManager.Instance != null
+                ? LocalizationManager.Instance.Get("SHOP_PURCHASE_SUCCESS", "¡Comprado!")
+                : "¡Comprado!";
+            ShowMessage(string.IsNullOrEmpty(message) ? fallback : message, successMessageColor, pulseCurrency: true);
+        }
         else
-            ShowMessage(string.IsNullOrEmpty(message) ? "No se pudo comprar." : message, errorMessageColor);
+        {
+            string fallback = LocalizationManager.Instance != null
+                ? LocalizationManager.Instance.Get("SHOP_PURCHASE_FAILED", "No se pudo comprar.")
+                : "No se pudo comprar.";
+            ShowMessage(string.IsNullOrEmpty(message) ? fallback : message, errorMessageColor);
+        }
 
         if (success)
         {

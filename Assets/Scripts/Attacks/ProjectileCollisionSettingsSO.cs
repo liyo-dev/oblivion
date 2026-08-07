@@ -50,6 +50,11 @@ public class ProjectileCollisionSettingsSO : ScriptableObject
     [Min(0.05f)]
     public float playerAerialKnockbackDuration = 0.6f;
 
+    [Header("Mecánica en pruebas (Agosto 2026)")]
+    [Tooltip("false (por defecto) = cuando dos hechizos chocan, el jugador reproduce su animación de daño estándar y pierde vida (daño propio + daño del hechizo enemigo). " +
+             "true = comportamiento antiguo, el jugador sale lanzado por el aire.")]
+    public bool usePlayerAerialLaunch = false;
+
     /// <summary>
     /// Convierte este ScriptableObject en la configuración para el handler
     /// </summary>
@@ -69,7 +74,8 @@ public class ProjectileCollisionSettingsSO : ScriptableObject
             enableCollisionAnimations = true,
             playerAerialKnockbackDistance = playerAerialKnockbackDistance,
             playerAerialKnockbackHeight = playerAerialKnockbackHeight,
-            playerAerialKnockbackDuration = playerAerialKnockbackDuration
+            playerAerialKnockbackDuration = playerAerialKnockbackDuration,
+            usePlayerAerialLaunch = usePlayerAerialLaunch
         };
     }
 }

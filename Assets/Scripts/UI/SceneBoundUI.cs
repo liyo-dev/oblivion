@@ -18,12 +18,23 @@ public class SceneBoundUI : MonoBehaviour
     private string instanceKey;
     private float _preBossAlpha = -1f;
 
+    /// <summary>True mientras una intro de boss tiene la UI persistente oculta (entre BeginBossIntro y EndBossIntro).</summary>
+    public static bool IsBossIntroActive => _bossIntroActive;
+
+    /// <summary>
+    /// Se dispara justo al terminar EndBossIntro (UI restaurada). Pensado para que sistemas como
+    /// AbilityUnlockPopupUI puedan diferir una animación hasta que la intro del boss haya acabado
+    /// del todo, en vez de "gastar" su ventana de visibilidad oculta a alpha 0 durante la intro.
+    /// </summary>
+    public static event System.Action OnBossIntroEnded;
+
     #if UNITY_EDITOR
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatics()
     {
         Instances.Clear();
         _bossIntroActive = false;
+        OnBossIntroEnded = null;
     }
     #endif
 
@@ -66,6 +77,8 @@ public class SceneBoundUI : MonoBehaviour
             cg.DOFade(targetAlpha, fadeDuration).SetUpdate(true);
             inst._preBossAlpha = -1f;
         }
+
+        OnBossIntroEnded?.Invoke();
     }
 
     /// <summary>Marca este SceneBoundUI para no ser ocultado durante la intro de boss.</summary>

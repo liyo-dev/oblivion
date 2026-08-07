@@ -43,8 +43,8 @@ public class InventoryRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHa
     public void Configure(ItemData item)
     {
         _item = item;
-        if (_item != null && !string.IsNullOrEmpty(_item.displayName))
-            _fallbackName = _item.displayName;
+        if (_item != null && !string.IsNullOrEmpty(_item.GetLocalizedName()))
+            _fallbackName = _item.GetLocalizedName();
         UpdateIcon();
     }
 
@@ -56,8 +56,8 @@ public class InventoryRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHa
             ? inventory.Count(_item.itemId)
             : 0;
 
-        string name = _item != null && !string.IsNullOrEmpty(_item.displayName)
-            ? _item.displayName
+        string name = _item != null && !string.IsNullOrEmpty(_item.GetLocalizedName())
+            ? _item.GetLocalizedName()
             : _fallbackName;
 
         label.text = $"{name} x{count}";

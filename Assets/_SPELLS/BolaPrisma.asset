@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: BolaPrisma
   m_EditorClassIdentifier: Assembly-CSharp::MagicSpellSO
   spellId: 2
+  displayNameId: SPELL_BOLA_PRISMA_NAME
   displayName: Bola Prisma
   kind: 0
   element: 2

@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: IT_AC04_BunnyEars
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemId: AC04_BunnyEars
+  displayNameId: ITEM_AC04_BUNNYEARS_NAME
   displayName: Orejas de Conejo
   icon: {fileID: 21300000, guid: cd319af6d56089b4bbf35dfc0a50e3d3, type: 3}
   usableFromInventory: 0
@@ -22,6 +23,7 @@ MonoBehaviour:
     quantity: 1
     amount: 0
     consumeEvenIfNoChange: 0
+  useDescriptionId: ITEM_AC04_BUNNYEARS_DESC
   useDescription: Orejas de Conejo.
   usageKind: 2
   buyPrice: 100

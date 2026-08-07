@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: IT_Boots
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemId: botas
+  displayNameId: ITEM_BOOTS_NAME
   displayName: Botas
   icon: {fileID: 21300000, guid: cebd2f77c5af00f4dbafb7529c466a7a, type: 3}
   usableFromInventory: 0

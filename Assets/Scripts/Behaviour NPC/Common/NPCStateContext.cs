@@ -39,18 +39,25 @@ namespace Game.NPC.Common
         /// </summary>
         public string RelationshipId { get; set; }
 
-        // Refugio de lluvia (ver SeekShelterState / NPCWeatherAwareness)
+        // Refugio de lluvia (ver SeekShelterState / ReturnFromShelterState / NPCWeatherAwareness)
         public bool ShouldSeekShelter { get; set; }
         public NPCShelterPoint CurrentShelter { get; set; }
 
         /// <summary>
-        /// True mientras el GameObject está desactivado por haber "entrado" en una casa
-        /// (NPCShelterType.HouseDoor). Con el GameObject inactivo, Unity no llama a Update(),
-        /// así que NPCBehaviourManagerV2.HandleRainStopped() reactiva el GameObject directamente
-        /// consultando este flag (la suscripción al evento de lluvia sí se ejecuta con el
-        /// GameObject desactivado, al ser una invocación de delegado C# normal).
+        /// Posición donde estaba el NPC justo antes de empezar a caminar hacia un refugio,
+        /// capturada por SeekShelterState.OnEnter. Cuando deja de llover, ReturnFromShelterState
+        /// usa este punto para que el NPC regrese exactamente a donde estaba en vez de quedarse
+        /// vagando desde la puerta/árbol donde se refugió.
         /// </summary>
-        public bool IsHiddenForShelter { get; set; }
+        public Vector3 ShelterOriginPosition { get; set; }
+
+        /// <summary>
+        /// True desde que SeekShelterState captura ShelterOriginPosition hasta que
+        /// ReturnFromShelterState completa el regreso (o se descarta por no tener camino válido).
+        /// Evita que reintentos dentro de SeekShelterState (p.ej. el punto de refugio se ocupó justo
+        /// antes de llegar) sobreescriban el origen real con una posición intermedia.
+        /// </summary>
+        public bool HasShelterOrigin { get; set; }
 
         public NPCStateContext(NPCBrain brain, Transform transform, NavMeshAgent agent,
             NPCSimpleAnimator animator, Animator unityAnimator, Rigidbody rigidbody)

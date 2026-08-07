@@ -196,14 +196,26 @@ public class QuestMainMenuUI : MonoBehaviour
 
         if (headerText)
         {
-            headerText.text = "Misiones (principal)";
+            headerText.text = LocalizationManager.Instance != null
+                ? LocalizationManager.Instance.Get("QUEST_MENU_HEADER_MAIN", "Misiones (principal)")
+                : "Misiones (principal)";
         }
 
         if (visibleHeaderText)
-            visibleHeaderText.text = $"Misiones visibles ({visibleCount})"; //TODO este texto debe ir multificado
+        {
+            string fmt = LocalizationManager.Instance != null
+                ? LocalizationManager.Instance.Get("QUEST_MENU_HEADER_VISIBLE", "Misiones visibles ({0})")
+                : "Misiones visibles ({0})";
+            visibleHeaderText.text = string.Format(fmt, visibleCount);
+        }
 
         if (hiddenHeaderText)
-            hiddenHeaderText.text = $"Misiones ocultas ({hiddenCount})"; //TODO este texto debe ir multificado
+        {
+            string fmt = LocalizationManager.Instance != null
+                ? LocalizationManager.Instance.Get("QUEST_MENU_HEADER_HIDDEN", "Misiones ocultas ({0})")
+                : "Misiones ocultas ({0})";
+            hiddenHeaderText.text = string.Format(fmt, hiddenCount);
+        }
 
         // Debug.Log($"QuestMainMenuUI: Rebuild complete. Visible={visibleCount}, Hidden={hiddenCount}");
         RefreshScrollViews();

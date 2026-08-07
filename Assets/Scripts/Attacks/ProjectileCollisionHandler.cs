@@ -54,6 +54,11 @@ public static class ProjectileCollisionHandler
 
         [Tooltip("Duración total del lanzamiento aéreo del jugador (subida + caída)")]
         public float playerAerialKnockbackDuration = 0.6f;
+
+        [Header("Mecánica en pruebas (Agosto 2026)")]
+        [Tooltip("false (por defecto) = cuando dos hechizos chocan, el jugador reproduce su animación de daño estándar y pierde vida (daño propio + daño del hechizo enemigo). " +
+                 "true = comportamiento antiguo, el jugador sale lanzado por el aire (ver ApplyAerialLaunch). Se mantiene el código del lanzamiento aéreo por si se revierte esta prueba.")]
+        public bool usePlayerAerialLaunch = false;
     }
     
     private static CollisionConfig _config;
@@ -86,7 +91,8 @@ public static class ProjectileCollisionHandler
                 enableCollisionAnimations = true,
                 playerAerialKnockbackDistance = 3.5f,
                 playerAerialKnockbackHeight = 2.2f,
-                playerAerialKnockbackDuration = 0.6f
+                playerAerialKnockbackDuration = 0.6f,
+                usePlayerAerialLaunch = false
             };
         }
         return _config;
@@ -104,29 +110,49 @@ public static class ProjectileCollisionHandler
         Vector3 collisionPoint)
     {
         var config = GetConfig();
-        
+
         Debug.Log($"[ProjectileCollision] 💥 Colisión detectada en {collisionPoint}");
-        
+
+        // Sumar el daño de ambos hechizos (el propio del jugador + el del enemigo) ANTES de
+        // destruir los proyectiles en el paso 6, para no perder el acceso a sus componentes.
+        float totalDamage = GetProjectileDamage(playerProjectile) + GetProjectileDamage(enemyProjectile);
+
         // 1. Reproducir VFX en el punto de colisión
         SpawnCollisionVFX(collisionPoint, config);
-        
+
         // 2. Reproducir SFX
         PlayCollisionSound(config);
-        
+
         // 3. Camera shake para feedback
         ApplyCameraShake(config);
-        
-        // 4. Reproducir animaciones en jugador y NPC
+
+        // 4. Reacción del jugador: animación de daño + pérdida de vida
         if (config.enableCollisionAnimations)
         {
-            PlayCollisionAnimations(config);
+            ApplyPlayerReaction(totalDamage, config);
         }
-        
+
         // 5. Aplicar knockback a jugador y NPC
         ApplyKnockbackToEntities(playerProjectile, enemyProjectile, collisionPoint, config);
-        
+
         // 6. Destruir ambos proyectiles
         DestroyProjectiles(playerProjectile, enemyProjectile);
+    }
+
+    /// <summary>
+    /// Lee el daño configurado del proyectil, sea del jugador (MagicProjectile) o del enemigo (EnemyProjectile).
+    /// </summary>
+    private static float GetProjectileDamage(GameObject projectile)
+    {
+        if (projectile == null) return 0f;
+
+        var magicProj = projectile.GetComponent<MagicProjectile>();
+        if (magicProj != null) return magicProj.Damage;
+
+        var enemyProj = projectile.GetComponent<EnemyProjectile>();
+        if (enemyProj != null) return enemyProj.Damage;
+
+        return 0f;
     }
     
     private static void SpawnCollisionVFX(Vector3 position, CollisionConfig config)
@@ -170,26 +196,46 @@ public static class ProjectileCollisionHandler
         }
     }
     
-    private static void PlayCollisionAnimations(CollisionConfig config)
+    /// <summary>
+    /// Reacción del jugador ante un choque de hechizos. Mecánica en pruebas (Agosto 2026):
+    /// por defecto (usePlayerAerialLaunch = false) el jugador recibe daño = suma del daño de
+    /// ambos hechizos (el propio + el del enemigo) y reproduce su animación de daño estándar vía
+    /// PlayerHealthSystem.TakeDamage (que ya gestiona animación, VFX, sonido, invulnerabilidad y
+    /// knockback simple). Si usePlayerAerialLaunch = true se conserva el comportamiento antiguo:
+    /// el jugador sale lanzado por el aire (ver ApplyAerialLaunch).
+    /// </summary>
+    private static void ApplyPlayerReaction(float totalDamage, CollisionConfig config)
     {
-        Debug.Log($"[ProjectileCollision] 🎬 PlayCollisionAnimations INICIADO");
-        Debug.Log($"[ProjectileCollision]   - Player animation: '{config.playerCollisionAnimation}'");
-        
-        // ⭐ Solo reproducir animación de roll en el JUGADOR
-        // El NPC NO hará animación de roll cuando los proyectiles colisionen
-        if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
-        {
-            Debug.Log($"[ProjectileCollision] ✅ Player encontrado: '{playerGo.name}'");
-            PlayAnimationOnTarget(playerGo, config.playerCollisionAnimation, "Player", config);
-        }
-        else
+        Debug.Log($"[ProjectileCollision] 🎬 ApplyPlayerReaction INICIADO (usePlayerAerialLaunch={config.usePlayerAerialLaunch}, totalDamage={totalDamage})");
+
+        if (!PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) || playerGo == null)
         {
             Debug.LogWarning($"[ProjectileCollision] ⚠️ Player NO encontrado");
+            return;
         }
+
+        Debug.Log($"[ProjectileCollision] ✅ Player encontrado: '{playerGo.name}'");
+
+        if (config.usePlayerAerialLaunch)
+        {
+            PlayAnimationOnTarget(playerGo, config.playerCollisionAnimation, "Player", config);
+            return;
+        }
+
+        var playerHealth = playerGo.GetComponent<PlayerHealthSystem>() ?? playerGo.GetComponentInParent<PlayerHealthSystem>();
+        if (playerHealth == null)
+        {
+            Debug.LogWarning($"[ProjectileCollision] ⚠️ Player '{playerGo.name}' no tiene PlayerHealthSystem, no se puede aplicar daño de choque de hechizos");
+            return;
+        }
+
+        bool applied = playerHealth.TakeDamage(totalDamage);
+        Debug.Log($"[ProjectileCollision] 💥 Choque de hechizos: {totalDamage} de daño {(applied ? "aplicado" : "IGNORADO (invulnerable/muerto/god mode)")} al jugador");
     }
-    
+
     /// <summary>
-    /// Reproduce una animación en un GameObject objetivo (Player o NPC)
+    /// Reproduce una animación en un GameObject objetivo (Player o NPC).
+    /// Solo se usa cuando CollisionConfig.usePlayerAerialLaunch = true (comportamiento antiguo).
     /// </summary>
     private static void PlayAnimationOnTarget(GameObject target, string animationName, string targetType, CollisionConfig config)
     {

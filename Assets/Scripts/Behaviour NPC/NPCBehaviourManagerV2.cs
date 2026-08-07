@@ -213,18 +213,11 @@ namespace Game.NPC
         private void HandleRainStopped()
         {
             if (_context == null) return;
-            _context.ShouldSeekShelter = false;
 
-            // Si estábamos ocultos refugiados en una casa, reactivarnos aquí directamente: con el
-            // GameObject desactivado, Unity no llama a Update(), así que SeekShelterState no puede
-            // reaccionar por sí solo a este evento. Esta suscripción SÍ se ejecuta con el
-            // GameObject desactivado, al ser una invocación de delegado C# normal, no un callback
-            // de ciclo de vida de Unity.
-            if (_context.IsHiddenForShelter)
-            {
-                _context.IsHiddenForShelter = false;
-                gameObject.SetActive(true);
-            }
+            // El propio SeekShelterState (todavía activo y recibiendo Update normalmente, el NPC
+            // nunca se desactiva) detecta este flag en su CheckTransitions y hace que el NPC
+            // camine de vuelta a ShelterOriginPosition vía ReturnFromShelterState.
+            _context.ShouldSeekShelter = false;
         }
         
         void OnEnable()

@@ -24,6 +24,8 @@ public class UICurrentPartLabel : MonoBehaviour
         if (sel.TryGetValue(_cat, out var name))
             _txt.text = name;
         else
-            _txt.text = "None";
+            _txt.text = LocalizationManager.Instance != null
+                ? LocalizationManager.Instance.Get("COMMON_NONE", "Ninguno")
+                : "Ninguno";
     }
 }

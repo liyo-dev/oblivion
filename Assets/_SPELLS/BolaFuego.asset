@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: BolaFuego
   m_EditorClassIdentifier: Assembly-CSharp::MagicSpellSO
   spellId: 1
+  displayNameId: SPELL_BOLA_FUEGO_NAME
   displayName: Bola de Fuego
   kind: 0
   element: 0

@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Tornado
   m_EditorClassIdentifier: Assembly-CSharp::MagicSpellSO
   spellId: 6
+  displayNameId: SPELL_TORNADO_NAME
   displayName: Cycloneburst
   kind: 0
   element: 2
