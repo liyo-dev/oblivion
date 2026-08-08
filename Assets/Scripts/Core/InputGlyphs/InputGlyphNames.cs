@@ -28,10 +28,19 @@ namespace Core.InputGlyphs
         public const string Stick = "interactable_Joystick"; // mayúscula intencionada — así está en el asset real
         public const string Start = "start";
 
+        // Botón de teletransporte en un punto de guardado. En mando es FÍSICAMENTE el mismo botón que
+        // North/AttackMagicNorth (Y en Xbox, △ en PlayStation, X en Switch) — SavePointTeleportTrigger
+        // lee gamepad.buttonNorth directamente — así que en mando reutiliza el mismo dibujo. Pero en
+        // teclado NO comparte tecla: AttackMagicNorth está en Q, mientras que el teletransporte está
+        // hardcodeado a la tecla T (ver SavePointTeleportTrigger.IsYButtonPressed). Por eso necesita su
+        // propio nombre en vez de reutilizar North sin más — reutilizarlo mostraría "Q" en teclado para
+        // un atajo que en realidad es "T".
+        public const string Teleport = "interactable_teleport";
+
         public static readonly string[] All =
         {
             South, East, West, North, ShoulderLeft, ShoulderRight,
-            TriggerLeft, TriggerRight, Dpad, Stick, Start
+            TriggerLeft, TriggerRight, Dpad, Stick, Start, Teleport
         };
     }
 }

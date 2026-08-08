@@ -218,6 +218,24 @@ namespace Core.InputGlyphs
             return result;
         }
 
+        // Calibración de tamaño para los sprites inyectados en TMP (ver BuildTmpSpriteAsset). Antes de
+        // este servicio, DialogueIcons.asset ya tenía a mano una entrada "interactable_A" con métricas
+        // afinadas por prueba y error para que el icono (arte Xbox real, 832×1248 px) se viera bien
+        // insertado en medio de una línea de diálogo: ancho 832, alto 1248, bearingX -60, bearingY 700,
+        // advance 750, con un multiplicador "scale" de 3 a nivel de carácter TMP. Esos números son la
+        // única referencia real que tenemos de "esto se veía bien", así que en vez de inventar una
+        // fórmula genérica los usamos como base y escalamos proporcionalmente para el resto de sprites
+        // (que pueden venir en cualquier resolución: el arte Xbox real son 832×1248 px pero los
+        // placeholders de PlayStation/Switch/Teclado son 96×96 px). Sin esto, un icono de 96 px con
+        // "scale 1" sale con un tamaño y una posición vertical completamente distintos a los que tenía
+        // el original calibrado, y termina recortado por la máscara del cuadro de diálogo.
+        const float RefWidth = 832f;
+        const float RefHeight = 1248f;
+        const float RefCharacterScale = 3f;
+        const float RefBearingXRatio = -60f / RefWidth;
+        const float RefBearingYRatio = 700f / RefHeight;
+        const float RefAdvanceRatio = 750f / RefWidth;
+
         /// <summary>
         /// Empaqueta un diccionario nombre→sprite ya cargado (ver <see cref="LoadFamilySprites"/>) en
         /// un <see cref="TMP_SpriteAsset"/> nuevo, para que TMP pueda resolver
@@ -261,18 +279,27 @@ namespace Core.InputGlyphs
                 var sprite = kvp.Value;
                 if (sprite == null) continue;
 
+                float w = sprite.rect.width;
+                float h = sprite.rect.height;
+                // Escala inversamente proporcional a la altura real del PNG para que TODOS los
+                // botones se vean del mismo tamaño en pantalla dentro del texto, sea cual sea la
+                // resolución de origen (ver constantes Ref* arriba) — sin esto, un placeholder de
+                // 96 px queda minúsculo (o el arte Xbox de 1248 px queda gigante y recortado) frente
+                // al calibrado original.
+                float characterScale = h > 0f ? (RefHeight * RefCharacterScale) / h : RefCharacterScale;
+
                 var glyph = new TMP_SpriteGlyph
                 {
                     index = glyphIndex,
-                    metrics = new GlyphMetrics(sprite.rect.width, sprite.rect.height, 0, sprite.rect.height * 0.8f, sprite.rect.width),
-                    glyphRect = new GlyphRect(0, 0, (int)sprite.rect.width, (int)sprite.rect.height),
+                    metrics = new GlyphMetrics(w, h, RefBearingXRatio * w, RefBearingYRatio * h, RefAdvanceRatio * w),
+                    glyphRect = new GlyphRect(0, 0, (int)w, (int)h),
                     scale = 1f,
                     atlasIndex = 0,
                     sprite = sprite,
                 };
                 asset.spriteGlyphTable.Add(glyph);
 
-                var character = new TMP_SpriteCharacter(0xFFFE, glyph) { name = kvp.Key, scale = 1f };
+                var character = new TMP_SpriteCharacter(0xFFFE, glyph) { name = kvp.Key, scale = characterScale };
                 asset.spriteCharacterTable.Add(character);
 
                 glyphIndex++;

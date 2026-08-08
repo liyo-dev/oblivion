@@ -82,7 +82,14 @@ void StylizeLight(inout Light light) {
     const half shadowAttenuation = saturate(light.shadowAttenuation * 10.0);
     light.shadowAttenuation = shadowAttenuation;
 
-    const float distanceAttenuation = smoothstep(0, 0.001, light.distanceAttenuation);
+    // Widened from the original 0.001 threshold: point/spot lights (torches, candles, etc.)
+    // are common indoors, and a near-zero-width smoothstep snaps their falloff to an almost
+    // literal on/off edge. As a character crosses that edge the light pops fully on/off from
+    // one frame to the next, which read as flickering/"glitchy" NPCs indoors (this line is a
+    // no-op for the sun/main directional light, whose distance attenuation is always 1, so
+    // outdoor scenes were never affected). A slightly wider window keeps the crisp toon cutoff
+    // but removes the single-pixel pop.
+    const float distanceAttenuation = smoothstep(0, 0.05, light.distanceAttenuation);
     light.distanceAttenuation = distanceAttenuation;
 #endif
 
@@ -139,6 +146,15 @@ half4 UniversalFragment_DSTRM(InputData inputData, SurfaceData surfaceData, floa
     const uint pixelLightCount = GetAdditionalLightsCount();
     uint meshRenderingLayers = GetMeshRenderingLayer();
 
+    // Accumulated separately from `color` so it can be capped below. Outdoors there is
+    // normally a single directional sun, so this bucket stays empty and nothing changes.
+    // Indoors (torches, chandeliers, candles) several point/spot lights routinely overlap;
+    // each one adds its own full-strength toon-ramp result, and because StylizeLight snaps
+    // distance attenuation to a near-binary value (see above), two or three overlapping
+    // lights easily sum past 1.0 per channel. That over-brightening is what showed up as
+    // blown-out/blotchy patches on NPCs standing near multiple light sources indoors.
+    half3 additionalLightsColor = half3(0, 0, 0);
+
     #if USE_FORWARD_PLUS
     for (uint lightIndex = 0; lightIndex < min(URP_FP_DIRECTIONAL_LIGHTS_COUNT, MAX_VISIBLE_LIGHTS); lightIndex++)
     {
@@ -151,11 +167,11 @@ half4 UniversalFragment_DSTRM(InputData inputData, SurfaceData surfaceData, floa
         if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
             #endif
         {
-            color += LightingPhysicallyBased_DSTRM(light, inputData);
+            additionalLightsColor += LightingPhysicallyBased_DSTRM(light, inputData);
         }
     }
     #endif
-    
+
     LIGHT_LOOP_BEGIN(pixelLightCount)
         Light light = GetAdditionalLight(lightIndex, inputData.positionWS, shadowMask);
 
@@ -164,14 +180,19 @@ half4 UniversalFragment_DSTRM(InputData inputData, SurfaceData surfaceData, floa
 #endif
 
         StylizeLight(light);
-    
+
         #ifdef _LIGHT_LAYERS
         if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
         #endif
         {
-            color += LightingPhysicallyBased_DSTRM(light, inputData);
+            additionalLightsColor += LightingPhysicallyBased_DSTRM(light, inputData);
         }
     LIGHT_LOOP_END
+
+    // Cap the extra brightness contributed by additional lights instead of dropping it
+    // entirely, so nearby torches still visibly light up characters, but three or four
+    // overlapping ones can no longer stack into an over-exposed patch.
+    color += min(additionalLightsColor, half3(1, 1, 1));
 #endif
 
 #ifdef _ADDITIONAL_LIGHTS_VERTEX

@@ -173,6 +173,8 @@ public class DialogueCinematicController : MonoBehaviour
     // Ocultación de party members no-hablantes en modo individual
     private readonly List<Renderer> _hiddenPartyRenderers = new List<Renderer>();
     private readonly List<bool> _hiddenPartyRenderersOrigState = new List<bool>();
+    [Tooltip("Radio (m) desde el centro de la conversación (punto medio player↔NPC) dentro del cual se oculta a un party member no-hablante en modo individual, para evitar que bloquee la cámara. Fuera de este radio no puede estar en plano, así que se deja visible.")]
+    [SerializeField] private float nonSpeakingPartyHideRadius = 10f;
 
     // Rotación suave del player y del NPC principal en modo grupal (mirar al speaker)
     private Coroutine _playerRotationCoroutine;
@@ -1014,6 +1016,16 @@ public class DialogueCinematicController : MonoBehaviour
 
         if (!Game.NPC.PlayerParty.HasInstance) return;
 
+        // FIX "compañero desaparece en diálogos 1:1": antes se ocultaba a CUALQUIER miembro
+        // activo del equipo sin comprobar distancia, así que un compañero siguiendo al jugador
+        // pero completamente fuera de plano (ej. Liam mientras se juega con Estela hablando con
+        // un tercer NPC) desaparecía igualmente durante toda la conversación aunque nunca
+        // pudiera bloquear la cámara. Solo ocultamos a quien esté lo bastante cerca del centro
+        // de la conversación como para representar un riesgo real de obstrucción.
+        Vector3 conversationCenter = (currentPlayer != null && currentNPC != null)
+            ? (currentPlayer.position + currentNPC.position) * 0.5f
+            : (currentPlayer != null ? currentPlayer.position : speaker.position);
+
         foreach (var m in Game.NPC.PlayerParty.Instance.Members)
         {
             if (m == null || !m.IsActiveInParty) continue;
@@ -1021,6 +1033,8 @@ public class DialogueCinematicController : MonoBehaviour
             if (m.transform == speaker) continue;
             if (m.transform == currentPlayer) continue;
             if (m.transform == currentNPC) continue;
+            // No ocultar a compañeros demasiado lejos de la conversación para bloquear la cámara
+            if (Vector3.Distance(m.transform.position, conversationCenter) > nonSpeakingPartyHideRadius) continue;
 
             var renderers = m.GetComponentsInChildren<Renderer>(true);
             foreach (var r in renderers)
@@ -1155,7 +1169,17 @@ public class DialogueCinematicController : MonoBehaviour
             // ya fichado o no (puerta, cofre, mobiliario...), se oculta igual. CalculateCameraPosition
             // ya garantizó que no había nada aquí al fijar el plano, así que si algo aparece ahora es,
             // por definición, un objeto que se ha movido durante la línea — el caso que se nos escapaba.
-            _frameIntruders.Add(root);
+            //
+            // FIX: aquí NO se debe usar 'root' (la raíz absoluta de la jerarquía) como objetivo a
+            // ocultar. 'root' solo sirve para identificar si el collider pertenece al speaker/player/
+            // NPC/party (arriba). Para decidir QUÉ ocultar hace falta acotar al objeto físico real que
+            // obstruye: en muchas escenas todo el escenario cuelga de un único GameObject contenedor
+            // (p.ej. "Escenario"), así que ocultar los renderers de 'root' ocultaba el nivel entero
+            // (todo el mundo) en vez de solo el objeto que tapaba al NPC. Si el collider pertenece a un
+            // objeto físico compuesto (puerta con bisagra, cofre con Rigidbody...) usamos ese Rigidbody
+            // como límite; si no, nos quedamos en el propio GameObject del collider.
+            Transform hideTarget = col.attachedRigidbody != null ? col.attachedRigidbody.transform : col.transform;
+            _frameIntruders.Add(hideTarget);
         }
 
         foreach (var intruder in _frameIntruders)
@@ -1334,7 +1358,15 @@ public class DialogueCinematicController : MonoBehaviour
                             || mgr.PersistenceId == speakerId
                             || m.gameObject.name == speakerId)
                         {
-                            speakerTransform = m.transform;
+                            // FIX "el personaje activo se vuelve invisible al hablar": si este party
+                            // member es el NPC "decoy" que ActiveCharacterSwapper oculta porque el
+                            // controller del jugador YA representa físicamente a este personaje
+                            // (p.ej. jugando como Liam, existe un NPCPartyMember "Liam" oculto de
+                            // fondo), el speaker real y visible es currentPlayer, no este transform
+                            // con los renderers apagados y el NavMeshAgent congelado.
+                            bool isActiveCharacterDecoy = ActiveCharacterSwapper.Instance != null
+                                && ActiveCharacterSwapper.Instance.HiddenNpc == m;
+                            speakerTransform = isActiveCharacterDecoy ? currentPlayer : m.transform;
                             break;
                         }
                     }

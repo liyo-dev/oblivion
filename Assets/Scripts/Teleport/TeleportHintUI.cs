@@ -105,13 +105,23 @@ public class TeleportHintUI : MonoBehaviour
 
     private void OnInputFamilyChanged(InputGlyphDeviceFamily _) => UpdateButtonIcon();
 
-    /// Refresca el icono del botón de teletransporte (usa "interactuar", el mismo botón que el resto
-    /// de interacciones) con el generado por <see cref="InputGlyphService"/> para el dispositivo activo.
+    /// Refresca el icono del botón de teletransporte con el generado por <see cref="InputGlyphService"/>
+    /// para el dispositivo activo. OJO: el teletransporte NO usa el botón de "interactuar" (South/A) —
+    /// <see cref="SavePointTeleportTrigger.IsYButtonPressed"/> lee directamente <c>gamepad.buttonNorth</c>
+    /// (Y en Xbox, △ en PlayStation, X en Switch) + tecla T en teclado. Mostrar el botón equivocado aquí
+    /// fue una regresión real: el jugador veía "A" en pantalla pero el punto de guardado solo respondía
+    /// a Y. Usamos <see cref="InputGlyphNames.Teleport"/> en vez de <see cref="InputGlyphNames.North"/>
+    /// a secas porque en teclado NO coinciden: North/AttackMagicNorth está en Q, pero el atajo de
+    /// teletransporte está hardcodeado a T — son botones físicos iguales en mando pero teclas distintas.
     private void UpdateButtonIcon()
     {
         if (buttonIcon == null) return;
-        var icon = InputGlyphService.GetSprite(InputGlyphNames.South);
+        var icon = InputGlyphService.GetSprite(InputGlyphNames.Teleport);
         if (icon != null) buttonIcon.sprite = icon;
+        // Defensivo: si el icono real (arte Xbox, alto/estrecho) se sustituye por un placeholder
+        // cuadrado (PlayStation/Switch/Teclado) sin Preserve Aspect, el sprite se estira para llenar
+        // el RectTransform (100x150, pensado solo para el aspect ratio del arte Xbox) y sale deformado.
+        buttonIcon.preserveAspect = true;
     }
 
     private void OnRegistryChanged()

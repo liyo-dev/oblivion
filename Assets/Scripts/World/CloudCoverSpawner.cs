@@ -33,11 +33,11 @@ public class CloudCoverSpawner : MonoBehaviour
     [SerializeField] private float cloudHeight = 60f;
     [Tooltip("Radio horizontal alrededor del jugador que cubre el techo de nubes. Cuanto más grande, menos se nota el borde del área cubierta, pero más instancias hacen falta.")]
     [SerializeField] private float coverRadius = 150f;
-    [Tooltip("Separación aproximada entre nubes de la rejilla. Más bajo = más denso = tapa mejor el cielo, pero más nubes instanciadas (y más overdraw con quads transparentes).")]
-    [SerializeField] private float cellSize = 45f;
+    [Tooltip("Separación aproximada entre nubes de la rejilla. Más bajo = más denso = tapa mejor el cielo, pero más nubes instanciadas (y más overdraw con quads transparentes). Bajado de 45 a 30 (Agosto 2026): con 45 y coverRadius típico de 150-180 solo salían ~35-50 nubes en total — demasiado separadas para un cielo de tormenta. Con 30 caben ~2.25x más dentro del mismo radio. Ojo: más densidad también significa más solape entre mallas vecinas, lo que puede acentuar el posible artefacto de 'línea negra' entre dos nubes (ver comentario en clase) — si se nota más tras este cambio, bajar heightJitter o el límite superior de scaleRange antes que volver a subir cellSize.")]
+    [SerializeField] private float cellSize = 30f;
     [Tooltip("Variación aleatoria de posición dentro de cada celda de la rejilla, para que no se note el patrón regular.")]
     [SerializeField, Range(0f, 1f)] private float jitter = 0.5f;
-    [Tooltip("Escala mínima/máxima aplicada a cada nube, MULTIPLICANDO la escala base del prefab (los QuibliRainCloud3D_X ya vienen normalizados a ~25-33 unidades de ancho a escala 1). Con 0.8-1.5 y cellSize 45 quedan huecos de cielo entre nubes, que es lo que hace que se lean como nubes y no como una masa gris uniforme. minClearanceAboveFollowTarget protege contra el caso de que la cámara acabe dentro de una nube.")]
+    [Tooltip("Escala mínima/máxima aplicada a cada nube, MULTIPLICANDO la escala base del prefab (los QuibliRainCloud3D_X ya vienen normalizados a ~25-33 unidades de ancho a escala 1). Con 0.8-1.5 y cellSize 30 las nubes se tocan/solapan lo justo para leerse como un techo de tormenta sin dejar huecos grandes. minClearanceAboveFollowTarget protege contra el caso de que la cámara acabe dentro de una nube.")]
     [SerializeField] private Vector2 scaleRange = new Vector2(0.8f, 1.5f);
     [Tooltip("Límite de seguridad de instancias, por si coverRadius/cellSize generan una rejilla enorme.")]
     [SerializeField] private int maxCloudInstances = 300;

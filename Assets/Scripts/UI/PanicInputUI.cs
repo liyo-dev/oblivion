@@ -64,7 +64,11 @@ public class PanicInputUI : MonoBehaviour
     /// cada vez que se activa la secuencia de pánico, por si el jugador cambió de dispositivo mientras tanto.
     public void SetIcon(Sprite icon)
     {
-        if (_buttonIcon != null && icon != null) _buttonIcon.sprite = icon;
+        if (_buttonIcon == null || icon == null) return;
+        _buttonIcon.sprite = icon;
+        // Defensivo: ver mismo comentario en Interactable.RefreshHintIcon — evita estirado/recorte
+        // si el sprite generado no tiene la misma proporción que el que tuviera el panel en el Editor.
+        _buttonIcon.preserveAspect = true;
     }
 
     public void Activate(PanicInputDetector detector)

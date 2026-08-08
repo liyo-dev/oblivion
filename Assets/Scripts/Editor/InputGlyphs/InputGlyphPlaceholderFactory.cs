@@ -72,6 +72,10 @@ namespace Core.InputGlyphs.EditorTools
                     result[InputGlyphNames.Dpad] = WideKeycap("WASD");
                     result[InputGlyphNames.Stick] = MouseGlyph(highlightLeft: false, highlightRight: false, wheel: false, wheelUp: false);
                     result[InputGlyphNames.Start] = WideKeycap("ESC");
+                    // Atajo de teletransporte en un punto de guardado (SavePointTeleportTrigger lee la
+                    // tecla T directamente) — NO comparte tecla con North/AttackMagicNorth (Q), a
+                    // diferencia de mando, donde sí es el mismo botón físico. Ver InputGlyphNames.Teleport.
+                    result[InputGlyphNames.Teleport] = Keycap("T");
                     break;
 
                 case InputGlyphDeviceFamily.PlayStation:
@@ -86,6 +90,12 @@ namespace Core.InputGlyphs.EditorTools
                     result[InputGlyphNames.Dpad] = DpadIcon();
                     result[InputGlyphNames.Stick] = StickIcon();
                     result[InputGlyphNames.Start] = HamburgerIcon();
+                    // En mando, teletransporte es el mismo botón físico que North (△) — ver comentario
+                    // en InputGlyphNames.Teleport. Se regenera en vez de reutilizar la misma instancia
+                    // de Texture2D de North porque BuildTexture() destruye por clave todas las texturas
+                    // no solicitadas al regenerar un único botón desde la ventana del Editor; compartir
+                    // el objeto dejaría el otro nombre apuntando a una textura ya destruida.
+                    result[InputGlyphNames.Teleport] = FaceSymbol(c => c.FillTriangle(TexSize * 0.5f, TexSize * 0.5f, TexSize * 0.40f, ColPsTriangle));
                     break;
 
                 case InputGlyphDeviceFamily.Switch:
@@ -100,6 +110,9 @@ namespace Core.InputGlyphs.EditorTools
                     result[InputGlyphNames.Dpad] = DpadIcon();
                     result[InputGlyphNames.Stick] = StickIcon();
                     result[InputGlyphNames.Start] = PlusIcon();
+                    // Mismo botón físico que North (X) — ver comentario en el caso PlayStation de
+                    // arriba sobre por qué se regenera en vez de reutilizar la instancia.
+                    result[InputGlyphNames.Teleport] = FaceButton(ColSwitchBody, "X", TextWhite);
                     break;
 
                 case InputGlyphDeviceFamily.Xbox:
@@ -115,6 +128,10 @@ namespace Core.InputGlyphs.EditorTools
                     result[InputGlyphNames.Dpad] = DpadIcon();
                     result[InputGlyphNames.Stick] = StickIcon();
                     result[InputGlyphNames.Start] = HamburgerIcon();
+                    // Xbox normalmente no pasa por este placeholder (la ventana copia el arte real de
+                    // Assets/Art/UI/Buttons, incluido interactable_teleport si existe ahí como copia de
+                    // interactable_y.png) — esto es solo el último recurso si falta ese arte real.
+                    result[InputGlyphNames.Teleport] = FaceButton(ColXboxY, "Y", TextDark);
                     break;
             }
 

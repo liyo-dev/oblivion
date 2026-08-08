@@ -116,6 +116,11 @@ public class Interactable : MonoBehaviour
         if (_hintIcon == null) return;
         var sprite = InputGlyphService.GetSprite(InputGlyphNames.South);
         if (sprite != null) _hintIcon.sprite = sprite;
+        // Defensivo: forzar Preserve Aspect por código en vez de confiar en que cada prefab de
+        // NPC/objeto lo tenga bien puesto a mano — así un icono generado con otra proporción
+        // (placeholder cuadrado de PlayStation/Switch/Teclado frente al arte Xbox alto/estrecho)
+        // nunca sale estirado ni recortado, sea cual sea el prefab.
+        _hintIcon.preserveAspect = true;
     }
 
     void HandlePresetApplied()
