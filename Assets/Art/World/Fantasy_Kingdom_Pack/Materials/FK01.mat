@@ -134,11 +134,11 @@ Material:
     - _EmissionScaleUI: 0.3
     - _EnvironmentReflections: 1
     - _ExtraBandThickness: 0.3
-    - _FlatRimEdgeSmoothness: 0.5
+    - _FlatRimEdgeSmoothness: 0.425
     - _FlatRimLightAlign: 0
-    - _FlatRimSize: 0.5
+    - _FlatRimSize: 1
     - _FlatSpecularEdgeSmoothness: 0
-    - _FlatSpecularSize: 0.1
+    - _FlatSpecularSize: 1
     - _GlossMapScale: 1
     - _Glossiness: 0.1
     - _GlossinessSource: 0
