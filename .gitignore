@@ -19,6 +19,7 @@ copilot-language.txt
 # --- Archivos de recuperación / diagnóstico ---
 Recovered/
 GeneratedAssets_deleted/
+_to_delete/
 
 # This .gitignore file should be placed at the root of your Unity project directory
 #

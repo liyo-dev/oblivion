@@ -15,6 +15,7 @@ Toda la documentación técnica detallada está en **`TDD.md`** (fuente de verda
   - `PlayerService` → -900
   - `ServiceLocator` → -800
   - `WorldBootstrap` → +200
+- **Start → MainMenu:** el GameObject `START_BootLoader` en `Start.unity` lleva el componente `BootLoader.cs` (`sceneToLoad: MainMenu`), que hace `SceneManager.LoadScene("MainMenu")` (no aditivo) en su `Start()`. No hay condición de carrera con `GameBootService`: todos los `Awake()` de la escena (incluido el de `GameBootService`, execution order -1000) se ejecutan antes que cualquier `Start()`, así que el arranque ya está resuelto cuando `BootLoader` dispara la carga. Los managers persistentes sobreviven por ser `DontDestroyOnLoad`. (Verificado Agosto 2026 — antes no estaba documentado aquí.)
 
 ---
 
