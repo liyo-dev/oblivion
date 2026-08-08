@@ -22,23 +22,30 @@ using UnityEngine;
 /// </summary>
 public class DialogueHeadLook : MonoBehaviour
 {
+    // Valores por defecto deliberadamente SUTILES: la cabeza insinúa la mirada, no la clava.
+    // La primera versión (yaw 60°, peso 1.0, aim 8) hacía que el player pareciera nervioso:
+    // cada cambio de línea era un golpe de cabeza completo y rápido.
     [Header("Límites de giro (relativos al forward del personaje)")]
     [Tooltip("Giro horizontal máximo de la cabeza en grados")]
-    [SerializeField] private float maxYaw = 60f;
+    [SerializeField] private float maxYaw = 40f;
     [Tooltip("Inclinación vertical máxima de la cabeza en grados")]
-    [SerializeField] private float maxPitch = 25f;
+    [SerializeField] private float maxPitch = 15f;
     [Tooltip("Margen extra sobre maxYaw a partir del cual se apaga el head-look (el cuerpo ya gira)")]
     [SerializeField] private float yawCutoffMargin = 35f;
+    [Tooltip("Histéresis (grados) para reactivar el head-look tras apagarse por fuera de rango — evita parpadeo del peso cuando el objetivo baila justo en el límite")]
+    [SerializeField] private float yawCutoffHysteresis = 15f;
 
     [Header("Suavizado")]
+    [Tooltip("Peso máximo de la mirada: 1 = clavar la vista en el objetivo, valores bajos solo la insinúan")]
+    [SerializeField, Range(0f, 1f)] private float maxWeight = 0.6f;
     [Tooltip("Velocidad del fade de peso (1/velocidad ≈ segundos de transición)")]
-    [SerializeField] private float weightFadeSpeed = 3.5f;
+    [SerializeField] private float weightFadeSpeed = 1.8f;
     [Tooltip("Velocidad de persecución del objetivo (damping exponencial)")]
-    [SerializeField] private float aimSpeed = 8f;
+    [SerializeField] private float aimSpeed = 3.5f;
 
     [Header("Reparto cuello/cabeza")]
     [Tooltip("Fracción del giro que absorbe el cuello (el resto va a la cabeza)")]
-    [SerializeField, Range(0f, 1f)] private float neckShare = 0.35f;
+    [SerializeField, Range(0f, 1f)] private float neckShare = 0.25f;
 
     [Header("Objetivo")]
     [Tooltip("Altura (m) sobre el root del objetivo a la que se mira si no tiene hueso head")]
@@ -50,6 +57,7 @@ public class DialogueHeadLook : MonoBehaviour
     private Transform _neck;
     private float _weight;                              // peso actual (0..1)
     private Quaternion _smoothedTurn = Quaternion.identity; // giro suavizado acumulado
+    private bool _yawOutOfRange;                        // estado con histéresis del corte por yaw
 
     private bool _bonesResolved;
 
@@ -135,6 +143,7 @@ public class DialogueHeadLook : MonoBehaviour
         {
             _target = target;
             _targetHead = FindTargetHead(target);
+            _yawOutOfRange = false; // objetivo nuevo, corte por rango se reevalúa de cero
         }
 
         // Despertar si hay trabajo que hacer (aunque sea solo el fade out pendiente)
@@ -177,9 +186,22 @@ public class DialogueHeadLook : MonoBehaviour
                 float yaw   = Vector3.SignedAngle(baseFwd, toTargetFlat.normalized, Vector3.up);
                 float pitch = Mathf.Atan2(toTarget.y, toTargetFlat.magnitude) * Mathf.Rad2Deg;
 
-                // Objetivo demasiado lateral/trasero: no torcer el cuello, que gire el cuerpo
-                // (el peso hace fade a 0 en vez de cortar en seco)
-                if (Mathf.Abs(yaw) <= maxYaw + yawCutoffMargin)
+                // Objetivo demasiado lateral/trasero: no torcer el cuello, que gire el cuerpo.
+                // Con HISTÉRESIS: se apaga al superar maxYaw+margen y no se reactiva hasta bajar
+                // del margen menos la histéresis. Sin esto, un objetivo bailando justo en el
+                // límite (p.ej. mientras el cuerpo rota) hacía parpadear el peso → temblores.
+                float absYaw = Mathf.Abs(yaw);
+                if (_yawOutOfRange)
+                {
+                    if (absYaw < maxYaw + yawCutoffMargin - yawCutoffHysteresis)
+                        _yawOutOfRange = false;
+                }
+                else if (absYaw > maxYaw + yawCutoffMargin)
+                {
+                    _yawOutOfRange = true;
+                }
+
+                if (!_yawOutOfRange)
                 {
                     float yawC   = Mathf.Clamp(yaw, -maxYaw, maxYaw);
                     float pitchC = Mathf.Clamp(pitch, -maxPitch, maxPitch);
@@ -189,7 +211,7 @@ public class DialogueHeadLook : MonoBehaviour
                     clampedDir = Quaternion.AngleAxis(-pitchC, rightAxis) * clampedDir;
 
                     desiredTurn  = Quaternion.FromToRotation(baseFwd, clampedDir);
-                    targetWeight = 1f;
+                    targetWeight = maxWeight; // nunca clavar la mirada al 100%: solo insinuarla
                 }
             }
         }

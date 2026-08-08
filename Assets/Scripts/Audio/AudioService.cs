@@ -16,6 +16,7 @@ public sealed class AudioService : MonoBehaviour
     static void ResetStatics()
     {
         Instance = null;
+        MuteNextBaseSceneMusic = false;
     }
     #endif
 

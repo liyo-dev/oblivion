@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using DG.Tweening;
+using Core.InputGlyphs;
 
 /// <summary>
 /// UI global para mostrar el hint de teletransporte cuando el jugador está en un SavePoint.
@@ -77,26 +78,40 @@ public class TeleportHintUI : MonoBehaviour
         }
         
         UpdateHintText();
+        UpdateButtonIcon();
     }
-    
+
     private void OnDestroy()
     {
         if (Instance == this)
             Instance = null;
-        
+
         _fadeTween?.Kill();
     }
-    
+
     private void OnEnable()
     {
         TeleportRegistry.OnRegistryChanged += OnRegistryChanged;
         GameState.OnChanged += OnGameStateChanged;
+        InputGlyphService.FamilyChanged += OnInputFamilyChanged;
     }
 
     private void OnDisable()
     {
         TeleportRegistry.OnRegistryChanged -= OnRegistryChanged;
         GameState.OnChanged -= OnGameStateChanged;
+        InputGlyphService.FamilyChanged -= OnInputFamilyChanged;
+    }
+
+    private void OnInputFamilyChanged(InputGlyphDeviceFamily _) => UpdateButtonIcon();
+
+    /// Refresca el icono del botón de teletransporte (usa "interactuar", el mismo botón que el resto
+    /// de interacciones) con el generado por <see cref="InputGlyphService"/> para el dispositivo activo.
+    private void UpdateButtonIcon()
+    {
+        if (buttonIcon == null) return;
+        var icon = InputGlyphService.GetSprite(InputGlyphNames.South);
+        if (icon != null) buttonIcon.sprite = icon;
     }
 
     private void OnRegistryChanged()
@@ -180,7 +195,8 @@ public class TeleportHintUI : MonoBehaviour
         OnHintShown?.Invoke();
 
         UpdateHintText();
-        
+        UpdateButtonIcon();
+
         if (hintRoot != null)
             hintRoot.SetActive(true);
         

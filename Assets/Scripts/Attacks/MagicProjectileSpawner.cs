@@ -10,7 +10,15 @@ public class MagicProjectileSpawner : MonoBehaviour
     /// Los compañeros del party pueden suscribirse para entrar en modo alerta/combate.
     /// </summary>
     public static event System.Action OnPlayerAttacked;
-    
+
+#if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        OnPlayerAttacked = null;
+    }
+#endif
+
     [Header("Listen")]
     [SerializeField] private vThirdPersonController controller;
     [SerializeField] private PlayerTargeting targeting;  // <- NUEVO

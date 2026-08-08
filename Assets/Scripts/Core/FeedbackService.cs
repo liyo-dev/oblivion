@@ -21,6 +21,21 @@
         private static ISfxProvider _sfxProvider;
         private static DeathCameraEffect _deathCameraEffect;
 
+#if UNITY_EDITOR
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            _instance = null;
+            _cameraShakeProvider = null;
+            _screenFlashProvider = null;
+            _hitStopProvider = null;
+            _vfxProvider = null;
+            _sfxProvider = null;
+            _deathCameraEffect = null;
+            _fadeRoot = null;
+        }
+#endif
+
         // ===================== API PÚBLICA =====================
 
         // Camera Shake

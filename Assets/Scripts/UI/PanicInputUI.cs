@@ -59,6 +59,14 @@ public class PanicInputUI : MonoBehaviour
         gameObject.SetActive(false);
     }
 
+    /// Actualiza el icono de botón mostrado sin reconstruir el panel — usado para refrescarlo con el
+    /// icono generado por <c>Core.InputGlyphs.InputGlyphService</c> (Xbox/PlayStation/Switch/Teclado)
+    /// cada vez que se activa la secuencia de pánico, por si el jugador cambió de dispositivo mientras tanto.
+    public void SetIcon(Sprite icon)
+    {
+        if (_buttonIcon != null && icon != null) _buttonIcon.sprite = icon;
+    }
+
     public void Activate(PanicInputDetector detector)
     {
         _detector = detector;

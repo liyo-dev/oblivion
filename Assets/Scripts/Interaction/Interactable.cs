@@ -1,7 +1,9 @@
 using System.Collections.Generic;
+using Core.InputGlyphs;
 using Game.NPC;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.UI;
 using DG.Tweening;
 
 [DisallowMultipleComponent]
@@ -52,6 +54,7 @@ public class Interactable : MonoBehaviour
     public bool IsHintVisible => _hintVisible;
     Tweener _hintTween;
     Vector3 _hintOriginalScale;
+    Image _hintIcon;
 
     void Awake()
     {
@@ -59,6 +62,11 @@ public class Interactable : MonoBehaviour
         if (hint)
         {
             _hintOriginalScale = hint.transform.localScale;
+            // Icono de botón dentro del hint (bocadillo "pulsa A"/"pulsa ✕"/etc.). Se busca una sola
+            // vez aquí y se refresca luego con el sprite real de InputGlyphService cada vez que el
+            // hint se muestra o cambia el mando conectado — así no hace falta editar el prefab de
+            // cada NPC/objeto interactuable a mano, todos comparten este mismo código.
+            _hintIcon = hint.GetComponentInChildren<Image>(true);
             if (hideHintAtStart)
             {
                 hint.transform.localScale = Vector3.zero;
@@ -75,6 +83,8 @@ public class Interactable : MonoBehaviour
         GameBootService.OnProfileReady += RestoreSingleUseStateFromPreset;
         // Re-aplicar estado single-use también cuando el preset se re-aplique en runtime (tras cargar save)
         PlayerPresetService.OnPresetApplied += HandlePresetApplied;
+        // Refrescar el icono del hint si cambia el mando/teclado mientras está visible.
+        InputGlyphService.FamilyChanged += HandleInputFamilyChanged;
 
         if (GameBootService.IsAvailable)
             RestoreSingleUseStateFromPreset();
@@ -84,11 +94,28 @@ public class Interactable : MonoBehaviour
     {
         GameBootService.OnProfileReady -= RestoreSingleUseStateFromPreset;
         PlayerPresetService.OnPresetApplied -= HandlePresetApplied;
+        InputGlyphService.FamilyChanged -= HandleInputFamilyChanged;
 
         // Si el jugador murió o la escena se descargó mientras un diálogo estaba activo,
         // limpiar las fases que este Interactable pudo haber empujado sin hacer Pop.
         if (GameState.Is(GamePhase.Dialogue)) GameState.Pop(GamePhase.Dialogue);
         if (GameState.Is(GamePhase.SavePrompt)) GameState.Pop(GamePhase.SavePrompt);
+    }
+
+    void HandleInputFamilyChanged(InputGlyphDeviceFamily _)
+    {
+        if (_hintVisible) RefreshHintIcon();
+    }
+
+    /// <summary>Pone en el icono del hint el sprite real (Xbox/PlayStation/Switch/Teclado) del botón
+    /// de interactuar, según el dispositivo activo. Si todavía no se ha generado ningún asset para
+    /// ese botón (Tools/Input Glyphs/Generar Assets de Botones), deja el sprite que ya tuviera el
+    /// prefab en el Editor en vez de dejarlo en blanco.</summary>
+    void RefreshHintIcon()
+    {
+        if (_hintIcon == null) return;
+        var sprite = InputGlyphService.GetSprite(InputGlyphNames.South);
+        if (sprite != null) _hintIcon.sprite = sprite;
     }
 
     void HandlePresetApplied()
@@ -116,6 +143,7 @@ public class Interactable : MonoBehaviour
         if (canShow)
         {
             // Mostrar con animación
+            RefreshHintIcon();
             hint.SetActive(true);
             hint.transform.localScale = Vector3.zero;
             _hintTween = hint.transform.DOScale(_hintOriginalScale, hintAnimDuration)

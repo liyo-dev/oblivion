@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using Sendero.Core.Feedback;
+using Core.InputGlyphs;
 
 /// Orquestador de la secuencia del Despertar de la Estrella.
 /// Señal de entrada: "AWAKEN_START".
@@ -267,8 +268,14 @@ public class StarAwakeningSequencer : CinematicSequencerBase
 
         if (playerSpawner != null) playerSpawner.enabled = false;
 
+        // Icono dinámico según el dispositivo activo (Xbox/PlayStation/Switch/Teclado); si el
+        // servicio todavía no tiene nada generado (p.ej. muy al principio del arranque del juego),
+        // cae al sprite fijo configurado en el Inspector como respaldo.
+        var panicIcon = InputGlyphService.GetSprite(InputGlyphNames.South) ?? panicButtonSprite;
         if (panicInputUI == null)
-            panicInputUI = PanicInputUI.GetOrCreate(panicButtonSprite);
+            panicInputUI = PanicInputUI.GetOrCreate(panicIcon);
+        else
+            panicInputUI.SetIcon(panicIcon);
         panicInputUI?.Activate(panicInputDetector);
         panicInputDetector.OnSuccess += OnPanicSuccess;
         panicInputDetector.OnFailure += OnPanicFailure;

@@ -33,6 +33,18 @@ public class TeleportService : MonoBehaviour
     public static event System.Action OnTeleportCut;     // Momento del movimiento real
     public static event System.Action OnTeleportEnded;   // Fin de transición (o inmediato si no hay transición)
 
+#if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        _inst = null;
+        OnTeleportStarted = null;
+        OnTeleportCut = null;
+        OnTeleportEnded = null;
+        _sTransitionInProgress = false;
+    }
+#endif
+
     // Helper para invocar eventos de forma segura y con logging por suscriptor
     private static void InvokeEvent(System.Action evt, string eventName)
     {

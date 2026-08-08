@@ -40,7 +40,10 @@ namespace Game.NPC.States
         }
 
         private const float ARRIVAL_THRESHOLD = 0.5f;  // Distancia para considerar que llegó
-        private const float ROTATION_SPEED = 360f;     // Grados por segundo para rotación suave
+        // Grados/segundo del giro continuo en posición. Bajado de 360 a 120: a 360 el compañero
+        // daba latigazos de cuerpo cada vez que cambiaba el speaker del diálogo grupal — a 120
+        // el giro se lee como "se vuelve hacia quien habla", no como un tic nervioso.
+        private const float ROTATION_SPEED = 120f;
 
         public DialoguePositionState(NPCPartyMember partyMember, Vector3 targetPosition, float maxTime, Transform npcTarget = null)
         {

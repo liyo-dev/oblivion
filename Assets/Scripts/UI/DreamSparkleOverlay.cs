@@ -79,6 +79,20 @@ public class DreamSparkleOverlay : MonoBehaviour
 
     // ── API pública ───────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Reconfigura el ritmo/tamaño del pool ANTES de que se ejecute <see cref="Awake"/> — hay que llamarlo
+    /// justo después de <c>AddComponent&lt;DreamSparkleOverlay&gt;()</c> con el GameObject aún inactivo
+    /// (si no, Awake ya habrá construido el pool con los valores del Inspector). Pensado para reutilizar
+    /// este mismo generador con una cadencia más suave en overlays de ambiente permanentes de UI
+    /// (ver <c>ProceduralAmbientSparkles</c>), sin duplicar el código de sprites/pool.
+    /// </summary>
+    public void ConfigurePace(int poolSize, float spawnMin, float spawnMax)
+    {
+        _poolSize = Mathf.Clamp(poolSize, 5, 30);
+        _spawnMin = spawnMin;
+        _spawnMax = spawnMax;
+    }
+
     public void StartSparkles()
     {
         gameObject.SetActive(true);

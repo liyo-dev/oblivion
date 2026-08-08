@@ -2217,27 +2217,39 @@ public class DialogueCinematicController : MonoBehaviour
             }
         }
 
-        // Player: mira al speaker; si el speaker es él, mira al NPC principal
+        // Player: la CABEZA sigue al speaker; el CUERPO se queda quieto (anclado mirando al
+        // NPC desde el inicio del diálogo) salvo que el speaker quede fuera del alcance de la
+        // cabeza. Antes el cuerpo perseguía al speaker en cada línea y el player parecía
+        // nervioso — giro completo + head-look encima en cada cambio de turno.
         Transform playerLook = (currentSpeaker == currentPlayer) ? currentNPC : currentSpeaker;
-        StartSmoothFace(currentPlayer, playerLook, ref _playerRotationCoroutine);
+        FaceBodyOnlyIfOutOfHeadRange(currentPlayer, playerLook, ref _playerRotationCoroutine);
         SetHeadLook(currentPlayer, playerLook);
 
-        // NPC principal: mira al speaker; si el speaker es él, mira al player
+        // NPC principal: misma política que el player (cabeza sí, cuerpo solo si es necesario)
         Transform npcLook = (currentSpeaker == currentNPC) ? currentPlayer : currentSpeaker;
-        StartSmoothFace(currentNPC, npcLook, ref _npcRotationCoroutine);
+        FaceBodyOnlyIfOutOfHeadRange(currentNPC, npcLook, ref _npcRotationCoroutine);
         SetHeadLook(currentNPC, npcLook);
     }
 
+    [Tooltip("Ángulo (grados) entre el forward del cuerpo y el speaker a partir del cual el cuerpo sí gira (por debajo, solo la cabeza acompaña)")]
+    [SerializeField] private float groupBodyTurnThreshold = 100f;
+
     /// <summary>
-    /// Lanza (o relanza) una rotación suave de 'who' para encarar a 'target' en el plano horizontal.
+    /// Gira el cuerpo hacia el objetivo SOLO si este queda tan lateral/trasero que el head-look
+    /// no llega (más de groupBodyTurnThreshold°). En el semicírculo normal todos los
+    /// participantes quedan delante, así que el cuerpo casi nunca se mueve — la conversación
+    /// se lleva con miradas de cabeza sutiles, no con giros de cuerpo por línea.
     /// </summary>
-    private void StartSmoothFace(Transform who, Transform target, ref Coroutine handle)
+    private void FaceBodyOnlyIfOutOfHeadRange(Transform who, Transform target, ref Coroutine handle)
     {
         if (who == null || target == null || who == target) return;
 
         Vector3 dir = target.position - who.position;
         dir.y = 0f;
         if (dir.sqrMagnitude < 0.01f) return;
+
+        if (Vector3.Angle(who.forward, dir) < groupBodyTurnThreshold)
+            return; // la cabeza llega sola: cuerpo quieto
 
         if (handle != null)
             StopCoroutine(handle);

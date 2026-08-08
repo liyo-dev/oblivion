@@ -103,6 +103,15 @@ public class LevitationTarget : MonoBehaviour
     public static event System.Action OnAnyLevitationStarted;
     public static event System.Action OnAnyLevitationEnded;
 
+#if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        OnAnyLevitationStarted = null;
+        OnAnyLevitationEnded = null;
+    }
+#endif
+
     // ────────────────────────────────────────────────────────────────────────
     void Awake()
     {

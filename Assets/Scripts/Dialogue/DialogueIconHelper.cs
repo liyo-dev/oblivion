@@ -1,8 +1,15 @@
 using UnityEngine;
 
+// OBSOLETO — sin ningún uso en el proyecto (verificado por búsqueda global, agosto 2026) y con
+// nombres de sprite ("ButtonA", "DpadUp"...) que no coinciden con los reales del asset
+// (interactable_A, interactable_dpad...) definidos en Core.InputGlyphs.InputGlyphNames, que es la
+// fuente de verdad actual. Candidato a borrar sin más — Raúl, puedes eliminar este archivo (y su
+// .meta) a mano en el Editor cuando quieras; no lo he tocado porque no puedo borrar archivos desde
+// aquí, solo escribirlos.
+
 /// <summary>
 /// Helper para insertar iconos en textos de diálogo usando TextMeshPro Sprite Assets.
-/// 
+///
 /// USO EN DIÁLOGOS:
 /// - Para mostrar un botón: "Pulsa <sprite name="ButtonA"> para saltar"
 /// - Para UI: "Abre el inventario con <sprite name="DpadDown">"

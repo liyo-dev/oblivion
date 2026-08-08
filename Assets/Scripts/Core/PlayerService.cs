@@ -29,6 +29,17 @@ public sealed class PlayerService : MonoBehaviour
     public static event Action<GameObject> OnPlayerRegistered;
     public static event Action OnPlayerUnregistered;
 
+#if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        _instance = null;
+        _isShuttingDown = false;
+        OnPlayerRegistered = null;
+        OnPlayerUnregistered = null;
+    }
+#endif
+
     public static PlayerService Instance
     {
         get
@@ -41,7 +52,7 @@ public sealed class PlayerService : MonoBehaviour
         }
     }
     public static bool HasInstance => _instance != null;
-    public static GameObject Player => Instance.playerRoot;
+    public static GameObject Player => Instance != null ? Instance.playerRoot : null;
     public static Transform PlayerTransform => TryGetComponent(out Transform result) ? result : null;
 
     void Awake()

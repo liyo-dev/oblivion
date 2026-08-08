@@ -97,6 +97,16 @@ public class BossArenaController : MonoBehaviour
     public static event Action OnAnyBattleStarted;
     public static event Action OnAnyBattleEnded;
 
+#if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        s_arenaRegistry.Clear();
+        OnAnyBattleStarted = null;
+        OnAnyBattleEnded = null;
+    }
+#endif
+
     // Exponer el id públicamente de solo lectura
     public string BattleId => battleId;
 

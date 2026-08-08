@@ -17,6 +17,8 @@ public class EnvironmentController : MonoBehaviour
     static void ResetStatics()
     {
         Instance = null;
+        OnInteriorEntered = null;
+        OnInteriorExited = null;
     }
     #endif
 

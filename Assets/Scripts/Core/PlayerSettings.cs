@@ -11,6 +11,19 @@ public static class PlayerSettings
     public static event Action<bool> InvertLookChanged;
     public static event Action<bool> InvertFlightLookChanged;
 
+#if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        LanguageChanged = null;
+        VolumeChanged = null;
+        InvertLookChanged = null;
+        InvertFlightLookChanged = null;
+        _loaded = false;
+        _data = null;
+    }
+#endif
+
     [Serializable]
     private class PlayerSettingsData
     {
