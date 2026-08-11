@@ -32,6 +32,8 @@ MonoBehaviour:
   - {fileID: 8495392020831295843}
   - {fileID: -6193495409717275984}
   - {fileID: 7914412161684764669}
+  - {fileID: -7339064221953844569}
+  - {fileID: 5520786421273073081}
 --- !u!114 &7914412161684764669
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -106,3 +108,65 @@ MonoBehaviour:
   bladeRotation:
     m_OverrideState: 0
     m_Value: 0
+--- !u!114 &-7339064221953844569
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f8f6e43869a48f991285995d4df1e93, type: 3}
+  m_Name: ColorGrading
+  m_EditorClassIdentifier: 
+  active: 1
+  intensity:
+    m_OverrideState: 1
+    m_Value: 1
+  blueShadows:
+    m_OverrideState: 1
+    m_Value: 0.5
+  greenShadows:
+    m_OverrideState: 1
+    m_Value: 0.07
+  redHighlights:
+    m_OverrideState: 1
+    m_Value: 0.2
+  contrast:
+    m_OverrideState: 1
+    m_Value: 0.4
+  vibrance:
+    m_OverrideState: 1
+    m_Value: 0.4
+  saturation:
+    m_OverrideState: 1
+    m_Value: 0
+--- !u!114 &5520786421273073081
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f8317041eee140a38873daddb4b3a5f, type: 3}
+  m_Name: StylizedDetail
+  m_EditorClassIdentifier: 
+  active: 1
+  intensity:
+    m_OverrideState: 1
+    m_Value: 1
+  blur:
+    m_OverrideState: 1
+    m_Value: 0.72
+  edgePreserve:
+    m_OverrideState: 1
+    m_Value: 0.25
+  rangeStart:
+    m_OverrideState: 1
+    m_Value: 0
+  rangeEnd:
+    m_OverrideState: 1
+    m_Value: 100
