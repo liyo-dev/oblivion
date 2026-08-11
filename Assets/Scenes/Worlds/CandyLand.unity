@@ -36296,7 +36296,7 @@ MonoBehaviour:
   priority: 0
   blendDistance: 0
   weight: 1
-  sharedProfile: {fileID: 11400000, guid: 99fa6bea6370d4358a833e23eeedae34, type: 2}
+  sharedProfile: {fileID: 11400000, guid: 062496888546cab46afe11d6f639009c, type: 2}
 --- !u!1 &515855612
 GameObject:
   m_ObjectHideFlags: 0
@@ -97447,10 +97447,10 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   dayNightCycle: {fileID: 1311901892}
   cloudPrefabs:
-  - {fileID: 5310000000000000041, guid: 6cc159fe2e77465fa84041ee86aedf37, type: 3}
-  - {fileID: 5310000000000000081, guid: 82515535050e42dd97fe8e1f6f9c9eb6, type: 3}
-  - {fileID: 5310000000000000121, guid: 6187f2e1fa3b4415aa4c101aa81812d8, type: 3}
-  - {fileID: 5310000000000000161, guid: 3d930c68c6aa43b484af06130a4fff3e, type: 3}
+  - {fileID: 159362, guid: 248f8272187dcc448a9d3c979531398f, type: 3}
+  - {fileID: 115772, guid: 98c20755924aa5d499600058295661ee, type: 3}
+  - {fileID: 160454, guid: 8ec774c4def159e4dba49882bd591326, type: 3}
+  - {fileID: 115846, guid: bef19769e972d0741aec3902288fcc2e, type: 3}
 --- !u!1001 &1312132202
 PrefabInstance:
   m_ObjectHideFlags: 0

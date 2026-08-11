@@ -24,19 +24,7 @@ public class DayNightCycle : MonoBehaviour
     public class TimeOfDaySettings
     {
         public TimeOfDay timeOfDay;
-
-        [Tooltip("LEGACY — ya no se usa en el ciclo (ver más abajo skyboxIntensity/skyboxExponent/skyboxDirectionYaw/skyboxDirectionPitch y DayNightCycle.sharedSkyboxMaterial). El skybox pasó a ser uno único, fuera de cada periodo; este campo se deja para no perder la referencia mientras se decide qué material final usar.")]
         public Material skybox;
-
-        [Header("Skybox único (shader Quibli/Skybox — degradado por ángulo)")]
-        [Tooltip("Brillo del cielo en este periodo (_Intensity del shader Quibli/Skybox). Actúa como la 'exposición': bajo de noche, alto de día.")]
-        [Range(0f, 5f)] public float skyboxIntensity = 1f;
-        [Tooltip("Dureza del degradado (_Exponent). Alto = el color queda concentrado cerca de la dirección marcada por skyboxDirectionYaw/Pitch; bajo = se reparte más uniforme por todo el cielo.")]
-        [Range(0f, 5f)] public float skyboxExponent = 1f;
-        [Tooltip("Eje horizontal del degradado (_DirectionYaw, 0-1 en el shader). Punto de partida razonable: sunRotationY / 360, luego ajustar a ojo — no hace falta que coincida exactamente con el sol.")]
-        [Range(0f, 1f)] public float skyboxDirectionYaw = 0f;
-        [Tooltip("Eje vertical del degradado (_DirectionPitch, 0-1 en el shader). Punto de partida razonable: sunRotationX / 180, luego ajustar a ojo.")]
-        [Range(0f, 1f)] public float skyboxDirectionPitch = 0f;
 
         [Header("Luz direccional")]
         public Color lightColor = Color.white;
@@ -122,10 +110,6 @@ public class DayNightCycle : MonoBehaviour
             fogColor = new Color(0.04f, 0.04f, 0.1f), fogDensity = 0.022f
         }
     };
-
-    [Header("Skybox único")]
-    [Tooltip("El ÚNICO material de skybox del juego (shader Quibli/Skybox: City_Skybox o SampleScene_Skybox, en Assets/Plugins/Quibli/Demos/.../Materials — Clouds_Skybox usa el mismo shader y encaja con las nubes Quibli ya usadas por CloudCoverSpawner, también vale la pena probarlo). Se instancia una copia en runtime (_runtimeSkybox) para poder animar _Intensity/_Exponent/_DirectionYaw/_DirectionPitch por periodo sin ensuciar este asset compartido. Arrastra aquí el candidato a probar y dale a Play para comparar.")]
-    [SerializeField] private Material sharedSkyboxMaterial;
 
     [Header("Luz direccional")]
     [SerializeField] private Light directionalLight;
@@ -230,17 +214,6 @@ public class DayNightCycle : MonoBehaviour
     private float _timeElapsed;
     private float _currentDuration;
     private bool _isTransitioning;
-
-    // Instancia propia de sharedSkyboxMaterial (ver Awake/OnDestroy). RenderSettings.skybox no
-    // auto-instancia el material al asignarlo (a diferencia de renderer.material): sin esta copia,
-    // animar _Intensity/_Exponent/_DirectionYaw/_DirectionPitch en Play Mode ensuciaría el .mat
-    // compartido de verdad en el Editor.
-    private Material _runtimeSkybox;
-    private static readonly int SkyboxIntensityId = Shader.PropertyToID("_Intensity");
-    private static readonly int SkyboxExponentId = Shader.PropertyToID("_Exponent");
-    private static readonly int SkyboxDirectionYawId = Shader.PropertyToID("_DirectionYaw");
-    private static readonly int SkyboxDirectionPitchId = Shader.PropertyToID("_DirectionPitch");
-
     private GameObject _activeRainInstance;
     private Coroutine _rainCoroutine;
     private Coroutine _transitionCoroutine;
@@ -313,18 +286,6 @@ public class DayNightCycle : MonoBehaviour
 
         _mainCamera = Camera.main;
 
-        if (sharedSkyboxMaterial != null)
-        {
-            _runtimeSkybox = new Material(sharedSkyboxMaterial);
-            RenderSettings.skybox = _runtimeSkybox;
-        }
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        else
-        {
-            Debug.LogWarning("[DayNightCycle] No hay sharedSkyboxMaterial asignado; el ciclo día/noche no podrá animar el skybox (se queda con el que ya hubiera en RenderSettings.skybox).");
-        }
-#endif
-
         if (controlAmbientLight)
             RenderSettings.ambientMode = AmbientMode.Flat;
 
@@ -332,18 +293,6 @@ public class DayNightCycle : MonoBehaviour
         // estuviera horneado en la escena — así "desactivar niebla" en el Inspector apaga de
         // verdad la niebla, en lugar de depender de lo último que hubiera en Lighting Settings.
         RenderSettings.fog = controlFog;
-    }
-
-    void OnDestroy()
-    {
-        // _runtimeSkybox es una copia en memoria de sharedSkyboxMaterial (ver Awake), no el asset
-        // compartido: hay que liberarla explícitamente o queda huérfana hasta la siguiente carga
-        // de escena/recolección de basura.
-        if (_runtimeSkybox != null)
-        {
-            Destroy(_runtimeSkybox);
-            _runtimeSkybox = null;
-        }
     }
 
     void OnEnable()
@@ -582,12 +531,9 @@ public class DayNightCycle : MonoBehaviour
         {
             ApplyStormSkybox();
         }
-        else if (_runtimeSkybox != null && RenderSettings.skybox != _runtimeSkybox)
+        else if (timeSettings[_currentIndex].skybox != null && RenderSettings.skybox != timeSettings[_currentIndex].skybox)
         {
-            // _runtimeSkybox ya tiene los valores correctos del periodo actual (se han seguido
-            // actualizando en ApplySettingsImmediate/TransitionToSettings aunque estuviéramos
-            // bloqueados), solo hace falta restaurar la referencia.
-            RenderSettings.skybox = _runtimeSkybox;
+            RenderSettings.skybox = timeSettings[_currentIndex].skybox;
             DynamicGI.UpdateEnvironment();
         }
     }
@@ -759,23 +705,12 @@ public class DayNightCycle : MonoBehaviour
 
     void ApplySettingsImmediate(TimeOfDaySettings settings)
     {
-        if (_runtimeSkybox != null)
+        // No pisar el skybox si un interior (real o cinemático) tiene el control ahora mismo — ver
+        // IsSkyboxLockedByEnvironment. Se re-aplicará solo al salir/terminar (ReapplyPendingSkybox).
+        if (settings.skybox != null && !IsSkyboxLockedByEnvironment())
         {
-            _runtimeSkybox.SetFloat(SkyboxIntensityId, settings.skyboxIntensity);
-            _runtimeSkybox.SetFloat(SkyboxExponentId, settings.skyboxExponent);
-            _runtimeSkybox.SetFloat(SkyboxDirectionYawId, settings.skyboxDirectionYaw);
-            _runtimeSkybox.SetFloat(SkyboxDirectionPitchId, settings.skyboxDirectionPitch);
-
-            // No pisar la REFERENCIA de RenderSettings.skybox si un interior (real o cinemático)
-            // tiene el control ahora mismo — ver IsSkyboxLockedByEnvironment. Los valores de arriba
-            // ya han quedado guardados en _runtimeSkybox y se verán en cuanto ReapplyPendingSkybox
-            // restaure la referencia al salir/terminar, sin esperar a la siguiente transición.
-            if (!IsSkyboxLockedByEnvironment())
-            {
-                if (RenderSettings.skybox != _runtimeSkybox)
-                    RenderSettings.skybox = _runtimeSkybox;
-                DynamicGI.UpdateEnvironment();
-            }
+            RenderSettings.skybox = settings.skybox;
+            DynamicGI.UpdateEnvironment();
         }
 
         if (directionalLight != null)
@@ -801,13 +736,13 @@ public class DayNightCycle : MonoBehaviour
     {
         _isTransitioning = true;
 
-        // Asegurar que RenderSettings.skybox apunta a nuestra instancia ANTES de animar sus
-        // propiedades, salvo que un interior/cinemática tenga el control ahora mismo (ver
-        // IsSkyboxLockedByEnvironment). _runtimeSkybox se sigue actualizando cada frame más abajo
-        // aunque estemos bloqueados: en cuanto se libere, ReapplyPendingSkybox restaura la
-        // referencia y ya se ve con los valores correctos, sin esperar a la siguiente transición.
-        if (_runtimeSkybox != null && RenderSettings.skybox != _runtimeSkybox && !IsSkyboxLockedByEnvironment())
-            RenderSettings.skybox = _runtimeSkybox;
+        // El skybox cambia al inicio para que cielo y luz evolucionen juntos, evitando el "pop" al final.
+        // No pisar el skybox si un interior (real o cinemático) tiene el control ahora mismo.
+        if (target.skybox != null && RenderSettings.skybox != target.skybox && !IsSkyboxLockedByEnvironment())
+        {
+            RenderSettings.skybox = target.skybox;
+            DynamicGI.UpdateEnvironment();
+        }
 
         var light = directionalLight;
         Color startLightColor = light ? light.color : Color.white;
@@ -820,11 +755,6 @@ public class DayNightCycle : MonoBehaviour
         // y arrastrarían el multiplicador a la transición.
         Color startFogColor = _baseFogColor;
         float startFogDensity = _baseFogDensity;
-
-        float startSkyboxIntensity = _runtimeSkybox != null ? _runtimeSkybox.GetFloat(SkyboxIntensityId) : target.skyboxIntensity;
-        float startSkyboxExponent = _runtimeSkybox != null ? _runtimeSkybox.GetFloat(SkyboxExponentId) : target.skyboxExponent;
-        float startSkyboxYaw = _runtimeSkybox != null ? _runtimeSkybox.GetFloat(SkyboxDirectionYawId) : target.skyboxDirectionYaw;
-        float startSkyboxPitch = _runtimeSkybox != null ? _runtimeSkybox.GetFloat(SkyboxDirectionPitchId) : target.skyboxDirectionPitch;
 
         float elapsed = 0f;
         while (elapsed < transitionDuration)
@@ -859,14 +789,6 @@ public class DayNightCycle : MonoBehaviour
 
                 RenderSettings.fogColor   = lerpedColor;
                 RenderSettings.fogDensity = lerpedDensity;
-            }
-
-            if (_runtimeSkybox != null)
-            {
-                _runtimeSkybox.SetFloat(SkyboxIntensityId, Mathf.Lerp(startSkyboxIntensity, target.skyboxIntensity, t));
-                _runtimeSkybox.SetFloat(SkyboxExponentId, Mathf.Lerp(startSkyboxExponent, target.skyboxExponent, t));
-                _runtimeSkybox.SetFloat(SkyboxDirectionYawId, Mathf.Lerp(startSkyboxYaw, target.skyboxDirectionYaw, t));
-                _runtimeSkybox.SetFloat(SkyboxDirectionPitchId, Mathf.Lerp(startSkyboxPitch, target.skyboxDirectionPitch, t));
             }
 
             yield return null;
@@ -946,16 +868,10 @@ public class DayNightCycle : MonoBehaviour
             DynamicGI.UpdateEnvironment();
         }
 
-        // Red de seguridad HEREDADA del sistema de 9 skyboxes por foto: sin un stormSkybox asignado,
-        // el skybox despejado (con sol y rayos) seguía viéndose en el horizonte, más allá de donde
-        // llega CloudCoverSpawner. Con un único skybox persistente (_runtimeSkybox) esto ya NO hace
-        // falta — es justo el "como pasaría de verdad" que ya explicaba el tooltip de stormSkybox:
-        // el cielo despejado por encima/alrededor del techo de nubes es el comportamiento deseado,
-        // no un hueco que tapar. Forzar aquí un color sólido literalmente OCULTA el skybox único que
-        // tanto costó dejar bonito (bug reportado: "activar/desactivar lluvia no sale bien" — la
-        // pantalla se quedaba plana en vez de mostrar el cielo). Por eso este fallback ahora solo se
-        // activa si NO hay _runtimeSkybox (es decir, si la escena sigue en el sistema legacy).
-        if (stormSkybox == null && _runtimeSkybox == null && _mainCamera != null && !_cameraOverrideActive)
+        // Red de seguridad: sin un stormSkybox asignado, el skybox despejado (con sol y rayos)
+        // sigue viéndose en el horizonte, más allá de donde llega CloudCoverSpawner, y la niebla
+        // de RenderSettings no lo tiñe. Forzamos color sólido en la cámara para tapar ese hueco.
+        if (stormSkybox == null && _mainCamera != null && !_cameraOverrideActive)
         {
             _preStormClearFlags = _mainCamera.clearFlags;
             _preStormBackgroundColor = _mainCamera.backgroundColor;
@@ -971,7 +887,7 @@ public class DayNightCycle : MonoBehaviour
         {
             // Si ninguna transición de periodo cambió el skybox mientras tanto, volvemos al que
             // había antes de nublarse (o al del periodo actual si no se guardó ninguno).
-            RenderSettings.skybox = _preStormSkybox != null ? _preStormSkybox : _runtimeSkybox;
+            RenderSettings.skybox = _preStormSkybox != null ? _preStormSkybox : timeSettings[_currentIndex].skybox;
             DynamicGI.UpdateEnvironment();
             _preStormSkybox = null;
         }
@@ -1217,46 +1133,9 @@ public class DayNightCycle : MonoBehaviour
     [ContextMenu("Avanzar al siguiente periodo")]
     public void DebugAdvanceTime() => AdvanceToNextPeriod();
 
-    // Antes había un único "Activar/Desactivar lluvia" (ToggleRain) — con un solo ítem que hace lo
-    // contrario según el estado interno, es fácil pulsar esperando que empiece y que en realidad
-    // pare (o al revés) si no se tiene clara la etiqueta ni el estado actual. Separado en dos
-    // acciones explícitas: cada una hace SIEMPRE lo que dice, sin depender de IsRaining. StartRain()/
-    // StopRain() ya no hacen nada si ya está en ese estado (no hace falta guardia extra aquí).
-    [ContextMenu("Lluvia: iniciar")]
-    public void DebugStartRain() => StartRain();
+    [ContextMenu("Activar/Desactivar lluvia")]
+    public void DebugToggleRain() => ToggleRain();
 
-    [ContextMenu("Lluvia: detener")]
-    public void DebugStopRain() => StopRain();
-
-    [ContextMenu("Niebla: iniciar")]
-    public void DebugStartMist() => StartMist();
-
-    [ContextMenu("Niebla: detener")]
-    public void DebugStopMist() => StopMist();
-
-    /// <summary>
-    /// Punto de partida rápido para no salir de cero al comparar candidatos de
-    /// sharedSkyboxMaterial: deriva skyboxIntensity/skyboxDirectionYaw/skyboxDirectionPitch de la
-    /// luz ya tuneada de cada periodo. No es un resultado final — el shader Quibli/Skybox es un
-    /// degradado por ángulo, no un sol físico, así que la correspondencia con sunRotationX/Y es
-    /// solo una aproximación. Revisar y ajustar a mano en el Inspector después de generar.
-    /// </summary>
-    [ContextMenu("Generar valores de skybox desde la luz de cada periodo (punto de partida)")]
-    void DebugGenerateSkyboxFromLight()
-    {
-        if (timeSettings == null) return;
-
-        foreach (var s in timeSettings)
-        {
-            s.skyboxIntensity = Mathf.Lerp(0.15f, 2.2f, Mathf.InverseLerp(0.1f, 1.4f, s.lightIntensity));
-            s.skyboxExponent = 1f; // punto de partida neutro, ajustar a ojo por periodo
-            s.skyboxDirectionYaw = Mathf.Repeat(s.sunRotationY / 360f, 1f);
-            s.skyboxDirectionPitch = Mathf.Clamp01(s.sunRotationX / 180f);
-        }
-
-#if UNITY_EDITOR
-        UnityEditor.EditorUtility.SetDirty(this);
-#endif
-        Debug.Log("[DayNightCycle] Valores de skybox generados desde la luz de cada periodo. Ajusta a mano en el Inspector y compara sharedSkyboxMaterial (City_Skybox vs SampleScene_Skybox, o Clouds_Skybox) dándole a Play.");
-    }
+    [ContextMenu("Activar/Desactivar niebla")]
+    public void DebugToggleMist() => ToggleMist();
 }
