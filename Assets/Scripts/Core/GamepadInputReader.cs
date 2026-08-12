@@ -661,6 +661,13 @@ namespace Core
                 if (y != null && y.wasPressedThisFrame)
                     return true;
             }
+
+            // FIX: faltaba el fallback de teclado que sí tiene YButtonPressed (gameplay). Sin esto,
+            // la Q nunca cerraba/activaba "Salir al menú principal" en teclado — el hint en pantalla
+            // (InputGlyphNames.North → "Q" en InputGlyphLabels) prometía algo que el código no leía.
+            var kb = Keyboard.current;
+            if (kb != null && kb.qKey.wasPressedThisFrame)
+                return true;
 #endif
 
             return false;

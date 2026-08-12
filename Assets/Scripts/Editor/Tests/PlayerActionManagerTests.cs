@@ -20,6 +20,21 @@ public class PlayerActionManagerTests
     private GameObject _go;
     private PlayerActionManager _mgr;
 
+    [OneTimeSetUp]
+    public void OneTimeSetUp()
+    {
+        // ApplyTopMode() llama SIEMPRE a UpdatePlayerLock(), que en su primer acceso de
+        // toda la sesión crea PlayerLockService.Instance (PlayerLockService.cs:28-34) y
+        // llama DontDestroyOnLoad — método que solo es válido en Play mode. En Edit mode
+        // lanza InvalidOperationException, pero _instance ya quedó asignado ANTES de esa
+        // línea, así que el primer test de la sesión que toque Push/PopMode revienta y
+        // todos los siguientes van bien (leen el _instance ya cacheado). Para no depender
+        // del orden de ejecución de NUnit (no garantizado), "gastamos" aquí esa única
+        // excepción esperada una sola vez, antes de que corra ningún test real.
+        try { _ = PlayerLockService.Instance; }
+        catch (System.InvalidOperationException) { /* esperado en Edit mode, ver arriba */ }
+    }
+
     [SetUp]
     public void SetUp()
     {

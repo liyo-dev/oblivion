@@ -17403,10 +17403,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 141d646b6703b4c478642cb48c9f1f33, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::RendererColorOverride
   _color: {r: 1, g: 0.45, b: 0.15, a: 1}
-  _renderers: []
+  _renderers:
+  - {fileID: 6601794589266627543}
 --- !u!1 &8022916129199227797
 GameObject:
   m_ObjectHideFlags: 0
