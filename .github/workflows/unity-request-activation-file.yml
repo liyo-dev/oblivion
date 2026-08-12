@@ -1,0 +1,28 @@
+# Workflow de un solo uso: genera el archivo .alf que hace falta para activar una licencia
+# de Unity personal/plus/pro para usarla en CI. Ejecútalo manualmente una vez (pestaña
+# Actions → "Unity — solicitar archivo de activación" → "Run workflow"), descarga el
+# artefacto resultante y sigue los pasos descritos en unity-tests.yml. No hace falta
+# volver a correr esto salvo que la licencia caduque o se revoque.
+# Documentación oficial: https://game.ci/docs/github/activation
+name: Unity — solicitar archivo de activación
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  request-activation-file:
+    name: Request activation file
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (solo para leer ProjectSettings/ProjectVersion.txt)
+        uses: actions/checkout@v4
+
+      - name: Request manual activation file
+        id: getManualLicenseFile
+        uses: game-ci/unity-request-activation-file@v2
+
+      - name: Subir el archivo de activación como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.getManualLicenseFile.outputs.filePath }}
+          path: ${{ steps.getManualLicenseFile.outputs.filePath }}

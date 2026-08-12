@@ -1,0 +1,68 @@
+# CI de tests para "El Sendero de las Estrellas".
+# Añadido en la auditoría de seguimiento del 12 de agosto de 2026 (TDD.md §19.2/§19.4) —
+# el proyecto no tenía ninguna verificación automática de build/tests hasta ahora.
+#
+# ⚠️ SETUP REQUERIDO ANTES DE QUE ESTO PUEDA PASAR EN VERDE:
+# Este workflow usa game-ci/unity-test-runner, que necesita una licencia de Unity activada
+# para poder abrir el proyecto en modo batch. Sin los secretos de abajo configurados en
+# GitHub (Settings → Secrets and variables → Actions), el job fallará en el paso de
+# activación de licencia, no por un fallo real de tests. Pasos (una sola vez):
+#   1. Ejecuta manualmente el workflow "Unity — solicitar archivo de activación"
+#      (.github/workflows/unity-request-activation-file.yml, botón "Run workflow" en la
+#      pestaña Actions) y descarga el artefacto que genera (un archivo .alf).
+#   2. Sube ese .alf en https://license.unity3d.com/manual (con tu cuenta de Unity) y
+#      descarga el .ulf que te devuelve.
+#   3. Crea estos secretos en el repo:
+#        UNITY_LICENSE  → contenido completo del archivo .ulf descargado
+#        UNITY_EMAIL    → el email de tu cuenta de Unity
+#        UNITY_PASSWORD → la contraseña de tu cuenta de Unity
+#   4. Borra el .alf/.ulf de tu disco si no los necesitas más (no los subas al repo).
+# Documentación oficial: https://game.ci/docs/github/activation
+name: Unity Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: EditMode Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del repositorio (con LFS)
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache de Library/ (acelera runs siguientes)
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-
+
+      # Solo EditMode por ahora: es lo único que tiene tests hoy (Assets/Scripts/Editor/Tests/).
+      # PlayMode necesita más infraestructura (escena de test, display virtual) — añadir un
+      # segundo job "testMode: playmode" cuando existan tests de ese tipo.
+      - name: Run EditMode tests
+        uses: game-ci/unity-test-runner@v4
+        id: tests
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          testMode: editmode
+          artifactsPath: test-results
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Subir resultados de los tests
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-results
