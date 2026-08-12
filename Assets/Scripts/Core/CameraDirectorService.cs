@@ -54,6 +54,22 @@ public static class CameraDirectorService
     }
 #endif
 
+    /// Crea el GameObject "CameraDirectorService" de forma EAGER, antes de que cargue
+    /// cualquier escena. Antes se creaba de forma perezosa dentro de EnsureRunner(), la
+    /// primera vez que algún sistema llamaba a Release() — pero Release() se llama a menudo
+    /// desde OnDestroy (ver CinematicCameraDriver.OnDestroy, BossIntroPresentation, etc.). Si
+    /// esa primera llamada coincidía con el cierre/descarga de una escena, el "new
+    /// GameObject(...)" ocurría literalmente durante el teardown de la escena, y Unity lo
+    /// reportaba como "Some objects were not cleaned up when closing the scene (Did you spawn
+    /// new GameObjects from OnDestroy?)" señalando a "CameraDirectorService". Al crear el
+    /// runner aquí, ya existe en la escena persistente (DontDestroyOnLoad) mucho antes de que
+    /// ninguna escena empiece a cerrarse, así que ese hueco desaparece.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void Bootstrap()
+    {
+        EnsureRunner();
+    }
+
     /// True si hay algún owner con el control reclamado en este momento (incluida la ventana de gracia).
     public static bool HasOwner => s_currentOwner != null;
 

@@ -881,15 +881,27 @@ public class ImpDemonAI : MonoBehaviour
         }
     }
 
+    // FIX A11 (auditoría 2026-08-07): último (hash, capa) reproducido, para no reiniciar la misma
+    // animación en la misma capa en cada llamada. Antes PlayAnimation() llamaba a animator.Play()
+    // sin ningún guard — como varios estados llaman a PlayAnimation(AnimIdle) (u otras) en cada
+    // frame que se re-evalúan (ver p. ej. el bucle de vuelo), la animación se reiniciaba al frame 0
+    // constantemente: animación visualmente congelada en la primera pose, más el coste de
+    // Animator.Play() cada frame. Mismo guard que ya usa Spider1AI.PlayAnimation, portado aquí.
+    private int _lastPlayedAnimHash = -1;
+    private int _lastPlayedLayer = -1;
+
     private void PlayAnimation(int animHash)
     {
         if (!animator) return;
 
         if (_animLookup != null && _animLookup.TryGetValue(animHash, out var info) && info.layer >= 0)
         {
+            if (_lastPlayedAnimHash == animHash && _lastPlayedLayer == info.layer) return;
             try
             {
                 animator.Play(info.clipHash, info.layer, 0f);
+                _lastPlayedAnimHash = animHash;
+                _lastPlayedLayer = info.layer;
                 return;
             }
             catch (System.Exception ex)
@@ -901,7 +913,13 @@ public class ImpDemonAI : MonoBehaviour
         int layerIndex = AnimatorLayerContainingState(animHash);
         if (layerIndex >= 0)
         {
-            try { animator.Play(animHash, layerIndex, 0f); }
+            if (_lastPlayedAnimHash == animHash && _lastPlayedLayer == layerIndex) return;
+            try
+            {
+                animator.Play(animHash, layerIndex, 0f);
+                _lastPlayedAnimHash = animHash;
+                _lastPlayedLayer = layerIndex;
+            }
             catch (System.Exception ex)
             {
                 Debug.LogWarning($"[ImpDemonAI] Error al reproducir animación hash={animHash} en capa={layerIndex}: {ex.Message}");
@@ -913,7 +931,11 @@ public class ImpDemonAI : MonoBehaviour
         Debug.LogWarning($"[ImpDemonAI] Estado '{animName}' no encontrado. Reproduciendo Idle como fallback.");
         int idleLayer = AnimatorLayerContainingState(AnimIdle);
         if (idleLayer >= 0)
+        {
             animator.Play(AnimIdle, idleLayer, 0f);
+            _lastPlayedAnimHash = AnimIdle;
+            _lastPlayedLayer = idleLayer;
+        }
     }
 
     private int AnimatorLayerContainingState(int animHash)

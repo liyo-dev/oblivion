@@ -49,6 +49,11 @@ namespace Core.InputGlyphs
         static List<TMP_SpriteAsset> _originalFallbacks;
         static bool _bootstrapped;
 
+        // Librería de sprites baked por familia (ver LoadFamilySprites) — sustituye a los
+        // Resources.Load por PNG que se hacían antes en esta misma función.
+        static InputGlyphFamilySpriteLibraryLink _familyLibraryLink;
+        static bool _familyLibraryLoadAttempted;
+
         // ── Arranque automático ──────────────────────────────────────────────
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -82,6 +87,8 @@ namespace Core.InputGlyphs
             _rawSpritesByFamily.Clear();
             _dialogueIcons = null;
             _originalFallbacks = null;
+            _familyLibraryLink = null;
+            _familyLibraryLoadAttempted = false;
             CurrentFamily = InputGlyphDeviceFamily.KeyboardMouse;
             FamilyChanged = null;
         }
@@ -176,29 +183,68 @@ namespace Core.InputGlyphs
         }
 
         /// <summary>
-        /// Carga desde <c>Resources/InputGlyphs/&lt;Familia&gt;/&lt;nombre&gt;</c> los 11 sprites de
-        /// botón de la familia pedida (ver <see cref="InputGlyphNames"/>). Si a una familia le falta
-        /// algún PNG (por ejemplo porque todavía no se ha corrido la herramienta de Editor para esa
-        /// familia, o solo se ha generado Xbox), se usa el de Xbox como respaldo para ese botón
-        /// concreto en vez de dejar un hueco vacío — mejor un icono "equivocado" pero visible que un
-        /// hint invisible en mitad de una partida.
+        /// Puntero cacheado a los 4 sets de sprites baked (uno por familia), vía un único
+        /// Resources.Load del link (ver <see cref="InputGlyphFamilySpriteLibraryLink"/>) — no de
+        /// las imágenes en sí. Se intenta cargar una sola vez; si falla, se avisa una vez y se
+        /// sigue devolviendo null en llamadas siguientes (sin reintentar Resources.Load cada vez
+        /// que se pide un sprite).
+        /// </summary>
+        static InputGlyphFamilySpriteLibraryLink GetFamilyLibraryLink()
+        {
+            if (_familyLibraryLink != null) return _familyLibraryLink;
+            if (_familyLibraryLoadAttempted) return null;
+            _familyLibraryLoadAttempted = true;
+
+            _familyLibraryLink = Resources.Load<InputGlyphFamilySpriteLibraryLink>("InputGlyphFamilySpriteLibraryLink");
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (_familyLibraryLink == null)
+                Debug.LogWarning("[InputGlyphService] No se pudo resolver InputGlyphFamilySpriteLibraryLink desde " +
+                                  "Resources. Los iconos de botón no se resolverán hasta revisar esa referencia " +
+                                  "(Assets/Resources/InputGlyphFamilySpriteLibraryLink.asset).");
+#endif
+            return _familyLibraryLink;
+        }
+
+        /// <summary>
+        /// Lee los 12 sprites de botón de la familia pedida (ver <see cref="InputGlyphNames"/>) desde
+        /// el <see cref="InputGlyphFamilySpriteSet"/> baked correspondiente — referencia directa, sin
+        /// Resources.Load por archivo. Si a una familia le falta algún sprite (hueco vacío en el
+        /// asset), se usa el de Xbox como respaldo para ese botón concreto en vez de dejar un hueco
+        /// vacío — mejor un icono "equivocado" pero visible que un hint invisible en mitad de una
+        /// partida.
         /// </summary>
         static Dictionary<string, Sprite> LoadFamilySprites(InputGlyphDeviceFamily family)
         {
             var result = new Dictionary<string, Sprite>(InputGlyphNames.All.Length);
 
+            var link = GetFamilyLibraryLink();
+            var familySet = link != null ? link.GetSet(family) : null;
+            var xboxSet = link != null ? link.GetSet(InputGlyphDeviceFamily.Xbox) : null;
+
             foreach (var buttonName in InputGlyphNames.All)
             {
-                var sprite = Resources.Load<Sprite>($"InputGlyphs/{family}/{buttonName}");
+                var sprite = familySet != null ? familySet.GetSprite(buttonName) : null;
 
-                if (sprite == null && family != InputGlyphDeviceFamily.Xbox)
+                // Confirm (UI/Submit) es fisicamente el mismo boton que South (Interactuar) en
+                // cualquier mando real -- Xbox/PlayStation/Switch comparten un unico boton para
+                // ambos conceptos, asi que si la familia no es teclado y no hay sprite propio de
+                // "confirm" en su set, reutilizamos el de South de esa MISMA familia antes de caer
+                // al respaldo de Xbox de mas abajo -- evita tener que arrastrar el mismo sprite dos
+                // veces en 3 assets distintos. Teclado&Raton SI necesita un sprite propio de Confirm
+                // (Espacio/Enter), porque ahi Interactuar (E) y Confirmar son teclas distintas -- ver
+                // InputGlyphNames.Confirm.
+                if (sprite == null && buttonName == InputGlyphNames.Confirm && family != InputGlyphDeviceFamily.KeyboardMouse && familySet != null)
+                    sprite = familySet.GetSprite(InputGlyphNames.South);
+
+
+                if (sprite == null && family != InputGlyphDeviceFamily.Xbox && xboxSet != null)
                 {
-                    sprite = Resources.Load<Sprite>($"InputGlyphs/{InputGlyphDeviceFamily.Xbox}/{buttonName}");
+                    sprite = xboxSet.GetSprite(buttonName);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     if (sprite != null)
-                        Debug.LogWarning($"[InputGlyphService] Falta Resources/InputGlyphs/{family}/{buttonName}." +
-                                          " Usando el de Xbox como respaldo. Genera el que falta con " +
-                                          "Tools/Input Glyphs/Generar Assets de Botones.");
+                        Debug.LogWarning($"[InputGlyphService] Falta el sprite '{buttonName}' en " +
+                                          $"InputGlyphFamilySpriteSet_{family}.asset. Usando el de Xbox como respaldo.");
 #endif
                 }
 
@@ -206,8 +252,8 @@ namespace Core.InputGlyphs
                 {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.LogWarning($"[InputGlyphService] No se encontró ningún sprite para '{buttonName}' " +
-                                      $"(ni en {family} ni en Xbox). Genera los assets con " +
-                                      "Tools/Input Glyphs/Generar Assets de Botones antes de jugar.");
+                                      $"(ni en {family} ni en Xbox). Rellena Assets/_UI/InputGlyphFamilySpriteSet_" +
+                                      $"{family}.asset antes de jugar.");
 #endif
                     continue;
                 }

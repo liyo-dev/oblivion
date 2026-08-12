@@ -24,6 +24,13 @@ public class MenuNavigator : MonoBehaviour
     private Button _lastSelected;
     private RectTransform _lastNudgedText;
 
+    // FIX M10 (auditoría 2026-08-07): si no hay nada seleccionado, Update() llamaba a
+    // SelectFirstButton() cada frame — y esa función hace GetComponentsInChildren<Button> +
+    // Array.Sort completos cada vez. En un menú sin ningún botón interactable (o mientras el
+    // EventSystem tarda en asentar la selección), esto se convertía en un bucle caro por frame.
+    // Throttle a 4 reintentos/seg: de sobra para recuperar una selección perdida.
+    private float _nextSelectFirstRetryAt;
+
     void OnEnable()
     {
         // Seleccionar el primer botón activo e interactable
@@ -82,7 +89,11 @@ public class MenuNavigator : MonoBehaviour
         // Si no hay nada seleccionado, seleccionar el primer botón automáticamente
         if (selected == null)
         {
-            SelectFirstButton();
+            if (Time.unscaledTime >= _nextSelectFirstRetryAt)
+            {
+                _nextSelectFirstRetryAt = Time.unscaledTime + 0.25f;
+                SelectFirstButton();
+            }
             return;
         }
 

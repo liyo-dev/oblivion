@@ -268,8 +268,13 @@ namespace Game.NPC
 
             // ✅ SAFETY CHECK: Si está en IdleState pero el agente no está detenido, forzar detención
             // Esto captura casos donde algo externo está activando el agente
-            if (_brain != null && _brain.CurrentState != null && 
-                _brain.CurrentState.StateName == "Idle" &&
+            // FIX M12 (auditoría 2026-08-07, parcial): comparación por tipo en vez de por string
+            // (evita comparar StateName == "Idle" cada NPC/frame). No se ha unificado con la
+            // vigilancia equivalente de IdleState.OnUpdate — ambas llevan el comentario "FIX
+            // CRÍTICO" propio, señal de que cada una se añadió para tapar un caso real distinto;
+            // fusionarlas sin poder reproducir esos casos en el editor es más riesgo del que
+            // conviene asumir ahora mismo.
+            if (_brain != null && _brain.CurrentState is IdleState &&
                 _agent != null && _agent.enabled && _agent.isOnNavMesh)
             {
                 if (!_agent.isStopped || _agent.velocity.sqrMagnitude > 0.01f)
@@ -469,7 +474,16 @@ namespace Game.NPC
         {
             // Evitar entrar en combate si ya estamos muertos
             if (_cachedLifecycle != null && _cachedLifecycle.IsDefeatedAndInactive) return;
-            
+
+            // FIX C5 (auditoría 2026-08-07): NPCCombatLifecycleHandler.OnDamaged llama a este
+            // método sin comprobar si el NPC está en mitad de una cinemática. Golpear a un NPC
+            // durante una cinemática forzaba la salida de CinematicState (vía ForceState del
+            // brain, más abajo) a mitad de secuencia, dejando colgados los secuenciadores que
+            // encadenan pasos por onComplete (MountainSequencer, ReinoExitBanterSequencer). El
+            // combate se resolverá igualmente en cuanto la cinemática termine — el atacante no
+            // pierde el registro, solo se evita interrumpir la secuencia en curso.
+            if (_context != null && _context.IsInCinematic) return;
+
             // Asignar el objetivo
             _context.Player = target;
             _context.IsInCombat = true;

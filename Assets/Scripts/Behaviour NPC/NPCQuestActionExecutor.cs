@@ -22,6 +22,13 @@ namespace Game.NPC
         // Control de ejecución
         private bool _isExecutingPostAction;
 
+        // FIX M3 (auditoría 2026-08-07): si QuestManager.Instance era null en Start (orden de
+        // inicialización de escena), este executor se quedaba sordo el resto de la sesión — nunca
+        // reintentaba la suscripción. Con este flag + coroutine de reintento, sigue intentándolo
+        // hasta conseguirlo o hasta que el componente se destruya/desactive.
+        private bool _subscribedToQuestManager;
+        private Coroutine _subscribeRetryRoutine;
+
         void Awake()
         {
             if (npcManager == null)
@@ -48,27 +55,79 @@ namespace Game.NPC
         void OnDestroy()
         {
             // Desuscribirse del QuestManager
+            if (_subscribeRetryRoutine != null)
+            {
+                StopCoroutine(_subscribeRetryRoutine);
+                _subscribeRetryRoutine = null;
+            }
+
             if (QuestManager.Instance != null)
             {
                 QuestManager.Instance.OnQuestCompleted -= HandleQuestCompleted;
             }
         }
 
+        // FIX M3 (auditoría 2026-08-07): _isExecutingPostAction solo se limpiaba al final de
+        // ExecuteActionCoroutine. Si el GameObject se desactivaba a mitad de la corrutina (p.ej.
+        // el NPC sale de rango de streaming, o se desactiva por otro sistema), Unity aborta la
+        // corrutina sin ejecutar el resto del método y el flag quedaba en true para siempre:
+        // todas las post-actions futuras de este NPC se ignoraban en silencio.
+        void OnDisable()
+        {
+            _isExecutingPostAction = false;
+
+            if (_subscribeRetryRoutine != null)
+            {
+                StopCoroutine(_subscribeRetryRoutine);
+                _subscribeRetryRoutine = null;
+            }
+        }
+
+        void OnEnable()
+        {
+            // Si OnDisable interrumpió el reintento de suscripción (o si nunca llegó a
+            // suscribirse), reanudar al reactivarse.
+            if (!_subscribedToQuestManager && _subscribeRetryRoutine == null && npcManager != null)
+            {
+                SubscribeToQuestManager();
+            }
+        }
+
         /// <summary>
-        /// Suscribe al evento global de QuestManager para detectar cuando se completan quests
+        /// Suscribe al evento global de QuestManager para detectar cuando se completan quests.
+        /// Si QuestManager.Instance no está disponible todavía, reintenta en corrutina hasta
+        /// conseguirlo (FIX M3).
         /// </summary>
         private void SubscribeToQuestManager()
         {
+            if (_subscribedToQuestManager) return;
+
             var questManager = QuestManager.Instance;
             if (questManager == null)
             {
-                Debug.LogWarning($"[NPCQuestActionExecutor:{name}] QuestManager.Instance no disponible, no se pueden detectar quest completadas");
+                if (debugMode) Debug.LogWarning($"[NPCQuestActionExecutor:{name}] QuestManager.Instance no disponible todavía, reintentando...");
+                if (_subscribeRetryRoutine == null)
+                    _subscribeRetryRoutine = StartCoroutine(RetrySubscribeToQuestManager());
                 return;
             }
 
             questManager.OnQuestCompleted += HandleQuestCompleted;
+            _subscribedToQuestManager = true;
 
             //if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Suscrito a QuestManager.OnQuestCompleted");
+        }
+
+        private IEnumerator RetrySubscribeToQuestManager()
+        {
+            // Reintenta cada 0.5s hasta que QuestManager.Instance exista; se detiene solo en
+            // OnDisable/OnDestroy (ver ahí) o al conseguir la suscripción.
+            while (QuestManager.Instance == null)
+            {
+                yield return new WaitForSeconds(0.5f);
+            }
+
+            _subscribeRetryRoutine = null;
+            SubscribeToQuestManager();
         }
 
         /// <summary>

@@ -191,10 +191,12 @@ MonoBehaviour:
   hint: {fileID: 4206752884934478463}
   hideHintAtStart: 1
   hintAnimDuration: 0.25
+  iconSet: {fileID: 11400000, guid: 9120cc0f8d6f411aa56d4ef968de44c5, type: 2}
   singleUse: 0
   initiallyEnabled: 1
   persistentIdOverride: 
   includeSceneInPersistentId: 1
+  dialogueCharacterId: 
   dialogue: {fileID: 0}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}

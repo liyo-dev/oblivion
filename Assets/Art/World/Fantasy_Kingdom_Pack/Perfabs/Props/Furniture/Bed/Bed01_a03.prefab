@@ -157,6 +157,7 @@ MonoBehaviour:
   hint: {fileID: 5718506636608110044}
   hideHintAtStart: 1
   hintAnimDuration: 0.25
+  iconSet: {fileID: 11400000, guid: 9120cc0f8d6f411aa56d4ef968de44c5, type: 2}
   singleUse: 0
   initiallyEnabled: 1
   persistentIdOverride: 
@@ -199,6 +200,7 @@ MonoBehaviour:
   bedPosition: {fileID: 203020830509951505}
   sleepCameraAnchor: {fileID: 5661880240781306111}
   cameraTransitionSpeed: 2
+  sleepEmotion: 7
   wakeUpPosition: {fileID: 1041254996337363729}
   wakeUpCameraAnchor: {fileID: 1846220991582729171}
   sleepOnStart: 1

@@ -109,9 +109,27 @@ public class EnvironmentController : MonoBehaviour
         enabled = true;
         DontDestroyOnLoad(gameObject);
 
-        SceneManager.activeSceneChanged += (_, _) => OnSceneChanged();
-        SceneManager.sceneLoaded       += (_, _) => OnSceneChanged();
+        // FIX M11 (auditoría 2026-08-07): antes se suscribía con lambdas anónimas, imposibles de
+        // desuscribir. Este objeto es DontDestroyOnLoad y normalmente vive toda la sesión, así que
+        // en juego real esto no fuga — pero en el editor, al parar Play sin domain reload, Unity
+        // destruye los DontDestroyOnLoad y dispara OnDestroy: sin poder desuscribir la lambda, la
+        // referencia se quedaba colgada de SceneManager (evento estático que sobrevive entre
+        // sesiones de PlayMode) y OnSceneChanged() seguía disparándose sobre una instancia ya
+        // "muerta" en la siguiente sesión. Ahora se usan métodos con nombre para poder
+        // desuscribirlos en OnDestroy.
+        SceneManager.activeSceneChanged += HandleActiveSceneChanged;
+        SceneManager.sceneLoaded       += HandleSceneLoaded;
     }
+
+    void OnDestroy()
+    {
+        SceneManager.activeSceneChanged -= HandleActiveSceneChanged;
+        SceneManager.sceneLoaded       -= HandleSceneLoaded;
+        if (Instance == this) Instance = null;
+    }
+
+    void HandleActiveSceneChanged(Scene _, Scene __) => OnSceneChanged();
+    void HandleSceneLoaded(Scene _, LoadSceneMode __) => OnSceneChanged();
 
     void OnSceneChanged()
     {

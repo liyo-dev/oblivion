@@ -37,6 +37,18 @@ public class NarrativeRunner : MonoBehaviour
     bool IsForkGenerationStale(string forkGuid, int gen)
         => _forkGeneration.TryGetValue(forkGuid, out var current) && current != gen;
 
+    // FIX A6 (auditoría 2026-08-07): nodos de ramas de fork que están actualmente "esperando" un
+    // callback (ver RunSubGraph). El camino principal (_current) ya recibía Exit() al interrumpirse
+    // vía StopExecution(); las ramas de fork nunca lo recibían — si un nodo esperaba un callback
+    // externo (WaitQuestCompleteNode._cb, StartBattleNode._onBattleWonCb) y esos campos viven en el
+    // NarrativeNode serializado del asset COMPARTIDO (no por-runner), quedaban suscritos para
+    // siempre tras StopAllRunners/recarga, y podían disparar side effects reales (completar una
+    // quest, dar por ganada una batalla) de una sesión ya muerta cuando una re-entrada posterior
+    // pisaba el mismo campo. No resuelve el problema de raíz (el estado de suscripción sigue
+    // viviendo en el asset compartido), pero cierra el escenario concreto que StopExecution() debe
+    // garantizar: nada queda escuchando tras parar la ejecución de este runner.
+    readonly HashSet<NarrativeNode> _activeBranchNodes = new();
+
     // ✅ API pública para acceder al nodo actual y su estado
     public NarrativeNode CurrentNode => _current;
     public bool IsCurrentNodeBlockingSave => _current != null && _current.blockSaving;
@@ -56,6 +68,17 @@ public class NarrativeRunner : MonoBehaviour
             catch (System.Exception ex) { Debug.LogError($"[NarrativeRunner] StopExecution Exit error: {ex.Message}"); }
         }
         _current = null;
+
+        // FIX A6 (auditoría 2026-08-07): ver comentario de _activeBranchNodes.
+        if (_ctx != null && _activeBranchNodes.Count > 0)
+        {
+            foreach (var node in _activeBranchNodes)
+            {
+                try { node.Exit(_ctx); }
+                catch (System.Exception ex) { Debug.LogError($"[NarrativeRunner] StopExecution Exit error (rama fork): {ex.Message}"); }
+            }
+        }
+        _activeBranchNodes.Clear();
     }
 
     /// <summary>
@@ -378,6 +401,11 @@ public class NarrativeRunner : MonoBehaviour
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[NarrativeRunner] ▶ SubGraph[{branchIndex}] → {node.GetType().Name} '{node.displayTitle}' ({node.guid})");
 #endif
+            // FIX A6 (auditoría 2026-08-07): registrar este nodo como "esperando" mientras dure el
+            // WaitUntil de abajo, para que StopExecution() pueda encontrarlo y llamar a su Exit()
+            // si el runner se detiene/recarga mientras esta rama está a mitad de espera. Ver
+            // comentario de _activeBranchNodes.
+            _activeBranchNodes.Add(node);
             try
             {
                 node.Enter(_ctx, () =>
@@ -391,10 +419,15 @@ public class NarrativeRunner : MonoBehaviour
             catch (System.Exception ex)
             {
                 Debug.LogError($"[Narrative] RunSubGraph Enter error en {node.GetType().Name}: {ex.Message}");
+                _activeBranchNodes.Remove(node);
                 yield break;
             }
 
             yield return new WaitUntil(() => ready);
+
+            // El nodo completó por su cuenta (no fue interrumpido externamente): ya no está
+            // "esperando", deja de estar sujeto al Exit() de StopExecution.
+            _activeBranchNodes.Remove(node);
 
             // FIX (Agosto 2026): si este fork se re-lanzó con una generación más nueva mientras esta
             // rama esperaba (bucle de reintento que re-entra en el mismo nodo fork — ver comentario

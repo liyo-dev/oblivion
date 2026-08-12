@@ -20,6 +20,37 @@ public class NarrativeGraphStarter : MonoBehaviour
     [Header("Debug")]
     [SerializeField] private bool logDebug = true;
 
+    // FIX C4 (auditoría 2026-08-07): RestoreBlackboardsFromPreset() se llamaba antes en CADA
+    // StartGraphs() — es decir, cada vez que se cargaba una escena de gameplay con este
+    // componente, no solo al continuar una partida real. Pero preset.narrativeBlackboards solo
+    // se refresca al guardar en un SavePoint: si el jugador guarda, avanza el grafo (recibe un
+    // ítem vía GiveInventoryItemNode), y cambia de escena SIN volver a guardar, el blackboard EN
+    // VIVO de la escena nueva retrocedía al snapshot del último save — el flag que marcaba el
+    // ítem como entregado desaparecía sin que el inventario se revirtiera, y el nodo lo volvía a
+    // entregar (mismo patrón que INC-020). Restaurar como mucho una vez por sesión, justo cuando
+    // GameBootService.OnProfileReady confirma que hay datos de sesión reales listos (arranque,
+    // "continuar" o recarga de preset de testing), evita el retroceso en cambios de escena
+    // normales sin tocar el comportamiento en el momento en que sí hace falta restaurar.
+    private static bool _hasRestoredBlackboardsThisSession;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetNarrativeGraphStarterStatics()
+    {
+        _hasRestoredBlackboardsThisSession = false;
+        // -= antes de += para que quede idempotente sin importar cuántas veces se ejecute este
+        // método (se ejecuta en cada entrada a PlayMode, con o sin domain reload) ni el orden
+        // respecto al propio reset de GameBootService.OnProfileReady. Necesario en builds
+        // también (no solo editor): es la única vía por la que este flag se limpia en cada
+        // sesión/recarga real.
+        GameBootService.OnProfileReady -= HandleProfileReadyForBlackboardRestore;
+        GameBootService.OnProfileReady += HandleProfileReadyForBlackboardRestore;
+    }
+
+    private static void HandleProfileReadyForBlackboardRestore()
+    {
+        _hasRestoredBlackboardsThisSession = false;
+    }
+
     void Start()
     {
         if (startOnAwake)
@@ -120,11 +151,21 @@ public class NarrativeGraphStarter : MonoBehaviour
     /// </summary>
     private void RestoreBlackboardsFromPreset(NarrativeGraphHub hub)
     {
+        // FIX C4: ver comentario de _hasRestoredBlackboardsThisSession más arriba. Ya se
+        // restauró una vez en esta sesión (arranque/continuar/recarga de preset) — no volver a
+        // pisar el blackboard en vivo con el snapshot del último save en cada cambio de escena.
+        if (_hasRestoredBlackboardsThisSession)
+            return;
+
         if (!GameBootService.IsAvailable)
         {
             Debug.LogWarning("[NarrativeGraphStarter] ⚠️ GameBootService no disponible - no hay blackboards para restaurar");
-            return;
+            return; // no marcar como restaurado: GameBootService puede no estar listo aún, reintentar en el próximo StartGraphs()
         }
+
+        // A partir de aquí, cualquiera que sea el resultado (incluso si el preset no tiene
+        // blackboards que restaurar), esta sesión ya ha hecho su intento real de restauración.
+        _hasRestoredBlackboardsThisSession = true;
 
         var profile = GameBootService.Profile;
         if (profile == null)

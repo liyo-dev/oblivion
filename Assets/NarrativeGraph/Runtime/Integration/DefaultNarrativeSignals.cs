@@ -365,6 +365,32 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
         else _custom[key] = cb;
     }
 
+    /// <summary>
+    /// FIX A5 (auditoría 2026-08-07): "devuelve" una señal custom a _pending/_raised sin
+    /// invocar a ningún suscriptor — a diferencia de RaiseCustom, que si hay oyentes activos en
+    /// _custom los invoca de inmediato. Pensado para el caso en que un suscriptor consumió una
+    /// señal desde OnCustom() (porque ya estaba pendiente/persistida al suscribirse) pero decide
+    /// que no era para él (p.ej. NPCInteractiveNarrativeExecutor.OnCustomEventReceived
+    /// descartándola por singleUse ya ejecutado): el consumo en OnCustom es "primero en
+    /// suscribirse, se la lleva", así que si el ejecutor legacy Interactive se suscribe antes de
+    /// que el WaitCustomEventNode del grafo lo haga (orden normal durante la carga: el executor
+    /// se re-suscribe en OnSignalsReset antes de que los runners restauren blackboards), la señal
+    /// se perdía para siempre aunque el grafo la necesitara. Requeue-sin-invocar es seguro de
+    /// llamar incluso desde dentro del propio callback que la consumió: no puede re-disparar al
+    /// mismo suscriptor en el mismo stack porque no invoca nada, solo la deja disponible para la
+    /// próxima llamada a OnCustom() de cualquier futuro suscriptor real.
+    /// </summary>
+    public void RequeueCustom(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return;
+
+        _pending.Add(key);
+        _raised.Add(key);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Record(key, SignalStatus.Queued, "reencolada sin invocar (consumidor la descartó, ver RequeueCustom)");
+#endif
+    }
+
     public void OffCustom(string key, Action cb)
     {
         if (string.IsNullOrWhiteSpace(key) || cb == null) return;

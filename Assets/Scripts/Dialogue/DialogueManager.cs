@@ -320,6 +320,21 @@ public class DialogueManager : MonoBehaviour
     {
         if (asset == null || asset.lines == null || asset.lines.Length == 0) return;
 
+        // FIX C1 (auditoría 2026-08-07): StartDialogue pisaba _current/_onEnd sin avisar al
+        // llamador anterior. PlayDialogueNode del grafo narrativo espera el callback con
+        // `while (!completed) yield return null`; si otro sistema abría diálogo antes de que
+        // terminara (típico: post-action de quest + siguiente nodo del grafo al completarla),
+        // el que llegaba segundo se quedaba con el diálogo y el primer callback no se invocaba
+        // nunca — la rama del grafo quedaba bloqueada para siempre. El diálogo nuevo sigue
+        // ganando (mismo comportamiento de antes); la diferencia es que ya no deja a nadie
+        // esperando un callback que no iba a llegar.
+        if (IsOpen && _onEnd != null)
+        {
+            var previousOnEnd = _onEnd;
+            _onEnd = null;
+            previousOnEnd.Invoke();
+        }
+
         ClearActiveSpeakerAnimations();
         _current = asset;
         _onEnd = onFinished;
@@ -859,7 +874,7 @@ public class DialogueManager : MonoBehaviour
             else
                 textToShow = string.Empty;
         }
-        _currentText = textToShow;
+        _currentText = ProtectSpriteTagsFromWordWrap(PinSpriteTagsToExplicitAsset(textToShow));
 
         // --- PORTRAIT (se mantiene si viene null) ---
         if (portraitImage && line.portrait != null)
@@ -876,9 +891,17 @@ public class DialogueManager : MonoBehaviour
             if (useTypewriter)
             {
                 if (verboseLogging) Debug.Log($"[DialogueManager] TYPEWRITER ACTIVADO - Texto: '{_currentText}' ({_currentText.Length} chars) - Velocidad: {charsPerSecond} chars/s");
-                bodyText.ForceMeshUpdate();
-                bodyText.maxVisibleCharacters = 0;
-                _typeRoutine = StartCoroutine(TypeRoutine());
+                if (TryForceMeshUpdate())
+                {
+                    bodyText.maxVisibleCharacters = 0;
+                    _typeRoutine = StartCoroutine(TypeRoutine());
+                }
+                else
+                {
+                    // ForceMeshUpdate falló (ver TryForceMeshUpdate) - renunciamos al typewriter
+                    // para esta línea y mostramos el texto completo en vez de dejar el diálogo roto.
+                    bodyText.maxVisibleCharacters = int.MaxValue;
+                }
             }
             else
             {
@@ -897,8 +920,21 @@ public class DialogueManager : MonoBehaviour
         HideSubmitHint();
         
         // Asegurar mesh info
-        bodyText.ForceMeshUpdate();
-        int total = bodyText.textInfo.characterCount;
+        int total;
+        if (TryForceMeshUpdate())
+        {
+            total = bodyText.textInfo.characterCount;
+        }
+        else
+        {
+            // ForceMeshUpdate falló a mitad de la corrutina (ver TryForceMeshUpdate) - abortamos
+            // el typewriter y mostramos el texto completo en vez de quedarnos a medio escribir.
+            bodyText.maxVisibleCharacters = int.MaxValue;
+            _isTyping = false;
+            _typeRoutine = null;
+            ShowSubmitHintWithAnimation();
+            yield break;
+        }
         int shown = 0;
         int charactersSinceLastSound = 0;
         if (charsPerSecond <= 0f) charsPerSecond = 35f;
@@ -947,8 +983,7 @@ public class DialogueManager : MonoBehaviour
     {
         if (!bodyText) return;
         StopTypewriter();
-        bodyText.ForceMeshUpdate();
-        bodyText.maxVisibleCharacters = bodyText.textInfo.characterCount;
+        bodyText.maxVisibleCharacters = TryForceMeshUpdate() ? bodyText.textInfo.characterCount : int.MaxValue;
         
         // Marcar el momento en que se completó la línea para ignorar inputs inmediatos
         _lastLineCompletedAt = Time.unscaledTime;
@@ -966,6 +1001,89 @@ public class DialogueManager : MonoBehaviour
             _typeRoutine = null;
         }
         _isTyping = false;
+    }
+
+    // Bug conocido de TextMeshPro (com.unity.ugui, TMP_Text.SaveSpriteVertexInfo): puede lanzar
+    // NullReferenceException al generar el mesh de un texto con un tag <sprite> resuelto por la
+    // cadena de fallbackSpriteAssets (m_currentSpriteAsset/spriteSheet quedan null en un repaso
+    // interno de GenerateTextMesh). Sin fix oficial de Unity — solo mitigaciones. Documentado en
+    // TDD.md § 13 (bug U1).
+    //
+    // 2026-08-12 — CORRECCIÓN: la capa 0 (PinSpriteTagsToExplicitAsset, que reescribía
+    // <sprite name="X"> a <sprite="X" name="X">) se ha DESACTIVADO porque, revisando el código
+    // fuente real de TMP (Library/PackageCache/com.unity.ugui@.../Runtime/TMP/TMP_Text.cs, case
+    // MarkupTag.SPRITE, y TMP_SpriteAsset.cs), resulta que el <sprite="AssetName" ...> explícito y
+    // el <sprite name="X"> a secas NO usan la misma resolución:
+    //   - <sprite name="X">  → TMP_SpriteAsset.SearchForSpriteByHashCode(), que SÍ recorre
+    //     spriteAsset.fallbackSpriteAssets recursivamente buscando el CARÁCTER "X". Es la vía que
+    //     funciona con DialogueIcons.asset tal y como está montado (start, algas, boots,
+    //     interactable_* viven en sub-assets fallback individuales).
+    //   - <sprite="AssetName" name="X"> → busca un ASSET (no un carácter) llamado "AssetName" en
+    //     MaterialReferenceManager (un registro global de assets ya "vistos"); si no está ahí,
+    //     intenta Resources.Load(TMP_Settings.defaultSpriteAssetPath + "AssetName") ("Sprite
+    //     Assets/AssetName"). NUNCA mira fallbackSpriteAssets del asset asignado al text object. Los
+    //     sub-assets de icono (Assets/Art/UI/DialogueIcons/start.asset, algas.asset, etc.) no viven
+    //     en ninguna carpeta Resources ni están pre-registrados en MaterialReferenceManager, así que
+    //     esa búsqueda SIEMPRE falla → el tag entero se considera inválido y TMP lo imprime tal cual
+    //     como texto plano (exactamente el síntoma reportado: "<sprite="start" name="start">"
+    //     visible en pantalla en vez del icono).
+    // O sea: la capa 0 no solo no evitaba el crash (no hay evidencia de que lo evitara — nunca
+    // llegaba a resolver el sprite por esa vía), sino que rompía SIEMPRE el renderizado normal de
+    // cualquier icono en fallback. Se deja PinSpriteTagsToExplicitAsset como no-op (por si algo más
+    // la llama) y el texto vuelve a pasar por la resolución por CARÁCTER de TMP, que es la que de
+    // verdad funciona con el montaje actual de DialogueIcons.asset. Las capas 1 y 2 seguían de todos
+    // modos: <nobr> sigue evitando el corte de línea a mitad de tag, y TryForceMeshUpdate sigue
+    // capturando el NullReferenceException si llegase a saltar (no lo cambia esta corrección).
+    //
+    // Arreglo definitivo si el NRE de SaveSpriteVertexInfo volviera a aparecer en consola: mover el
+    // glyph del icono afectado a la tabla PROPIA de DialogueIcons.asset (como ya está "interactable_A")
+    // en vez de dejarlo solo como sub-asset fallback — así ni siquiera hace falta recorrer la cadena
+    // de fallbacks para encontrarlo. Requiere el Editor de Unity, no se puede hacer editando el
+    // .asset a mano seguro.
+    private static readonly System.Text.RegularExpressions.Regex _spriteTagRegex =
+        new System.Text.RegularExpressions.Regex("<sprite[^>]*>", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    // Solo captura tags "cortos" tipo <sprite name="X">, que es la única forma que usa este
+    // proyecto (ver DialogueIconHelper.cs, obsoleto, y las líneas de Assets/Resources/Localization).
+    // Si el tag ya trae un valor explícito (<sprite="Y" name="X">) o usa índice (<sprite=0>) no
+    // matchea y se deja tal cual.
+    private static readonly System.Text.RegularExpressions.Regex _spriteNameOnlyRegex =
+        new System.Text.RegularExpressions.Regex(
+            "<sprite\\s+name\\s*=\\s*\"([^\"]+)\"",
+            System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    // No-op desde 2026-08-12 (ver comentario grande arriba): reescribir a <sprite="X" name="X">
+    // rompía la resolución del sprite en vez de arreglarla. Se deja el método (en vez de borrar la
+    // llamada en ShowLine) para que sea fácil de revertir/experimentar sin tocar más sitios.
+    private static string PinSpriteTagsToExplicitAsset(string text)
+    {
+        return text;
+    }
+
+    private static string ProtectSpriteTagsFromWordWrap(string text)
+    {
+        if (string.IsNullOrEmpty(text) || !text.Contains("<sprite"))
+            return text;
+        return _spriteTagRegex.Replace(text, m => "<nobr>" + m.Value + "</nobr>");
+    }
+
+    private bool TryForceMeshUpdate()
+    {
+        try
+        {
+            bodyText.ForceMeshUpdate();
+            return true;
+        }
+        catch (NullReferenceException ex)
+        {
+            // LogWarning (no LogError) a propósito: este catch ya deja el diálogo en un estado
+            // usable (ver arriba), así que no es un error que deba parar el Play Mode con "Error
+            // Pause" activado en la consola durante el playtesting. Sigue siendo visible en la
+            // consola para detectar si la capa 0 (PinSpriteTagsToExplicitAsset) deja algún caso
+            // sin cubrir.
+            Debug.LogWarning($"[DialogueManager] ForceMeshUpdate() falló (bug conocido de TMP con <sprite> + fallback sprite assets, ver TDD.md § 13 U1). Texto: '{_currentText}'. Excepción: {ex}");
+            return false;
+        }
     }
     
     private void HideSubmitHint()

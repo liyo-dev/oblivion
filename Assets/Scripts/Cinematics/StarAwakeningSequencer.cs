@@ -55,6 +55,13 @@ public class StarAwakeningSequencer : CinematicSequencerBase
     [Header("Sistemas")]
     [SerializeField] private PanicInputDetector     panicInputDetector;
     [SerializeField] private PanicInputUI           panicInputUI;
+    [Tooltip("OBSOLETO como fuente principal (Agosto 2026): este set solo contiene el icono de " +
+             "South/Interactuar (E en teclado) — MISMO asset que usa Interactable " +
+             "(Assets/_UI/InteractionHintIconSet.asset). panicInputDetector.panicAction NO está atado " +
+             "a Interact, así que el icono real se resuelve ahora con InputGlyphService/" +
+             "InputGlyphNames.West (ver OnPanicIconResolved). Se deja este campo solo como fallback " +
+             "si InputGlyphService no devuelve nada; panicButtonSprite es el último respaldo fijo.")]
+    [SerializeField] private InteractionHintIconSet interactIconSet;
     [SerializeField] private Sprite                 panicButtonSprite;
     [SerializeField] private ShockEffectsController shockEffects;
 
@@ -268,10 +275,19 @@ public class StarAwakeningSequencer : CinematicSequencerBase
 
         if (playerSpawner != null) playerSpawner.enabled = false;
 
-        // Icono dinámico según el dispositivo activo (Xbox/PlayStation/Switch/Teclado); si el
-        // servicio todavía no tiene nada generado (p.ej. muy al principio del arranque del juego),
-        // cae al sprite fijo configurado en el Inspector como respaldo.
-        var panicIcon = InputGlyphService.GetSprite(InputGlyphNames.South) ?? panicButtonSprite;
+        // FIX (Agosto 2026): antes este icono se resolvía SIEMPRE contra interactIconSet, que solo
+        // tiene arte de South/Interactuar (E en teclado) — el jugador veía "pulsa E" en pantalla
+        // aunque panicInputDetector.panicAction está atado a AttackMagicWest (ratón izquierdo en
+        // Teclado&Ratón / botón West en mando), el mismo botón con el que Will lanza magia en el
+        // resto del juego. Coincide con el sprite "interactable_x" que ya usa el texto de Eldran en
+        // EVT_08 ("...presiona <sprite name=\"interactable_x\">..."). Se resuelve ahora con
+        // InputGlyphService, que sí sabe dar el icono correcto (West) por familia de dispositivo
+        // activa; interactIconSet/panicButtonSprite quedan solo como red de seguridad si el servicio
+        // no devuelve nada. Si panicAction cambia de acción alguna vez, actualizar
+        // InputGlyphNames.West por la constante que corresponda.
+        var panicIcon = InputGlyphService.GetSprite(InputGlyphNames.West)
+                         ?? (interactIconSet != null ? interactIconSet.GetSprite(InputGlyphService.CurrentFamily) : null)
+                         ?? panicButtonSprite;
         if (panicInputUI == null)
             panicInputUI = PanicInputUI.GetOrCreate(panicIcon);
         else

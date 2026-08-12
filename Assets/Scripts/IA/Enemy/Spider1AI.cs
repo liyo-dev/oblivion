@@ -54,6 +54,10 @@ public class Spider1AI : MonoBehaviour
     private bool isDead = false;
     private float originalSpeed;
     private float _targetRefreshTimer;
+    // FIX A11 (auditoría 2026-08-07): referencia real a la corrutina de ataque activa, para poder
+    // cancelarla de verdad desde OnDamageTaken. Antes había un método StopCoroutineSafe() que era
+    // un no-op vacío: el daño se aplicaba igual aunque la araña estuviera en stun.
+    private Coroutine _attackCoroutine;
 
     // Hash de animaciones
     private static readonly int AnimIdle = Animator.StringToHash("Idle");
@@ -165,7 +169,7 @@ public class Spider1AI : MonoBehaviour
             // Decidir si atacar o perseguir
             if (distanceToPlayer <= attackRange && !isAttacking)
             {
-                StartCoroutine(AttackPlayer());
+                _attackCoroutine = StartCoroutine(AttackPlayer()); // FIX A11 (auditoría 2026-08-07): guardar referencia real
             }
             else if (distanceToPlayer > attackRange && currentState == SpiderState.Chasing)
             {
@@ -398,9 +402,18 @@ public class Spider1AI : MonoBehaviour
     {
         if (isDead) return;
 
-        // Cancelar ataque en curso
+        // FIX A11 (auditoría 2026-08-07): "Cancelar ataque en curso" antes llamaba a
+        // StopCoroutineSafe(AttackPlayer()) — AttackPlayer() construye un IEnumerator NUEVO (no
+        // ejecuta nada por sí solo) y StopCoroutineSafe era un no-op vacío: la corrutina de
+        // ataque real (iniciada más arriba con StartCoroutine) seguía viva y aplicaba el daño de
+        // todas formas aunque la araña acabara de recibir un golpe y entrara en stun. Ahora se
+        // detiene la corrutina real, guardada en _attackCoroutine al iniciarla.
         isAttacking = false;
-        StopCoroutineSafe(AttackPlayer());
+        if (_attackCoroutine != null)
+        {
+            StopCoroutine(_attackCoroutine);
+            _attackCoroutine = null;
+        }
 
         if (stopOnHit)
         {
@@ -470,12 +483,6 @@ public class Spider1AI : MonoBehaviour
             // Volver al estado anterior/patrulla de forma segura
             if (patrolEnabled) SetNewPatrolTarget(); else { currentState = SpiderState.Idle; idleTimer = idleTime; }
         }
-    }
-
-    private void StopCoroutineSafe(IEnumerator routine)
-    {
-        // Helper para detener posibles corutinas de ataque sin lanzar excepciones
-        // No tenemos referencia directa, el ataque se autorregula por flags.
     }
 
     private void OnDeath()

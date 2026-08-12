@@ -15,6 +15,7 @@ Toda la documentación técnica detallada está en **`TDD.md`** (fuente de verda
   - `PlayerService` → -900
   - `ServiceLocator` → -800
   - `WorldBootstrap` → +200
+- **Start → MainMenu:** el GameObject `START_BootLoader` en `Start.unity` lleva el componente `BootLoader.cs` (`sceneToLoad: MainMenu`), que hace `SceneManager.LoadScene("MainMenu")` (no aditivo) en su `Start()`. No hay condición de carrera con `GameBootService`: todos los `Awake()` de la escena (incluido el de `GameBootService`, execution order -1000) se ejecutan antes que cualquier `Start()`, así que el arranque ya está resuelto cuando `BootLoader` dispara la carga. Los managers persistentes sobreviven por ser `DontDestroyOnLoad`. (Verificado Agosto 2026 — antes no estaba documentado aquí.)
 
 ---
 
@@ -30,6 +31,8 @@ Toda la documentación técnica detallada está en **`TDD.md`** (fuente de verda
 - `StartCoroutine(...)` sin comprobar si ya hay una corriendo — acumula corrutinas
 - `SetActive(...)` sin guard de estado previo — dispara layout rebuilds
 
+**VFX de un solo uso (impacto, explosión, despawn):** nunca `Instantiate(...); Destroy(fx, t)` directo — usar `VfxPoolService.Instance.Play(prefab, pos, rot, lifetime)` (`Core/Pooling/VfxPoolService.cs`). Ver TDD.md § 12 "Instancias y pools" para el patrón completo y la lista de sitios aún pendientes de migrar.
+
 **Physics:**
 ```csharp
 // NUNCA:
@@ -38,6 +41,13 @@ Collider[] hits = Physics.OverlapSphere(pos, radius);
 private readonly Collider[] _buffer = new Collider[32];
 int count = Physics.OverlapSphereNonAlloc(pos, radius, _buffer, layerMask);
 ```
+
+**Distinguir personajes de geometría en raycasts/obstrucciones:** los personajes (player, NPCs, party members) no tienen una capa propia — todos viven en `Default` junto con la mayoría de la geometría estática del mundo (confirmado en `Prefabs/_LIAM.prefab`, todo a `m_Layer: 0`). Por eso la capa sola no sirve para que un raycast de "¿hay pared/puerta en medio?" ignore a los personajes. Usar `NPCSimpleAnimator` como marcador fiable: lo tiene el player y TODOS los NPCs (mismo criterio que ya usa `DialogueManager.IsActualNPC`), y ningún objeto de escenario (puertas, muebles, props). Patrón:
+```csharp
+Transform root = hit.collider.transform.root;
+if (root.GetComponent<NPCSimpleAnimator>() != null) continue; // es un personaje, no una obstrucción
+```
+Ejemplo real: `PlayerParty.FindClearDialogueFormationPosition` — evita teletransportar a un party member al otro lado de una puerta cerrada al posicionarlo para un diálogo (bug: NPC hablando desde detrás de una puerta, cámara pegada a la hoja).
 
 **Logging:**
 ```csharp
@@ -116,20 +126,20 @@ El `Advance()` ya maneja fork detection. El `WaitCustomEventNode` ya tiene su me
 
 Estos bugs están documentados en **TDD.md § 13**. No introducir más instancias del mismo patrón y no asumir que son accidentales.
 
-### Críticos (pendientes de corrección)
+### Críticos (todos resueltos — verificado Julio 2026)
 
-| # | Archivo | Descripción breve |
-|---|---------|-------------------|
-| C1 | `Audio/AudioService.cs` | `StopAllCoroutines()` en `PlayMusic` destruye corrutinas del pool SFX → leak de AudioSource |
-| C2 | `Core/SaveSystem.cs:28` | `File.WriteAllText` no atómico → save corrupto si hay crash |
-| C3 | `Quests/QuestManager.cs:921` | `FindObjectsByType` en cada evento de inventario → O(n×m) |
-| C4 | `Player/MagicCaster.cs:53` | `new List<MagicSlot>(_slotCooldowns.Keys)` en `Update` → GC cada frame |
-| C5 | `Player/PlayerBattleModeController.cs:278` | 3× `GetComponentInChildren` en `Update` por collider |
-| C6 | `Attacks/MagicProjectil.cs:229` | `OverlapSphereNonAlloc` en `Update` por cada proyectil en vuelo |
+El catálogo de Mayo 2026 quedó desactualizado; una pasada de optimización posterior ("Fase 2") corrigió C1-C6 sin volcarlo de vuelta a esta tabla. Antes de "arreglar" algo de aquí, comprobar primero el archivo actual.
+
+- **C1** `Audio/AudioService.cs` — ya no usa `StopAllCoroutines()` en `PlayMusic`. Existe `StopMusicCoroutines()` dedicado que solo detiene las corrutinas de música por referencia explícita, sin tocar el pool SFX (comentario explícito en el código sobre por qué).
+- **C2** `Core/SaveSystem.cs` — escritura atómica: escribe a `.tmp` y hace `File.Move` al path final. Un crash a mitad de escritura deja el save anterior intacto.
+- **C3** `Quests/QuestManager.cs` — `OnInventoryItemAdded` usa `FindQuestChainEntry`, que consulta un índice cacheado (`_questChainIndex`) reconstruido solo cuando está `dirty` (cambio de escena), no en cada evento de inventario.
+- **C4** `Attacks/MagicCaster.cs` — `Update()` itera el array estático `AllSlots` sin allocar.
+- **C5** `Player/PlayerBattleModeController.cs` — `DetectEnemiesNearby()` usa `ActiveCombatRegistry.Count`, O(1).
+- **C6** `Attacks/MagicProjectil.cs` — el `OverlapSphereNonAlloc` solo se llama al resolver un impacto, no en `Update`.
 
 ### Importantes (I1–I17)
 
-Ver tabla completa en TDD.md § 13. Incluyen: grace period de diálogos (I1), GetComponent por línea de diálogo (I2), corrutinas acumuladas en MagicSlotsUI (I3), listeners duplicados en PlayerHealthUI (I4), locks innecesarios en CollectiblePopupQueue (I5), HashSet allocation en MenuManager.AnyOpenExcept (I6), Reflection en ShopUI/PlayerActionManager/PlayerLevitationController (I7–I9), corrutina sin timeout en GameBootService (I10), FogZone variables estáticas (I12), SimpleCinematicDirector timeScale (I14), Invoke no cancelado en PlayerCarrySystem (I15), doble daño en MagicProjectil (I16), Resources.LoadAll en Inventory fallback (I17).
+Ver tabla completa en TDD.md § 13. **La mayoría ya está resuelta** (verificado Julio 2026, más I10/I12/I13 verificados Agosto 2026): I2, I3, I4, I6, I7, I8, I10, I11, I13, I15, I16, I17. I12 no era un bug (renombrado a `AmbientZone`, solo quedaba un tooltip desactualizado, ya corregido). Genuinamente pendientes o sin verificar: I1 (grace period diálogos, UX), I5 (locks residuales en paths de error, impacto ≈0), I9 (reflection cacheada en `PlayerFlyingController`, solo 2 llamadas por vuelo, impacto ≈0), I14 (`Time.timeScale` en SimpleCinematicDirector, probablemente mitigado pero no confirmado al 100%).
 
 ---
 
@@ -147,3 +157,14 @@ Ver tabla completa en TDD.md § 13. Incluyen: grace period de diálogos (I1), Ge
 | Escenas de test | `Assets/Scenes/Test/` |
 | Presets de testing | `Assets/_BootProfile/` |
 | Debug visual en runtime | F3 (NPCs), F4 (panel general) |
+
+---
+
+## 7. Convivencia Interactive ↔ Grafo narrativo — política formal
+
+El proyecto tiene **dos motores narrativos en paralelo**: `NarrativeGraph`/`NarrativeRunner` y el sistema legacy "Interactive" (`NPCInteractiveNarrativeExecutor` + `NPCInteractiveNarrativeConfig`/`ConditionalNarrative`/`NarrativeCondition`), más `NPCQuestConfig` para diálogo-por-estado-de-quest fuera del grafo. Un intento de unificarlos en un único sistema rompió el juego (Agosto 2026); con el proyecto tan avanzado, **no se intenta fusionarlos**. En su lugar:
+
+- **`NPCInteractiveNarrativeExecutor` queda congelado.** No añadir `NarrativeActionType` nuevos ni NPCs nuevos a su catálogo (`ConditionalNarrative`/`NPCInteractiveNarrativeConfig`).
+- **Todo NPC o quest nueva se construye en `NarrativeGraph`.** Usa los nodos ya existentes (`StartQuestNode`, `CompleteQuestStepsNode`, `PlayDialogueNode`, `WaitCustomEventNode`, etc.). El puente `NPCBrain.HandleInteraction()` ya emite `NPC_INTERACT_{persistenceId}` por `DefaultNarrativeSignals` en cada interacción, así que un grafo puede reaccionar a "hablar con NPC X" sin tocar el executor legacy.
+- **Antes de dar por buena una entrega**, correr `El Sendero/Narrativa/Validar Interactive vs Grafo (proyecto completo)` (`Assets/NarrativeGraph/Editor/Validation/CrossSystemNarrativeValidator.cs`). Avisa si la misma quest o el mismo evento custom está referenciado a la vez por el grafo y por el sistema Interactive sin estar enlazado — el mismo patrón que causó INC-020 (consumo duplicado de ítems de quest en dos sitios que no se conocían entre sí).
+- Los NPCs existentes que ya funcionan con `NPCQuestConfig`/`NPCInteractiveNarrativeConfig` **no se migran** salvo que se toquen por otro motivo. No es deuda urgente, es una decisión de arquitectura aceptada.

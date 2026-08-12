@@ -49,6 +49,10 @@ public class PartyControlManager : MonoBehaviour
     private bool _isPartyFollowing = true;
     private bool _switchingLocked;
     private int _pendingSlotToRestore = -1;
+    // FIX A12 (auditoría 2026-08-07): resuelto perezosamente vía ServiceLocator (mismo patrón que
+    // CinematicSequencerBase.ResolveActionManager) para poder gatear el swap de personaje por
+    // ActionMode — ver IsSwapAllowedByCurrentMode más abajo.
+    private PlayerActionManager _actionManager;
     #endregion
 
     #region Events
@@ -120,9 +124,29 @@ public class PartyControlManager : MonoBehaviour
     #endregion
 
     #region Character Switching
+
+    /// <summary>
+    /// FIX A12 (auditoría 2026-08-07): antes HandleInput solo comprobaba IsInUIMode antes de
+    /// permitir el swap — se podía cambiar de personaje en pleno vuelo/nado/carry/knockback,
+    /// aplicando el controller a un personaje que quizá no tiene esa habilidad activa, con los
+    /// modos de PlayerActionManager aún apilados sobre el personaje anterior. Solo se permite el
+    /// swap si el modo activo es el "reposo" normal del gameplay (Default) o Combat — cualquier
+    /// otro modo (Flying, Swimming, Carrying, Stunned, Cinematic, UsingWorldPoint...) lo bloquea.
+    /// </summary>
+    private bool IsSwapAllowedByCurrentMode()
+    {
+        if (_actionManager == null)
+            _actionManager = ServiceLocator.Get<PlayerActionManager>(logIfMissing: false);
+        if (_actionManager == null) return true; // sin manager resuelto, no bloquear por esto
+
+        var top = _actionManager.Top;
+        return top == ActionMode.Default || top == ActionMode.Combat;
+    }
+
     private void TrySwitchLeft()
     {
         if (_switchingLocked) { Debug.LogWarning($"[PartyControlManager] DPad-Left ignorado — switching BLOQUEADO. _activeIndex={_activeIndex}"); return; }
+        if (!IsSwapAllowedByCurrentMode()) { Debug.LogWarning($"[PartyControlManager] DPad-Left ignorado — ActionMode actual no permite swap ({_actionManager?.Top})."); return; }
 
         Debug.Log($"[PartyControlManager] TrySwitchLeft — _activeIndex={_activeIndex}");
         for (int i = _activeIndex - 1; i >= 0; i--)
@@ -139,6 +163,7 @@ public class PartyControlManager : MonoBehaviour
     private void TrySwitchRight()
     {
         if (_switchingLocked) { Debug.LogWarning($"[PartyControlManager] DPad-Right ignorado — switching BLOQUEADO. _activeIndex={_activeIndex}"); return; }
+        if (!IsSwapAllowedByCurrentMode()) { Debug.LogWarning($"[PartyControlManager] DPad-Right ignorado — ActionMode actual no permite swap ({_actionManager?.Top})."); return; }
 
         Debug.Log($"[PartyControlManager] TrySwitchRight — _activeIndex={_activeIndex}");
         for (int i = _activeIndex + 1; i <= 2; i++)

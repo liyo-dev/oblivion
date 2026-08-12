@@ -94,13 +94,22 @@ namespace Game.NPC.States
         
         public override Common.INPCState CheckTransitions(Common.NPCStateContext context)
         {
+            // FIX C5 (auditoría 2026-08-07): todos los demás estados de la FSM (Idle, Combat,
+            // Alert, Wander, SeekShelter, WalkToActivity, ReturnFromShelter, SocialEncounter...)
+            // comprueban WasDefeatedInCombat primero y van a DeadState; CinematicState era la
+            // única excepción. Un NPC que muere durante una cinemática (p.ej. golpeado por un AoE
+            // mientras Cleanup/ForceEnterCombat todavía no filtraban por IsInCinematic — ver el
+            // gate añadido en NPCBehaviourManagerV2.ForceEnterCombat) quedaba atrapado en
+            // cinemática en vez de pasar a DeadState al terminar la secuencia.
+            if (context.WasDefeatedInCombat) return new DeadState();
+
             // El estado cinemático solo termina cuando la secuencia se completa
             if (_sequenceCompleted || _currentSequence == null)
             {
                 context.Log($"[{StateName}] Secuencia finalizada, volviendo a Idle");
                 return new IdleState();
             }
-            
+
             return null; // Continuar en cinemática
         }
         
@@ -567,19 +576,29 @@ namespace Game.NPC.States
                 _owner.StopCoroutine(_activeCoroutine);
                 _activeCoroutine = null;
             }
-            
+
             RestoreObstacleAvoidance(context);
             ReleasePlayerLock();
-            
+
             if (context.Agent != null)
             {
                 Common.NavMeshAgentUtility.HardStop(context.Agent);
             }
-            
+
             if (context.Animator != null)
             {
                 context.Animator.ResetMovement();
             }
+
+            // FIX C5 (auditoría 2026-08-07): esta limpieza FORZADA (salida del estado a mitad de
+            // secuencia: el NPC entra en combate, muere, cambia de escena...) no marcaba
+            // IsCompleted — solo lo hacía CleanupAndComplete(), la salida NATURAL. Cualquier
+            // secuenciador esperando con `while (!seq.IsCompleted) yield return null;`
+            // (WaitForSequence en NPCBehaviourManagerV2 y los sequencers que encadenan pasos vía
+            // onComplete, p.ej. MountainSequencer/ReinoExitBanterSequencer) se quedaba esperando
+            // para siempre. Marcarlo aquí también hace que esa espera termine igual que si la
+            // secuencia hubiera acabado por su cuenta.
+            IsCompleted = true;
         }
         
         /// <summary>

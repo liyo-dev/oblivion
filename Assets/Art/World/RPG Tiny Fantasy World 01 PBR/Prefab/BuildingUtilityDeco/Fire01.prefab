@@ -132,10 +132,12 @@ MonoBehaviour:
   hint: {fileID: 1323298225229417685}
   hideHintAtStart: 1
   hintAnimDuration: 0.25
+  iconSet: {fileID: 11400000, guid: 9120cc0f8d6f411aa56d4ef968de44c5, type: 2}
   singleUse: 0
   initiallyEnabled: 1
   persistentIdOverride: 
   includeSceneInPersistentId: 1
+  dialogueCharacterId: 
   dialogue: {fileID: 0}
   yesOption: {fileID: 11400000, guid: 893e5eb91f75c2445bcd4ca4bad32fe9, type: 2}
   noOption: {fileID: 11400000, guid: 987eb1a8d60d8e34e85f3ff7476919b4, type: 2}
@@ -172,7 +174,9 @@ MonoBehaviour:
   waitForDayDialogue: {fileID: 11400000, guid: 3876c47b6b57f2d4abb5354b948f9042, type: 2}
   nightTarget: 7
   dayTarget: 6
-  immediate: 0
+  fadeOutDuration: 0.4
+  holdDuration: 0.15
+  fadeInDuration: 0.6
 --- !u!1 &1323298225229417685
 GameObject:
   m_ObjectHideFlags: 0

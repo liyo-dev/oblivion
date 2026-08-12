@@ -21,7 +21,6 @@ public class BossProgressPersistenceBridge : MonoBehaviour
         go.AddComponent<BossProgressPersistenceBridge>();
     }
 
-    private bool _initialized;
     private static BossProgressPersistenceBridge _instance;
 
     private void OnEnable()
@@ -64,7 +63,6 @@ public class BossProgressPersistenceBridge : MonoBehaviour
         yield return null;
         
         Debug.Log("[BossProgressPersistenceBridge] ✅ BossProgressTracker listo - Inicializando estado vacío para testing");
-        _initialized = true;
     }
 
     private void OnDisable()
@@ -81,10 +79,14 @@ public class BossProgressPersistenceBridge : MonoBehaviour
 
     private void HandleProfileReady()
     {
-        if (_initialized) return;
+        // FIX M6 (auditoría 2026-08-07): antes, tras la primera vez, este handler se desuscribía
+        // de OnProfileReady y no volvía a aplicar el preset al tracker. ReloadTestPreset() (el
+        // flujo de testeo que se usa a diario) vuelve a invocar OnProfileReady confiando en que
+        // todo se reaplique — pero este bridge, al haberse desuscrito, dejaba el
+        // BossProgressTracker con el estado de la carga anterior: tras derrotar un boss y
+        // recargar el preset de testeo, el boss seguía marcado como derrotado. Ahora se reaplica
+        // en cada disparo del evento, no solo el primero.
         ApplyPresetToTracker();
-        _initialized = true;
-        GameBootService.OnProfileReady -= HandleProfileReady;
     }
 
     private void ApplyPresetToTracker()

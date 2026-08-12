@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49248322a2a64e4490543dfb93c22a41, type: 3}
+  m_Name: InputGlyphFamilySpriteLibraryLink
+  m_EditorClassIdentifier: 
+  xbox: {fileID: 11400000, guid: 841ef50ae31f4df0a583a66a515d40fe, type: 2}
+  playStation: {fileID: 11400000, guid: ff035c73a03f4ce19495a688064f4ec7, type: 2}
+  switchConsole: {fileID: 11400000, guid: 2df16fae108c43e5ae8ee62f3c8af0b6, type: 2}
+  keyboardMouse: {fileID: 11400000, guid: 4225ca0b6ce54706b2b58b6bc5af8eda, type: 2}

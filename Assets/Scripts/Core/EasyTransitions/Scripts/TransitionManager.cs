@@ -19,6 +19,30 @@ namespace EasyTransition
         private static TransitionManager instance;
         private static bool duplicateWarningShown;
 
+        // FIX (auditoría 2026-08-11): Instance() logueaba LogError cada vez que 'instance' era
+        // null, sin distinguir un uso indebido real (llamar antes de que Awake() haya corrido) de
+        // un cierre normal del juego / salida de Play Mode. TransitionManager es DontDestroyOnLoad
+        // y se destruye junto con el resto de la escena al cerrar; el orden de destrucción entre
+        // objetos no está garantizado, así que varios OnDestroy() de otros sistemas (sequencers de
+        // cinemática, TeleportService, ...) que consultan TransitionManager.Instance() para
+        // desuscribirse de sus eventos podían ejecutarse DESPUÉS de que este objeto ya se hubiera
+        // destruido a sí mismo, generando un LogError en cada cierre de partida/salida de Play Mode
+        // aunque no hubiera ningún bug real. applicationIsQuitting distingue ambos casos: Unity
+        // envía OnApplicationQuit a todos los objetos activos (también al salir de Play Mode en el
+        // Editor) ANTES de empezar a destruirlos, así que el flag ya está activo cuando esos otros
+        // OnDestroy() se ejecutan.
+        private static bool applicationIsQuitting;
+
+#if UNITY_EDITOR
+        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            instance = null;
+            duplicateWarningShown = false;
+            applicationIsQuitting = false;
+        }
+#endif
+
         private void Awake()
         {
             // Robust singleton: si ya existe otra instancia, destruir esta y conservar la original.
@@ -42,6 +66,13 @@ namespace EasyTransition
             }
         }
 
+        private void OnApplicationQuit()
+        {
+            // Ver comentario de applicationIsQuitting arriba: llega antes que los OnDestroy() de
+            // todos los demás objetos, tanto al cerrar el build como al salir de Play Mode.
+            applicationIsQuitting = true;
+        }
+
         private void OnDestroy()
         {
             if (instance == this)
@@ -54,7 +85,15 @@ namespace EasyTransition
         public static TransitionManager Instance()
         {
             if (instance == null)
-                Debug.LogError("You tried to access the instance before it exists.");
+            {
+                // Durante el cierre del juego / salida de Play Mode es normal y esperable que
+                // otros OnDestroy() consulten esto después de que la instancia ya no exista: no es
+                // un error, así que no se loguea (evita el spam "You tried to access the instance
+                // before it exists." en cada cierre de partida).
+                if (!applicationIsQuitting)
+                    Debug.LogError("You tried to access the instance before it exists.");
+                return null;
+            }
 
             return instance;
         }
@@ -130,100 +169,114 @@ namespace EasyTransition
             return SceneManager.GetSceneByName(sceneName).buildIndex;
         }
 
+        // FIX Bajos (auditoría 2026-08-07): las tres corrutinas Timer solo ponían
+        // runningTransition = false al final del bloque "feliz". Si cualquier suscriptor de
+        // onTransitionBegin/onTransitionCutPointReached/onTransitionEnd lanzaba una excepción sin
+        // capturar, Unity aborta la corrutina en ese punto — el código de después (incluido el
+        // reset del flag) nunca se ejecuta, y runningTransition se queda en true para siempre:
+        // todas las transiciones futuras de todo el juego quedan bloqueadas silenciosamente
+        // ("Transition already running — ignoring new request."). Un try/finally (sin catch, así
+        // que yield return sigue siendo válido dentro del try) garantiza el reset pase lo que
+        // pase, sin ocultar la excepción original (Unity la sigue logueando igual).
         IEnumerator Timer(string sceneName, float startDelay, TransitionSettings transitionSettings)
         {
-            yield return new WaitForSecondsRealtime(startDelay);
+            try
+            {
+                yield return new WaitForSecondsRealtime(startDelay);
 
-            onTransitionBegin?.Invoke();
+                onTransitionBegin?.Invoke();
 
-            var template = Instantiate(transitionTemplate);
-            template.GetComponent<Transition>().transitionSettings = transitionSettings;
+                var template = Instantiate(transitionTemplate);
+                template.GetComponent<Transition>().transitionSettings = transitionSettings;
 
-            float transitionTime = transitionSettings.transitionTime;
-            if (transitionSettings.autoAdjustTransitionTime)
-                transitionTime = transitionTime / transitionSettings.transitionSpeed;
+                float transitionTime = transitionSettings.transitionTime;
+                if (transitionSettings.autoAdjustTransitionTime)
+                    transitionTime = transitionTime / transitionSettings.transitionSpeed;
 
-            yield return new WaitForSecondsRealtime(transitionTime);
+                yield return new WaitForSecondsRealtime(transitionTime);
 
-            onTransitionCutPointReached?.Invoke();
+                onTransitionCutPointReached?.Invoke();
 
+                SceneManager.LoadScene(sceneName);
 
-            SceneManager.LoadScene(sceneName);
+                yield return new WaitForSecondsRealtime(transitionSettings.destroyTime);
 
-            yield return new WaitForSecondsRealtime(transitionSettings.destroyTime);
-
-            onTransitionEnd?.Invoke();
-
-            // Asegurar que el flag se limpia al finalizar la transición que incluye carga de escena.
-            runningTransition = false;
+                onTransitionEnd?.Invoke();
+            }
+            finally
+            {
+                // Asegura que el flag se limpia siempre, incluso si algo de arriba lanzó.
+                runningTransition = false;
+            }
         }
 
         IEnumerator Timer(int sceneIndex, float startDelay, TransitionSettings transitionSettings)
         {
-            yield return new WaitForSecondsRealtime(startDelay);
+            try
+            {
+                yield return new WaitForSecondsRealtime(startDelay);
 
-            onTransitionBegin?.Invoke();
+                onTransitionBegin?.Invoke();
 
-            var template = Instantiate(transitionTemplate);
-            template.GetComponent<Transition>().transitionSettings = transitionSettings;
+                var template = Instantiate(transitionTemplate);
+                template.GetComponent<Transition>().transitionSettings = transitionSettings;
 
-            float transitionTime = transitionSettings.transitionTime;
-            if (transitionSettings.autoAdjustTransitionTime)
-                transitionTime = transitionTime / transitionSettings.transitionSpeed;
+                float transitionTime = transitionSettings.transitionTime;
+                if (transitionSettings.autoAdjustTransitionTime)
+                    transitionTime = transitionTime / transitionSettings.transitionSpeed;
 
-            yield return new WaitForSecondsRealtime(transitionTime);
+                yield return new WaitForSecondsRealtime(transitionTime);
 
-            onTransitionCutPointReached?.Invoke();
+                onTransitionCutPointReached?.Invoke();
 
-            SceneManager.LoadScene(sceneIndex);
+                SceneManager.LoadScene(sceneIndex);
 
-            yield return new WaitForSecondsRealtime(transitionSettings.destroyTime);
+                yield return new WaitForSecondsRealtime(transitionSettings.destroyTime);
 
-            onTransitionEnd?.Invoke();
-
-            // Asegurar que el flag se limpia al finalizar la transición que incluye carga de escena.
-            runningTransition = false;
+                onTransitionEnd?.Invoke();
+            }
+            finally
+            {
+                runningTransition = false;
+            }
         }
 
         IEnumerator Timer(float delay, TransitionSettings transitionSettings)
         {
-            yield return new WaitForSecondsRealtime(delay);
-
-            onTransitionBegin?.Invoke();
-
-            var template = Instantiate(transitionTemplate);
-            template.GetComponent<Transition>().transitionSettings = transitionSettings;
-
-            float transitionTime = transitionSettings.transitionTime;
-            if (transitionSettings.autoAdjustTransitionTime)
-                transitionTime = transitionTime / transitionSettings.transitionSpeed;
-
-            yield return new WaitForSecondsRealtime(transitionTime);
-
-            onTransitionCutPointReached?.Invoke();
-
-            template.GetComponent<Transition>().OnSceneLoad(SceneManager.GetActiveScene(), LoadSceneMode.Single);
-
-            yield return new WaitForSecondsRealtime(transitionSettings.destroyTime);
-
-            onTransitionEnd?.Invoke();
-
-            runningTransition = false;
-        }
-
-        private IEnumerator Start()
-        {
-            while (this.gameObject.activeInHierarchy)
+            try
             {
-                // Ensure only one TransitionManager instance exists using the singleton pattern
-                if (instance != this)
-                {
-                    Debug.LogError("[TransitionManager] Multiple TransitionManager instances detected. Ensure only one TransitionManager exists in the scene.");
-                }
+                yield return new WaitForSecondsRealtime(delay);
 
-                yield return new WaitForSecondsRealtime(1f);
+                onTransitionBegin?.Invoke();
+
+                var template = Instantiate(transitionTemplate);
+                template.GetComponent<Transition>().transitionSettings = transitionSettings;
+
+                float transitionTime = transitionSettings.transitionTime;
+                if (transitionSettings.autoAdjustTransitionTime)
+                    transitionTime = transitionTime / transitionSettings.transitionSpeed;
+
+                yield return new WaitForSecondsRealtime(transitionTime);
+
+                onTransitionCutPointReached?.Invoke();
+
+                template.GetComponent<Transition>().OnSceneLoad(SceneManager.GetActiveScene(), LoadSceneMode.Single);
+
+                yield return new WaitForSecondsRealtime(transitionSettings.destroyTime);
+
+                onTransitionEnd?.Invoke();
+            }
+            finally
+            {
+                runningTransition = false;
             }
         }
+
+        // FIX Bajos: este Start() era un poll infinito cada 1s que nunca podía detectar nada útil
+        // — cualquier instancia duplicada ya se destruye en Awake() antes de que su propio Start()
+        // llegue a correr, así que la única instancia que sobrevive para ejecutar este bucle
+        // siempre tiene instance == this. Se elimina: no aportaba protección real, solo trabajo
+        // per-tick indefinido durante toda la partida.
     }
 
 }

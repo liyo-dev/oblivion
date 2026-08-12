@@ -3340,7 +3340,22 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         public void SetVisible(bool value)
         {
             if (!value)
+            {
                 ResetAllHighlights();
+
+                // FIX M10 (auditoría 2026-08-07): a diferencia de InventoryView, EquipmentView no
+                // se desuscribía de OnWardrobeChanged al ocultarse — solo Dispose() lo hacía. Con
+                // el canvas oculto (otra pestaña activa) HandleWardrobeChanged seguía disparándose
+                // y refrescando la UI de esta vista sin que nadie la viera ("refrescos fantasma").
+                // Al limpiar _boundWardrobe aquí, Refresh() vuelve a suscribirse solo la próxima
+                // vez que la pestaña se muestre (ver el bloque `if (_activeTab == 2)` que llama a
+                // Refresh() justo después de SetVisible(true)).
+                if (_boundWardrobe != null)
+                {
+                    _boundWardrobe.OnWardrobeChanged -= HandleWardrobeChanged;
+                    _boundWardrobe = null;
+                }
+            }
             if (_ui.root != null)
                 _ui.root.SetActive(value);
         }

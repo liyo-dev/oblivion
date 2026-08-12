@@ -932,6 +932,14 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!222 &1361764701
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1361764698}
+  m_CullTransparentMesh: 1
 --- !u!114 &1361764702
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -942,17 +950,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
   key: SPLASH_PRESENTA
---- !u!222 &1361764701
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1361764698}
-  m_CullTransparentMesh: 1
 --- !u!1 &1472811942
 GameObject:
   m_ObjectHideFlags: 0
@@ -1951,7 +1951,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4558239694027600418, guid: f3249b88b53994a47b3319b81a048931, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8832130299040915484, guid: f3249b88b53994a47b3319b81a048931, type: 3}
       propertyPath: OnSkipCompleted.m_PersistentCalls.m_Calls.Array.data[0].m_Target

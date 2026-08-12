@@ -22,21 +22,40 @@ public class InteractionDetector : MonoBehaviour
     [Tooltip("Retardo antes de volver a mostrar iconos tras terminar un estado bloqueante (diálogo/combate/cinemática).")]
     [SerializeField] private float hintReappearDelay = 0.12f;
 
+    // FIX M7 (auditoría 2026-08-07): FindNearest() corría cada frame sin throttle (OverlapSphereNonAlloc
+    // + un SphereCast por candidato). PlayerTargeting ya usa 10 Hz para su propio escaneo; mismo criterio aquí.
+    [Header("Rendimiento")]
+    [SerializeField] private float updatesPerSecond = 10f;
+    private float _nextScan;
+
     private Interactable current;
+    private Interactable _lastFoundNearest;
     private PlayerCarrySystem _carrySystem;
     private PlayerActionManager _actionManager;
     private Game.Player.PlayerBattleModeController _battleModeController;
     private bool _wasBlockedLastFrame;
     private float _resumeAfterBlockAt;
-    
+
     // ✅ OPTIMIZACIÓN FASE 2: Buffer reutilizable para Physics queries
     private Collider[] _interactableBuffer = new Collider[16];
+
+    // FIX (2026-08-11): la máscara de obstrucción del SphereCast de FindNearest() usaba
+    // ~interactableMask, que solo excluye la capa "Interactable". Eso hace que el propio
+    // collider del jugador (capa "Player"/"Default", según el rig) y el suelo (capa "Floor")
+    // cuenten como obstrucción, bloqueando el hint en casi cualquier punto de guardado/NPC.
+    // Cacheado en Awake (regla del proyecto: nunca LayerMask en Update).
+    private int _obstructionMask;
 
     private void Awake()
     {
         _carrySystem = GetComponent<PlayerCarrySystem>();
         _actionManager = GetComponent<PlayerActionManager>() ?? GetComponentInParent<PlayerActionManager>();
         _battleModeController = GetComponent<Game.Player.PlayerBattleModeController>() ?? GetComponentInParent<Game.Player.PlayerBattleModeController>();
+
+        int floorLayer = LayerMask.NameToLayer("Floor");
+        int excludeBits = interactableMask.value | (1 << gameObject.layer);
+        if (floorLayer >= 0) excludeBits |= 1 << floorLayer;
+        _obstructionMask = ~excludeBits;
     }
 
     private void OnEnable()
@@ -106,8 +125,16 @@ public class InteractionDetector : MonoBehaviour
             return;
         }
 
-        var nearest = FindNearest();
-        SetCurrent(nearest);
+        // FIX M7 (auditoría 2026-08-07): throttle a updatesPerSecond en vez de escanear cada
+        // frame. SetCurrent() se sigue llamando cada frame con el último resultado conocido —
+        // sigue sincronizando el hint aunque no toque re-escanear este frame (ver comentario en
+        // SetCurrent).
+        if (updatesPerSecond <= 0f || Time.unscaledTime >= _nextScan)
+        {
+            _lastFoundNearest = FindNearest();
+            _nextScan = Time.unscaledTime + 1f / Mathf.Max(0.01f, updatesPerSecond);
+        }
+        SetCurrent(_lastFoundNearest);
     }
 
     private void OnInteract(InputAction.CallbackContext _context)
@@ -279,8 +306,21 @@ public class InteractionDetector : MonoBehaviour
             float d = Vector3.Distance(origin, it.transform.position);
             if (d < best)
             {
+                // FIX M7 (auditoría 2026-08-07): la comprobación estaba invertida. Antes se
+                // ACEPTABA el candidato cuando el SphereCast SÍ golpeaba algo (incluida una pared
+                // de por medio → "interactuar a través de muros") y se RECHAZABA cuando no golpeaba
+                // nada (p.ej. un interactuable solo-trigger en espacio abierto, que
+                // QueryTriggerInteraction.Ignore nunca detecta → nunca seleccionable). Ahora un
+                // impacto sólido se trata como obstrucción real (se descarta el candidato) y la
+                // ausencia de impacto significa línea de visión libre (se acepta).
+                // FIX (2026-08-11): se usaba ~interactableMask, que solo excluye la propia capa
+                // "Interactable" — el SphereCast se autogolpeaba con el collider del jugador y con
+                // el suelo ("Floor"), marcando el interactuable como obstruido siempre. Se usa
+                // _obstructionMask (cacheado en Awake), que además excluye la capa del propio
+                // jugador y "Floor", pero SIGUE incluyendo muros/puertas/obstáculos.
                 Vector3 dir = (it.transform.position - origin).normalized;
-                if (Physics.SphereCast(origin, focusRadius, dir, out _, d + 0.1f, ~0, QueryTriggerInteraction.Ignore))
+                bool obstructed = Physics.SphereCast(origin, focusRadius, dir, out _, d, _obstructionMask, QueryTriggerInteraction.Ignore);
+                if (!obstructed)
                 {
                     best = d;
                     winner = it;

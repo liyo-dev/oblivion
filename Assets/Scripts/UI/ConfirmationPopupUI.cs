@@ -67,6 +67,19 @@ public class ConfirmationPopupUI : MonoBehaviour
         // usan DialogueManager, QuestMenuManager, TeleportUI, etc.
         Core.PlayerInputManager.Instance?.PushUIMode();
 
+        // FIX (recurrente — INC-048 y bug de "el player no se detiene al guardar"): PushUIMode()
+        // solo deshabilita el mapa de Input GamePlay, pero NO detiene el movimiento/momentum ya
+        // en curso del Invector Controller (root motion residual, CharacterController, etc.).
+        // StartDialogueWithOptions() sí lo hacía porque DialogueManager.ActivateDialogueMode()
+        // empuja ActionMode.Cinematic en PlayerActionManager, que a su vez adquiere
+        // PlayerLockService (lockMovement=true + ResetInputSmoothing + CharacterController.enabled
+        // = false). Este popup (usado por SavePoint/CampfireRestInteractable/TagMinigame/etc. vía
+        // StartConfirmationPopup) nunca pasaba por ahí, así que el jugador seguía andando o
+        // deslizándose tras pulsar A en un punto de guardado aunque el popup ya estuviera abierto.
+        // PlayerLockService.Acquire() es un no-op seguro si no hay Player en la escena (menú
+        // principal, etc.) y soporta múltiples owners simultáneos por referencia.
+        PlayerLockService.Instance?.Acquire(this);
+
         // Guardamos qué botón tenía el foco antes de abrir el popup para poder
         // restaurar la selección al cerrarlo. Sin esto, el EventSystem se queda
         // sin objeto seleccionado y el menú deja de responder a mando/teclado
@@ -206,6 +219,11 @@ public class ConfirmationPopupUI : MonoBehaviour
         StopBlink();
         Time.timeScale = _savedTimeScale;
         Core.PlayerInputManager.Instance?.PopUIMode();
+
+        // Libera el freeze de movimiento adquirido en Show(). Seguro de llamar aunque Show()
+        // no llegara a bloquear nada (owner no registrado => PlayerLockService.Release() es no-op).
+        if (PlayerLockService.HasInstance)
+            PlayerLockService.Instance.Release(this);
 
         // El botón Sur (confirmar) es el mismo botón que Jump/Interact, y el botón Este
         // (cancelar) es el mismo botón que la magia derecha/levitación. PopUIMode() reactiva

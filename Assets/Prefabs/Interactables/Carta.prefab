@@ -167,6 +167,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!65 &4319646061617883643
 BoxCollider:
@@ -204,10 +205,13 @@ MonoBehaviour:
   mode: 0
   hint: {fileID: 8625976105098133822}
   hideHintAtStart: 1
+  hintAnimDuration: 0.25
+  iconSet: {fileID: 11400000, guid: 9120cc0f8d6f411aa56d4ef968de44c5, type: 2}
   singleUse: 1
   initiallyEnabled: 1
   persistentIdOverride: 
   includeSceneInPersistentId: 1
+  dialogueCharacterId: 
   dialogue: {fileID: 11400000, guid: 16f6f92679e396e45bcb2f3ab42eec3a, type: 2}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}
@@ -254,6 +258,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InteractableToNarrativeEvent
   eventKey: LETTER_START
   sendNow: 0
+  playerStop: {fileID: 0}
 --- !u!1 &8625976105098133822
 GameObject:
   m_ObjectHideFlags: 0
@@ -311,6 +316,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: -1748431125

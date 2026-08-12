@@ -129,8 +129,13 @@ MonoBehaviour:
   mode: 2
   hint: {fileID: 4747539678484950133}
   hideHintAtStart: 1
+  hintAnimDuration: 0.25
+  iconSet: {fileID: 11400000, guid: 9120cc0f8d6f411aa56d4ef968de44c5, type: 2}
   singleUse: 1
   initiallyEnabled: 1
+  persistentIdOverride: 
+  includeSceneInPersistentId: 1
+  dialogueCharacterId: 
   dialogue: {fileID: 0}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}
@@ -195,15 +200,14 @@ MonoBehaviour:
     amount: 0
     consumeEvenIfNoChange: 0
   persistState: 1
-  pickupId: 90648dd3d828463eb56a64ffa8eceb86
+  pickupIdOverride: 
   destroyOnCollect: 0
   destroyDelay: 0
   deactivateRootOnCollect: 0
   disableOnCollect: []
   collectOnTrigger: 0
   vfxPrefab: {fileID: 2020661361868494885, guid: 895c6d094b6b213418cddcfb520298e9, type: 3}
-  pickupSfx: {fileID: 8300000, guid: ab5056e86d89a9b49af0adccd84af617, type: 3}
-  sfxVolume: 1
+  pickupSfxKey: 
   onCollected:
     m_PersistentCalls:
       m_Calls: []
@@ -316,6 +320,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &2664780821616690238
 GameObject:
@@ -405,6 +410,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &3677926695935809609
 GameObject:
@@ -494,6 +500,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &4747539678484950133
 GameObject:
@@ -552,6 +559,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: -1748431125

@@ -13,5 +13,5 @@ AssetOrigin:
   productId: 203178
   packageName: 'Quibli: Anime Shaders and Tools'
   packageVersion: 2.6.4
-  assetPath: Assets/Quibli/Post Process/ShaderLibrary/Core.hlsl
+  assetPath: Assets/Plugins/Quibli/Post Process/ShaderLibrary/Core.hlsl
   uploadId: 939564

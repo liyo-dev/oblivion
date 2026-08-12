@@ -1,10 +1,10 @@
 using System.Collections.Generic;
-using Core.InputGlyphs;
 using Game.NPC;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 using DG.Tweening;
+using Core.InputGlyphs;
 
 [DisallowMultipleComponent]
 public class Interactable : MonoBehaviour
@@ -18,6 +18,11 @@ public class Interactable : MonoBehaviour
     [SerializeField] private GameObject hint;
     [SerializeField] private bool hideHintAtStart = true;
     [SerializeField] private float hintAnimDuration = 0.25f;
+    [Tooltip("Set de sprites (uno por familia de mando/teclado) para el icono de interactuar. " +
+             "Referencia DIRECTA (sin Resources.Load) — arrastrar el asset compartido " +
+             "InteractionHintIconSet. Si se deja vacío, el icono se queda con el sprite que ya " +
+             "tenga puesto a mano en el prefab (comportamiento anterior, sin romper nada).")]
+    [SerializeField] private InteractionHintIconSet iconSet;
 
     [Header("Uso")]
     [SerializeField] private bool singleUse = false;
@@ -50,11 +55,11 @@ public class Interactable : MonoBehaviour
     Game.NPC.CompanionFollowPrompt _followPrompt;
     NPCWorldPoint _worldPoint;
     bool _hintVisible;
+    Image _hintIcon;
 
     public bool IsHintVisible => _hintVisible;
     Tweener _hintTween;
     Vector3 _hintOriginalScale;
-    Image _hintIcon;
 
     void Awake()
     {
@@ -62,10 +67,6 @@ public class Interactable : MonoBehaviour
         if (hint)
         {
             _hintOriginalScale = hint.transform.localScale;
-            // Icono de botón dentro del hint (bocadillo "pulsa A"/"pulsa ✕"/etc.). Se busca una sola
-            // vez aquí y se refresca luego con el sprite real de InputGlyphService cada vez que el
-            // hint se muestra o cambia el mando conectado — así no hace falta editar el prefab de
-            // cada NPC/objeto interactuable a mano, todos comparten este mismo código.
             _hintIcon = hint.GetComponentInChildren<Image>(true);
             if (hideHintAtStart)
             {
@@ -83,11 +84,13 @@ public class Interactable : MonoBehaviour
         GameBootService.OnProfileReady += RestoreSingleUseStateFromPreset;
         // Re-aplicar estado single-use también cuando el preset se re-aplique en runtime (tras cargar save)
         PlayerPresetService.OnPresetApplied += HandlePresetApplied;
-        // Refrescar el icono del hint si cambia el mando/teclado mientras está visible.
-        InputGlyphService.FamilyChanged += HandleInputFamilyChanged;
 
         if (GameBootService.IsAvailable)
             RestoreSingleUseStateFromPreset();
+
+        // Icono según mando/teclado (sprites baked en iconSet, sin Resources.Load).
+        InputGlyphService.FamilyChanged += HandleInputFamilyChanged;
+        RefreshHintIcon();
     }
 
     void OnDisable()
@@ -102,32 +105,30 @@ public class Interactable : MonoBehaviour
         if (GameState.Is(GamePhase.SavePrompt)) GameState.Pop(GamePhase.SavePrompt);
     }
 
-    void HandleInputFamilyChanged(InputGlyphDeviceFamily _)
-    {
-        if (_hintVisible) RefreshHintIcon();
-    }
-
-    /// <summary>Pone en el icono del hint el sprite real (Xbox/PlayStation/Switch/Teclado) del botón
-    /// de interactuar, según el dispositivo activo. Si todavía no se ha generado ningún asset para
-    /// ese botón (Tools/Input Glyphs/Generar Assets de Botones), deja el sprite que ya tuviera el
-    /// prefab en el Editor en vez de dejarlo en blanco.</summary>
-    void RefreshHintIcon()
-    {
-        if (_hintIcon == null) return;
-        var sprite = InputGlyphService.GetSprite(InputGlyphNames.South);
-        if (sprite != null) _hintIcon.sprite = sprite;
-        // Defensivo: forzar Preserve Aspect por código en vez de confiar en que cada prefab de
-        // NPC/objeto lo tenga bien puesto a mano — así un icono generado con otra proporción
-        // (placeholder cuadrado de PlayStation/Switch/Teclado frente al arte Xbox alto/estrecho)
-        // nunca sale estirado ni recortado, sea cual sea el prefab.
-        _hintIcon.preserveAspect = true;
-    }
-
     void HandlePresetApplied()
     {
         // Cuando el PlayerPresetService re-aplica el preset (por ejemplo tras Load),
         // refrescar el estado single-use desde el preset activo.
         RestoreSingleUseStateFromPreset();
+    }
+
+    void HandleInputFamilyChanged(InputGlyphDeviceFamily _) => RefreshHintIcon();
+
+    /// <summary>
+    /// Actualiza el sprite del icono de interactuar según la familia de mando/teclado activa,
+    /// usando el set de sprites baked en <see cref="iconSet"/> (referencia directa, sin
+    /// Resources.Load). Si no hay iconSet asignado, o le falta el sprite de la familia actual,
+    /// no toca nada — se queda con el sprite que ya tuviera el prefab a mano.
+    /// </summary>
+    void RefreshHintIcon()
+    {
+        if (iconSet == null || _hintIcon == null) return;
+
+        var sprite = iconSet.GetSprite(InputGlyphService.CurrentFamily);
+        if (sprite == null) return;
+
+        _hintIcon.sprite = sprite;
+        _hintIcon.preserveAspect = true;
     }
 
     public void SetHintVisible(bool visible, GameObject interactor = null)
@@ -148,7 +149,6 @@ public class Interactable : MonoBehaviour
         if (canShow)
         {
             // Mostrar con animación
-            RefreshHintIcon();
             hint.SetActive(true);
             hint.transform.localScale = Vector3.zero;
             _hintTween = hint.transform.DOScale(_hintOriginalScale, hintAnimDuration)

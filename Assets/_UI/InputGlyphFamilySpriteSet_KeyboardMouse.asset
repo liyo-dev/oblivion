@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f43311c27934016bba95f7ee8b47c23, type: 3}
+  m_Name: InputGlyphFamilySpriteSet_KeyboardMouse
+  m_EditorClassIdentifier: 
+  south: {fileID: 21300000, guid: d40cca85f0f54f30445a3577e18a0a5a, type: 3}
+  east: {fileID: 21300000, guid: b6c29163d00d68df6db75d0c3f7eb934, type: 3}
+  west: {fileID: 21300000, guid: 8d656ec4f3378c19cd5840f1aec544ad, type: 3}
+  north: {fileID: 21300000, guid: 81ee214e69886dd9078d3fe0a0887bee, type: 3}
+  shoulderLeft: {fileID: 21300000, guid: 177e7e8c92637e64b6ba0865ef5aa370, type: 3}
+  shoulderRight: {fileID: 21300000, guid: 81b34bf7e8df33809cd89bf6e31c021f, type: 3}
+  triggerLeft: {fileID: 21300000, guid: 03d76e82f142f51d1c30ea83859dafc1, type: 3}
+  triggerRight: {fileID: 21300000, guid: 74193304885ee914f149f83b5ae08e9d, type: 3}
+  dpad: {fileID: 0}
+  stick: {fileID: 21300000, guid: 95891fca76a9e28becdcb820372c310f, type: 3}
+  start: {fileID: 21300000, guid: e2ecff4615441050c5bf87362df09a5d, type: 3}
+  confirm: {fileID: 21300000, guid: 48e896c46e72439285c090b557805bb4, type: 3}
+  teleport: {fileID: 21300000, guid: bfff1c03bb48ea359a4445038d18288a, type: 3}
+  dpadLeft: {fileID: 21300000, guid: 961facda271c42c0b5bf47bbe559e99b, type: 3}
+  dpadRight: {fileID: 21300000, guid: ce03901976454189ade9c5d995052cbf, type: 3}
+  dpadUp: {fileID: 21300000, guid: 4a100340e2ab475e9814d79f25f9397a, type: 3}
+  dpadDown: {fileID: 21300000, guid: e82b907922ab41948f1638fdd3b9cb1b, type: 3}

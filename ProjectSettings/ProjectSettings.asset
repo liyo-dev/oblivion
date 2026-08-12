@@ -169,9 +169,9 @@ PlayerSettings:
   androidMaxAspectRatio: 2.4
   androidMinAspectRatio: 1
   applicationIdentifier:
-    Android: com.UnityTechnologies.com.unity.template.urpblank
-    Standalone: com.Unity-Technologies.com.unity.template.urp-blank
-    iPhone: com.Unity-Technologies.com.unity.template.urp-blank
+    Android: com.liyodev.elsenderodelasestrellas
+    Standalone: com.liyodev.elsenderodelasestrellas
+    iPhone: com.liyodev.elsenderodelasestrellas
   buildNumber:
     Standalone: 0
     VisionOS: 0
@@ -879,14 +879,14 @@ PlayerSettings:
   editorAssembliesCompatibilityLevel: 1
   m_RenderingPath: 1
   m_MobileRenderingPath: 1
-  metroPackageName: Test
+  metroPackageName: ElSenderoDeLasEstrellas
   metroPackageVersion: 
   metroCertificatePath: 
   metroCertificatePassword: 
   metroCertificateSubject: 
   metroCertificateIssuer: 
   metroCertificateNotAfter: 0000000000000000
-  metroApplicationDescription: Test
+  metroApplicationDescription: El Sendero de las Estrellas
   wsaImages: {}
   metroTileShortName: 
   metroTileShowName: 0

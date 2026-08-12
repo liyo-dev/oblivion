@@ -67,6 +67,14 @@ public class TeleportService : MonoBehaviour
     // Flag propio para no invocar Transition() cuando ya hay una en curso (el plugin usa el mismo mensaje de error)
     private static bool _sTransitionInProgress;
 
+    // FIX A7 (auditoría 2026-08-07): handlers activos de la transición en curso, guardados a nivel
+    // de instancia para poder desuscribirlos desde OnDestroy si el GameObject se destruye a mitad
+    // de una transición. TransitionManager es DontDestroyOnLoad/persistente: sin esto, un handler
+    // local huérfano seguía suscrito y podía disparar más tarde para una transición de OTRO
+    // sistema, moviendo al jugador/compañeros a las coordenadas de este teleport ya obsoleto.
+    private UnityEngine.Events.UnityAction _activeCutHandler;
+    private UnityEngine.Events.UnityAction _activeEndHandler;
+
     /// <summary>
     /// Solo se libera en el callback tm.onTransitionEnd; si la escena cambia a mitad de una
     /// transición (evento que nunca llega a dispararse) queda "colgado" en true para siempre,
@@ -91,6 +99,16 @@ public class TeleportService : MonoBehaviour
             ServiceLocator.Unregister(this);
             _inst = null;
         }
+
+        // FIX A7 (auditoría 2026-08-07): ver comentario de _activeCutHandler/_activeEndHandler.
+        var tm = FindTM();
+        if (tm != null)
+        {
+            if (_activeCutHandler != null) tm.onTransitionCutPointReached -= _activeCutHandler;
+            if (_activeEndHandler != null) tm.onTransitionEnd -= _activeEndHandler;
+        }
+        _activeCutHandler = null;
+        _activeEndHandler = null;
     }
 
 #if UNITY_EDITOR
@@ -108,7 +126,17 @@ public class TeleportService : MonoBehaviour
     /// <summary>Teleporta a un anchor por id.</summary>
     public static void TeleportToAnchor(GameObject player, string anchorId, bool? useTransition = null)
     {
-        if (!Inst) return;
+        // FIX C3 (auditoría 2026-08-07): los tres early-return de este método (y de
+        // DoTeleportToAnchor, más abajo) retornaban sin emitir OnTeleportEnded. TeleportSystem.
+        // TeleportSequence espera ese evento con WaitUntil antes de devolver el control al
+        // jugador — si nunca llega, la corrutina se queda colgada para siempre: input bloqueado,
+        // GamePhase.Cutscene empujado permanentemente, y además IsTeleporting=true bloquea
+        // cualquier teleport futuro. Emitir el evento en cada fallo evita el cuelgue.
+        if (!Inst)
+        {
+            InvokeEvent(OnTeleportEnded, nameof(OnTeleportEnded));
+            return;
+        }
         var sa = SpawnManager.GetAnchor(anchorId);
         if (!sa)
         {
@@ -124,6 +152,7 @@ public class TeleportService : MonoBehaviour
         if (!sa)
         {
             Debug.LogWarning($"[TeleportService] Anchor '{anchorId}' no encontrado.");
+            InvokeEvent(OnTeleportEnded, nameof(OnTeleportEnded));
             return;
         }
         Inst.DoTeleportToAnchor(player, sa.transform, useTransition);
@@ -135,6 +164,8 @@ public class TeleportService : MonoBehaviour
     {
         if (!player || !anchor)
         {
+            // FIX C3: mismo motivo que arriba — no dejar colgado a quien espera OnTeleportEnded.
+            InvokeEvent(OnTeleportEnded, nameof(OnTeleportEnded));
             Debug.LogWarning("[TeleportService] Parámetros nulos en TeleportToAnchor.");
             return;
         }
@@ -225,6 +256,7 @@ public class TeleportService : MonoBehaviour
             // Notificar corte (momento del movimiento)
             InvokeEvent(OnTeleportCut, nameof(OnTeleportCut));
             tm.onTransitionCutPointReached -= OnCut;
+            _activeCutHandler = null;
         }
 
         void OnEnd()
@@ -233,10 +265,14 @@ public class TeleportService : MonoBehaviour
             // Notificar fin
             InvokeEvent(OnTeleportEnded, nameof(OnTeleportEnded));
             tm.onTransitionEnd -= OnEnd;
+            _activeEndHandler = null;
         }
 
-        tm.onTransitionCutPointReached += OnCut;
-        tm.onTransitionEnd            += OnEnd;
+        // FIX A7 (auditoría 2026-08-07): guardar referencia a nivel de instancia (ver OnDestroy).
+        _activeCutHandler = OnCut;
+        _activeEndHandler = OnEnd;
+        tm.onTransitionCutPointReached += _activeCutHandler;
+        tm.onTransitionEnd            += _activeEndHandler;
 
         // OJO: usamos la versión SIN cambio de escena del plugin (la estable)
         tm.Transition(teleportTransition, transitionDelay);

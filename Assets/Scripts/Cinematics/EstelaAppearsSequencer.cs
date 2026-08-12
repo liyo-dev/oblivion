@@ -222,6 +222,39 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
 
     private static void MarkSequencePlayed() => MarkCinematicAsSeen(SequenceId);
 
+    // INC-075-bis (08/08/2026): la comprobación de Awake() por sí sola asume que
+    // GameBootService.Profile ya tiene los flags del save cargados en el momento exacto en que
+    // esta escena hace Awake(). Eso es cierto en el camino normal (LoadProfile ocurre en la
+    // escena Start/MainMenu antes de cargar MainWorld), pero es una asunción implícita y frágil:
+    // cualquier cambio futuro en el orden de carga (p.ej. otro sistema que reactive NPCs por
+    // nombre desde OnProfileReady, o un refactor que mueva esta escena a un flujo de carga
+    // distinto) puede dejar arañas/guerreros visibles sin que el fix de INC-075 deje de ser
+    // "correcto" sobre el papel. Para no depender de un único punto de comprobación:
+    //   1. Se repite la misma comprobación cuando GameBootService.OnProfileReady se dispara
+    //      (el punto en el que el proyecto considera "el perfil ya está listo del todo" — se
+    //      dispara también tras ReloadTestPreset/NewGameReset). Si en ese momento la secuencia
+    //      consta como vista, se vuelve a ocultar; si ya estaba oculta, es un no-op.
+    //   2. Se deja un log SIEMPRE activo (sin '#if UNITY_EDITOR || DEVELOPMENT_BUILD') con el
+    //      resultado de HasSequencePlayed(), para que la próxima vez que esto falle quede
+    //      constancia en el Player.log de una build de Release y no haga falta reproducirlo con
+    //      una build de desarrollo para diagnosticarlo.
+    private void ApplyAlreadyPlayedState(string checkpoint)
+    {
+        bool seen = HasSequencePlayed();
+        Debug.Log($"[EstelaAppearsSequencer] Comprobación 'secuencia ya vista' en {checkpoint}: {seen}. " +
+            $"Arañas/guerreros deberían quedar {(seen ? "OCULTOS" : "visibles (sin cambios)")}.");
+
+        if (!seen) return;
+
+        if (_spiderObjects != null)
+        {
+            foreach (var spider in _spiderObjects)
+                if (spider != null) spider.SetActive(false);
+        }
+        if (_warrior1Transform != null) _warrior1Transform.gameObject.SetActive(false);
+        if (_warrior2Transform != null) _warrior2Transform.gameObject.SetActive(false);
+    }
+
     protected override void Awake()
     {
         base.Awake();
@@ -229,16 +262,11 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
         // Si la secuencia ya se reprodujo antes en esta partida, aplicar de inmediato el estado
         // final (arañas y guerreros ocultos) por si la escena se acaba de recargar desde un
         // punto de guardado posterior a la secuencia.
-        if (HasSequencePlayed())
-        {
-            if (_spiderObjects != null)
-            {
-                foreach (var spider in _spiderObjects)
-                    if (spider != null) spider.SetActive(false);
-            }
-            if (_warrior1Transform != null) _warrior1Transform.gameObject.SetActive(false);
-            if (_warrior2Transform != null) _warrior2Transform.gameObject.SetActive(false);
-        }
+        ApplyAlreadyPlayedState("Awake");
+
+        // Red de seguridad (ver comentario INC-075-bis arriba): re-aplicar cuando el resto del
+        // juego considera que el perfil está totalmente listo, no solo en Awake().
+        GameBootService.OnProfileReady += HandleProfileReadyReapply;
 
         if (_estelaTransform != null)
         {
@@ -322,7 +350,10 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
     protected override void OnDestroy()
     {
         base.OnDestroy();
+        GameBootService.OnProfileReady -= HandleProfileReadyReapply;
     }
+
+    private void HandleProfileReadyReapply() => ApplyAlreadyPlayedState("OnProfileReady");
 
     // ══════════════════════════════════════════════════════════════════════════
     // Secuencia principal

@@ -145,10 +145,12 @@ namespace Game.NPC.Modules
                 _damageable.OnDied -= OnDied;
             }
             // Salvaguarda final por si se destruye durante slow-mo: cancelamos el efecto cinematográfico
-            // (restaura FOV y libera _isEffectActive, si no quedaría bloqueado para la próxima muerte)
-            // y forzamos el timeScale por si acaso.
+            // (restaura FOV y libera _isEffectActive, si no quedaría bloqueado para la próxima muerte).
+            // FIX C6 (auditoría 2026-08-07): antes forzaba Time.timeScale=1 "por si acaso", pisando
+            // cualquier otro efecto activo (hitstop, cinemática) que no tuviera relación con esta
+            // muerte. CancelDeathEffect() ya libera la petición de este NPC en TimeScaleArbiterService
+            // (vía DeathCameraEffect.CancelEffect); no hace falta tocar Time.timeScale aquí.
             FeedbackService.CancelDeathEffect();
-            if (Time.timeScale < 0.99f || Time.timeScale > 1.01f) Time.timeScale = 1f;
         }
 
         // =================================================================================

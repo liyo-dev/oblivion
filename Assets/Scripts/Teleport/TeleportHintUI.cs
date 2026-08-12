@@ -27,6 +27,11 @@ public class TeleportHintUI : MonoBehaviour
     [SerializeField] private CanvasGroup canvasGroup;
     [SerializeField] private TextMeshProUGUI hintText;
     [SerializeField] private Image buttonIcon;
+    [Tooltip("Icono del botón de teletransporte (distinto físicamente del de interactuar) por " +
+             "familia de mando. Referencia directa (sin Resources.Load) — asset propio, no el " +
+             "mismo que InteractionHintIconSet. Si se deja vacío, o le falta el sprite de la " +
+             "familia actual, el icono se queda como esté puesto a mano en el prefab.")]
+    [SerializeField] private InteractionHintIconSet teleportIconSet;
     
     [Header("Configuración")]
     [SerializeField] private float fadeInDuration = 0.25f;
@@ -115,9 +120,10 @@ public class TeleportHintUI : MonoBehaviour
     /// teletransporte está hardcodeado a T — son botones físicos iguales en mando pero teclas distintas.
     private void UpdateButtonIcon()
     {
-        if (buttonIcon == null) return;
-        var icon = InputGlyphService.GetSprite(InputGlyphNames.Teleport);
-        if (icon != null) buttonIcon.sprite = icon;
+        if (buttonIcon == null || teleportIconSet == null) return;
+        var icon = teleportIconSet.GetSprite(InputGlyphService.CurrentFamily);
+        if (icon == null) return;
+        buttonIcon.sprite = icon;
         // Defensivo: si el icono real (arte Xbox, alto/estrecho) se sustituye por un placeholder
         // cuadrado (PlayStation/Switch/Teclado) sin Preserve Aspect, el sprite se estira para llenar
         // el RectTransform (100x150, pensado solo para el aspect ratio del arte Xbox) y sale deformado.

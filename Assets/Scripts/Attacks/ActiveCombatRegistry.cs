@@ -159,7 +159,22 @@ public static class ActiveCombatRegistry
     }
     
     /// <summary>
-    /// Debug: Cantidad de NPCs en combate
+    /// Debug: Cantidad de NPCs en combate.
+    /// FIX A1 (auditoría 2026-08-07): antes devolvía el tamaño crudo del HashSet, que puede
+    /// contener referencias "fake-null" a NPCs destruidos sin pasar por UnregisterNPC (Destroy
+    /// directo, descarga de escena aditiva — ClearAll solo se llama en GameOver). Consumidores
+    /// como PlayerBattleModeController.DetectEnemiesNearby() y PlayerActionManager leían
+    /// Count > 0 directamente: un enemigo destruido así dejaba Count > 0 para siempre → Battle
+    /// Mode y ActionMode.Combat permanentes (que además bloqueaba Interact). Limpiar aquí, en el
+    /// único punto de lectura, corrige los tres consumidores de una vez sin tener que auditar
+    /// cada OnDestroy de NPC.
     /// </summary>
-    public static int Count => _npcsInCombat.Count;
+    public static int Count
+    {
+        get
+        {
+            CleanupDestroyedNPCs();
+            return _npcsInCombat.Count;
+        }
+    }
 }

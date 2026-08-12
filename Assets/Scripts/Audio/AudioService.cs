@@ -982,6 +982,11 @@ public sealed class AudioService : MonoBehaviour
     // por loopId, fuera del pool, que solo se detiene cuando se llama
     // explícitamente a StopLoopingSFX.
     readonly Dictionary<string, AudioSource> _loopingSfxSources = new();
+    // FIX M4 (auditoría 2026-08-07): fade-out en curso por loopId, para poder cancelarlo si el
+    // mismo loop se reinicia (PlayLoopingSFX) o si se pide otro StopLoopingSFX antes de que
+    // termine el anterior. Antes, un fade-out viejo seguía corriendo tras rearrancar el loop y
+    // acababa cortando en seco el loop nuevo cuando el temporizador viejo llegaba a cero.
+    readonly Dictionary<string, Coroutine> _loopFadeRoutines = new();
 
     /// <summary>
     /// Arranca (o reinicia) en loop el SFX asociado a eventKey en el AudioGraphProfile, bajo la
@@ -1004,6 +1009,15 @@ public sealed class AudioService : MonoBehaviour
             _loopingSfxSources[loopId] = src;
         }
 
+        // FIX M4: si había un fade-out en curso para este loopId (StopLoopingSFX con fadeOut>0
+        // seguido de un reinicio), cancelarlo — si no, el fade viejo termina llamando src.Stop()
+        // sobre el loop recién reiniciado.
+        if (_loopFadeRoutines.TryGetValue(loopId, out var pendingFade) && pendingFade != null)
+        {
+            StopCoroutine(pendingFade);
+            _loopFadeRoutines.Remove(loopId);
+        }
+
         src.loop = true;
         src.clip = clip;
         src.volume = Mathf.Clamp01(volume);
@@ -1020,13 +1034,21 @@ public sealed class AudioService : MonoBehaviour
         if (!_loopingSfxSources.TryGetValue(loopId, out var src) || src == null) return;
         if (!src.isPlaying) return;
 
+        // FIX M4: cancelar cualquier fade-out previo de este mismo loopId antes de arrancar uno
+        // nuevo (o un Stop en seco), para no dejar dos corrutinas escribiendo src.volume a la vez.
+        if (_loopFadeRoutines.TryGetValue(loopId, out var existingFade) && existingFade != null)
+        {
+            StopCoroutine(existingFade);
+            _loopFadeRoutines.Remove(loopId);
+        }
+
         if (fadeOut > 0f)
-            StartCoroutine(FadeOutAndStopLoop(src, fadeOut));
+            _loopFadeRoutines[loopId] = StartCoroutine(FadeOutAndStopLoop(loopId, src, fadeOut));
         else
             src.Stop();
     }
 
-    IEnumerator FadeOutAndStopLoop(AudioSource src, float duration)
+    IEnumerator FadeOutAndStopLoop(string loopId, AudioSource src, float duration)
     {
         float startVolume = src.volume;
         float elapsed = 0f;
@@ -1041,6 +1063,7 @@ public sealed class AudioService : MonoBehaviour
             src.Stop();
             src.volume = startVolume;
         }
+        _loopFadeRoutines.Remove(loopId);
     }
 
     // ===========================================================
@@ -1117,8 +1140,12 @@ public sealed class AudioService : MonoBehaviour
 
     IEnumerator ReturnWhenDone(AudioSource src, Queue<AudioSource> pool)
     {
+        // FIX M4 (auditoría 2026-08-07): WaitForSeconds está escalado por Time.timeScale. En
+        // pausa (timeScale=0) esta corrutina nunca avanza, así que la fuente SFX nunca vuelve al
+        // pool y Rent2D/Rent3D siguen creando "SFX2D_dyn"/"SFX3D_dyn" sin límite mientras dure la
+        // pausa. WaitForSecondsRealtime no depende de timeScale.
         float wait = src.clip ? Mathf.Max(0.02f, src.clip.length / Mathf.Max(0.01f, src.pitch)) : 1f;
-        yield return new WaitForSeconds(wait);
+        yield return new WaitForSecondsRealtime(wait);
         src.Stop(); src.clip = null; pool.Enqueue(src);
     }
 

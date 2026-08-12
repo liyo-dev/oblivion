@@ -110,15 +110,35 @@ namespace Game.Core.Pooling
                 return;
             }
 
-            // Verificar que el objeto estaba en uso
+            // FIX A3 (auditoría 2026-08-07): antes, si el objeto ya no estaba en _inUse (doble
+            // devolución, p.ej. un caller que llama Return() dos veces sobre la misma instancia),
+            // se detectaba con el LogWarning de abajo pero SE HACÍA PUSH IGUALMENTE — la misma
+            // instancia terminaba dos veces en la pila de disponibles, y dos Get() consecutivos
+            // devolvían el mismo Transform (dos "objetos" distintos compartiendo posición/estado,
+            // cada Return() posterior de uno de ellos volvía a empujarlo). Ahora una devolución de
+            // algo que no estaba en uso es un no-op seguro (tras avisar), en vez de corromper el
+            // pool.
             if (!_inUse.Remove(obj))
             {
-                Debug.LogWarning($"[ObjectPool] Objeto {obj.name} no estaba registrado como en uso");
+                Debug.LogWarning($"[ObjectPool] Objeto {obj.name} no estaba registrado como en uso (posible doble Return, ignorado)");
+                return;
             }
 
             // Desactivar y devolver al pool
             obj.gameObject.SetActive(false);
             _available.Push(obj);
+        }
+
+        /// <summary>
+        /// Libera una instancia de _inUse SIN devolverla al pool de disponibles. Pensado para
+        /// cuando el objeto fue destruido externamente (p. ej. su padre, ver
+        /// VfxPoolService.Update) y por tanto no se debe reactivar ni reutilizar — solo hay que
+        /// dejar de contarlo como "en uso" para no agotar el pool con referencias fake-null.
+        /// FIX A3 (auditoría 2026-08-07).
+        /// </summary>
+        public void ForceRelease(T obj)
+        {
+            _inUse.Remove(obj);
         }
 
         /// <summary>

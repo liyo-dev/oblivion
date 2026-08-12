@@ -277,7 +277,24 @@ public class GameBootService : MonoBehaviour
         else if (_saveSystem != null && _saveSystem.HasSave())
         {
             Debug.Log("[GameBootService] 💾 Cargando partida desde save JSON...");
-            _profile.LoadProfile(_saveSystem);
+            // FIX A4 (auditoría 2026-08-07): antes se ignoraba el valor de retorno de
+            // LoadProfile. Si el JSON está corrupto (p.ej. cierre forzado a mitad de escritura),
+            // LoadProfile devuelve false y no había ningún fallback: el juego arrancaba con el
+            // runtimePreset residual, sin HP/inventario/flags coherentes. Ahora, si falla, se cae
+            // exactamente a la misma rama de "sin save" que el caso 3) de abajo.
+            if (!_profile.LoadProfile(_saveSystem))
+            {
+                Debug.LogError("[GameBootService] ⚠️ El save existe pero no se pudo cargar (JSON corrupto/inválido). Usando preset por defecto.");
+                if (_profile.defaultPlayerPreset)
+                {
+                    _profile.EnsureRuntimePresetFromTemplate(_profile.defaultPlayerPreset);
+                }
+                else
+                {
+                    _profile.EnsureRuntimePreset();
+                    Debug.LogWarning("[GameBootService] No hay defaultPlayerPreset. Se crea runtimePreset vacío.");
+                }
+            }
         }
         // 3) Si no, usar preset por defecto
         else

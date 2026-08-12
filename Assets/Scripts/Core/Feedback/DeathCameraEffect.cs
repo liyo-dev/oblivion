@@ -106,14 +106,15 @@ namespace Sendero.Core.Feedback
         private IEnumerator DeathEffectSequence(Transform target)
         {
             _isEffectActive = true;
-            float originalTimeScale = Time.timeScale;
-            
+
             if (showDebugLogs)
                 Debug.Log($"[DeathCameraEffect] 🎬 Iniciando efecto de muerte - Target: {target.name}");
-            
+
             // ========== FASE 1: SLOWMOTION + ZOOM ==========
-            // Aplicar slowmotion
-            Time.timeScale = slowMotionScale;
+            // FIX C6 (auditoría 2026-08-07): antes capturaba/restauraba Time.timeScale a pelo,
+            // pisando cualquier otro efecto activo (hitstop, cinemática). Se delega en
+            // TimeScaleArbiterService (pila de peticiones, gana la más lenta).
+            TimeScaleArbiterService.Request(this, slowMotionScale);
             
             if (showDebugLogs)
                 Debug.Log($"[DeathCameraEffect] ⏱️ Slowmotion activado - TimeScale: {slowMotionScale}");
@@ -154,8 +155,8 @@ namespace Sendero.Core.Feedback
             
             // ========== FASE 3: RESTAURAR TIME SCALE ==========
             // CRÍTICO: Restaurar timeScale ANTES de volver el zoom
-            Time.timeScale = originalTimeScale;
-            
+            TimeScaleArbiterService.Release(this);
+
             if (showDebugLogs)
                 Debug.Log($"[DeathCameraEffect] ⏱️ TimeScale restaurado: {Time.timeScale}");
             
@@ -185,7 +186,7 @@ namespace Sendero.Core.Feedback
             
             // ========== VERIFICACIÓN FINAL ==========
             // Asegurar que todo está en su estado original
-            Time.timeScale = 1f; // Forzar a 1 por si acaso
+            TimeScaleArbiterService.Release(this); // por si acaso (no-op si ya se liberó arriba)
             mainCamera.fieldOfView = _originalFieldOfView;
             
             _isEffectActive = false;
@@ -207,14 +208,14 @@ namespace Sendero.Core.Feedback
             }
             
             // Restaurar todo
-            Time.timeScale = 1f;
+            TimeScaleArbiterService.Release(this);
             if (mainCamera != null)
             {
                 mainCamera.fieldOfView = _originalFieldOfView;
             }
-            
+
             _isEffectActive = false;
-            
+
             if (showDebugLogs)
                 Debug.Log("[DeathCameraEffect] ⛔ Efecto cancelado - Todo restaurado");
         }
@@ -222,7 +223,7 @@ namespace Sendero.Core.Feedback
         void OnDestroy()
         {
             // Asegurar restauración al destruir el componente
-            Time.timeScale = 1f;
+            TimeScaleArbiterService.Release(this);
             if (mainCamera != null)
             {
                 mainCamera.fieldOfView = _originalFieldOfView;

@@ -41,6 +41,14 @@ public class QuestManager : MonoBehaviour
     private readonly Dictionary<string, Game.NPC.Modules.QuestChainEntry> _questChainIndex = new(32, StringComparer.Ordinal);
     private bool _questChainIndexDirty = true;
 
+    // FIX M2 (auditoría 2026-08-07): RestoreFromProfileFlags auto-completa quests (paso 5) llamando
+    // a CompleteQuest de forma síncrona en plena carga/restauración. Antes eso disparaba
+    // OnQuestCompleted igual que una compleción real de gameplay, y los ejecutores de post-action
+    // (NPCQuestActionExecutor) reaccionaban lanzando diálogos/moviendo NPCs durante la carga del
+    // save. Con este flag, CompleteQuest sigue marcando el estado y archivando la quest con
+    // normalidad, pero no dispara el evento público mientras se está restaurando.
+    private bool _isRestoringFromProfile;
+
     // Eventos públicos para UI/lógica externa
     public event Action<string> OnQuestStarted;
     public event Action<string> OnQuestCompleted;
@@ -213,7 +221,10 @@ public class QuestManager : MonoBehaviour
         ConsumeRequiredItems(questId);
 
         rq.State = QuestState.Completed;
-        OnQuestCompleted?.Invoke(questId);
+        // FIX M2: no propagar el evento (y sus post-actions) mientras estamos restaurando
+        // el estado desde un perfil/save; ver comentario en _isRestoringFromProfile.
+        if (!_isRestoringFromProfile)
+            OnQuestCompleted?.Invoke(questId);
         ArchiveCompletedQuest(questId);
         OnQuestsChanged?.Invoke();
     }
@@ -498,6 +509,20 @@ public class QuestManager : MonoBehaviour
 
     /// <summary>Reconstruye el estado a partir de flags del perfil.</summary>
     public void RestoreFromProfileFlags(IReadOnlyList<string> flags)
+    {
+        // FIX M2 (auditoría 2026-08-07): ver comentario en _isRestoringFromProfile.
+        _isRestoringFromProfile = true;
+        try
+        {
+            RestoreFromProfileFlagsInternal(flags);
+        }
+        finally
+        {
+            _isRestoringFromProfile = false;
+        }
+    }
+
+    private void RestoreFromProfileFlagsInternal(IReadOnlyList<string> flags)
     {
         ResetAllQuests();
 

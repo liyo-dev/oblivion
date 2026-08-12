@@ -17,15 +17,23 @@
 
         private IEnumerator Co_HitStop(float timeScale, float duration)
         {
-            float original = Time.timeScale;
-            Time.timeScale = timeScale;
+            // FIX C6 (auditoría 2026-08-07): antes capturaba "el timeScale de antes" y lo
+            // restauraba al acabar. Dos golpes solapados (trivial en combate, <0.2s entre
+            // golpes) dejaban el juego en cámara lenta permanente: el segundo Co_HitStop
+            // capturaba el valor ya ralentizado por el primero, y al restaurar pisaba la
+            // restauración del primero. Un token único por invocación + TimeScaleArbiterService
+            // (pila de peticiones, gana la más lenta) hace que cada hitstop se libere sin
+            // pisar al resto de peticiones activas — de otro hitstop solapado, de una cinemática
+            // o de una muerte en curso.
+            object token = new object();
+            TimeScaleArbiterService.Request(token, timeScale);
             float elapsed = 0f;
             while (elapsed < duration)
             {
                 elapsed += Time.unscaledDeltaTime;
                 yield return null;
             }
-            Time.timeScale = original;
+            TimeScaleArbiterService.Release(token);
         }
     }
 }

@@ -344,10 +344,21 @@ public class MagicProjectile : MonoBehaviour
                 return; // No dañarse a sí mismo
             }
 
+            // FIX M8 (auditoría 2026-08-07): _cfg.hitLayers se leía del SO pero nunca se
+            // comprobaba — el impacto directo y, sobre todo, el AOE de abajo aplicaban daño a
+            // CUALQUIER Damageable en el radio, incluidos aliados del party. Solo se filtra
+            // cuando el SO tiene hitLayers explícitamente configurado (!= 0); si se deja vacío
+            // (el estado de todos los assets existentes hoy) el comportamiento no cambia, para no
+            // romper en silencio proyectiles ya afinados que nunca tocaron ese campo.
+            if (_cfg.hitLayers.value != 0 && ((1 << other.gameObject.layer) & _cfg.hitLayers.value) == 0)
+            {
+                return;
+            }
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[MagicProjectile] 🎯 Impacto contra {other.gameObject.name} - Aplicando {_cfg.damage} de daño via Damageable");
 #endif
-            
+
             if (_cfg.aoeRadius > 0f)
             {
                 // Para AOE, buscar todos los Damageable en el radio
@@ -355,6 +366,8 @@ public class MagicProjectile : MonoBehaviour
                 for (int i = 0; i < aoeCount; i++)
                 {
                     var c = _aoeHitBuffer[i];
+                    if (_cfg.hitLayers.value != 0 && ((1 << c.gameObject.layer) & _cfg.hitLayers.value) == 0)
+                        continue;
                     var d = c.GetComponent<Damageable>() ?? c.GetComponentInParent<Damageable>();
                     if (d != null && (_instigator == null || d.gameObject != _instigator))
                     {

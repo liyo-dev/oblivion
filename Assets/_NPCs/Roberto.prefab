@@ -2361,6 +2361,7 @@ MonoBehaviour:
   hint: {fileID: 8086376615423378128}
   hideHintAtStart: 1
   hintAnimDuration: 0.25
+  iconSet: {fileID: 11400000, guid: 9120cc0f8d6f411aa56d4ef968de44c5, type: 2}
   singleUse: 0
   initiallyEnabled: 1
   persistentIdOverride: 
@@ -2434,6 +2435,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InteractableToNarrativeEvent
   eventKey: START_ROBERTO_MISION
   sendNow: 0
+  playerStop: {fileID: 0}
 --- !u!114 &5728212917075174232
 MonoBehaviour:
   m_ObjectHideFlags: 0

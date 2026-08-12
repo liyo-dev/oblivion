@@ -586,6 +586,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InteractableToNarrativeEvent
   eventKey: ERIKA_BATTLE_WON
   sendNow: 0
+  playerStop: {fileID: 0}
 --- !u!1 &362692108624606021
 GameObject:
   m_ObjectHideFlags: 0
@@ -9981,6 +9982,7 @@ MonoBehaviour:
   hint: {fileID: 5591256588876701375}
   hideHintAtStart: 1
   hintAnimDuration: 0.25
+  iconSet: {fileID: 11400000, guid: 9120cc0f8d6f411aa56d4ef968de44c5, type: 2}
   singleUse: 0
   initiallyEnabled: 1
   persistentIdOverride: 

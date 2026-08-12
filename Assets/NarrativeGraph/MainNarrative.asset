@@ -909,9 +909,10 @@ MonoBehaviour:
         outputs:
         - 6f0c236c-9cf3-44bc-a968-f5ad724c845a
         action: 0
-        text: Pulsa A para despertar a Will
+        text: Pulsa {BOTON} para despertar a Will
         textId: 
         icon: {fileID: 21300000, guid: b1bae50a86e690449a7ba8c03900f80e, type: 3}
+        buttonName: interactable_confirm
     - rid: 5290829367972725004
       type: {class: TutorialPromptNode, ns: , asm: Assembly-CSharp}
       data:
@@ -926,9 +927,10 @@ MonoBehaviour:
         position: {x: 1428, y: -1276}
         outputs: []
         action: 0
-        text: "Usa el Joystick para mover a Will. Inspecciona la habitaci\xF3n."
+        text: "Usa {BOTON} para mover a Will. Inspecciona la habitaci\xF3n."
         textId: 
         icon: {fileID: 21300000, guid: d8f997a4962ba6043a531732f1e8777a, type: 3}
+        buttonName: interactable_Joystick
     - rid: 5290829367972725077
       type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
       data:

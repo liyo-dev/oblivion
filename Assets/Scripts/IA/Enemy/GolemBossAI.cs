@@ -1556,36 +1556,16 @@ public class GolemBossAI : MonoBehaviour
     }
     
     /// <summary>
-    /// Activa el temblor de cámara (si hay un sistema disponible)
+    /// Activa el temblor de cámara.
+    /// FIX A11 (auditoría 2026-08-07): antes buscaba un método "Shake" por reflection en
+    /// cualquier MonoBehaviour de la cámara principal — costoso (GetComponents + GetMethod +
+    /// Invoke en cada llamada) y frágil (depende de que exista un componente con ese nombre de
+    /// método exacto), cuando el propio archivo ya usa FeedbackService.CameraShake directamente
+    /// en otro punto (ver PerformGroundSlam). Se unifica en la misma API centralizada.
     /// </summary>
     private void TriggerCameraShake()
     {
-        // Intentar usar Cinemachine Impulse si está disponible
-        // Nota: Requiere que haya un CinemachineImpulseListener en la cámara virtual
-        try
-        {
-            // Buscar cualquier componente de shake en la cámara principal
-            var mainCam = Camera.main;
-            if (mainCam != null)
-            {
-                // Intentar encontrar un componente genérico de shake
-                var shakeComponents = mainCam.GetComponents<MonoBehaviour>();
-                foreach (var comp in shakeComponents)
-                {
-                    // Buscar método Shake por reflection (para compatibilidad)
-                    var shakeMethod = comp.GetType().GetMethod("Shake");
-                    if (shakeMethod != null)
-                    {
-                        shakeMethod.Invoke(comp, new object[] { cameraShakeDuration, cameraShakeIntensity });
-                        return;
-                    }
-                }
-            }
-        }
-        catch (System.Exception ex)
-        {
-            Log($"⚠️ No se pudo activar camera shake: {ex.Message}");
-        }
+        Sendero.Core.Feedback.FeedbackService.CameraShake(cameraShakeIntensity, cameraShakeDuration);
     }
     
     #endregion

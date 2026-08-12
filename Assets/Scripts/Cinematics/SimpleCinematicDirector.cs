@@ -199,12 +199,24 @@ namespace Game.Cinematics
         // Estado global para que otros scripts (como vThirdPersonCamera) sepan si hay cinemática
         public static bool IsAnyCinematicPlaying { get; private set; }
 
+        // FIX A9 (auditoría 2026-08-07): IsAnyCinematicPlaying era un flag estático sin dueño. Si
+        // el director A estaba reproduciendo y un director B —que NUNCA llegó a reproducir, p.ej.
+        // se desactiva por descarga de escena aditiva— se desactivaba, B reseteaba el flag global,
+        // liberaba el timeScale y cerraba el override de entorno de A, todo mientras A seguía en
+        // marcha. s_activeInstance guarda quién es el dueño real de la cinemática en curso; solo
+        // esa instancia puede tocar el estado global al desactivarse/destruirse.
+        private static SimpleCinematicDirector s_activeInstance;
+
         /// <summary>
         /// Fuerza el flag a false sin pasar por OnDisable/OnDestroy de ninguna instancia. Red de
         /// seguridad adicional para los puntos de entrada de sesión (MainMenu, arranque de
         /// partida); en el camino normal OnDisable/OnDestroy ya lo dejan en false.
         /// </summary>
-        public static void ForceResetStaticState() => IsAnyCinematicPlaying = false;
+        public static void ForceResetStaticState()
+        {
+            IsAnyCinematicPlaying = false;
+            s_activeInstance = null;
+        }
 
         private void Start()
         {
@@ -213,26 +225,35 @@ namespace Game.Cinematics
 
         private void OnDisable()
         {
-            // Restaurar estado global si la cinemática fue interrumpida externamente (ej. StopCoroutine sin Destroy)
-            if (!IsAnyCinematicPlaying) return;
+            // Limpieza de recursos propios de ESTA instancia: CleanupGraphs opera solo sobre
+            // _activeGraphs (instancia), y TimeScaleArbiterService.Release/CameraDirectorService.Release
+            // son no-op seguros si esta instancia no era la dueña de nada — se puede llamar siempre,
+            // sin condicionar al estado global.
             CleanupGraphs(true);
-            Time.timeScale = 1f;
-            IsAnyCinematicPlaying = false;
+            TimeScaleArbiterService.Release(this); // FIX C6 (auditoría 2026-08-07)
             CameraDirectorService.Release(this);
+
+            // FIX A9 (auditoría 2026-08-07): solo el dueño real de la cinemática en curso puede
+            // resetear el estado GLOBAL (flag + override de entorno).
+            if (s_activeInstance != this) return;
+
+            IsAnyCinematicPlaying = false;
+            s_activeInstance = null;
             if (EnvironmentController.Instance != null && EnvironmentController.Instance.IsCinematicOverrideActive)
                 EnvironmentController.Instance.EndCinematicOverride();
         }
 
         private void OnDestroy()
         {
-            CleanupGraphs(true); // Forzar limpieza total al destruir
-            Time.timeScale = 1f;
-            if (IsAnyCinematicPlaying) IsAnyCinematicPlaying = false;
-
-            // Asegurar que liberamos la cámara (Release() ya es un no-op seguro si no somos el owner actual)
+            CleanupGraphs(true); // Forzar limpieza total al destruir (recursos propios de esta instancia)
+            TimeScaleArbiterService.Release(this); // FIX C6 (auditoría 2026-08-07)
             CameraDirectorService.Release(this);
 
-            // Liberar el override cinemático si estaba activo (evita que el entorno quede en estado incorrecto)
+            // FIX A9 (auditoría 2026-08-07): ver comentario de OnDisable.
+            if (s_activeInstance != this) return;
+
+            IsAnyCinematicPlaying = false;
+            s_activeInstance = null;
             if (EnvironmentController.Instance != null && EnvironmentController.Instance.IsCinematicOverrideActive)
             {
                 EnvironmentController.Instance.EndCinematicOverride();
@@ -309,7 +330,8 @@ namespace Game.Cinematics
         {
             Debug.Log($"[Cinematic] Iniciando secuencia con {steps.Count} pasos.");
             IsAnyCinematicPlaying = true;
-            
+            s_activeInstance = this; // FIX A9 (auditoría 2026-08-07)
+
             // Bloquear vThirdPersonCamera (vía CameraDirectorService, ver CameraDirectorService.cs)
             CameraDirectorService.Claim(this);
 
@@ -439,13 +461,15 @@ namespace Game.Cinematics
                 }
 
                 // 3. SLOW MOTION
+                // FIX C6 (auditoría 2026-08-07): delegado en TimeScaleArbiterService para no pisar
+                // ni ser pisado por otros efectos activos (hitstop, muerte).
                 if (step.slowMotion)
                 {
-                    Time.timeScale = step.timeScale;
+                    TimeScaleArbiterService.Request(this, step.timeScale);
                 }
                 else
                 {
-                    Time.timeScale = 1f;
+                    TimeScaleArbiterService.Release(this);
                 }
                 
                 // 3.5 GESTIÓN DE ENTORNO (Interior/Exterior)
@@ -745,9 +769,10 @@ namespace Game.Cinematics
 
             // --- FINALIZACIÓN ---
             CleanupGraphs(true); // Limpiar todo al acabar la cinemática
-            Time.timeScale = 1f; // Restaurar tiempo
+            TimeScaleArbiterService.Release(this); // FIX C6 (auditoría 2026-08-07): restaurar tiempo
             IsAnyCinematicPlaying = false;
-            
+            if (s_activeInstance == this) s_activeInstance = null; // FIX A9 (auditoría 2026-08-07)
+
             // Liberar vThirdPersonCamera (vía CameraDirectorService)
             CameraDirectorService.Release(this);
 

@@ -81,6 +81,15 @@ public abstract class CinematicSequencerBase : MonoBehaviour
     // en curso mantiene Push/Pop siempre equilibrados sin importar cuántas veces dispare el grafo.
     private bool _sequenceRunning;
 
+    // FIX A7 (auditoría 2026-08-07): handlers activos de Co_Transition, guardados a nivel de
+    // instancia para poder desuscribirlos desde OnDestroy. TransitionManager es persistente
+    // (DontDestroyOnLoad); si este objeto se destruye/su corrutina se interrumpe a mitad de una
+    // transición (StopAllCoroutines, cambio de escena), los handlers locales de Co_Transition
+    // quedaban suscritos para siempre y podían disparar más tarde para una transición de OTRO
+    // sistema, ejecutando onCutPoint (p. ej. BeginCinematic()) sobre un sequencer ya destruido.
+    private UnityEngine.Events.UnityAction _activeTransitionCutHandler;
+    private UnityEngine.Events.UnityAction _activeTransitionEndHandler;
+
     // ── Ciclo de vida Unity ───────────────────────────────────────────────────
 
     protected virtual void Awake()
@@ -125,6 +134,16 @@ public abstract class CinematicSequencerBase : MonoBehaviour
     {
         FeedbackService.CancelAllShakes();
         DefaultNarrativeSignals.Instance?.OffCustom(_signalIn, _signalInHandler);
+
+        // FIX A7 (auditoría 2026-08-07): ver comentario de _activeTransitionCutHandler/_activeTransitionEndHandler.
+        var tm = TransitionManager.Instance();
+        if (tm != null)
+        {
+            if (_activeTransitionCutHandler != null) tm.onTransitionCutPointReached -= _activeTransitionCutHandler;
+            if (_activeTransitionEndHandler != null) tm.onTransitionEnd -= _activeTransitionEndHandler;
+        }
+        _activeTransitionCutHandler = null;
+        _activeTransitionEndHandler = null;
     }
 
     // ── Punto de entrada de la subclase ──────────────────────────────────────
@@ -266,14 +285,19 @@ public abstract class CinematicSequencerBase : MonoBehaviour
         cutHandler = () =>
         {
             tm.onTransitionCutPointReached -= cutHandler;
+            _activeTransitionCutHandler = null;
             onCutPoint?.Invoke();
         };
         endHandler = () =>
         {
             tm.onTransitionEnd -= endHandler;
+            _activeTransitionEndHandler = null;
             done = true;
         };
 
+        // FIX A7 (auditoría 2026-08-07): guardar referencia a nivel de instancia (ver OnDestroy).
+        _activeTransitionCutHandler = cutHandler;
+        _activeTransitionEndHandler = endHandler;
         tm.onTransitionCutPointReached += cutHandler;
         tm.onTransitionEnd += endHandler;
         tm.Transition(settings, 0f);
@@ -332,7 +356,27 @@ public abstract class CinematicSequencerBase : MonoBehaviour
     // la use igual, sin reinventar el formato de la clave cada vez.
     protected static bool HasCinematicBeenSeen(string id)
     {
-        var preset = GameBootService.Profile != null ? GameBootService.Profile.GetActivePresetResolved() : null;
+        // INC-075-bis (08/08/2026): si GameBootService.Profile es null, esta comprobación
+        // devolvía silenciosamente "false" (no vista) — indistinguible de un save real sin el
+        // flag. Eso hizo perder tiempo varias veces diagnosticando "el flag no persiste" cuando
+        // en realidad la causa era entrar en Play Mode directamente sobre una escena de mundo
+        // (ej. MainWorld) en vez de por 'Start.unity': GameBootService.Bootstrap() SOLO busca una
+        // instancia ya existente (no crea una dinámica, ver comentario en GameBootService.cs), así
+        // que sin 'Start' cargado (normalmente vía Editor/AutoBootstrapOnPlay.cs) Profile se queda
+        // en null y CUALQUIER sequencer que dependa de este helper deja de ocultar sus actores, sin
+        // que eso implique que el guardado/carga real esté roto. El log de aviso hace explícita esa
+        // diferencia para no repetir la misma investigación cada vez.
+        if (GameBootService.Profile == null)
+        {
+            Debug.LogWarning($"[CinematicSequencerBase] HasCinematicBeenSeen('{id}'): GameBootService.Profile " +
+                "es null, así que no se puede saber si esta cinemática ya se vio (se asume que no). Si esperabas " +
+                "que sus actores ya estuvieran ocultos, probablemente entraste en Play Mode directamente sobre " +
+                "esta escena en vez de por 'Start.unity' — revisa la consola por '[AutoBootstrapOnPlay]' o " +
+                "arranca desde 'Start.unity'/el flujo normal del menú. No es un fallo del guardado/carga real.");
+            return false;
+        }
+
+        var preset = GameBootService.Profile.GetActivePresetResolved();
         return preset != null && preset.flags != null && preset.flags.Contains($"CINEMATIC_SEEN:Cinematic_{id}");
     }
 

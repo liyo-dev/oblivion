@@ -471,7 +471,10 @@ public class PlayerLevitationController : MonoBehaviour
         DestroyHoldVFX();
         DestroyRangeIndicators();
 
-        if (animator != null)
+        // isActiveAndEnabled evita el warning "Animator is not playing an AnimatorController":
+        // si el Animator ya fue desactivado (p.ej. por un swap de personaje en el mismo frame),
+        // su playable graph ya no existe y no tiene sentido intentar resetear el layer weight.
+        if (animator != null && animator.isActiveAndEnabled)
             animator.SetLayerWeight(_upperBodyLayerIndex, 0f);
 
         _phase = LevitationPhase.Idle;

@@ -131,6 +131,46 @@ public class AerialKnockbackReceiver : MonoBehaviour
     }
 
     /// <summary>
+    /// FIX C7 (auditoría 2026-08-07): si el GameObject se desactiva a mitad de un lanzamiento
+    /// (cambio de personaje activo, muerte, descarga de escena...), Unity detiene LaunchRoutine
+    /// en seco sin ejecutar su bloque de restauración final: el Rigidbody se queda kinemático y
+    /// sin gravedad, el vThirdPersonController y el root motion siguen desactivados, y
+    /// ActionMode.Stunned queda apilado para siempre en PlayerActionManager. Sin este OnDisable,
+    /// el personaje queda permanentemente bloqueado (inmóvil, sin animación de movimiento)
+    /// incluso después de reactivarse.
+    /// </summary>
+    private void OnDisable()
+    {
+        if (!_isLaunching) return;
+
+        StopAllCoroutines();
+        _isLaunching = false;
+
+        if (_rigidbody != null)
+        {
+            _rigidbody.isKinematic = _cachedRigidbodyKinematic;
+            _rigidbody.useGravity = _cachedRigidbodyUseGravity;
+            if (!_cachedRigidbodyKinematic)
+            {
+                _rigidbody.linearVelocity = Vector3.zero;
+                _rigidbody.angularVelocity = Vector3.zero;
+            }
+        }
+
+        if (_thirdPersonController != null)
+            _thirdPersonController.enabled = _controllerWasEnabled;
+
+        if (_animator != null)
+            _animator.applyRootMotion = _cachedApplyRootMotion;
+
+        if (_stunnedModePushed && _actionManager != null)
+        {
+            _actionManager.PopMode(ActionMode.Stunned);
+            _stunnedModePushed = false;
+        }
+    }
+
+    /// <summary>
     /// Lanza al objetivo hacia atrás (dirección ya calculada por el llamador, normalmente
     /// -transform.forward del propio objetivo para garantizar que SIEMPRE va hacia atrás,
     /// sin depender de vectores geométricos como la posición del proyectil o del impacto).

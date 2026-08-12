@@ -594,9 +594,16 @@ public class BossArenaController : MonoBehaviour
 
         if (!_bossDeathConfirmed)
         {
-            // El boss fue destruido sin haber sido derrotado (p.ej. cambio de escena tras Game Over).
-            CleanupBossSubscriptions();
-            started = false;
+            // El boss fue destruido sin haber sido derrotado (p.ej. cambio de escena tras Game
+            // Over, killzone, despawn o limpieza externa). FIX A2 (auditoría 2026-08-07): antes
+            // este camino solo hacía CleanupBossSubscriptions()+started=false, sin reabrir
+            // puertas, desbloquear el área ni parar la música de batalla — el jugador quedaba
+            // encerrado con música de boss infinita y sin poder re-disparar el trigger (started
+            // seguía en el estado de "batalla en curso" a efectos de puertas/barrera). Se reusa
+            // ApplyBossClearedState (misma limpieza que una victoria real) pero sin marcar
+            // derrota real: no cuenta como victoria en BossProgressTracker, no dispara eventos
+            // de Unity ni señales narrativas de "batalla ganada".
+            ApplyBossClearedState(invokeUnityEvents: false, markDefeatedInTracker: false, raiseSignals: false);
             return;
         }
         

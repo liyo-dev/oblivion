@@ -76,6 +76,19 @@ public class VfxPoolService : MonoBehaviour
             ActiveVfx entry = _active[i];
             if (entry.instance == null)
             {
+                // FIX A3 (auditoría 2026-08-07): si el VFX murió con su "parent" externo (ver
+                // Play(..., parent:)) en vez de expirar por lifetime, antes solo se quitaba de
+                // _active — el ObjectPool<Transform> de origen seguía contando esta instancia
+                // como "en uso" para siempre (nunca pasa por Return/ReturnInternal). Tras
+                // MaxPoolSizePerPrefab (64) muertes así, ese prefab deja de poder Get() nuevas
+                // instancias y ese VFX deja de verse el resto de la sesión. Purgar aquí también
+                // _instancePool y liberar el hueco en el ObjectPool de origen (sin reactivar
+                // nada, el GameObject ya no existe).
+                if (_instancePool.TryGetValue(entry.instance, out ObjectPool<Transform> deadPool))
+                {
+                    deadPool.ForceRelease(entry.instance);
+                    _instancePool.Remove(entry.instance);
+                }
                 _active.RemoveAt(i);
                 continue;
             }

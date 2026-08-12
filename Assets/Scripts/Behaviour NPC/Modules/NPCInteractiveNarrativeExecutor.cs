@@ -380,9 +380,17 @@ namespace Game.NPC.Modules
             if (narrative.singleUse && narrative.HasBeenExecuted)
             {
                 if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] ⏭️ Ignorando evento '{eventKey}' - narrativa '{narrative.description}' ya fue ejecutada (singleUse)");
+                // FIX A5 (auditoría 2026-08-07): este ejecutor puede suscribirse a la señal ANTES
+                // que el WaitCustomEventNode del grafo narrativo (orden de carga: el executor se
+                // re-suscribe en OnSignalsReset antes de que los runners restauren blackboards).
+                // Sin esto, al descartar el evento aquí, la señal se pierde para siempre y el
+                // nodo del grafo que sí la necesitaba queda esperando eternamente. Reencolarla
+                // (sin invocar a nadie, ver RequeueCustom) la deja disponible para quien la
+                // necesite de verdad.
+                DefaultNarrativeSignals.Instance?.RequeueCustom(eventKey);
                 return;
             }
-            
+
             // ✅ También verificar si está en la lista de completadas del preset (persistencia)
             if (_config != null && _config.persistState && !string.IsNullOrEmpty(GetEffectivePersistenceId()))
             {
@@ -393,6 +401,8 @@ namespace Game.NPC.Modules
                     if (preset.completedInteractiveNarratives.Contains(narrativeId))
                     {
                         if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] ⏭️ Ignorando evento '{eventKey}' - narrativa '{narrative.description}' ya completada en preset");
+                        // FIX A5 (auditoría 2026-08-07): mismo razonamiento que arriba.
+                        DefaultNarrativeSignals.Instance?.RequeueCustom(eventKey);
                         return;
                     }
                 }

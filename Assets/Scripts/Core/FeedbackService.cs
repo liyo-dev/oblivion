@@ -33,6 +33,7 @@
             _sfxProvider = null;
             _deathCameraEffect = null;
             _fadeRoot = null;
+            _activeFadeRoutine = null;
         }
 #endif
 
@@ -74,11 +75,22 @@
         /// <summary>
         /// Hace un fade de pantalla completa. fadeIn=true va de transparente a color, fadeIn=false va de color a transparente.
         /// </summary>
+        // FIX M5 (auditoría 2026-08-07): ScreenFade lanzaba una corrutina nueva en cada llamada
+        // sin cancelar una anterior todavía en curso. Con N llamadas solapadas, N corrutinas
+        // escriben el mismo img.color a la vez y la pantalla puede quedarse en negro (o en
+        // cualquier color a medias) según cuál termine última — no necesariamente la más reciente.
+        private static Coroutine _activeFadeRoutine;
+
         public static void ScreenFade(Color color, float duration, bool fadeIn = true)
         {
             if (duration <= 0f) return;
             var inst = EnsureInstance();
-            inst.StartCoroutine(Co_ScreenFade(color, duration, fadeIn));
+            if (_activeFadeRoutine != null)
+            {
+                inst.StopCoroutine(_activeFadeRoutine);
+                _activeFadeRoutine = null;
+            }
+            _activeFadeRoutine = inst.StartCoroutine(Co_ScreenFade(color, duration, fadeIn));
         }
         
         /// <summary>
@@ -145,6 +157,8 @@
             var final = color;
             final.a = fadeIn ? color.a : 0f;
             img.color = final;
+
+            _activeFadeRoutine = null;
         }
         
         // Reutilizar el mismo sistema de overlay que Flash

@@ -6598,8 +6598,9 @@ GameObject:
   - component: {fileID: 723473664}
   - component: {fileID: 723473666}
   - component: {fileID: 723473665}
+  - component: {fileID: 723473670}
   m_Layer: 0
-  m_Name: ImageArrowLeft (1)
+  m_Name: PartySwitchHintRight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6614,7 +6615,7 @@ RectTransform:
   m_GameObject: {fileID: 723473663}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: -1, y: 1, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 323231517}
@@ -6634,7 +6635,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -6662,6 +6663,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 723473663}
   m_CullTransparentMesh: 1
+--- !u!114 &723473670
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 723473663}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d705401041c54051abddaaaffd9c7960, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  glyphName: interactable_dpad_right
+  icon: {fileID: 723473665}
 --- !u!1 &726007092
 GameObject:
   m_ObjectHideFlags: 0
@@ -7277,6 +7292,7 @@ MonoBehaviour:
   canvasGroup: {fileID: 790455495}
   hintText: {fileID: 1486373885}
   buttonIcon: {fileID: 1553512701}
+  teleportIconSet: {fileID: 11400000, guid: 940c40bb9a60476082b4dc10aa467b6b, type: 2}
   fadeInDuration: 0.25
   fadeOutDuration: 0.15
   hintLocKey: TELEPORT_HINT
@@ -9467,8 +9483,9 @@ GameObject:
   - component: {fileID: 1035811562}
   - component: {fileID: 1035811564}
   - component: {fileID: 1035811563}
+  - component: {fileID: 1035811570}
   m_Layer: 0
-  m_Name: ImageArrowLeft
+  m_Name: PartySwitchHintLeft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -9503,7 +9520,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -9531,6 +9548,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1035811561}
   m_CullTransparentMesh: 1
+--- !u!114 &1035811570
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1035811561}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d705401041c54051abddaaaffd9c7960, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  glyphName: interactable_dpad_left
+  icon: {fileID: 1035811563}
 --- !u!1 &1060315180
 GameObject:
   m_ObjectHideFlags: 0
@@ -12737,6 +12768,7 @@ GameObject:
   - component: {fileID: 1549242723}
   - component: {fileID: 1549242725}
   - component: {fileID: 1549242724}
+  - component: {fileID: 1549242798}
   m_Layer: 5
   m_Name: boton A
   m_TagString: Untagged
@@ -12801,6 +12833,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1549242722}
   m_CullTransparentMesh: 1
+--- !u!114 &1549242798
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1549242722}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d705401041c54051abddaaaffd9c7960, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  glyphName: interactable_confirm
+  icon: {fileID: 1549242724}
 --- !u!1 &1553512699
 GameObject:
   m_ObjectHideFlags: 0

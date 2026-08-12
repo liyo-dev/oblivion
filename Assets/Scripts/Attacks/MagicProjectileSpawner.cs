@@ -33,6 +33,15 @@ public class MagicProjectileSpawner : MonoBehaviour
 
     private MagicSpellSO leftSpell, rightSpell, specialSpell;
 
+    // FIX M8 (auditoría 2026-08-07): mientras Co_SpawnWithCharge espera chargeTime, el proyectil
+    // vive parenteado a la mano (followOriginDuringCharge) y en kinematic. Si este spawner se
+    // desactiva a mitad de la carga (p.ej. el player se desactiva por cinemática/muerte/cambio de
+    // escena), Unity aborta la corrutina sin ejecutar el resto — el proyectil se queda pegado a la
+    // mano para siempre, sobre todo si spell.lifeTime==0 (nunca arranca su temporizador porque
+    // Launch() nunca llega a llamarse). OnDisable limpia cualquier proyectil que se haya quedado
+    // a medio cargar.
+    private readonly System.Collections.Generic.List<GameObject> _chargingProjectiles = new System.Collections.Generic.List<GameObject>();
+
     [Header("Opciones")]
     [SerializeField] private bool ignoreCasterColliders = true;
     [SerializeField] private GameObject instigatorOverride;
@@ -138,6 +147,20 @@ public class MagicProjectileSpawner : MonoBehaviour
     void OnDisable()
     {
         if (controller) controller.OnMagicSlotCast -= HandleSlotCast;
+
+        // FIX M8: ver comentario en _chargingProjectiles. La corrutina de carga se aborta al
+        // desactivarse este componente sin llegar a soltar el proyectil; lo destruimos aquí para
+        // no dejarlo pegado a la mano indefinidamente.
+        for (int i = 0; i < _chargingProjectiles.Count; i++)
+        {
+            var go = _chargingProjectiles[i];
+            if (go)
+            {
+                go.transform.SetParent(null, worldPositionStays: true);
+                Destroy(go);
+            }
+        }
+        _chargingProjectiles.Clear();
     }
 
     private void HandleSlotCast(int slotId)
@@ -274,6 +297,9 @@ public class MagicProjectileSpawner : MonoBehaviour
             go.transform.localScale = spell.scaleOverride;
         if (go == null) yield break;
 
+        // FIX M8: registrar como "cargando" hasta que se suelte (o hasta OnDisable, ver arriba).
+        _chargingProjectiles.Add(go);
+
         // Pausar física mientras carga
         Rigidbody cachedRb = null;
         bool cachedKinematic = false;
@@ -336,6 +362,9 @@ public class MagicProjectileSpawner : MonoBehaviour
 
         if (go != null && spell.followOriginDuringCharge && origin != null)
             go.transform.SetParent(previousParent, worldPositionStays: true);
+
+        // FIX M8: ya se va a soltar (Launch/velocity más abajo) — deja de estar "cargando".
+        _chargingProjectiles.Remove(go);
 
         // FIX INC-049: recalcular la velocidad justo antes de soltar el proyectil, no al
         // empezar la carga. Con hechizos con chargeTime > 0 el jugador puede empezar a volar

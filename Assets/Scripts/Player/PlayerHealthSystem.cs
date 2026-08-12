@@ -62,6 +62,9 @@ public class PlayerHealthSystem : MonoBehaviour
     private Animator _animator;
     private Renderer[] _renderers;
     private Material[] _originalMaterials;
+    // FIX A10 (auditoría 2026-08-07): resuelto en Awake para god-frame en Cinematic (TakeDamage)
+    // y para vaciar la pila de modos en Die()/ReviveInternal (ver comentarios más abajo).
+    private PlayerActionManager _actionManager;
 
     // Cache para resolución de estados del Animator
     private readonly Dictionary<string, int> _stateHash = new Dictionary<string, int>();
@@ -103,6 +106,7 @@ public class PlayerHealthSystem : MonoBehaviour
     void Awake()
     {
         _animator = GetComponent<Animator>();
+        _actionManager = GetComponent<PlayerActionManager>() ?? GetComponentInParent<PlayerActionManager>();
 
         // Obtener renderers para efectos visuales
         _renderers = GetComponentsInChildren<Renderer>();
@@ -123,6 +127,13 @@ public class PlayerHealthSystem : MonoBehaviour
     void OnDisable()
     {
         GameBootService.OnProfileReady -= HandleProfileReady;
+
+        // FIX A10 (auditoría 2026-08-07): si el GameObject se desactiva a mitad del ciclo "apagado"
+        // de InvulnerabilityFlashCoroutine (SetRenderersVisibility(false)), la corrutina muere en
+        // seco sin llegar a su reactivación — el jugador queda invisible para siempre, incluso al
+        // reactivarse, porque nada volvía a llamar a ResetDamageVisuals(). Se llama siempre al
+        // desactivar (ya es seguro/no-op si no había nada que restaurar).
+        ResetDamageVisuals();
     }
 
     private void HandleProfileReady()
@@ -159,21 +170,35 @@ public class PlayerHealthSystem : MonoBehaviour
         GameBootService.OnProfileReady -= HandleProfileReady;
     }
     
+    // FIX Bajos (auditoría 2026-08-07): `renderer.material` (getter) ya auto-instancia una copia
+    // única del material la primera vez que se accede, y esa copia se descarta inmediatamente al
+    // envolverla en `new Material(...)` — una fuga por renderer cada vez que se llama a este
+    // método. Se usa `sharedMaterial` como origen (no instancia nada) y se destruyen instancias
+    // previas si el método se llegara a llamar más de una vez en la vida del componente.
     private void CacheOriginalMaterials()
     {
         if (_renderers == null) return;
-        
+
+        if (_originalMaterials != null)
+        {
+            for (int i = 0; i < _originalMaterials.Length; i++)
+            {
+                if (_originalMaterials[i] != null)
+                    Destroy(_originalMaterials[i]);
+            }
+        }
+
         _originalMaterials = new Material[_renderers.Length];
         for (int i = 0; i < _renderers.Length; i++)
         {
             if (_renderers[i] != null)
             {
                 // Crear una instancia del material para evitar modificar el material compartido
-                _originalMaterials[i] = new Material(_renderers[i].material);
+                _originalMaterials[i] = new Material(_renderers[i].sharedMaterial);
                 _renderers[i].material = _originalMaterials[i];
             }
         }
-    
+
     }
     
     /// <summary>
@@ -182,8 +207,14 @@ public class PlayerHealthSystem : MonoBehaviour
     public bool TakeDamage(float damageAmount, bool ignoreInvulnerability = false)
     {
         if (!IsAlive || damageAmount <= 0f || godMode) return false;
+        // FIX A10 (auditoría 2026-08-07): god-frame durante cinemáticas. Sin esto, un AoE/proyectil
+        // residual que impacta justo cuando arranca una cinemática (o un daño en curso que se
+        // resuelve un frame después de que ActionMode.Cinematic ya esté en la pila) podía matar al
+        // jugador y disparar el GameOver DENTRO de la cinemática — pantalla de muerte superpuesta a
+        // una secuencia que se supone segura.
+        if (_actionManager != null && _actionManager.Top == ActionMode.Cinematic) return false;
         if (IsInvulnerable && !ignoreInvulnerability) return false;
-        
+
         float oldHealth = _currentHp;
         _currentHp = Mathf.Max(0f, oldHealth - damageAmount);
         
@@ -366,6 +397,12 @@ public class PlayerHealthSystem : MonoBehaviour
 
         _isDead = true;
 
+        // FIX A10 (auditoría 2026-08-07): vaciar la pila de modos al morir. Sin esto, morir con
+        // Flying/Carrying/Cinematic/Stunned pushed (p. ej. un AoE que mata en pleno vuelo) dejaba
+        // esos modos "vivos" de cara al respawn — el jugador reaparecía con el input parcialmente
+        // bloqueado por un modo que ya no tiene sentido tras la muerte.
+        _actionManager?.ResetToDefault();
+
         // Asegurar que la salud está a 0
         _currentHp = 0f;
 
@@ -412,6 +449,16 @@ public class PlayerHealthSystem : MonoBehaviour
         if (!_isDead) return;
 
         _isDead = false;
+
+        // FIX A10 (auditoría 2026-08-07): red de seguridad — vaciar la pila de nuevo por si algún
+        // sistema empujó un modo entre la muerte y el revive (p. ej. una cinemática de Game Over).
+        _actionManager?.ResetToDefault();
+
+        // FIX A10 (auditoría 2026-08-07): invulnerabilidad temporal al revivir. Sin esto, el
+        // jugador podía reaparecer exactamente sobre el peligro que lo mató (el anchor de
+        // respawn no garantiza estar fuera del radio de un AoE/trampa) y morir de nuevo antes de
+        // recuperar el control.
+        StartInvulnerability();
 
         // Teletransportar al último anchor conocido si existe
         try

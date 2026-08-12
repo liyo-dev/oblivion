@@ -1898,6 +1898,9 @@ public class TagMinigameController : MonoBehaviour
         isCountingDown = false;
         isRunning = true;
         remainingTime = duration;
+        // FIX M10: forzar reescritura del timer en el primer UpdateTimerUI tras (re)arrancar,
+        // aunque el segundo entero coincida por casualidad con el de la ejecución anterior.
+        _lastDisplayedTimerSeconds = int.MinValue;
 
         if (chaser)
         {
@@ -2686,12 +2689,21 @@ public class TagMinigameController : MonoBehaviour
         if (uiContainer) uiContainer.SetActive(false);
     }
 
+    // FIX M10 (auditoría 2026-08-07): UpdateTimerUI se llama cada frame desde Update mientras el
+    // minijuego está en marcha y antes reformateaba/reasignaba timerText.text en cada uno,
+    // aunque el segundo entero mostrado solo cambia una vez por segundo — coste de string y
+    // relayout de TMP evitable. Ahora solo se reescribe cuando el segundo entero visible cambia.
+    private int _lastDisplayedTimerSeconds = int.MinValue;
+
     private void UpdateTimerUI()
     {
-        if (timerText)
-        {
-            timerText.text = FormatTime(remainingTime);
-        }
+        if (!timerText) return;
+
+        int wholeSeconds = Mathf.FloorToInt(Mathf.Max(0f, remainingTime));
+        if (wholeSeconds == _lastDisplayedTimerSeconds) return;
+
+        _lastDisplayedTimerSeconds = wholeSeconds;
+        timerText.text = FormatTime(remainingTime);
     }
 
     private string FormatTime(float time)

@@ -4861,7 +4861,7 @@ ParticleSystem:
     vectorLabel1_3: W
 --- !u!199 &1119288958028264178
 ParticleSystemRenderer:
-  serializedVersion: 6
+  serializedVersion: 7
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -4907,6 +4907,7 @@ ParticleSystemRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_RenderMode: 0
   m_MeshDistribution: 0
   m_SortMode: 0
@@ -4938,7 +4939,6 @@ ParticleSystemRenderer:
   m_MeshWeighting1: 1
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
-  m_MaskInteraction: 0
 --- !u!1 &2014128913095585371
 GameObject:
   m_ObjectHideFlags: 0
@@ -9764,7 +9764,7 @@ ParticleSystem:
     vectorLabel1_3: W
 --- !u!199 &837919357064250329
 ParticleSystemRenderer:
-  serializedVersion: 6
+  serializedVersion: 7
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -9810,6 +9810,7 @@ ParticleSystemRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_RenderMode: 1
   m_MeshDistribution: 0
   m_SortMode: 0
@@ -9841,7 +9842,6 @@ ParticleSystemRenderer:
   m_MeshWeighting1: 1
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
-  m_MaskInteraction: 0
 --- !u!1 &2887514927977797420
 GameObject:
   m_ObjectHideFlags: 0
@@ -9974,6 +9974,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: -1748431125
@@ -14883,7 +14884,7 @@ ParticleSystem:
     vectorLabel1_3: W
 --- !u!199 &4567963584276520425
 ParticleSystemRenderer:
-  serializedVersion: 6
+  serializedVersion: 7
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -14929,6 +14930,7 @@ ParticleSystemRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_RenderMode: 0
   m_MeshDistribution: 0
   m_SortMode: 0
@@ -14960,7 +14962,6 @@ ParticleSystemRenderer:
   m_MeshWeighting1: 1
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
-  m_MaskInteraction: 0
 --- !u!114 &7385859153328229950
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14976,10 +14977,13 @@ MonoBehaviour:
   mode: 1
   hint: {fileID: 4195920858664622009}
   hideHintAtStart: 1
+  hintAnimDuration: 0.25
+  iconSet: {fileID: 11400000, guid: 9120cc0f8d6f411aa56d4ef968de44c5, type: 2}
   singleUse: 0
   initiallyEnabled: 1
   persistentIdOverride: 
   includeSceneInPersistentId: 1
+  dialogueCharacterId: 
   dialogue: {fileID: 11400000, guid: d37a298bae2f40047978b9524f7fd669, type: 2}
   yesOption: {fileID: 11400000, guid: 893e5eb91f75c2445bcd4ca4bad32fe9, type: 2}
   noOption: {fileID: 11400000, guid: 987eb1a8d60d8e34e85f3ff7476919b4, type: 2}
@@ -15103,8 +15107,6 @@ MonoBehaviour:
   healOnSave: 1
   teleportAfterSave: 0
   teleportAnchorId: 
-  saveSuccessLocalizationKey: SAVEPOINT_SAVED
-  saveSuccessFallback: "\xA1Partida guardada con \xE9xito!"
 --- !u!1 &5698229888806196876
 GameObject:
   m_ObjectHideFlags: 0
@@ -19966,7 +19968,7 @@ ParticleSystem:
     vectorLabel1_3: W
 --- !u!199 &5090615938632662339
 ParticleSystemRenderer:
-  serializedVersion: 6
+  serializedVersion: 7
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -20012,6 +20014,7 @@ ParticleSystemRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_RenderMode: 0
   m_MeshDistribution: 0
   m_SortMode: 0
@@ -20043,7 +20046,6 @@ ParticleSystemRenderer:
   m_MeshWeighting1: 1
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
-  m_MaskInteraction: 0
 --- !u!1 &8922392204829728538
 GameObject:
   m_ObjectHideFlags: 0
@@ -24896,7 +24898,7 @@ ParticleSystem:
     vectorLabel1_3: W
 --- !u!199 &648344808630816527
 ParticleSystemRenderer:
-  serializedVersion: 6
+  serializedVersion: 7
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -24942,6 +24944,7 @@ ParticleSystemRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_RenderMode: 0
   m_MeshDistribution: 0
   m_SortMode: 0
@@ -24973,4 +24976,3 @@ ParticleSystemRenderer:
   m_MeshWeighting1: 1
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
-  m_MaskInteraction: 0

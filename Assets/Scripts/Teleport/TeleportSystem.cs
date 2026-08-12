@@ -207,9 +207,18 @@ public class TeleportSystem : MonoBehaviour
         // Realizar el teletransporte (dispara la transición de pantalla internamente)
         SpawnManager.TeleportTo(destinationAnchorId, true);
 
-        // Esperar a que la transición termine por completo (fade in incluido)
-        yield return new WaitUntil(() => transitionEnded);
+        // Esperar a que la transición termine por completo (fade in incluido).
+        // FIX C3 (auditoría 2026-08-07): TeleportService.TeleportToAnchor ya emite siempre
+        // OnTeleportEnded en sus paths de fallo (ver TeleportService.cs), pero se deja este
+        // timeout como red de seguridad: sin él, cualquier otro camino de fallo futuro que se
+        // cuele sin emitir el evento dejaría esta corrutina esperando para siempre, con el
+        // jugador sin input y sin poder volver a teletransportar (IsTeleporting nunca baja).
+        const float TeleportEndTimeout = 10f;
+        float waitStartedAt = Time.unscaledTime;
+        yield return new WaitUntil(() => transitionEnded || Time.unscaledTime - waitStartedAt > TeleportEndTimeout);
         TeleportService.OnTeleportEnded -= onTransitionEnd;
+        if (!transitionEnded)
+            Debug.LogError($"[TeleportSystem] Timeout esperando OnTeleportEnded para '{destinationAnchorId}' — se fuerza el cierre del teletransporte para no dejar al jugador bloqueado.");
 
         // Reproducir SFX de llegada
         PlayerService.TryGetPlayer(out player, allowSceneLookup: true);

@@ -2398,6 +2398,7 @@ MonoBehaviour:
   hint: {fileID: 8503697881313571355}
   hideHintAtStart: 1
   hintAnimDuration: 0.25
+  iconSet: {fileID: 11400000, guid: 9120cc0f8d6f411aa56d4ef968de44c5, type: 2}
   singleUse: 1
   initiallyEnabled: 1
   persistentIdOverride: 
@@ -2449,6 +2450,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InteractableToNarrativeEvent
   eventKey: ADD_CLOAK
   sendNow: 0
+  playerStop: {fileID: 0}
 --- !u!195 &1165701030903493255
 NavMeshAgent:
   m_ObjectHideFlags: 0

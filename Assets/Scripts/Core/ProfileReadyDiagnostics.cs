@@ -70,6 +70,20 @@ public class ProfileReadyDiagnostics : MonoBehaviour
     private static float _profileReadyTime = -1f;
     private static bool _trackingEnabled = true; // ✅ Nuevo: habilitar/deshabilitar tracking
 
+    // FIX M9 (auditoría 2026-08-07): este singleton no tenía el ResetStatics obligatorio (regla
+    // §3 del proyecto). Sin domain reload entre sesiones de PlayMode en el editor, _instance y
+    // todo el estado de tracking (_actualSubscribers, _profileAccessors, _profileReadyFired...)
+    // sobrevivía de una sesión a la siguiente, produciendo diagnósticos falsos (sistemas
+    // "faltantes" que en realidad ya se habían registrado en la sesión anterior).
+#if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        _instance = null;
+        Reset();
+    }
+#endif
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap()
     {

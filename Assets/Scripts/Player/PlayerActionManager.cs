@@ -248,7 +248,15 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
 
     public void PushMode(ActionMode mode)
     {
-        if (Top == mode) return;
+        // FIX C2 (auditoría 2026-08-07): antes, "if (Top == mode) return;" descartaba el segundo
+        // Push del mismo modo cuando dos sistemas lo empujaban casi a la vez (p.ej. DialogueManager
+        // y CinematicSequencerBase empujando Cinematic). El problema: el segundo sistema hace su
+        // Pop igualmente, y ese Pop borraba la ÚNICA entrada que había en la pila — la del primer
+        // sistema, que seguía activo. Resultado: input desbloqueado en mitad del diálogo, jugador
+        // controlable en mitad de una cinemática. PopMode ya borra una sola instancia (la más
+        // alta), así que permitir entradas repetidas en la pila la convierte en un refcount real:
+        // cada Push añade una entrada, cada Pop quita una, y el modo solo desaparece de verdad
+        // cuando el último Pop lo hace. Ya no hay early-return que descarte pushes "duplicados".
         _stack.Add(mode);
 #if UNITY_EDITOR
         if (debugLogs) Debug.Log($"[PlayerActionManager] Push: {mode} (stack size: {_stack.Count})");
@@ -260,16 +268,33 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     {
         for (int i = _stack.Count - 1; i >= 0; --i)
         {
-            if (_stack[i] == mode) 
-            { 
-                _stack.RemoveAt(i); 
+            if (_stack[i] == mode)
+            {
+                _stack.RemoveAt(i);
 #if UNITY_EDITOR
                 if (debugLogs) Debug.Log($"[PlayerActionManager] Pop: {mode} (stack size: {_stack.Count})");
 #endif
-                break; 
+                break;
             }
         }
         if (_stack.Count == 0) _stack.Add(ActionMode.Default);
+        ApplyTopMode();
+    }
+
+    /// <summary>
+    /// FIX A10 (auditoría 2026-08-07): vacía la pila de modos de golpe y vuelve a Default. Pensado
+    /// para puntos de reseteo "duros" de la sesión del jugador (muerte, revivir) donde cualquier
+    /// modo que quedara apilado (Flying/Carrying/Cinematic/Stunned...) ya no es válido — antes,
+    /// morir con un modo pushed lo dejaba vivo de cara al respawn, porque nada hacía los Pop
+    /// correspondientes.
+    /// </summary>
+    public void ResetToDefault()
+    {
+        _stack.Clear();
+        _stack.Add(ActionMode.Default);
+#if UNITY_EDITOR
+        if (debugLogs) Debug.Log("[PlayerActionManager] ResetToDefault: pila vaciada a Default");
+#endif
         ApplyTopMode();
     }
 

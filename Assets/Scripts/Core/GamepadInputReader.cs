@@ -65,6 +65,16 @@ namespace Core
         _navPrevious = Vector2.zero;
         _navFrame = -1;
         _boundControls = null;
+        // FIX Bajos (auditoría 2026-08-07): antes solo se ponía _pollingRegistered = false, pero
+        // eso es un flag NUESTRO — no desuscribe de verdad InputSystem.onAfterUpdate (evento
+        // estático del paquete Input System, sobrevive a sesiones de PlayMode sin domain reload).
+        // Con solo el flag reseteado, la siguiente EnsurePollingRegistered() añadía OTRA
+        // suscripción sin quitar la anterior: PollHardwareFallback se acumulaba una vez por sesión
+        // de PlayMode. Desuscribir explícitamente aquí antes de resetear el flag.
+        #if ENABLE_INPUT_SYSTEM
+        if (_pollingRegistered)
+            InputSystem.onAfterUpdate -= PollHardwareFallback;
+        #endif
         _pollingRegistered = false;
         _gameplaySuppressionOwners.Clear();
         for (int i = 0; i < _lastEmittedFrameByType.Length; i++)

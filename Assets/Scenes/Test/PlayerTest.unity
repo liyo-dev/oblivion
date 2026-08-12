@@ -17546,8 +17546,6 @@ MonoBehaviour:
   healOnSave: 1
   teleportAfterSave: 0
   teleportAnchorId: 
-  saveSuccessLocalizationKey: SAVEPOINT_SAVED
-  saveSuccessFallback: "\xA1Partida guardada con \xE9xito!"
 --- !u!65 &1083931705
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -17693,6 +17691,8 @@ MonoBehaviour:
     fogDensity: 0.008
     duration: 120
     forceRain: 0
+    rainChance: 0
+    fogChance: 0
   - timeOfDay: 1
     skybox: {fileID: 2100000, guid: 0b846be1b116429409a7669cacf2a62e, type: 2}
     lightColor: {r: 1, g: 1, b: 1, a: 1}
@@ -17705,6 +17705,8 @@ MonoBehaviour:
     fogDensity: 0.005
     duration: 90
     forceRain: 0
+    rainChance: 0
+    fogChance: 0
   - timeOfDay: 0
     skybox: {fileID: 2100000, guid: 1cf32c17fea93ef4fb120e8e0cdfbef1, type: 2}
     lightColor: {r: 1, g: 1, b: 1, a: 1}
@@ -17717,6 +17719,8 @@ MonoBehaviour:
     fogDensity: 0.004
     duration: 120
     forceRain: 0
+    rainChance: 0
+    fogChance: 0
   - timeOfDay: 3
     skybox: {fileID: 2100000, guid: 82b660520bdecce4daf45d270ec93fe4, type: 2}
     lightColor: {r: 1, g: 1, b: 1, a: 1}
@@ -17729,6 +17733,8 @@ MonoBehaviour:
     fogDensity: 0.009
     duration: 60
     forceRain: 0
+    rainChance: 0
+    fogChance: 0
   - timeOfDay: 8
     skybox: {fileID: 2100000, guid: ac2eeb98f1b423941b373f537bc56e18, type: 2}
     lightColor: {r: 1, g: 1, b: 1, a: 1}
@@ -17741,6 +17747,8 @@ MonoBehaviour:
     fogDensity: 0.013
     duration: 45
     forceRain: 0
+    rainChance: 0
+    fogChance: 0
   - timeOfDay: 7
     skybox: {fileID: 2100000, guid: 493bfb50af5d9424da505ba945c86600, type: 2}
     lightColor: {r: 1, g: 1, b: 1, a: 1}
@@ -17753,6 +17761,8 @@ MonoBehaviour:
     fogDensity: 0.016
     duration: 90
     forceRain: 0
+    rainChance: 0
+    fogChance: 0
   - timeOfDay: 5
     skybox: {fileID: 2100000, guid: 97637a2a763b7f24b8da4e139e4144ca, type: 2}
     lightColor: {r: 1, g: 1, b: 1, a: 1}
@@ -17765,6 +17775,8 @@ MonoBehaviour:
     fogDensity: 0.022
     duration: 60
     forceRain: 0
+    rainChance: 0
+    fogChance: 0
   directionalLight: {fileID: 1448444570}
   transitionDuration: 10
   useSmoothTransitions: 1
@@ -17773,15 +17785,42 @@ MonoBehaviour:
   rainPrefab: {fileID: 3292688598545588766, guid: 1b7e584853e241a1956d417c4436d159, type: 3}
   rainLastsWholePeriod: 0
   rainFadeOutTime: 3
+  stormSkybox: {fileID: 0}
+  rainLightIntensityMultiplier: 0.55
+  rainFogDensityMultiplier: 2.5
+  rainFogColorTint: {r: 0.45, g: 0.47, b: 0.5, a: 1}
+  rainFogColorBlend: 0.5
+  rainMinLightIntensity: 0.28
+  rainDarkenTransitionDuration: 4
+  mistPrefab: {fileID: 0}
+  mistLastsWholePeriod: 0
+  mistDurationRange: {x: 20, y: 45}
+  mistFadeOutTime: 4
+  mistFogDensityMultiplier: 4
+  mistTransitionDuration: 8
+  cloudsBuildingUpSfxKey: 
+  rainStartedSfxKey: 
+  rainStoppedSfxKey: 
+  mistStartedSfxKey: 
+  mistStoppedSfxKey: 
   autoAdvance: 1
   startingTimeIndex: 0
   onTimeOfDayChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  onCloudsBuildingUp:
     m_PersistentCalls:
       m_Calls: []
   onRainStarted:
     m_PersistentCalls:
       m_Calls: []
   onRainStopped:
+    m_PersistentCalls:
+      m_Calls: []
+  onMistStarted:
+    m_PersistentCalls:
+      m_Calls: []
+  onMistStopped:
     m_PersistentCalls:
       m_Calls: []
 --- !u!114 &1173026700
@@ -17794,14 +17833,25 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 46127b694da402b4fbdcb98cf24529a8, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   dayNightCycle: {fileID: 1173026585}
   cloudPrefabs:
   - {fileID: 159362, guid: 248f8272187dcc448a9d3c979531398f, type: 3}
   - {fileID: 115772, guid: 98c20755924aa5d499600058295661ee, type: 3}
   - {fileID: 160454, guid: 8ec774c4def159e4dba49882bd591326, type: 3}
   - {fileID: 115846, guid: bef19769e972d0741aec3902288fcc2e, type: 3}
+  cloudHeight: 45
+  coverRadius: 150
+  cellSize: 18
+  jitter: 0.5
+  scaleRange: {x: 5, y: 9}
+  maxCloudInstances: 300
+  minClearanceAboveFollowTarget: 25
+  recenterCheckInterval: 2
+  stormCloudColor: {r: 0.42, g: 0.43, b: 0.47, a: 1}
+  syncWithRainDarken: 1
+  fadeDuration: 6
 --- !u!1001 &1190223791
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -33565,6 +33615,7 @@ MonoBehaviour:
   hint: {fileID: 1512757424}
   hideHintAtStart: 1
   hintAnimDuration: 0.25
+  iconSet: {fileID: 11400000, guid: 9120cc0f8d6f411aa56d4ef968de44c5, type: 2}
   singleUse: 0
   initiallyEnabled: 1
   persistentIdOverride: 
@@ -43541,6 +43592,7 @@ MonoBehaviour:
   hint: {fileID: 597802226}
   hideHintAtStart: 1
   hintAnimDuration: 0.25
+  iconSet: {fileID: 11400000, guid: 9120cc0f8d6f411aa56d4ef968de44c5, type: 2}
   singleUse: 0
   initiallyEnabled: 1
   persistentIdOverride: 
@@ -48594,7 +48646,7 @@ MonoBehaviour:
   m_OverrideTileSize: 0
   m_TileSize: 256
   m_OverrideVoxelSize: 0
-  m_VoxelSize: 0.16666667
+  m_VoxelSize: 0.2
   m_MinRegionArea: 2
   m_NavMeshData: {fileID: 23800000, guid: d2fccce006ac09944bd6249398dace09, type: 2}
   m_BuildHeightMesh: 0
@@ -48728,8 +48780,6 @@ MonoBehaviour:
   healOnSave: 1
   teleportAfterSave: 0
   teleportAnchorId: 
-  saveSuccessLocalizationKey: SAVEPOINT_SAVED
-  saveSuccessFallback: "\xA1Partida guardada con \xE9xito!"
 --- !u!65 &1685420347
 BoxCollider:
   m_ObjectHideFlags: 0

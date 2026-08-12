@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ddb980a5a7fc48b984e8632fc7bfdcd1, type: 3}
+  m_Name: InteractionHintIconSet
+  m_EditorClassIdentifier: 
+  xbox: {fileID: 21300000, guid: 7eeb8a1ec9332a30a983694d1b428f3e, type: 3}
+  playStation: {fileID: 21300000, guid: 3a37dfe702393e0fa6c8bbc2a299e490, type: 3}
+  switchConsole: {fileID: 21300000, guid: 1b7ce2710dc2e55756ac85e20b247f4a, type: 3}
+  keyboardMouse: {fileID: 21300000, guid: d40cca85f0f54f30445a3577e18a0a5a, type: 3}
