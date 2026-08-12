@@ -29,7 +29,7 @@ Ante cualquier duda de arquitectura, se consulta `TDD.md` primero. Si vas a aña
 
 ## ✅ Estado del proyecto
 
-La auditoría más reciente (`TDD.md` § 19) confirma que el código está en muy buen estado para un proyecto indie en solitario: disciplina de rendimiento por frame por encima de la media (sin `OverlapSphere` sin `NonAlloc`, buffers cacheados, hashes de animator cacheados), guardado con escritura atómica, y una FSM de NPCs sólida. Lo que falta para nivel "estudio" no son bugs de código sino ausencias de proceso — tests automatizados, identidad de build configurada, CI — y ya está priorizado en `TDD.md` § 19.2 y § 19.3.
+La auditoría de seguimiento más reciente (`TDD.md` § 19.4, 12 de agosto de 2026) confirma que el código sigue en muy buen estado: los 19 bugs críticos/altos de la auditoría anterior (§ 19.1) están corregidos y verificados línea a línea, y la identidad de build ya está configurada. Lo que falta para nivel "estudio" sigue sin ser bugs de código sino ausencias de proceso — tests automatizados, CI, arquitectura de compilación (`.asmdef`) — priorizado en `TDD.md` § 19.2 y § 19.4.
 
 ## 🚀 Quick start
 

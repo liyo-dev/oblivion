@@ -28,6 +28,19 @@ namespace Core.InputGlyphs
         public const string Stick = "interactable_Joystick"; // mayúscula intencionada — así está en el asset real
         public const string Start = "start";
 
+        // Acelerar/Sprint — GamePlay.Sprint (Mayús izquierda en teclado, clic del stick izquierdo/L3
+        // en mando, ver PlayerControls.inputactions). NO es un nombre de sprite: no hay arte de icono
+        // propio para este botón (ningún InputGlyphFamilySpriteSet_*.asset tiene campo "sprint"), así
+        // que a propósito NO está en el array `All` de abajo — añadirlo ahí haría que
+        // InputGlyphService.LoadFamilySprites lo busque cada arranque, no lo encuentre en ninguna
+        // familia (ni siquiera Xbox de respaldo) y avise por consola sin necesidad. Se usa solo como
+        // clave de texto para InputGlyphLabels.GetLabel, resuelta por TagMinigameController contra el
+        // token literal "{SPRINT}" en MINIGAME_TAG_INSTRUCTION/MINIGAME_TASK (ver Loc() en ese script).
+        // Antes esas cadenas reutilizaban por error el sprite de Stick (WASD/joystick, que es Mover,
+        // no Sprintar). Si en el futuro se encarga arte real para este botón, se le puede dar su propio
+        // nombre de sprite aquí e incluirlo en `All` igual que el resto.
+        public const string Sprint = "Sprint";
+
         // Botón de "Confirmar" para prompts que esperan UI/Submit (TutorialPromptNode, SleepTrigger
         // despertando a Will, cualquier "pulsa para continuar" que aparezca con el mapa GamePlay
         // deshabilitado — p.ej. en ActionMode.Cinematic, ver PlayerLockService.ApplyHardLock). En

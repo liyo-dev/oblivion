@@ -1099,6 +1099,36 @@ namespace Core
     }
 
     /// <summary>
+    /// Lee si el botón de interactuar fue presionado este frame: tecla E en teclado (acción
+    /// GamePlay/Interact), botón South en mando. Respeta supresión de gameplay.
+    /// A diferencia de <see cref="JumpPressed"/>, en teclado NO lee Espacio: GamePlay/Interact (E)
+    /// y GamePlay/Jump (Espacio) son teclas distintas en PlayerControls.inputactions, aunque en
+    /// cualquier mando físico comparten el mismo botón South (ver comentario de
+    /// Core.InputGlyphs.InputGlyphNames.South). Usar esta propiedad — no JumpPressed — para leer
+    /// cualquier prompt que muestre el icono "interactable_A" (South), que en teclado se etiqueta
+    /// como "E" (ver Core.InputGlyphs.InputGlyphLabels).
+    /// </summary>
+    public static bool InteractPressed
+    {
+        get
+        {
+            if (IsGameplaySuppressed())
+                return false;
+
+            if (Controls != null && Controls.GamePlay.Interact.triggered)
+                return true;
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = GetGamepad();
+            if (gp != null && gp.buttonSouth.wasPressedThisFrame)
+                return true;
+#endif
+
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Lee si el gatillo izquierdo (LB/L1/L) fue presionado este frame.
     /// Hoy sin uso funcional en el movimiento del personaje (ver StrafeInput() en vThirdPersonInput,
     /// la llamada a cc.Strafe() está comentada); el ciclo de objetivo/pestaña real pasa por

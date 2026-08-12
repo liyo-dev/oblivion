@@ -97,6 +97,15 @@ namespace Core.InputGlyphs
                          : family == InputGlyphDeviceFamily.Switch ? "+"
                          : "Menú";
 
+                // Sprint — GamePlay.Sprint. En teclado, Mayús izquierda; en mando, clic del stick
+                // izquierdo (L3), ver PlayerControls.inputactions. Sin sprite propio todavía (ver
+                // InputGlyphNames.Sprint), así que de momento es solo texto.
+                case InputGlyphNames.Sprint:
+                    if (kb) return "Mayús";
+                    return family == InputGlyphDeviceFamily.PlayStation ? "L3"
+                         : family == InputGlyphDeviceFamily.Switch ? "clic del stick"
+                         : "L3";
+
                 case InputGlyphNames.Teleport: // Mismo botón físico que North en mando; "T" en teclado
                     return kb ? "T" : GetLabel(InputGlyphNames.North, family);
 

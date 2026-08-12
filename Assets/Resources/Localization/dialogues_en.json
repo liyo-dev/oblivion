@@ -1034,7 +1034,7 @@
         },
         {
             "key": "LORE_CELDA_12",
-            "value": "Press  <sprite name=\"interactable_dpad_down\"> down to join or split up the party."
+            "value": "Press  <sprite name=\"interactable_dpad_down\"> <gpadonly>DOWN</gpadonly> to join or split up the party."
         },
         {
             "key": "LORE_CELDA_3",

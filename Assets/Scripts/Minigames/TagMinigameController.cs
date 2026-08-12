@@ -1085,32 +1085,72 @@ public class TagMinigameController : MonoBehaviour
         return (ProtectionButton)Random.Range(0, 4);
     }
 
+    // Familia de dispositivo (mando Xbox/PlayStation/Switch o teclado&ratón) para la que están
+    // cacheados _iconTemplateA/B/X/Y. Si InputGlyphService.CurrentFamily cambia (p.ej. la persona
+    // suelta el mando y agarra el teclado a mitad de partida), hay que invalidar la caché para que
+    // los iconos sobre la cabeza de los NPCs se reconstruyan con el sprite correcto en vez de seguir
+    // enseñando para siempre el de la familia con la que arrancó el minijuego.
+    private Core.InputGlyphs.InputGlyphDeviceFamily? _iconTemplateFamily;
+
     private GameObject GetIconPrefabForButton(ProtectionButton button)
     {
+        InvalidateIconTemplatesIfFamilyChanged();
+
         switch (button)
         {
             case ProtectionButton.A:
             {
-                var spriteTemplate = ResolveRuntimeIconTemplate(ref _iconTemplateA, iconButtonASprite, "ProtectBtn_A");
+                var spriteTemplate = ResolveRuntimeIconTemplate(ref _iconTemplateA, ResolveButtonSprite(iconButtonASprite, Core.InputGlyphs.InputGlyphNames.South), "ProtectBtn_A");
                 return spriteTemplate != null ? spriteTemplate : ResolveTextIconTemplate(ref _fallbackIconTemplateA, "A", "ProtectBtn_A_Text");
             }
             case ProtectionButton.B:
             {
-                var spriteTemplate = ResolveRuntimeIconTemplate(ref _iconTemplateB, iconButtonBSprite, "ProtectBtn_B");
+                var spriteTemplate = ResolveRuntimeIconTemplate(ref _iconTemplateB, ResolveButtonSprite(iconButtonBSprite, Core.InputGlyphs.InputGlyphNames.East), "ProtectBtn_B");
                 return spriteTemplate != null ? spriteTemplate : ResolveTextIconTemplate(ref _fallbackIconTemplateB, "B", "ProtectBtn_B_Text");
             }
             case ProtectionButton.X:
             {
-                var spriteTemplate = ResolveRuntimeIconTemplate(ref _iconTemplateX, iconButtonXSprite, "ProtectBtn_X");
+                var spriteTemplate = ResolveRuntimeIconTemplate(ref _iconTemplateX, ResolveButtonSprite(iconButtonXSprite, Core.InputGlyphs.InputGlyphNames.West), "ProtectBtn_X");
                 return spriteTemplate != null ? spriteTemplate : ResolveTextIconTemplate(ref _fallbackIconTemplateX, "X", "ProtectBtn_X_Text");
             }
             case ProtectionButton.Y:
             {
-                var spriteTemplate = ResolveRuntimeIconTemplate(ref _iconTemplateY, iconButtonYSprite, "ProtectBtn_Y");
+                var spriteTemplate = ResolveRuntimeIconTemplate(ref _iconTemplateY, ResolveButtonSprite(iconButtonYSprite, Core.InputGlyphs.InputGlyphNames.North), "ProtectBtn_Y");
                 return spriteTemplate != null ? spriteTemplate : ResolveTextIconTemplate(ref _fallbackIconTemplateY, "Y", "ProtectBtn_Y_Text");
             }
             default: return null;
         }
+    }
+
+    /// <summary>
+    /// Sprite del icono de botón para la familia de dispositivo activa, vía InputGlyphService (mismo
+    /// sistema que ya usa el resto del HUD/diálogos para mostrar A/B/X/Y de mando o E/clic/Q de
+    /// teclado según corresponda — ver Core.InputGlyphs.InputGlyphNames). Si el servicio no tiene
+    /// sprite para ese nombre (p.ej. falta rellenar el asset de una familia), se cae al sprite
+    /// arrastrado a mano en el Inspector como respaldo, para no dejar el icono en blanco.
+    /// </summary>
+    private Sprite ResolveButtonSprite(Sprite manualFallback, string glyphName)
+    {
+        var glyphSprite = Core.InputGlyphs.InputGlyphService.GetSprite(glyphName);
+        return glyphSprite != null ? glyphSprite : manualFallback;
+    }
+
+    private void InvalidateIconTemplatesIfFamilyChanged()
+    {
+        var currentFamily = Core.InputGlyphs.InputGlyphService.CurrentFamily;
+        if (_iconTemplateFamily.HasValue && _iconTemplateFamily.Value == currentFamily) return;
+
+        _iconTemplateFamily = currentFamily;
+        DestroyIconTemplate(ref _iconTemplateA);
+        DestroyIconTemplate(ref _iconTemplateB);
+        DestroyIconTemplate(ref _iconTemplateX);
+        DestroyIconTemplate(ref _iconTemplateY);
+    }
+
+    private void DestroyIconTemplate(ref GameObject templateCache)
+    {
+        if (templateCache != null) Destroy(templateCache);
+        templateCache = null;
     }
 
     private GameObject ResolveRuntimeIconTemplate(ref GameObject templateCache, Sprite sprite, string templateName)
@@ -1182,7 +1222,11 @@ public class TagMinigameController : MonoBehaviour
 
     private ProtectionButton? ReadProtectionButtonPressed()
     {
-        if (GamepadInputReader.JumpPressed) return ProtectionButton.A;
+        // El icono que aparece sobre la cabeza del NPC para el botón A es "interactable_A" (South),
+        // que en teclado se lee "E" (GamePlay/Interact) — NO Espacio (GamePlay/Jump). Se comprueban
+        // ambas para no romper a quien ya tuviera el hábito de usar Espacio, pero InteractPressed es
+        // la lectura correcta y la que coincide con el icono mostrado.
+        if (GamepadInputReader.InteractPressed || GamepadInputReader.JumpPressed) return ProtectionButton.A;
         if (GamepadInputReader.AttackMagicRightPressed) return ProtectionButton.B;
         if (GamepadInputReader.AttackMagicLeftPressed) return ProtectionButton.X;
         if (GamepadInputReader.AttackMagicSpecialPressed) return ProtectionButton.Y;
@@ -1697,7 +1741,12 @@ public class TagMinigameController : MonoBehaviour
         // Un frame de gracia para que el input que abrió el diálogo no cuente
         yield return null;
 
-        while (!GamepadInputReader.JumpPressed && !GamepadInputReader.SubmitPressed && !userAborted)
+        // El texto de instrucciones (MINIGAME_TAG_INSTRUCTION) muestra <sprite name="interactable_confirm">,
+        // que en teclado se etiqueta "Espacio" (ver InputGlyphNames.Confirm) y en mando es el mismo
+        // botón South que Interactuar — de ahí que aceptemos Jump/Submit (Espacio/Enter/South de mando)
+        // Y TAMBIÉN GamepadInputReader.InteractPressed (E de teclado), por si alguien pulsa esa tecla
+        // por costumbre aunque el hint ya no la muestre.
+        while (!GamepadInputReader.JumpPressed && !GamepadInputReader.SubmitPressed && !GamepadInputReader.InteractPressed && !userAborted)
         {
             if (GamepadInputReader.StartPressed)
                 RequestAbortWithConfirmation(() => userAborted = true);
@@ -2464,9 +2513,22 @@ public class TagMinigameController : MonoBehaviour
 
     /// <summary>
     /// Resuelve una clave de traducción. Si no hay LocalizationManager devuelve la clave como fallback.
+    /// Además sustituye el token literal "{SPRINT}" (si aparece en el texto) por la etiqueta de texto
+    /// del botón de Sprint en el dispositivo activo (ver InputGlyphNames.Sprint/InputGlyphLabels) —
+    /// no hay sprite de icono propio para Sprint todavía, así que se resuelve como texto plano
+    /// ("Mayús" en teclado, "L3" en mando) en vez de con un <sprite name="...">.
     /// </summary>
-    private string Loc(string key) =>
-        LocalizationManager.Instance != null ? LocalizationManager.Instance.Get(key, key) : key;
+    private string Loc(string key)
+    {
+        string text = LocalizationManager.Instance != null ? LocalizationManager.Instance.Get(key, key) : key;
+        if (!string.IsNullOrEmpty(text) && text.Contains("{SPRINT}"))
+        {
+            string sprintLabel = Core.InputGlyphs.InputGlyphLabels.GetLabel(
+                Core.InputGlyphs.InputGlyphNames.Sprint, Core.InputGlyphs.InputGlyphService.CurrentFamily);
+            text = text.Replace("{SPRINT}", sprintLabel);
+        }
+        return text;
+    }
 
     /// <summary>
     /// Devuelve true si el minijuego ya fue completado y está guardado en el save.

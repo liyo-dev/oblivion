@@ -74,15 +74,15 @@
         },
         {
             "key": "MINIGAME_TAG_INSTRUCTION",
-            "value": "Estela is furious!\nAvoid being caught for the entire time.\n\nPress <sprite name=\"interactable_Joystick\"> to sprint.\n\nGet close to the people of the Kingdom and press the button shown above them to protect them.\n\nPress <sprite name=\"interactable_A\"> to begin"
+            "value": "Estela is furious!\nAvoid being caught for the entire time.\n\nPress {SPRINT} to sprint.\n\nGet close to the people of the Kingdom and press the button shown above them to protect them.\n\nPress <sprite name=\"interactable_confirm\"> to begin"
         },
         {
             "key": "MINIGAME_TAG_START_PROMPT",
-            "value": "Press <sprite name=\"interactable_A\"> to begin"
+            "value": "Press <sprite name=\"interactable_confirm\"> to begin"
         },
         {
             "key": "MINIGAME_TASK",
-            "value": "Press <sprite name=\"interactable_Joystick\"> to sprint and protect the citizens of the Kingdom."
+            "value": "Press {SPRINT} to sprint and protect the citizens of the Kingdom."
         },
         {
             "key": "MINIGAME_TIME_FAILED",

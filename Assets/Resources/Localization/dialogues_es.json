@@ -1034,7 +1034,7 @@
         },
         {
             "key": "LORE_CELDA_12",
-            "value": "Pulsa  <sprite name=\"interactable_dpad_down\"> abajo para unir o disolver al equipo."
+            "value": "Pulsa  <sprite name=\"interactable_dpad_down\"> <gpadonly>ABAJO</gpadonly> para unir o disolver al equipo."
         },
         {
             "key": "LORE_CELDA_3",

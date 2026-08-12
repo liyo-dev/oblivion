@@ -3,7 +3,7 @@
 **Motor:** Unity 6 (6000.5.4f1)  
 **Pipeline:** URP  
 **Input:** Unity Input System (nuevo) + Invector (movimiento base del jugador)  
-**Última revisión:** 12 de agosto de 2026 (unificación de toda la documentación del proyecto en este único archivo — ver § 20)
+**Última revisión:** 12 de agosto de 2026 (auditoría de seguimiento — ver § 19.4)
 
 ---
 
@@ -2140,6 +2140,154 @@ Esto ya lo documenta tu propio CLAUDE.md §7 como decisión de arquitectura acep
 | No tocar — decisión ya correcta | Dualidad Grafo/Interactive (§6) | N/A |
 
 Nada de lo encontrado aquí es urgente ni arriesgado — es limpieza de bajo riesgo. Lo más valioso es el `NPCMovementController`: si alguna vez alguien (tú u otra persona ayudando en el proyecto) lo encuentra y asume que ahí es donde hay que tocar el movimiento de NPCs, perderá tiempo con un sistema que no hace nada.
+
+### 19.4 Auditoría de seguimiento — 12 de agosto de 2026
+
+**Fecha:** 12 de agosto de 2026 · **Autor:** Claude (Cowork), a petición de Raúl ("hemos tenido muchos cambios") · **Ámbito:** los 22 commits desde `02a198f9f` (día siguiente a §19.1/19.2) hasta `HEAD` (`f7b86aa3c`) — integración completa del asset Quibli (post-procesado + shading + `QuibliMaterialAuditor`), sistema de glifos de mando (`InputGlyphs`), kit de HUD procedural, fixes de navegación NPC/diálogo, localización de hechizos/objetos, y un fix de NRE en extracción de strings. **Método:** cuatro revisiones paralelas — (1) reverificación línea a línea de los 19 hallazgos críticos/altos de §19.1 contra el código actual, (2) revisión de los ~48 archivos `.cs` propios tocados o creados en la ventana, (3) reverificación de los 8 puntos de entregabilidad de §19.2 más higiene de repo tras la importación masiva de Quibli, (4) seguimiento del catálogo de código muerto de §19.3 — todas hechas contra el repositorio real en la máquina de Raúl (no contra una copia), con `git show`/`grep -n` citando línea exacta. Se leyó además el informe automático `ReportesMateriales/auditoria_quibli_20260812_152402.csv`, generado hoy mismo por la herramienta propia del proyecto.
+
+---
+
+#### Veredicto general
+
+Excelente noticia primero: **los 19 hallazgos críticos y altos de §19.1 (C1–C7, A1–A12) están corregidos**, cada uno con un comentario `// FIX Cx/Ax (auditoría 2026-08-07)` en el código — no es casualidad, es una resolución sistemática y trazable del catálogo completo. El identificador de build y la fecha de motor en la cabecera de `TDD.md`, los dos bloqueadores "vergüenza empresa grande" de §19.2, también están resueltos. La limpieza de código muerto de §19.3 se ejecutó y en un punto (`NPCMovementController.cs`) fue incluso más lejos de lo que la auditoría pedía.
+
+Un commit del 11 de agosto borró, sin mencionarlo en el mensaje, el "kit de HUD unificado" que se había terminado dos commits antes — la revisión automática lo marcó como posible pérdida accidental, pero Raúl confirmó que fue una decisión consciente (el enfoque no acabó saliendo adelante). Queda documentado en §19.4.1 para que no se malinterprete en una lectura futura.
+
+Por lo demás, el patrón se repite: la disciplina de código sigue siendo sólida (el nuevo sistema `InputGlyphs` es un ejemplo de manual del proyecto), y lo que falta sigue siendo lo mismo que en agosto — proceso (tests, CI, `.asmdef`) — más higiene de repositorio nueva, generada por la importación de ~152 MB del asset Quibli.
+
+---
+
+#### 19.4.1 Borrado del kit de HUD unificado — confirmado intencional, no accidental
+
+`bd918d764` ("feat: kit de HUD unificado (Procedural UI Kit)") añadió 7 archivos completos y funcionales:
+
+```
+Assets/Scripts/UI/ProceduralUIKit.cs                (354 líneas)
+Assets/Scripts/UI/ProceduralPanelSkin.cs             (65 líneas)
+Assets/Scripts/UI/ProceduralSlotFrameSkin.cs         (44 líneas)
+Assets/Scripts/UI/ProceduralAmbientSparkles.cs       (53 líneas)
+Assets/Scripts/Editor/UI/CrearNuevoHUD.cs            (104 líneas)
+Assets/Scripts/Editor/UI/CrearHUDDesdeCero.cs        (188 líneas)
+Assets/Scripts/Editor/UI/AplicarLookQuibliAEscena.cs (67 líneas)
+```
+
+Dos commits después, `bfb27c983` ("feat: implement QuibliMaterialFixer tool for shader migration and texture recovery") borró los mismos 7 archivos completos, sin mencionarlo en el mensaje del commit. La revisión automática de esta auditoría lo marcó como posible pérdida accidental (el mensaje del commit no lo menciona y no hay commit de "revert del HUD" explícito) — **Raúl confirmó que fue intencional: el kit de HUD no acabó saliendo adelante como enfoque y se descartó a propósito.** Queda documentado aquí para que una lectura futura de este archivo (humana o de una IA) no vuelva a interpretarlo como una pérdida accidental ni intente "recuperarlo" sin preguntar antes.
+
+Sigue siendo cierto que no se encontró ninguna referencia rota a esas clases en el resto del código (`git grep` no devuelve nada) — si algún prefab de escena antiguo tuviera un componente `ProceduralUIKit`/`ProceduralPanelSkin` asignado de cuando existió, esa referencia quedaría huérfana sin aviso en compilación, pero no bloquea nada y no requiere acción salvo que se note algo raro al abrir una escena/prefab de esa época.
+
+---
+
+#### 19.4.2 Seguimiento de §19.1 — los 19 críticos/altos, verificados hoy contra el código real
+
+| # | Hallazgo | Estado |
+|---|---|---|
+| C1 | `DialogueManager.StartDialogue` reentrante | **Corregido** — `DialogueManager.cs:330-336` invoca el `_onEnd` previo si `IsOpen` antes de sobrescribir. |
+| C2 | `PushMode` sin refcount | **Corregido** — `PlayerActionManager.cs:249-260`, refcount real, sin el `if (Top == mode) return;`. |
+| C3 | Teleport a anchor inexistente sin emitir `OnTeleportEnded` | **Corregido** — `TeleportService.cs:137,155,168,266,288`, todos los paths de fallo emiten el evento. |
+| C4 | Blackboards rancios en cada carga de escena | **Corregido** — `NarrativeGraphStarter.cs:152-157`, flag `_hasRestoredBlackboardsThisSession`. |
+| C5 | `CinematicState.Cleanup()` no marca `IsCompleted` | **Corregido** — `CinematicState.cs:594`. |
+| C6 | Hitstops solapados / timeScale sin árbitro | **Corregido** — `SimpleHitStopProvider.cs:28-36` + nuevo `TimeScaleArbiterService`. |
+| C7 | Knockback aéreo interrumpido sin `OnDisable` | **Corregido** — `AerialKnockbackReceiver.cs:142-168`. |
+| A1 | `ActiveCombatRegistry.Count` no limpia fake-null | **Corregido** — `ActiveCombatRegistry.cs:167-176`, `CleanupDestroyedNPCs()` antes de contar. |
+| A2 | `BossArenaController` no reabre arena si el boss se destruye sin morir | **Corregido** — `BossArenaController.cs:594`, `ApplyBossClearedState(...)` en el path de emergencia. |
+| A3 | `ObjectPool.Return()` hace push aunque detecte doble devolución | **Corregido** — `ObjectPool.cs:119-123`. |
+| A4 | `GameBootService` ignora el retorno de `LoadProfile` | **Corregido** — `GameBootService.cs:285`. |
+| A5 | Señales narrativas sticky consumidas por sistema equivocado | **Corregido** — `DefaultNarrativeSignals.cs:381-390`, nuevo `RequeueCustom(key)`. |
+| A6 | Ramas fork sin `Exit()` | **Corregido** — `NarrativeRunner.cs`, nuevo `_activeBranchNodes`. |
+| A7 | `Transition.cs` fuga de `sceneLoaded` | **Corregido** — `Transition.cs:106-109`, `OnDestroy()` desuscribe. |
+| A8 | `DayNightCycle` oscurecimiento por lluvia compuesto exponencialmente | **Corregido** — `DayNightCycle.cs:389-390`. |
+| A9 | `SimpleCinematicDirector` flag estático compartido entre instancias | **Corregido** — nuevo `s_activeInstance` como dueño real. |
+| A10 | Muerte/revive del player sin limpiar pila de modos | **Corregido** — `PlayerHealthSystem.cs:404,455`, `ResetToDefault()`. |
+| A11 | Bosses: higiene (reflection, animator.Play sin guard, `StopCoroutineSafe` roto) | **Corregido** en los tres (`GolemBossAI`, `ImpDemonAI`, `Spider1AI`). |
+| A12 | Swap de personaje sin gating de estado | **Corregido** — `PartyControlManager.cs:135-142`, `IsSwapAllowedByCurrentMode()`. |
+
+No queda ningún crítico ni alto abierto de este catálogo. Vale la pena tachar C1-C7/A1-A12 en §19.1 (dejarlos como referencia histórica, igual que se hizo con el catálogo de mayo en §13) para que una lectura futura no los dé por vigentes sin mirar.
+
+---
+
+#### 19.4.3 Código nuevo — hallazgos
+
+Al margen del borrado intencional del kit de HUD (§19.4.1), el resto de código nuevo de la ventana está en buen estado. Dos hallazgos menores, ninguno urgente:
+
+**MEDIO — VFX de spawn sin pool en archivo ya tocado.** `Assets/Scripts/Attacks/MagicProjectileSpawner.cs:287-291` y `:446-450` siguen haciendo `Instantiate(spell.spawnVFX, ...)` + `Destroy(fx, destroyTime)` para el flash de inicio de hechizo — viola la regla del proyecto (AGENTS.md §2: VFX de un solo uso siempre por `VfxPoolService`). Es deuda preexistente (no de esta ventana), pero el propio `MagicProjectil.cs` ya usa `VfxPoolService` correctamente para `impactVFX`/`despawnVFX`, y el archivo del spawner se tocó esta semana (FIX M8, `_chargingProjectiles`) — aprovechar para pasar también el `spawnVFX` al pool ya que se está ahí.
+
+**BAJO — logging sin guardar por directiva de compilación, patrón reproducido, no nuevo.** `NPCQuestActionExecutor.cs:108` (línea añadida esta ventana) sigue el patrón ya existente en el resto del archivo: `debugMode` es un `[SerializeField] bool`, no una directiva `#if`, así que un `Debug.LogWarning` puede colarse en build si alguien activa el flag a mano en el inspector. No es una regresión nueva, pero tampoco corrige el patrón — mismo criterio que M13 en §19.1.
+
+**Lo que está bien hecho (destacable):**
+
+- `Assets/Scripts/Core/InputGlyphs/InputGlyphService.cs` — servicio nuevo completo, con `ResetStatics` correcto, sin `FindObjectOfType`/`GetComponent` sin cachear en el driver de `Update`, sin reflection, logs bien gateados. Ejemplo de manual de las reglas del proyecto.
+- `InteractionDetector.cs` — de paso se corrigió el bug de obstrucción invertida de M7 (§19.1) y se le añadió throttle a 10 Hz + máscara cacheada en `Awake`.
+- `PlayerParty.cs` y `FeedbackService.cs` — recibieron el patrón `ResetStatics` que les faltaba (cerraba parte de M9, §19.1).
+- `TMP_FreezeFallbackAtlas.cs` (el fix de NRE) — el orden de comprobación (`is Object` antes de `IEnumerable`) es el correcto para el "fake null" de Unity, no un parche superficial.
+
+---
+
+#### 19.4.4 Entregabilidad — seguimiento de §19.2
+
+| # | Punto | Estado el 8 de agosto | Estado hoy |
+|---|---|---|---|
+| 1 | `applicationIdentifier` del template | Bloqueante | **Resuelto** — `com.liyodev.elsenderodelasestrellas` en Android/Standalone, `projectName` correcto. |
+| 2 | Cero tests automatizados | Sin cambios | **Sigue igual** — los dos únicos `*Test*.cs` (`NarrativeQuickTestWindow.cs`, `NPCEmotionTesterWindow.cs`) son ventanas de editor manuales, no `[Test]`/`UnityTest`. Paquetes de test framework siguen instalados sin usar. |
+| 3 | Sin CI | Sin cambios | **Sigue igual** — no hay `.github/` ni verificación de build automática. |
+| 4 | Cero `.asmdef` propios | Sin cambios | **Sigue igual, con matiz** — ahora hay 3 `.asmdef`, pero los 3 son de plugins de terceros (Quibli, ExternalAttributes, ToonShader). El código del juego sigue en un único `Assembly-CSharp` monolítico. |
+| 5 | `m_LayerCollisionMatrix` sin personalizar | Sin cambios | **Sigue igual** — todo colisiona con todo, el default de Unity. |
+| 6 | `antiAliasing: 0` en ambas calidades | Sin cambios | **Sigue igual** — confirmado en `Mobile` y `PC`. |
+| 7 | `com.unity.ads`/`com.unity.analytics` sin uso | Sin cambios | **Sigue igual** — siguen en `manifest.json`, cero referencias en `Assets/**/*.cs`. |
+| 8 | Cabecera de `TDD.md` desactualizada ("Unity 2022.3+") | Pendiente | **Resuelto** — cabecera dice "Unity 6 (6000.5.4f1)". |
+
+Ningún punto ha empeorado; dos de ocho se resolvieron. Los seis restantes son exactamente los mismos que en agosto — siguen siendo huecos de proceso, no bugs, y siguen sin urgencia salvo que se acerque una entrega externa.
+
+**Higiene de repositorio — hallazgos nuevos, causados por la importación de Quibli (2122 archivos, ~152 MB):**
+
+- El `.git` del proyecto pesa ya **~2.05 GiB** (107.169 objetos en pack). Coherente con el volumen importado, pero vale la pena tenerlo en cuenta si algún día hay que clonar el repo en una máquina nueva o compartirlo.
+- **65 objetos `tmp_obj_*` huérfanos en `.git/objects/` (~7.17 MiB)** — probablemente de una operación de Git interrumpida durante el commit masivo (falta de espacio, timeout). Antes de limpiar: `git fsck` para confirmar que no falta nada, luego `git gc --prune=now` si todo está sano.
+- **Las texturas `.tif` que trae Quibli no están cubiertas por Git LFS.** `.gitattributes` cubre `jpg/jpeg/png/tga/psd/hdr/exr/fbx/obj/blend/mp3/ogg/wav/mp4/mov` pero no `.tif`, y hay texturas `.tif` de hasta 16.6 MB (`Ellen_Body_Normal.tif`) trackeadas como blob completo en el historial en vez de puntero LFS. Añadir `*.tif filter=lfs diff=lfs merge=lfs -text` a `.gitattributes` — los `.tif` ya commiteados seguirán pesando en el historial salvo que se haga un `git lfs migrate`, pero al menos para adelante no se sigue agravando.
+- **`Assets/Plugins/Quibli/Demos/` pesa 150 de los 152 MB del import total** — es contenido de demostración de terceros (personaje "Ellen", escenas "City"/"Nature"), no el shader/runtime que probablemente hace falta para el juego. Incluye una subcarpeta llamada literalmente `.../Ellen Textures/trash/` (~44 MB) que el propio autor del asset marcó como descarte. Candidato claro a borrar del repo si no se está usando como referencia activa.
+- `git-lfs` no está instalado en la VM local usada para esta auditoría, así que no se pudo verificar `git lfs ls-files` directamente — vale la pena confirmar en las máquinas de desarrollo activas que los archivos LFS ya bien configurados se están clonando como binarios reales y no como punteros de texto rotos.
+
+---
+
+#### 19.4.5 Código muerto — seguimiento de §19.3
+
+Todo lo que pedía acción se ejecutó en el commit `818a0ae7d` ("chore: limpieza de codigo muerto segun auditoria") u otros de la misma ventana:
+
+- **Los 8 archivos `.cs` vacíos** (incluido el duplicado de `NPCInitializer.cs` en `Initialization/`) — **borrados**, confirmado uno a uno.
+- **`NPCMovementController.cs`** (sistema fantasma de 449 líneas) — **borrado por completo**, más allá de lo que la auditoría pedía (solo lo señalaba como candidato). No se encontraron referencias rotas en el diff.
+- **Los 8 nodos narrativos `[Obsolete]`** — siguen ahí sin cambios, tal como se esperaba (la auditoría no pedía borrarlos, solo los dejaba documentados como candidatos sin uso).
+- **Las dos herramientas de migración de un solo uso** (`MigrateNarrativeConfigToBehaviourManager.cs`, `ReserializeOldAssets.cs`) — ya no existen.
+- **`BootLoader.cs`** — documentado en `TDD.md` §1 y en el propio §19.3, como se recomendó.
+- **`Assets/t2.txt` y `Assets/test_delete_me.txt`** — borrados en el mismo commit.
+- El vaivén de Quibli (import → revert completo → reimport) no dejó restos huérfanos: `Assets/Plugins/Quibli/` está íntegro y no hay referencias colgantes en `ProjectSettings/*.asset`.
+
+Nada pendiente de este catálogo salvo la decisión ya tomada (dejar los nodos `[Obsolete]` como están).
+
+---
+
+#### 19.4.6 Deuda de arte — informe de materiales Quibli (generado hoy por `QuibliMaterialAuditor`)
+
+El proyecto tiene ahora su propia herramienta de editor (`Assets/Editor/QuibliMaterialAuditor.cs`) que barre todos los materiales y clasifica su estado de migración al shading Quibli. Su informe de hoy (`ReportesMateriales/auditoria_quibli_20260812_152402.csv`, 4.818 materiales) da una foto objetiva de cuánta migración de arte queda pendiente — dato nuevo que no existía en agosto:
+
+| Categoría | Materiales |
+|---|---|
+| URP nativo, pendiente de migrar a Quibli | 3.847 |
+| Ya migrados a Quibli (`Quibli/Stylized Lit`, `Quibli/Foliage`, `Quibli/Cloud2D`) | 215 |
+| Shader Graphs/Toon (Ciro Continisio), a migrar | 100 |
+| Built-in de Unity (Standard/Mobile/Legacy), a revisar si se migran | ~85 |
+| Fuera de alcance (VFX/UI/Skybox) | ~250 |
+
+Es decir, la migración de arte está en una fase muy temprana (~4-5% del total). No es un bug ni deuda técnica de código — es trabajo de arte pendiente, cuantificado por primera vez gracias a la herramienta que el propio proyecto se acaba de dar. Vale la pena tratar este CSV como una checklist viva: se puede volver a generar en cualquier momento para medir progreso.
+
+---
+
+#### Plan de acción priorizado (actualiza al de §19.2 §6)
+
+1. **Tachar C1-C7/A1-A12 en §19.1** como resueltos (cosmético, pero evita relecturas futuras equivocadas) — ya reflejado en la tabla de §19.4.2.
+2. **`.gitattributes`: añadir `*.tif` a LFS** antes de que se importen más assets con texturas sin comprimir — dos minutos, evita que el problema crezca.
+3. **Evaluar borrar `Assets/Plugins/Quibli/Demos/`** (150 MB, contenido de muestra de terceros) — reduce sustancialmente el peso del repo si no se usa como referencia.
+4. **`git fsck` + `git gc --prune=now`** para los objetos `tmp_obj_*` huérfanos, una vez confirmado que no faltan datos.
+5. **Pool del `spawnVFX` en `MagicProjectileSpawner`** — ya que el archivo está tocado, cerrar la deuda de un plumazo.
+6. El resto de §19.2 (tests, CI, `.asmdef`, Layer Collision Matrix, antialiasing, paquetes `ads`/`analytics` sin usar) sigue teniendo la misma prioridad que en agosto — nada urgente, pero es lo primero que pediría un revisor externo.
+7. Migración de materiales a Quibli (§19.4.6) — sin urgencia, es trabajo de arte de fondo; usar el CSV como medida de progreso.
 
 
 ---
