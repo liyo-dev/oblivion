@@ -117,6 +117,14 @@ public static class TMP_FreezeFallbackAtlas
     // ScriptableObject y añade cada carácter encontrado al set. Así no hace
     // falta conocer de antemano el tipo exacto de cada asset de diálogo,
     // quest o item.
+    //
+    // IMPORTANTE: cualquier referencia a un UnityEngine.Object (Transform,
+    // GameObject, Sprite, otro ScriptableObject, etc.) se ignora sin
+    // recorrerla. Transform en concreto implementa IEnumerable (itera sus
+    // hijos), así que si no se filtra ANTES de comprobar IEnumerable, una
+    // referencia nula a un Transform revienta con NullReferenceException al
+    // intentar enumerarla. También evita salirnos del propio asset hacia
+    // otros objetos/escenas sin querer.
     private static void ExtraerStringsPorReflexion(object obj, HashSet<char> set, int profundidad = 0)
     {
         if (obj == null || profundidad > 4) return;
@@ -133,25 +141,39 @@ public static class TMP_FreezeFallbackAtlas
             try { valor = field.GetValue(obj); }
             catch { continue; }
 
+            if (valor == null) continue;
+
             if (valor is string str)
             {
                 foreach (var c in str) set.Add(c);
+                continue;
             }
-            else if (valor is System.Collections.IEnumerable enumerable && !(valor is string))
+
+            // Referencias a assets/objetos de Unity: no se recorren.
+            if (valor is Object) continue;
+
+            if (valor is System.Collections.IEnumerable enumerable)
             {
                 foreach (var item in enumerable)
                 {
+                    if (item == null) continue;
                     if (item is string s2)
                     {
                         foreach (var c in s2) set.Add(c);
                     }
-                    else if (item != null && item.GetType().IsClass && !(item is UnityEngine.Object))
+                    else if (item is Object)
+                    {
+                        // ignorar referencias a assets/objetos de Unity
+                    }
+                    else if (item.GetType().IsClass)
                     {
                         ExtraerStringsPorReflexion(item, set, profundidad + 1);
                     }
                 }
+                continue;
             }
-            else if (valor != null && valor.GetType().IsClass && !(valor is UnityEngine.Object))
+
+            if (valor.GetType().IsClass)
             {
                 ExtraerStringsPorReflexion(valor, set, profundidad + 1);
             }
