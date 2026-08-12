@@ -137,3 +137,7 @@ Assets/Art/World/Fantasy_Kingdom_Pack/Demo/**
 **/GI/**
 # --- Demos del Fantasy Kingdom ---
 Assets/Art/World/Fantasy_Kingdom_Pack/Demo/**
+
+# --- Archivos de licencia de Unity (generados localmente para CI, no versionar) ---
+*.alf
+*.ulf
