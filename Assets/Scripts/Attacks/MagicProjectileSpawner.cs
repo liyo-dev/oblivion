@@ -284,12 +284,12 @@ public class MagicProjectileSpawner : MonoBehaviour
 
         if (spell.spawnVFX)
         {
-            var fx = Instantiate(spell.spawnVFX, spawnPos, spawnRt);
-            if (spell.useScaleOverride)
-                fx.transform.localScale = spell.scaleOverride;
-            // 🔥 CORRECCIÓN: Siempre destruir el VFX después de un tiempo
+            // FIX (auditoría 2026-08-12): VfxPoolService en vez de Instantiate+Destroy directo
+            // (regla del proyecto — AGENTS.md §2, VFX de un solo uso siempre por pool).
             float destroyTime = spell.vfxLifetime > 0f ? spell.vfxLifetime : 3f; // 3s por defecto
-            Destroy(fx, destroyTime);
+            var fxTransform = VfxPoolService.Instance.Play(spell.spawnVFX, spawnPos, spawnRt, destroyTime);
+            if (spell.useScaleOverride && fxTransform != null)
+                fxTransform.localScale = spell.scaleOverride;
         }
 
         GameObject go = Instantiate(spell.prefab, spawnPos, spawnRt);
@@ -443,14 +443,14 @@ public class MagicProjectileSpawner : MonoBehaviour
 
         if (spell.spawnVFX)
         {
-            var fx = Instantiate(spell.spawnVFX, spawnPos, spawnRt);
-            if (spell.useScaleOverride)
-            {
-                fx.transform.localScale = spell.scaleOverride;
-            }
-            // 🔥 CORRECCIÓN: Siempre destruir el VFX después de un tiempo
+            // FIX (auditoría 2026-08-12): VfxPoolService en vez de Instantiate+Destroy directo
+            // (regla del proyecto — AGENTS.md §2, VFX de un solo uso siempre por pool).
             float destroyTime = spell.vfxLifetime > 0f ? spell.vfxLifetime : 3f; // 3s por defecto
-            Destroy(fx, destroyTime);
+            var fxTransform = VfxPoolService.Instance.Play(spell.spawnVFX, spawnPos, spawnRt, destroyTime);
+            if (spell.useScaleOverride && fxTransform != null)
+            {
+                fxTransform.localScale = spell.scaleOverride;
+            }
         }
 
         GameObject go = Instantiate(spell.prefab, spawnPos, spawnRt);

@@ -1739,49 +1739,49 @@ Hay 4 temas transversales que, arreglados una vez, eliminan familias enteras de 
 
 #### CRÍTICOS — pueden colgar una partida en flujos normales de juego
 
-##### C1. Reentrada en `DialogueManager.StartDialogue` → grafo narrativo colgado para siempre
+##### C1. Reentrada en `DialogueManager.StartDialogue` → grafo narrativo colgado para siempre — CORREGIDO (ver §19.4.2)
 `Assets/Scripts/Dialogue/DialogueManager.cs:319` *(verificado)*
 
 `StartDialogue` no comprueba `IsOpen`: sobrescribe `_current` y `_onEnd` **sin invocar el callback del diálogo anterior**. `PlayDialogueNode` (`NarrativeGraph/Runtime/Graph/NodeTypes/PlayDialogueNode.cs:81-89`) espera `while (!completed)` sobre ese callback. Escenario real: al completarse una quest reaccionan a la vez el grafo (siguiente `PlayDialogueNode`) y la post-action de `NPCQuestActionExecutor` (que también abre diálogo, con ventanas de 0.5 s en su chequeo de `IsOpen`). El que llega segundo pisa al primero → la rama del grafo queda bloqueada eternamente. Es el punto único de fallo donde convergen grafo, Interactive y post-actions.
 
 **Fix:** si `IsOpen`, encolar o rechazar; y si se decide pisar, invocar el `_onEnd` anterior antes de sustituirlo.
 
-##### C2. `PushMode` dedupe sin refcount roba el Pop entre sistemas
+##### C2. `PushMode` dedupe sin refcount roba el Pop entre sistemas — CORREGIDO (ver §19.4.2)
 `Assets/Scripts/Player/PlayerActionManager.cs:249-274` *(verificado; detectado independientemente por dos revisores)*
 
 `if (Top == mode) return;` ignora el segundo Push del mismo modo, pero el segundo sistema hará su Pop igualmente y eliminará la entrada del primero. `Cinematic` lo usan DialogueManager, SleepTrigger, CinematicSequencerBase y PlayVictorySequence; `Stunned` lo usan AerialKnockback y PlayerCarrySystem. Escenarios reales: victoria de combate con diálogo abierto → input desbloqueado en mitad del diálogo; diálogo abierto durante cinemática → jugador controlable en mitad de la cinemática.
 
 **Fix:** refcount por modo, o permitir entradas repetidas en la pila (quitar el early-return; el Pop ya elimina solo una instancia).
 
-##### C3. Teleport a anchor inexistente → jugador sin input permanentemente
+##### C3. Teleport a anchor inexistente → jugador sin input permanentemente — CORREGIDO (ver §19.4.2)
 `Assets/Scripts/Teleport/TeleportSystem.cs:211` + `Assets/Scripts/World/TeleportService.cs:99-116` *(verificado)*
 
 `TeleportSequence` empuja `Cutscene`, deshabilita el input y espera `WaitUntil(() => transitionEnded)`, que depende de `OnTeleportEnded`. Pero `TeleportService.TeleportToAnchor` retorna temprano **sin emitir ningún evento** si `Inst` es null o el anchor no se encuentra (solo un LogWarning). Resultado: input muerto, fase Cutscene y `IsTeleporting=true` para siempre (bloquea además todos los teleports futuros).
 
 **Fix:** emitir siempre `OnTeleportEnded` en los paths de fallo, más un timeout de seguridad en el `WaitUntil`.
 
-##### C4. `NarrativeGraphStarter` restaura blackboards rancios en cada carga de escena → ítems duplicados (patrón INC-020)
+##### C4. `NarrativeGraphStarter` restaura blackboards rancios en cada carga de escena → ítems duplicados (patrón INC-020) — CORREGIDO (ver §19.4.2)
 `Assets/NarrativeGraph/Runtime/Integration/NarrativeGraphStarter.cs:98,159`
 
 Restaura `preset.narrativeBlackboards` cada vez que una escena de gameplay se activa, pero ese snapshot solo se refresca al guardar en un SavePoint (`GameBootProfile.cs:715` ← `SavePoint.cs:168`). Secuencia normal: guardas → avanzas el grafo (recibes ítem vía `GiveInventoryItemNode`) → cambias de escena sin guardar → el blackboard retrocede al save: el flag `INV_GIVEN` desaparece pero el inventario no se revierte → **el nodo vuelve a entregar el ítem**. Diálogos sin `oneShotFlag` se repiten y el grafo se desincroniza del QuestManager.
 
 **Fix:** capturar blackboards al preset en cada transición de escena, o restaurar solo una vez por sesión (tras load real), no en cada `Start()`.
 
-##### C5. Interrumpir la cinemática de un NPC → corrutina zombie y secuenciadores colgados
+##### C5. Interrumpir la cinemática de un NPC → corrutina zombie y secuenciadores colgados — CORREGIDO (ver §19.4.2)
 `Assets/Scripts/Behaviour NPC/States/CinematicState.cs:562` + `NPCBehaviourManagerV2.cs:655-659` *(verificado)*
 
 `Cleanup()` (salida forzada del estado) detiene la corrutina y restaura avoidance, pero **no marca `IsCompleted = true`** (solo `CleanupAndComplete` lo hace). `WaitForSequence` hace `while (!seq.IsCompleted) yield return null;` → si el NPC sale de `CinematicState` a mitad de secuencia, esa espera gira para siempre y el `onComplete` no dispara. Y hay una vía fácil de provocarlo: `NPCCombatLifecycleHandler.OnDamaged` llama `ForceEnterCombat` **sin comprobar `IsInCinematic`** — golpear a un NPC durante una cinemática cuelga los secuenciadores que encadenan pasos vía `onComplete` (MountainSequencer, ReinoExitBanterSequencer). Relacionado: `CheckTransitions` de CinematicState tampoco mira `WasDefeatedInCombat` → NPC que muere en cinemática queda atrapado en el estado.
 
 **Fix:** `IsCompleted = true` en `Cleanup()`, gate de `IsInCinematic` en `OnDamaged`/`ForceEnterCombat`, y prioridad `WasDefeatedInCombat → DeadState` en `CheckTransitions`.
 
-##### C6. Hitstops solapados dejan el juego en cámara lenta permanente
+##### C6. Hitstops solapados dejan el juego en cámara lenta permanente — CORREGIDO (ver §19.4.2)
 `Assets/Scripts/Core/Feedback/SimpleHitStopProvider.cs:18-29`
 
 Cada `Co_HitStop` captura `original = Time.timeScale` al empezar y lo restaura al acabar, sin cancelar el anterior. Dos golpes en <0.2 s (trivial en combate): A captura 1.0, B captura el 0.1 que puso A → A restaura 1.0, B restaura 0.1 → **slow-mo permanente**. Además pelea con el menú de pausa y con `DeathCameraEffect` (que fuerza `timeScale = 1` incondicional al final, rompiendo una pausa activa). Misma familia: `NPCCombatLifecycleHandler.OnDestroy` fuerza `timeScale = 1` si no es 1 — descargar una escena con NPCs estando en pausa revierte la pausa.
 
 **Fix:** árbitro central de timeScale (contador de efectos + baseline gestionado). Un solo servicio resuelve los 4 actores.
 
-##### C7. Knockback aéreo interrumpido → input bloqueado para siempre
+##### C7. Knockback aéreo interrumpido → input bloqueado para siempre — CORREGIDO (ver §19.4.2)
 `Assets/Scripts/Attacks/AerialKnockbackReceiver.cs:147-289`
 
 `LaunchRoutine` empuja `Stunned`, deshabilita el controller y pone el Rigidbody kinemático; la restauración está al final de la corrutina y **no hay `OnDisable`**. Si el componente se desactiva a mitad del arco (~0.6 s) — cinemática con `ModeRule.disableComponents`, muerte, cambio de escena — quedan: `Stunned` pushed para siempre, controller deshabilitado, RB sin gravedad y `_isLaunching=true` (bloquea futuros knockbacks). El propio proyecto tiene el patrón correcto en `PlayerFlyingController.OnDisable` y `PlayerSwimmingController.OnDisable`.
@@ -1792,66 +1792,66 @@ Cada `Co_HitStop` captura `original = Time.timeScale` al empezar y lo restaura a
 
 #### ALTOS — rompen sistemas concretos o corrompen estado en escenarios alcanzables
 
-##### A1. `ActiveCombatRegistry` retiene enemigos destruidos → player atrapado en modo combate
+##### A1. `ActiveCombatRegistry` retiene enemigos destruidos → player atrapado en modo combate — CORREGIDO (ver §19.4.2)
 `Assets/Scripts/Attacks/ActiveCombatRegistry.cs:164` + `Player/PlayerBattleModeController.cs:311`
 
 `Count` no limpia referencias fake-null. Un enemigo destruido sin `UnregisterNPC` (Destroy directo, descarga de escena aditiva — `ClearAll` solo se llama en GameOver) deja `Count>0` para siempre → Battle Mode + `ActionMode.Combat` permanentes (que además bloquea `Interact`). `InteractionDetector` ya se defiende con `CleanupDestroyedNPCs()`; los otros dos consumidores no. **Fix:** limpieza dentro de `Count` o auto-unregister en `OnDestroy` del NPC.
 
-##### A2. `BossArenaController`: arena cerrada sin salida si el boss se destruye sin morir
+##### A2. `BossArenaController`: arena cerrada sin salida si el boss se destruye sin morir — CORREGIDO (ver §19.4.2)
 `Assets/Scripts/Rooms/BossArenaController.cs:585-591`
 
 Si el boss desaparece sin pasar por `Damageable.OnDied` (killzone, despawn, limpieza externa), el path de emergencia solo hace `started=false`: no reabre puertas, no llama `UnlockArea()` ni `RestoreBattleDisables()`, ni cierra la música de batalla → jugador encerrado con música infinita y sin posibilidad de re-disparar el trigger. **Fix:** en ese path, restaurar puertas/área/disables y `AudioService.EndBattleById`.
 
-##### A3. Pooling: devolución doble corrompe el pool y los parents destruidos lo agotan
+##### A3. Pooling: devolución doble corrompe el pool y los parents destruidos lo agotan — CORREGIDO (ver §19.4.2)
 `Assets/Scripts/Core/Pooling/ObjectPool.cs:114-121` *(verificado)* + `VfxPoolService.cs:74-119`
 
 `Return()` detecta la devolución doble pero **aun así hace push** → la misma instancia dos veces en la pila → dos `Get()` devuelven el mismo Transform. Y `VfxPoolService.Play` con `parent` externo: si el parent se destruye, el VFX muere con él pero `_inUse` del ObjectPool lo cuenta para siempre → tras `MaxPoolSizePerPrefab` (64) instancias muertas, ese VFX **deja de verse el resto de la sesión**. **Fix:** `if (!_inUse.Remove(obj)) return;` y, en la rama `instance == null` del Update del servicio, purgar también `_instancePool`/`_inUse`.
 
-##### A4. Save corrupto arranca el juego en estado indefinido
+##### A4. Save corrupto arranca el juego en estado indefinido — CORREGIDO (ver §19.4.2)
 `Assets/Scripts/Core/GameBootService.cs:280` *(verificado)*
 
 En el arranque normal, `_profile.LoadProfile(_saveSystem)` **ignora el valor de retorno**. Si el JSON está corrupto (cierre forzado a mitad de escritura), `LoadProfile` devuelve false y no hay fallback al `defaultPlayerPreset`: el juego arranca con el runtimePreset residual, sin HP/inventario/flags coherentes. **Fix (2 líneas):** `if (!_profile.LoadProfile(_saveSystem))` → rama del preset por defecto.
 
 Relacionado (MEDIO): `SaveSystem.Save` hace `File.Delete` + `File.Move` *(verificado)* — hay una ventana sin ningún save en disco; usar `File.Replace`, o leer `save.json.tmp` como fallback en `Load()`. Y `PlayerSaveData` no tiene campo de versión de esquema: cualquier renombrado de campo hará que saves antiguos carguen en silencio con defaults. Añadir `saveVersion` antes de la demo de Steam.
 
-##### A5. Señales narrativas sticky consumidas por el sistema equivocado
+##### A5. Señales narrativas sticky consumidas por el sistema equivocado — CORREGIDO (ver §19.4.2)
 `Assets/NarrativeGraph/Runtime/Integration/DefaultNarrativeSignals.cs:350-361` + `NPCInteractiveNarrativeExecutor.cs:342-349`
 
 `OnCustom` consume `_pending`/`_raised` en el momento de suscribirse, y el executor Interactive se re-suscribe durante la carga **antes** de que los runners restauren blackboards y suscriban sus `WaitCustomEventNode`. Una señal pendiente puede ser consumida por el executor (que luego la ignora por `singleUse`/preset) → el `WaitCustomEventNode` del grafo nunca la ve → grafo bloqueado. Es la versión runtime del conflicto que el `CrossSystemNarrativeValidator` solo detecta en editor. **Fix:** consumo por-suscriptor, o que el executor re-emita la señal cuando decide ignorarla.
 
-##### A6. Ramas fork del grafo: `Exit()` nunca se llama y el estado de suscripción vive en el asset compartido
+##### A6. Ramas fork del grafo: `Exit()` nunca se llama y el estado de suscripción vive en el asset compartido — CORREGIDO (ver §19.4.2)
 `Assets/NarrativeGraph/Runtime/Graph/NarrativeRunner.cs:327-457`
 
 Las ramas fork hacen `Enter` de cada nodo pero jamás `Exit`; `StopExecution()` solo hace `Exit` del nodo del camino principal. Nodos en espera dentro de ramas (`WaitQuestCompleteNode._cb`, `StartBattleNode._onBattleWonCb`) quedan suscritos tras `StopAllRunners`/recarga — y esos campos viven en el `NarrativeNode` serializado del asset compartido, así que una re-entrada pisa `_cb` y el `Exit` posterior ya no puede desuscribir el callback viejo → **callbacks fantasma de sesiones muertas ejecutando side effects reales** (completar quests al ganar una batalla de la sesión nueva). **Fix:** rastrear los nodos activos por rama y hacer su `Exit` en `StopExecution`; mover el estado de suscripción a un diccionario por runner.
 
 Relacionados en el mismo archivo: el resume de forks re-ejecuta el `Enter` del nodo fork en cada carga (si es `RaiseCustomEventNode`, re-emite la señal en cada load); y `RequireInventoryItemNode.HandleMissing` usa `ForceJumpToOutput` (mecanismo del camino principal) desde ramas → rama nunca marcada `__DONE__` y `__currentNodeGuid` corrupto; además con `consumeOnSuccess` + `completeQuestInstead` el ítem puede consumirse dos veces (el guard `_itemsConsumedForQuest` no cubre el consumo hecho por el nodo).
 
-##### A7. `Transition.cs`: fuga de `sceneLoaded` + disparo prematuro con cargas aditivas
+##### A7. `Transition.cs`: fuga de `sceneLoaded` + disparo prematuro con cargas aditivas — CORREGIDO (ver §19.4.2)
 `Assets/Scripts/Core/EasyTransitions/Scripts/Transition.cs:99`
 
 Suscribe `SceneManager.sceneLoaded` y no existe `OnDestroy` que desuscriba (el objeto muere con `Destroy(gameObject, destroyTime)`). En un proyecto multi-escena **aditiva**, además, cualquier carga aditiva durante la espera dispara `OnSceneLoad` prematuramente (no filtra por `LoadSceneMode`). **Fix:** `OnDestroy` desuscribiendo + ignorar `mode == Additive`. En la misma familia: `TeleportService.cs:226` y `CinematicSequencerBase.cs:266-279` dejan handlers de `onTransitionCutPointReached` suscritos al TransitionManager persistente si la transición se interrumpe → la siguiente transición de cualquier sistema puede teleportar al jugador al destino antiguo o ejecutar `BeginCinematic()` de un sequencer destruido. Desuscribir en `OnDestroy`/finally.
 
-##### A8. `DayNightCycle`: oscurecimiento por lluvia compuesto exponencialmente y luz clavada tras la lluvia
+##### A8. `DayNightCycle`: oscurecimiento por lluvia compuesto exponencialmente y luz clavada tras la lluvia — CORREGIDO (ver §19.4.2)
 `Assets/Scripts/World/DayNightCycle.cs:379-386` *(verificado)*
 
 `LateUpdate` lee `directionalLight.intensity` (ya oscurecida el frame anterior) y la vuelve a multiplicar cada frame — exactamente el bug que ya se corrigió para la niebla con `_baseFogDensity` (el comentario de las líneas 248-253 lo documenta), pero sin aplicar a la luz. En ~4 frames la luz cae al suelo (0.28) y al terminar la lluvia **se queda ahí** hasta la siguiente transición de periodo. **Fix:** cachear `_baseLightIntensity` igual que la niebla.
 
-##### A9. `SimpleCinematicDirector`: estado global compartido entre instancias
+##### A9. `SimpleCinematicDirector`: estado global compartido entre instancias — CORREGIDO (ver §19.4.2)
 `Assets/Scripts/Cinematics/SimpleCinematicDirector.cs:214-240`
 
 `OnDisable`/`OnDestroy` deciden con el flag **estático** `IsAnyCinematicPlaying`: si el director A reproduce y un director B (que nunca reprodujo) se desactiva por descarga de escena, B resetea el flag global, fuerza `timeScale=1` y cierra el override de A. La limpieza de interrupción además no restaura HUD/minimapa ni prioridad de cámara. Y `PlayRoutine` no está blindada con try/finally (a diferencia de `CinematicSequencerBase.Co_SequenceGuarded`, que sí lo está): una NRE deja flag global, HUD y cámara en estado de cinemática. El campo `lockPlayer` no se usa en ninguna parte. **Fix:** flag de instancia, rutina de restauración completa, y el patrón guarded de la clase base.
 
-##### A10. Muerte y revive del player sin limpiar contexto
+##### A10. Muerte y revive del player sin limpiar contexto — CORREGIDO (ver §19.4.2)
 `Assets/Scripts/Player/PlayerHealthSystem.cs:182-225, 363-408, 501-513`
 
 `TakeDamage`/`Die` no comprueban Cinematic (un AoE residual puede matar al player en mitad de una cinemática y disparar el GameOver dentro de ella); `Die()`/`ReviveInternal` no tocan la pila de modos (morir con `Flying`/`Carrying` pushed los deja vivos de cara al respawn) ni conceden invulnerabilidad temporal al revivir. Y `InvulnerabilityFlashCoroutine` apaga renderers: si el GO se desactiva en el medio ciclo apagado, **el player queda invisible permanente** (nadie llama a `ResetDamageVisuals` al reactivar). **Fix:** god-frame en Cinematic, reset de pila en muerte/revive, `OnDisable → ResetDamageVisuals()`.
 
-##### A11. Bosses: pasada de higiene propia
+##### A11. Bosses: pasada de higiene propia — CORREGIDO (ver §19.4.2)
 - `GolemBossAI.cs` — muerte a mitad de salto/embestida deja cadáver flotando (agente desactivado que `StopAgent` no puede parar) y `animator.speed` en 1.8; onda expansiva con `OverlapSphereNonAlloc` **sin layermask** y buffer de 32 en un mundo donde todo vive en `Default` → en zonas densas el player puede quedar fuera del buffer y no recibir daño; reflection en runtime (`GetMethod("Shake")`) cuando el propio archivo ya usa `FeedbackService.CameraShake`; `SetDestination` por frame en embestida.
 - `ImpDemonAI.cs` — `PlayAnimation` hace `animator.Play(hash, layer, 0f)` **cada frame** sin guard → reinicia la animación en el frame 0 continuamente (animación congelada + coste). `Spider1AI.cs:387` tiene el guard correcto: portarlo. VFX de casteo/lluvia instanciados sin `Destroy` programado ni pool.
 - `Spider1AI.cs` — `StopCoroutineSafe(AttackPlayer())` crea un enumerator nuevo y el helper está vacío: la "cancelación" no cancela nada; el daño se aplica aunque la araña esté en stun. `SetDestination` cada frame en persecución (y las arañas atacan en grupo).
 
-##### A12. Swap de personaje sin gating por estado
+##### A12. Swap de personaje sin gating por estado — CORREGIDO (ver §19.4.2)
 `Assets/Scripts/Player/PartyControlManager.cs:102-119`
 
 `HandleInput` solo comprueba `IsInUIMode`: se puede hacer swap en pleno vuelo/nado/carry/knockback, aplicando el controller a un personaje que quizá no tiene esa habilidad, con los modos aún en la pila. **Fix:** rechazar swap salvo `Top == Default || Combat`.
@@ -2224,24 +2224,24 @@ Al margen del borrado intencional del kit de HUD (§19.4.1), el resto de código
 
 #### 19.4.4 Entregabilidad — seguimiento de §19.2
 
-| # | Punto | Estado el 8 de agosto | Estado hoy |
+| # | Punto | Estado el 8 de agosto | Estado el 12 de agosto (tarde) |
 |---|---|---|---|
 | 1 | `applicationIdentifier` del template | Bloqueante | **Resuelto** — `com.liyodev.elsenderodelasestrellas` en Android/Standalone, `projectName` correcto. |
-| 2 | Cero tests automatizados | Sin cambios | **Sigue igual** — los dos únicos `*Test*.cs` (`NarrativeQuickTestWindow.cs`, `NPCEmotionTesterWindow.cs`) son ventanas de editor manuales, no `[Test]`/`UnityTest`. Paquetes de test framework siguen instalados sin usar. |
-| 3 | Sin CI | Sin cambios | **Sigue igual** — no hay `.github/` ni verificación de build automática. |
-| 4 | Cero `.asmdef` propios | Sin cambios | **Sigue igual, con matiz** — ahora hay 3 `.asmdef`, pero los 3 son de plugins de terceros (Quibli, ExternalAttributes, ToonShader). El código del juego sigue en un único `Assembly-CSharp` monolítico. |
-| 5 | `m_LayerCollisionMatrix` sin personalizar | Sin cambios | **Sigue igual** — todo colisiona con todo, el default de Unity. |
-| 6 | `antiAliasing: 0` en ambas calidades | Sin cambios | **Sigue igual** — confirmado en `Mobile` y `PC`. |
-| 7 | `com.unity.ads`/`com.unity.analytics` sin uso | Sin cambios | **Sigue igual** — siguen en `manifest.json`, cero referencias en `Assets/**/*.cs`. |
+| 2 | Cero tests automatizados | Sin cambios | **Sigue igual** — se decidió no abordarlo en esta pasada (ver nota abajo). |
+| 3 | Sin CI | Sin cambios | **Sigue igual** — se decidió no abordarlo en esta pasada (ver nota abajo). |
+| 4 | Cero `.asmdef` propios | Sin cambios | **Sigue igual, a propósito** — ver §19.4.7, no se tocó por riesgo de romper la compilación sin forma de verificarlo. |
+| 5 | `m_LayerCollisionMatrix` sin personalizar | Sin cambios | **Resuelto parcialmente** — ver §19.4.7. Se desactivó la colisión de las 5 capas puramente visuales/UI; las capas de gameplay (Player, Enemy, Projectile, etc.) se dejaron tal cual por riesgo de romper mecánicas basadas en trigger. |
+| 6 | `antiAliasing: 0` en ambas calidades | Sin cambios | **Resuelto en PC** — ver §19.4.7. MSAA 4x en calidad PC (`QualitySettings.asset` + `PC_RPAsset.asset`); Mobile se deja en 0 a propósito (gama baja). |
+| 7 | `com.unity.ads`/`com.unity.analytics` sin uso | Sin cambios | **Resuelto** — ambos paquetes eliminados de `manifest.json` (ver §19.4.7). |
 | 8 | Cabecera de `TDD.md` desactualizada ("Unity 2022.3+") | Pendiente | **Resuelto** — cabecera dice "Unity 6 (6000.5.4f1)". |
 
-Ningún punto ha empeorado; dos de ocho se resolvieron. Los seis restantes son exactamente los mismos que en agosto — siguen siendo huecos de proceso, no bugs, y siguen sin urgencia salvo que se acerque una entrega externa.
+Del bloque original, quedan sin tocar deliberadamente: tests automatizados y CI (Raúl decidió dejarlos fuera de esta pasada) y `.asmdef` propios (Claude decidió no tocarlo por riesgo — ver §19.4.7). Los otros cinco puntos están resueltos, parcial o totalmente, a día 12 de agosto.
 
 **Higiene de repositorio — hallazgos nuevos, causados por la importación de Quibli (2122 archivos, ~152 MB):**
 
 - El `.git` del proyecto pesa ya **~2.05 GiB** (107.169 objetos en pack). Coherente con el volumen importado, pero vale la pena tenerlo en cuenta si algún día hay que clonar el repo en una máquina nueva o compartirlo.
 - **65 objetos `tmp_obj_*` huérfanos en `.git/objects/` (~7.17 MiB)** — probablemente de una operación de Git interrumpida durante el commit masivo (falta de espacio, timeout). Antes de limpiar: `git fsck` para confirmar que no falta nada, luego `git gc --prune=now` si todo está sano.
-- **Las texturas `.tif` que trae Quibli no están cubiertas por Git LFS.** `.gitattributes` cubre `jpg/jpeg/png/tga/psd/hdr/exr/fbx/obj/blend/mp3/ogg/wav/mp4/mov` pero no `.tif`, y hay texturas `.tif` de hasta 16.6 MB (`Ellen_Body_Normal.tif`) trackeadas como blob completo en el historial en vez de puntero LFS. Añadir `*.tif filter=lfs diff=lfs merge=lfs -text` a `.gitattributes` — los `.tif` ya commiteados seguirán pesando en el historial salvo que se haga un `git lfs migrate`, pero al menos para adelante no se sigue agravando.
+- **Las texturas `.tif` que trae Quibli no estaban cubiertas por Git LFS — resuelto (ver §19.4.7).** Se añadió `*.tif`/`*.tiff filter=lfs diff=lfs merge=lfs -text` a `.gitattributes`. Los `.tif` ya commiteados (hasta 16.6 MB, ej. `Ellen_Body_Normal.tif`) siguen pesando en el historial existente salvo que se haga un `git lfs migrate` aparte — esto solo evita que el problema siga creciendo con archivos nuevos.
 - **`Assets/Plugins/Quibli/Demos/` pesa 150 de los 152 MB del import total** — es contenido de demostración de terceros (personaje "Ellen", escenas "City"/"Nature"), no el shader/runtime que probablemente hace falta para el juego. Incluye una subcarpeta llamada literalmente `.../Ellen Textures/trash/` (~44 MB) que el propio autor del asset marcó como descarte. Candidato claro a borrar del repo si no se está usando como referencia activa.
 - `git-lfs` no está instalado en la VM local usada para esta auditoría, así que no se pudo verificar `git lfs ls-files` directamente — vale la pena confirmar en las máquinas de desarrollo activas que los archivos LFS ya bien configurados se están clonando como binarios reales y no como punteros de texto rotos.
 
@@ -2279,15 +2279,60 @@ Es decir, la migración de arte está en una fase muy temprana (~4-5% del total)
 
 ---
 
-#### Plan de acción priorizado (actualiza al de §19.2 §6)
+#### 19.4.7 Acciones aplicadas — 12 de agosto de 2026 (misma tarde, a petición de Raúl)
 
-1. **Tachar C1-C7/A1-A12 en §19.1** como resueltos (cosmético, pero evita relecturas futuras equivocadas) — ya reflejado en la tabla de §19.4.2.
-2. **`.gitattributes`: añadir `*.tif` a LFS** antes de que se importen más assets con texturas sin comprimir — dos minutos, evita que el problema crezca.
-3. **Evaluar borrar `Assets/Plugins/Quibli/Demos/`** (150 MB, contenido de muestra de terceros) — reduce sustancialmente el peso del repo si no se usa como referencia.
-4. **`git fsck` + `git gc --prune=now`** para los objetos `tmp_obj_*` huérfanos, una vez confirmado que no faltan datos.
-5. **Pool del `spawnVFX` en `MagicProjectileSpawner`** — ya que el archivo está tocado, cerrar la deuda de un plumazo.
-6. El resto de §19.2 (tests, CI, `.asmdef`, Layer Collision Matrix, antialiasing, paquetes `ads`/`analytics` sin usar) sigue teniendo la misma prioridad que en agosto — nada urgente, pero es lo primero que pediría un revisor externo.
-7. Migración de materiales a Quibli (§19.4.6) — sin urgencia, es trabajo de arte de fondo; usar el CSV como medida de progreso.
+Tras entregar el informe de arriba, Raúl pidió aplicar directamente la parte de bajo riesgo. Alcance acordado: cambios de código sin riesgo sí; tests/CI/limpieza de repo (borrar `Quibli/Demos`, `git gc`) se dejan para más adelante; los ajustes de Project Settings (Layer Collision Matrix, antialiasing, paquetes sin usar, `.asmdef`) los decide y aplica Claude por tener visibilidad del código. Esto es lo que se hizo, y por qué se paró donde se paró:
+
+**Aplicado:**
+
+- **`MagicProjectileSpawner.cs`** (líneas ~285-293 y ~444-454) — el `spawnVFX` de inicio de hechizo pasa por `VfxPoolService.Instance.Play(...)` en vez de `Instantiate`+`Destroy` directo, igual que ya hacían `impactVFX`/`despawnVFX` en `MagicProjectil.cs`. Cierra el hallazgo MEDIO de §19.4.3.
+- **C1-C7/A1-A12 en §19.1** — cada cabecera lleva ahora "— CORREGIDO (ver §19.4.2)" para que una relectura futura no los dé por vigentes.
+- **`.gitattributes`** — añadido `*.tif`/`*.tiff filter=lfs diff=lfs merge=lfs -text`. Los `.tif` ya commiteados (hasta 16.6 MB) siguen pesando en el historial existente — para eso hace falta un `git lfs migrate` aparte, que no se ha hecho.
+- **`Packages/manifest.json`** — eliminadas las líneas `com.unity.ads` y `com.unity.analytics` (cero referencias en código, confirmado en §19.4.4/§19.2). No se tocó `com.unity.modules.unityanalytics`, que es un módulo distinto (built-in del motor, no el paquete de Analytics legacy).
+- **Layer Collision Matrix** (`ProjectSettings/DynamicsManager.asset`) — **cambio parcial y deliberadamente conservador.** Se identificaron por código 5 capas puramente visuales/de UI que el propio proyecto ya trata como "ignorar" en la lógica de colisión (`EnemyProjectile.cs` las excluye explícitamente): `TransparentFX`, `InteractHint`, `PauseUI`, `UI_Portrait`, `Minimap`. Se desactivó su colisión física con absolutamente todo (incluidas entre ellas), lo que es seguro porque el código ya no-opea cualquier contacto con estas capas. **No se tocaron** las capas de gameplay real (`Default`, `Player`, `Enemy`, `Projectile`, `ProjectileEnemy`, `Interactable`, `Floor`, `Obstacle`, `Climb`, `Water`) porque varias de sus combinaciones dependen de `OnTrigger*` para mecánicas reales que sí usan la matriz de colisión — por ejemplo, `MagicProjectil.cs` detecta colisión con `ProjectileEnemy` a propósito (posible mecánica de clash/parry de proyectiles), así que la sugerencia genérica de §19.2 ("Projectile no debería colisionar con ProjectileEnemy") resultó ser **incorrecta** al verificarla contra el código real — desactivar ese par habría roto esa mecánica. Diseñar la matriz completa (y la idea de darle a los personajes su propia capa `Character`, separada de `Default`) es un trabajo que necesita playtesting en el Editor, no una pasada de texto a ciegas — se deja pendiente, ver "Sigue pendiente" abajo.
+  - **Verificación pendiente por tu parte:** abre `Edit → Project Settings → Physics → Layer Collision Matrix` una vez en Unity y confirma que las 5 capas de arriba aparecen sin ninguna casilla marcada. El formato de este campo en el `.asset` es un blob binario poco documentado — hice el cambio con un script que decodifica/codifica el formato y lo verifiqué por consistencia (simetría de la matriz, que las capas de gameplay quedan exactamente igual que antes), pero no pude abrir Unity para confirmarlo visualmente.
+- **Antialiasing** — activado **MSAA 4x en la calidad PC** (`ProjectSettings/QualitySettings.asset` → `antiAliasing: 4` en el tier `PC`, y `Assets/Settings/PC_RPAsset.asset` → `m_MSAA: 4`, que es el campo que URP realmente lee — `QualitySettings.antiAliasing` por sí solo no basta en URP, hay que tocar también el asset del render pipeline). **Mobile se dejó en 0/Disabled a propósito** — es una decisión de rendimiento en gama baja que no me correspondía tomar por ti; si quieres AA en Mobile, es un cambio de un campo en `Mobile_RPAsset.asset`.
+
+**Sigue pendiente, a propósito:**
+
+- **Tests automatizados y CI** — Raúl decidió dejarlos fuera de esta pasada (ver §19.4.8, se retomó después el mismo día).
+- **Limpieza de repo** (`Assets/Plugins/Quibli/Demos/`, `git fsck` + `git gc --prune=now` para los `tmp_obj_*`) — Raúl decidió dejarla fuera de esta pasada; ver §19.4.8, se retomó después y apareció un hallazgo importante que cambia el plan.
+- **`.asmdef` propios** — decisión de Claude, no de alcance: dividir ~450 scripts en ensamblados propios requiere añadir referencias explícitas a cada paquete que usa cada carpeta (Cinemachine, Timeline, Input System, AI Navigation, DOTween, Invector, TextMeshPro, Quibli...) y Unity solo confirma si la configuración es correcta al recompilar en el Editor — un error de referencia rompe la compilación del proyecto entero hasta que se abra Unity y se lea la Consola. Sin esa señal de vuelta no hay forma responsable de hacerlo a ciegas desde aquí; es el único punto de §19.2 que requiere trabajo directamente en el Editor, iterando contra los errores de compilación reales.
+- **Layer Collision Matrix, parte completa** (capa `Character` propia para separar personajes de la geometría de `Default`) — igual que arriba, necesita playtesting en el Editor para no romper el raycast de obstrucción que hoy depende de que los personajes vivan en `Default` (ver AGENTS.md §2).
+
+#### 19.4.8 Segunda pasada — tests, CI y limpieza de repo (12 de agosto, misma tarde)
+
+Raúl pidió continuar hasta dejar el proyecto lo más completo posible. Esto es lo que se hizo, un hallazgo importante que cambió el plan sobre la marcha, y lo que quedó fuera y por qué.
+
+**Hallazgo importante — `Assets/Plugins/Quibli/Demos/` NO es contenido muerto, tiene una dependencia real activa.** El plan original (§19.4.4) era borrar esta carpeta de 150 MB por ser contenido de muestra de terceros. Antes de borrar nada se verificó si algo la referenciaba de verdad (no solo por nombre, sino por GUID contra las escenas reales) — y sí: el `Volume` global de post-procesado de `Assets/Scenes/Worlds/MainWorld.unity` (`m_IsGlobal: 1`, el que añadió el commit `294507f73 "agregar Global Volume permanente de post-procesado en MainWorld"`) tiene su `sharedProfile` apuntando **directamente** a `Assets/Plugins/Quibli/Demos/Sample Scene with Quibli/Scene Settings/SampleSceneWithQuibli-MainCameraProfile.asset`. Es decir: el post-procesado real del juego en producción vive dentro de la carpeta de demos del plugin, no en un asset propio del proyecto. Borrar `Demos/` como estaba previsto habría roto el post-procesado de `MainWorld` en el momento en que alguien abriera esa escena.
+
+Contexto: el commit `a0f8c1851` (posterior) sí creó una copia de los valores de ese perfil en `Assets/Scenes/Worlds/MainWorld/Volumen Profile.asset` — pero es una copia de valores en un asset *distinto*, no un redirigido del `Volume` de la escena. El `Volume` de `MainWorld.unity` nunca se actualizó para apuntar a esa copia; sigue leyendo el original dentro de `Demos/`. Se revisó también el propio perfil de `Demos/` (`SampleSceneWithQuibli-MainCameraProfile.asset`) y no referencia ninguna textura/LUT — solo parámetros numéricos de los overrides de post-proceso — así que la migración, cuando se haga, es sencilla: no arrastra dependencias adicionales.
+
+**No se borró nada de `Demos/` en esta pasada.** Queda así, a propósito, hasta que se decida y ejecute la migración (mover/copiar `SampleSceneWithQuibli-MainCameraProfile.asset` a una carpeta propia del proyecto — p. ej. junto a `Assets/Scenes/Worlds/MainWorld/Volumen Profile.asset` — y repuntar el `sharedProfile` del `Volume` de `MainWorld.unity` al nuevo asset). Es un cambio de una escena activa real, así que se deja para hacerlo con el Editor abierto y poder confirmar visualmente que el post-procesado no cambia al re-apuntar la referencia.
+
+**Sí se hizo, seguro e independiente de lo anterior:**
+
+- **`git fsck --full --unreachable`** — limpio, sin objetos corruptos ni advertencias.
+- **`git gc --prune=now`** — lanzado en segundo plano (el repo de ~2 GiB tarda más de lo que permite una sola llamada de shell); limpia los objetos `tmp_obj_*` huérfanos detectados en §19.4.4. Confirmar el resultado con `git count-objects -vH` la próxima vez que abras una terminal en el proyecto.
+- **Primer test automatizado del proyecto** — `Assets/Scripts/Editor/Tests/PlayerActionManagerTests.cs`, 5 tests de EditMode sobre el refcount de `PushMode`/`PopMode` de `PlayerActionManager`, incluyendo la reproducción exacta del escenario del bug C2 (dos sistemas empujando `Cinematic`, un solo Pop no debe devolver el control al jugador) y de A10 (`ResetToDefault` vacía la pila). Deliberadamente **sin `.asmdef` propio**: vive en una carpeta `Editor/` normal, así que compila como parte del ensamblado implícito `Assembly-CSharp-Editor` — se confirmó primero, leyendo los `.csproj` que Unity ya tiene generados en el repo, que ese ensamblado ya referencia `nunit.framework`/`UnityEditor.TestRunner`/`UnityEngine.TestRunner`, así que no hace falta crear ningún ensamblado nuevo ni arriesgar la compilación del proyecto. Se comprobó también que `PlayerActionManager.Awake()` no depende de ningún otro manager/singleton, así que es seguro instanciarlo aislado en un test. **Limitación real:** solo cubre lo que se puede probar sin entrar en Play — no hay tests de PlayMode todavía (necesitan su propio `.asmdef`, que si no compila bien bloquea la compilación de todo el proyecto hasta corregirlo en el Editor; se deja fuera por la misma razón que el resto de `.asmdef`).
+- **CI en GitHub Actions** — dos workflows (`unity-tests.yml` y `unity-request-activation-file.yml`) listos y entregados en el chat, pero **no pude escribirlos directamente en tu proyecto**: `.github/workflows/` está protegido contra escritura remota (por buenas razones — un cambio ahí puede ejecutar código con permisos del repo). Cópialos tú a `.github/workflows/` en tu carpeta del proyecto. El de tests correrá en cada push/PR a `main` y en la pestaña Actions bajo demanda, pero **no pasará en verde hasta que configures 3 secretos** (`UNITY_LICENSE`, `UNITY_EMAIL`, `UNITY_PASSWORD`) — el propio archivo trae los pasos exactos (ejecutar primero el workflow de activación, subir el `.alf` a license.unity3d.com, bajar el `.ulf` y pegarlo como secreto). Es un paso de 10-15 minutos que solo tú puedes hacer (necesita tu cuenta de Unity).
+
+**Sigue pendiente, ahora sí por límite real de lo que se puede hacer sin el Editor abierto:**
+
+- Migrar el `Volume Profile` de `MainWorld.unity` fuera de `Demos/` (arriba) y, solo entonces, borrar `Assets/Plugins/Quibli/Demos/`.
+- Colocar los dos workflows en `.github/workflows/` y configurar los 3 secretos de Unity.
+- Tests de PlayMode y el resto de `.asmdef` — necesitan iteración en el Editor.
+
+#### Plan de acción priorizado (actualiza al de §19.2 §6 y §19.4.7)
+
+1. Abrir el proyecto en Unity una vez y comprobar: (a) el Layer Collision Matrix se ve como se describe en §19.4.7, (b) el proyecto compila y el nuevo test de `PlayerActionManagerTests` aparece y pasa en Window → General → Test Runner → EditMode, (c) el MSAA en PC se nota bien en cámara sin coste de rendimiento inaceptable.
+2. Migrar `SampleSceneWithQuibli-MainCameraProfile.asset` fuera de `Demos/` y repuntar el `Volume` de `MainWorld.unity` (§19.4.8) — requisito previo para poder borrar `Demos/` sin romper el post-procesado real.
+3. Copiar `unity-tests.yml`/`unity-request-activation-file.yml` a `.github/workflows/` y configurar los secretos de Unity para que la CI pase en verde.
+4. Confirmar que `git gc --prune=now` terminó (`git count-objects -vH`, debería no quedar ningún `tmp_obj_*`).
+5. Tests automatizados — seguir con los de PlayMode (invariantes narrativos de §10, reproducir C1) cuando haya sesión de Editor para iterar.
+4. CI básico en GitHub Actions (el repo ya vive en `github.com/liyo-dev/ElSenderoDeLasEstrellas`) — al menos un job que compile el proyecto en cada push.
+5. `.asmdef` propios — dejar para una sesión de trabajo directo en el Editor, con la Consola abierta para iterar sobre los errores de referencia.
+6. Migración de materiales a Quibli (§19.4.6) — sin urgencia, es trabajo de arte de fondo; usar el CSV como medida de progreso.
 
 
 ---

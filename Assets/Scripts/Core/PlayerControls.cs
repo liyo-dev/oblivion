@@ -610,6 +610,17 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
+                    ""id"": ""83defb5a-d27f-432c-b270-a5c0a0735bb5"",
+                    ""path"": ""<Mouse>/middleButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""AttackMagicNorth"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
                     ""id"": ""d0b30479-48cd-4067-9509-c61a145d18a2"",
                     ""path"": ""<Mouse>/rightButton"",
                     ""interactions"": """",
