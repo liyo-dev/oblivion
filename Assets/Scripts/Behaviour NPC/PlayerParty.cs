@@ -39,12 +39,31 @@ namespace Game.NPC
         
         #region Singleton
         private static PlayerParty _instance;
+
+        // FIX (2026-08-12): igual que TransitionManager (ver auditoría 2026-08-11), Instance
+        // recreaba un GameObject "PlayerParty" nuevo cada vez que se consultaba con _instance en
+        // null. PlayerParty es DontDestroyOnLoad y se destruye junto al resto de la escena al
+        // cerrar partida / salir de Play Mode; el orden de destrucción entre objetos no está
+        // garantizado, así que otros OnDestroy()/Update() que consultan PlayerParty.Instance para
+        // desuscribirse o leer el estado podían ejecutarse DESPUÉS de que este objeto ya se
+        // hubiera destruido a sí mismo. Al no haber ya ninguna instancia real, el fallback de
+        // abajo instanciaba un GameObject "PlayerParty" completamente nuevo (con su propio
+        // DontDestroyOnLoad) en mitad del cierre de la escena — ese objeto quedaba huérfano,
+        // porque Unity ya había calculado qué destruir. Resultado: el warning "Some objects were
+        // not cleaned up when closing the scene" señalando exactamente "PlayerParty".
+        // applicationIsQuitting distingue el cierre real de un uso indebido en caliente: Unity
+        // envía OnApplicationQuit a todos los objetos activos (también al salir de Play Mode en
+        // el Editor) ANTES de empezar a destruirlos.
+        private static bool _applicationIsQuitting;
+
         public static PlayerParty Instance
         {
             get
             {
                 if (_instance == null)
                 {
+                    if (_applicationIsQuitting) return null;
+
                     _instance = FindAnyObjectByType<PlayerParty>();
                     if (_instance == null)
                     {
@@ -56,7 +75,7 @@ namespace Game.NPC
                 return _instance;
             }
         }
-        
+
         public static bool HasInstance => _instance != null;
         #endregion
 
@@ -112,6 +131,8 @@ namespace Game.NPC
             OnMemberJoined = null;
             OnMemberLeft = null;
             OnPartyChanged = null;
+            _instance = null;
+            _applicationIsQuitting = false;
         }
         #endif
         #endregion
@@ -206,6 +227,14 @@ namespace Game.NPC
                 UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoadedHandler;
                 _instance = null;
             }
+        }
+
+        // Ver comentario de _applicationIsQuitting en la región Singleton: llega antes que los
+        // OnDestroy()/Update() de todos los demás objetos, tanto al cerrar el build como al salir
+        // de Play Mode, así que evita que Instance recree un "PlayerParty" huérfano en ese momento.
+        void OnApplicationQuit()
+        {
+            _applicationIsQuitting = true;
         }
 
         void Update()

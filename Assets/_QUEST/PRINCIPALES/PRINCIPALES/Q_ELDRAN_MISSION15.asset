@@ -17,6 +17,8 @@ MonoBehaviour:
   displayName: QUEST_ELDRAN_MISSION15_NAME
   descriptionId: QUEST_ELDRAN_MISSION15_DESC
   description: 
+  detailedDescriptionId: QUEST_ELDRAN_MISSION15_DETAIL
+  detailedDescription: 
   steps:
   - descriptionId: QUEST_ELDRAN_MISSION15_DESC
     description: Encuentra el templo olvidado.

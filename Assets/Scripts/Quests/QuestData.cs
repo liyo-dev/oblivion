@@ -15,9 +15,17 @@ public class QuestData : ScriptableObject
     [Tooltip("ID de localización para la descripción (ej: 'QUEST_MISSION1_DESC'). Si está vacío, usa description.")]
     public string descriptionId;
     
-    [TextArea] 
+    [TextArea]
     [Tooltip("Descripción de la quest (usada si descriptionId está vacío o no se usa localización)")]
     public string description;
+
+    [Header("Descripción detallada (panel de detalle de misión)")]
+    [Tooltip("ID de localización para la descripción detallada mostrada en el panel de detalle de misión (ej: 'QUEST_MISSION1_DETAIL'). Debe guiar al jugador paso a paso cuando la quest tenga varios steps. Si está vacío, usa detailedDescription.")]
+    public string detailedDescriptionId;
+
+    [TextArea(3, 10)]
+    [Tooltip("Descripción detallada de la quest (usada si detailedDescriptionId está vacío o no se usa localización). Si también está vacía, se recurre a la descripción corta.")]
+    public string detailedDescription;
 
     [System.Serializable]
     public class Step
@@ -52,6 +60,27 @@ public class QuestData : ScriptableObject
         return description;
     }
     
+    /// <summary>
+    /// Obtiene la descripción detallada y localizada de la quest, pensada para el panel de detalle de misión
+    /// (guía completa, con los pasos explicados en conjunto si la quest tiene más de uno).
+    /// Si no hay texto detallado configurado, recurre a la descripción corta (GetLocalizedDescription).
+    /// </summary>
+    public string GetLocalizedDetailedDescription()
+    {
+        string result = null;
+
+        if (!string.IsNullOrEmpty(detailedDescriptionId) && LocalizationManager.Instance != null)
+        {
+            result = LocalizationManager.Instance.Get(detailedDescriptionId, detailedDescription);
+        }
+        else if (!string.IsNullOrEmpty(detailedDescription))
+        {
+            result = detailedDescription;
+        }
+
+        return string.IsNullOrEmpty(result) ? GetLocalizedDescription() : result;
+    }
+
     /// <summary>Obtiene la descripción localizada de un paso específico</summary>
     public string GetLocalizedStepDescription(int stepIndex)
     {

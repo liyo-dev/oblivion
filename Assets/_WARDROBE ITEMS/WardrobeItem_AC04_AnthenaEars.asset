@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99a46ebbd4e14370bc8f63c70e81d7ac, type: 3}
+  m_Name: WardrobeItem_AC04_AnthenaEars
+  m_EditorClassIdentifier: Assembly-CSharp::WardrobeItemSO
+  wardrobeId: AC04_AnthenaEars
+  category: 8
+  partName: AC04_AnthenaEars
+  displayNameId: ITEM_AC04_ANTHENAEARS_NAME
+  displayName: Orejas de Antena
+  descriptionId: ITEM_AC04_ANTHENAEARS_DESC
+  description: Orejas con antenas, como de otro mundo.
+  icon: {fileID: 21300000, guid: f255c854c33d470ba01ad2e60b7de486, type: 3}

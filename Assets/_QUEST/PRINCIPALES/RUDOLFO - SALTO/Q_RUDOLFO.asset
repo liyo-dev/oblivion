@@ -17,6 +17,8 @@ MonoBehaviour:
   displayName: CHAR_RUDOLFO
   descriptionId: QUEST_RUDOLFO_DESC
   description: 
+  detailedDescriptionId: QUEST_RUDOLFO_DETAIL
+  detailedDescription: 
   steps:
   - descriptionId: QUEST_RUDOLFO_DESC
     description: 

@@ -61,6 +61,41 @@ public class Interactable : MonoBehaviour
     Tweener _hintTween;
     Vector3 _hintOriginalScale;
 
+    [Header("Línea de visión")]
+    [Tooltip("Altura sobre la base de este objeto usada como SightPoint cuando no hay 'hint' " +
+             "asignado (ver SightPoint). Sin efecto si hint sí está asignado.")]
+    [SerializeField] private float defaultSightHeight = 1.4f;
+
+    // FIX (2026-08-12): InteractionDetector.FindNearest() comprobaba línea de visión contra
+    // transform.position (la base/los pies del NPC). Cualquier mueble de altura media entre el
+    // player y el NPC (mostrador de tienda, mesa...) queda justo a esa altura y se detectaba
+    // como obstrucción real aunque el jugador viera al NPC perfectamente por encima — el hint
+    // nunca llegaba a mostrarse en ningún vendedor con mostrador delante. En vez de re-etiquetar
+    // el layer de cada mueble de cada tienda (frágil y con efectos secundarios en renderizado/
+    // física), se expone aquí el punto que SÍ debe comprobarse: por defecto la posición del
+    // propio hint, que ya está a la altura de la cabeza/por encima del NPC por diseño (es un
+    // icono flotante). Si el jugador puede ver ese punto, un mostrador bajo deja de bloquear.
+    //
+    // FIX (2026-08-12b): la asunción de arriba ("el hint ya está a la altura de la cabeza") no
+    // se cumple para todos los prefabs de NPC — p.ej. Patricia tiene el Canvas del hint colgando
+    // directamente de la raíz del prefab con offset local (0,0,0), así que hint.transform.position
+    // queda prácticamente a la misma altura que transform.position (por eso el mostrador de su
+    // tienda seguía bloqueando el hint incluso después del fix anterior). En vez de depender de
+    // que cada prefab tenga el Canvas bien posicionado, se garantiza aquí una altura mínima
+    // (defaultSightHeight) sobre la base del NPC: si el hint ya está más alto que eso (el caso
+    // "bien configurado"), se usa su posición tal cual; si no, se eleva hasta el mínimo.
+    public Vector3 SightPoint
+    {
+        get
+        {
+            Vector3 point = hint != null ? hint.transform.position : transform.position + Vector3.up * defaultSightHeight;
+            float minY = transform.position.y + defaultSightHeight;
+            if (point.y < minY)
+                point.y = minY;
+            return point;
+        }
+    }
+
     void Awake()
     {
         enabledForUse = initiallyEnabled;

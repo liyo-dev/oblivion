@@ -49,7 +49,10 @@ public class QuestVisibilityItemUI : MonoBehaviour
 
         if (questDescription)
         {
-            var description = data.Data.GetLocalizedDescription();
+            // Panel de detalle de misión: usa la descripción detallada (guía completa,
+            // con todos los pasos explicados) en vez de la descripción corta que ya
+            // se muestra en el menú rápido de misiones.
+            var description = data.Data.GetLocalizedDetailedDescription();
             questDescription.text = string.IsNullOrEmpty(description) ? string.Empty : description;
         }
 

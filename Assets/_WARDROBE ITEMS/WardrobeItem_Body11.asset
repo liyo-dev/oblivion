@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99a46ebbd4e14370bc8f63c70e81d7ac, type: 3}
+  m_Name: WardrobeItem_Body11
+  m_EditorClassIdentifier: Assembly-CSharp::WardrobeItemSO
+  wardrobeId: Body11
+  category: 0
+  partName: Body11
+  displayNameId: WARDROBE_BODY11_NAME
+  displayName: Vestido de noble
+  descriptionId: WARDROBE_BODY11_DESC
+  description: Terciopelo y bordados dignos de la corte real.
+  icon: {fileID: 21300000, guid: c4a717d3af54462e98921db5ec1f3abf, type: 3}

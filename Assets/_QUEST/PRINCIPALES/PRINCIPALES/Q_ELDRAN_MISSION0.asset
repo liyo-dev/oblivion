@@ -17,4 +17,6 @@ MonoBehaviour:
   displayName: 
   descriptionId: 
   description: 
+  detailedDescriptionId: QUEST_ELDRAN_MISSION0_DETAIL
+  detailedDescription: 
   steps: []

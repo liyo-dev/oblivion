@@ -28,12 +28,10 @@ public class MenuTextHighlight : MonoBehaviour
     Sequence _seq;
     Transform _t;
     bool _isHighlighted;
-    EventSystem _es;
 
     void Awake()
     {
         _t = transform;
-        _es = EventSystem.current;
 
         // Auto-asigna graphic (TMP o Text)
         if (!targetGraphic)
@@ -69,9 +67,17 @@ public class MenuTextHighlight : MonoBehaviour
     void Update()
     {
         // Soporta gamepad/teclado: ¿está seleccionado el dueño?
-        if (!_es || !selectionOwner) return;
+        // IMPORTANTE: leer EventSystem.current en cada frame (NO cachearlo en Awake). Este
+        // componente se instancia en items creados/destruidos dinámicamente (QuestMainMenuUI.Rebuild)
+        // y, si el EventSystem "current" cambia mientras tanto (p.ej. al cargar aditivamente una
+        // escena de mundo con su propio EventSystem — ver PlayerInputManager.ConnectToEventSystemModule),
+        // una referencia cacheada queda apuntando al EventSystem equivocado y el highlight deja de
+        // reaccionar a la selección aunque la navegación funcione. MenuNavigator ya sigue este
+        // patrón (lee EventSystem.current en vivo) por el mismo motivo.
+        var es = EventSystem.current;
+        if (!es || !selectionOwner) return;
 
-        bool selected = _es.currentSelectedGameObject == selectionOwner;
+        bool selected = es.currentSelectedGameObject == selectionOwner;
         if (selected != _isHighlighted)
         {
             _isHighlighted = selected;

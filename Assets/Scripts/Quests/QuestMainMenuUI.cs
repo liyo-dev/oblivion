@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using DG.Tweening;
+using Core.InputGlyphs;
 
 public class QuestMainMenuUI : MonoBehaviour
 {
@@ -33,9 +34,15 @@ public class QuestMainMenuUI : MonoBehaviour
     [SerializeField] private RectTransform hiddenContentRoot;
     
     [Header("Input Icons")]
-    [Tooltip("Icono de LB para mostrar en el header de misiones visibles")]
+    [Tooltip("Icono del botón hombro-izquierdo para mostrar en el header de misiones visibles. El " +
+             "sprite se sustituye en runtime según InputGlyphService.CurrentFamily (Xbox LB / " +
+             "PlayStation L1 / Switch L / tecla de teclado): el sprite asignado aquí en el Inspector " +
+             "solo se usa como fallback antes del primer refresh.")]
     [SerializeField] private Image lbIcon;
-    [Tooltip("Icono de RB para mostrar en el header de misiones archivadas")]
+    [Tooltip("Icono del botón hombro-derecho para mostrar en el header de misiones archivadas. El " +
+             "sprite se sustituye en runtime según InputGlyphService.CurrentFamily (Xbox RB / " +
+             "PlayStation R1 / Switch R / tecla de teclado): el sprite asignado aquí en el Inspector " +
+             "solo se usa como fallback antes del primer refresh.")]
     [SerializeField] private Image rbIcon;
 
     [Header("Animación")]
@@ -53,8 +60,18 @@ public class QuestMainMenuUI : MonoBehaviour
     {
         get
         {
+            // FIX (flechas de teclado mueven al player con el menú detallado abierto):
+            // Antes se exigía panelGroup.alpha > 0.001f, pero ShowMenu() deja alpha en
+            // 0f de forma síncrona y solo el tween de DOTween lo sube en frames
+            // posteriores. Como QuestMenuManager.RefreshMenuRegistration() lee IsOpen
+            // en el MISMO Update() en el que se llama a ShowMenu() (justo después),
+            // esta comprobación devolvía false ese primer frame y retrasaba
+            // EnsureUiScope()/PushUIMode() (que suprime el Action Map GamePlay, incluido
+            // Move con las flechas) al frame siguiente. blocksRaycasts/interactable ya
+            // se fijan de forma síncrona en ShowMenu()/HideMenu(), así que basta con
+            // ellos para saber si el menú está "abierto" sin depender del tween.
             if (panelGroup != null)
-                return panelGroup.gameObject.activeSelf && panelGroup.alpha > 0.001f && panelGroup.blocksRaycasts;
+                return panelGroup.gameObject.activeSelf && panelGroup.blocksRaycasts;
             return panelRoot != null && panelRoot.activeSelf;
         }
     }
@@ -65,6 +82,8 @@ public class QuestMainMenuUI : MonoBehaviour
         // Por defecto siempre mostrar misiones visibles/activas
         _showingHidden = false;
         ValidateScrollRectSetup();
+        InputGlyphService.FamilyChanged += HandleInputFamilyChanged;
+        RefreshInputIconSprites();
         Rebuild();
     }
 
@@ -74,6 +93,7 @@ public class QuestMainMenuUI : MonoBehaviour
         ReleaseGamePhase();
         KillTween();
         ReleaseActionMode();
+        InputGlyphService.FamilyChanged -= HandleInputFamilyChanged;
     }
 
     public void ShowMenu()
@@ -394,9 +414,34 @@ public class QuestMainMenuUI : MonoBehaviour
         // Mostrar el icono correspondiente según la tab activa
         if (lbIcon != null)
             lbIcon.gameObject.SetActive(!showingHidden);
-        
+
         if (rbIcon != null)
             rbIcon.gameObject.SetActive(showingHidden);
+
+        // El sprite en sí (no solo la visibilidad) depende de la familia de mando/teclado activa —
+        // sin esto lbIcon/rbIcon se quedaban con el sprite fijo (arte Xbox "LB"/"RB") asignado a mano
+        // en el prefab, mostrando "RB" aunque se jugara con PlayStation (R1), Switch (R) o
+        // teclado/ratón (donde ni siquiera existen esos botones físicos).
+        RefreshInputIconSprites();
+    }
+
+    void HandleInputFamilyChanged(InputGlyphDeviceFamily _) => RefreshInputIconSprites();
+
+    void RefreshInputIconSprites()
+    {
+        ApplyGlyphSprite(lbIcon, InputGlyphNames.ShoulderLeft);
+        ApplyGlyphSprite(rbIcon, InputGlyphNames.ShoulderRight);
+    }
+
+    static void ApplyGlyphSprite(Image icon, string glyphName)
+    {
+        if (icon == null) return;
+
+        var sprite = InputGlyphService.GetSprite(glyphName);
+        if (sprite == null) return;
+
+        icon.sprite = sprite;
+        icon.preserveAspect = true;
     }
 
     void EnsureSelection()

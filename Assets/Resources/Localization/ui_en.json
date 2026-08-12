@@ -731,6 +731,454 @@
         {
             "key": "SHOP_ITEM_AVAILABLE",
             "value": "Available"
+        },
+        {
+            "key": "WARDROBE_BODY01_NAME",
+            "value": "Peasant Clothes"
+        },
+        {
+            "key": "WARDROBE_BODY01_DESC",
+            "value": "Simple, patched clothing typical of field workers."
+        },
+        {
+            "key": "WARDROBE_BODY02_NAME",
+            "value": "Traveler's Garb"
+        },
+        {
+            "key": "WARDROBE_BODY02_DESC",
+            "value": "Light layers made for long walks along the Path."
+        },
+        {
+            "key": "WARDROBE_BODY03_NAME",
+            "value": "Humble Tunic"
+        },
+        {
+            "key": "WARDROBE_BODY03_DESC",
+            "value": "A plain tunic, comfortable for everyday wear."
+        },
+        {
+            "key": "WARDROBE_BODY04_NAME",
+            "value": "Hunter's Gear"
+        },
+        {
+            "key": "WARDROBE_BODY04_DESC",
+            "value": "Tanned leather that protects among the forest brush."
+        },
+        {
+            "key": "WARDROBE_BODY06_NAME",
+            "value": "Guard Uniform"
+        },
+        {
+            "key": "WARDROBE_BODY06_DESC",
+            "value": "The standard-issue uniform of the village guard."
+        },
+        {
+            "key": "WARDROBE_BODY07_NAME",
+            "value": "Mage Apprentice Robe"
+        },
+        {
+            "key": "WARDROBE_BODY07_DESC",
+            "value": "Cloth touched by a faint arcane glow."
+        },
+        {
+            "key": "WARDROBE_BODY08_NAME",
+            "value": "Blacksmith's Apron"
+        },
+        {
+            "key": "WARDROBE_BODY08_DESC",
+            "value": "Thick leather that withstands sparks and forge heat."
+        },
+        {
+            "key": "WARDROBE_BODY09_NAME",
+            "value": "Fisherman's Clothes"
+        },
+        {
+            "key": "WARDROBE_BODY09_DESC",
+            "value": "Waterproof and light, perfect for days by the river."
+        },
+        {
+            "key": "WARDROBE_BODY10_NAME",
+            "value": "Merchant's Attire"
+        },
+        {
+            "key": "WARDROBE_BODY10_DESC",
+            "value": "Elegant yet practical, made for closing good deals."
+        },
+        {
+            "key": "WARDROBE_BODY11_NAME",
+            "value": "Noble's Dress"
+        },
+        {
+            "key": "WARDROBE_BODY11_DESC",
+            "value": "Velvet and embroidery worthy of the royal court."
+        },
+        {
+            "key": "WARDROBE_BODY12_NAME",
+            "value": "Scholar's Robe"
+        },
+        {
+            "key": "WARDROBE_BODY12_DESC",
+            "value": "Pockets full of notes and ink stains."
+        },
+        {
+            "key": "WARDROBE_BODY13_NAME",
+            "value": "Bard's Costume"
+        },
+        {
+            "key": "WARDROBE_BODY13_DESC",
+            "value": "Bright colors that turn heads in any tavern."
+        },
+        {
+            "key": "WARDROBE_BODY14_NAME",
+            "value": "Priest's Cassock"
+        },
+        {
+            "key": "WARDROBE_BODY14_DESC",
+            "value": "Plain cloth blessed in the temples of the Path."
+        },
+        {
+            "key": "WARDROBE_BODY15_NAME",
+            "value": "Thief's Garb"
+        },
+        {
+            "key": "WARDROBE_BODY15_DESC",
+            "value": "Dark tones meant to help you go unnoticed."
+        },
+        {
+            "key": "WARDROBE_BODY16_NAME",
+            "value": "Light Warrior Armor"
+        },
+        {
+            "key": "WARDROBE_BODY16_DESC",
+            "value": "Light plating that doesn't sacrifice mobility."
+        },
+        {
+            "key": "WARDROBE_BODY17_NAME",
+            "value": "Elder's Clothes"
+        },
+        {
+            "key": "WARDROBE_BODY17_DESC",
+            "value": "Warm and comfortable, fit for the years of wisdom."
+        },
+        {
+            "key": "WARDROBE_BODY18_NAME",
+            "value": "Baker's Apron"
+        },
+        {
+            "key": "WARDROBE_BODY18_DESC",
+            "value": "Always smells of freshly baked bread."
+        },
+        {
+            "key": "WARDROBE_BODY19_NAME",
+            "value": "Herbalist's Clothes"
+        },
+        {
+            "key": "WARDROBE_BODY19_DESC",
+            "value": "Many pockets for storing herbs and remedies."
+        },
+        {
+            "key": "WARDROBE_BODY20_NAME",
+            "value": "Festival Outfit"
+        },
+        {
+            "key": "WARDROBE_BODY20_DESC",
+            "value": "Reserved for the village's grand celebrations."
+        },
+        {
+            "key": "ITEM_AC01_HEART_NAME",
+            "value": "Heart"
+        },
+        {
+            "key": "ITEM_AC01_HEART_DESC",
+            "value": "A small heart-shaped charm."
+        },
+        {
+            "key": "ITEM_AC02_LEAF_NAME",
+            "value": "Leaf"
+        },
+        {
+            "key": "ITEM_AC02_LEAF_DESC",
+            "value": "An autumn leaf worn as an ornament."
+        },
+        {
+            "key": "ITEM_AC03_BLACKGLASS_NAME",
+            "value": "Black Glasses"
+        },
+        {
+            "key": "ITEM_AC03_BLACKGLASS_DESC",
+            "value": "Dark-lensed glasses, great for staying incognito."
+        },
+        {
+            "key": "ITEM_AC03_HEAVYMETALGLASS_NAME",
+            "value": "Heavy Metal Glasses"
+        },
+        {
+            "key": "ITEM_AC03_HEAVYMETALGLASS_DESC",
+            "value": "Glasses with a rebellious, rock-and-roll edge."
+        },
+        {
+            "key": "ITEM_AC03_NERDGLASS_NAME",
+            "value": "Nerd Glasses"
+        },
+        {
+            "key": "ITEM_AC03_NERDGLASS_DESC",
+            "value": "Thick-framed glasses, very intellectual."
+        },
+        {
+            "key": "ITEM_AC03_NIGHTVISION_NAME",
+            "value": "Night Vision Goggles"
+        },
+        {
+            "key": "ITEM_AC03_NIGHTVISION_DESC",
+            "value": "They help you see in the dark... or so it seems."
+        },
+        {
+            "key": "ITEM_AC04_ANTHENAEARS_NAME",
+            "value": "Antenna Ears"
+        },
+        {
+            "key": "ITEM_AC04_ANTHENAEARS_DESC",
+            "value": "Ears with antennas, like something from another world."
+        },
+        {
+            "key": "ITEM_AC04_SHORTEARS_NAME",
+            "value": "Short Ears"
+        },
+        {
+            "key": "ITEM_AC04_SHORTEARS_DESC",
+            "value": "A small, discreet pair of ears."
+        },
+        {
+            "key": "ITEM_AC05_HORN01_NAME",
+            "value": "Curved Horn"
+        },
+        {
+            "key": "ITEM_AC05_HORN01_DESC",
+            "value": "A curved horn with a demonic look."
+        },
+        {
+            "key": "ITEM_AC05_HORN02_NAME",
+            "value": "Straight Horn"
+        },
+        {
+            "key": "ITEM_AC05_HORN02_DESC",
+            "value": "A straight, sharp horn."
+        },
+        {
+            "key": "ITEM_AC05_HORN03_NAME",
+            "value": "Twin Horns"
+        },
+        {
+            "key": "ITEM_AC05_HORN03_DESC",
+            "value": "Two small twin horns."
+        },
+        {
+            "key": "ITEM_AC05_HORN04_NAME",
+            "value": "Dragon Horn"
+        },
+        {
+            "key": "ITEM_AC05_HORN04_DESC",
+            "value": "An imposing dragon-shaped horn."
+        },
+        {
+            "key": "ITEM_AC06_CROWN01_NAME",
+            "value": "Golden Crown"
+        },
+        {
+            "key": "ITEM_AC06_CROWN01_DESC",
+            "value": "A gleaming crown fit for royalty."
+        },
+        {
+            "key": "ITEM_AC06_CROWN02_NAME",
+            "value": "Silver Crown"
+        },
+        {
+            "key": "ITEM_AC06_CROWN02_DESC",
+            "value": "A modest crown of polished silver."
+        },
+        {
+            "key": "ITEM_AC06_CROWN03_NAME",
+            "value": "Flower Crown"
+        },
+        {
+            "key": "ITEM_AC06_CROWN03_DESC",
+            "value": "A crown woven from flowers of the Path."
+        },
+        {
+            "key": "ITEM_AC07_PIRATEPATCH_NAME",
+            "value": "Pirate Patch"
+        },
+        {
+            "key": "ITEM_AC07_PIRATEPATCH_DESC",
+            "value": "A patch hiding an eye... or a secret."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK01_NAME",
+            "value": "Ninja Mask I"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK01_DESC",
+            "value": "A dark mask that conceals the face, perfect for stealth."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK02_NAME",
+            "value": "Ninja Mask II"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK02_DESC",
+            "value": "A dark mask that conceals the face, perfect for stealth."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK03_NAME",
+            "value": "Ninja Mask III"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK03_DESC",
+            "value": "A dark mask that conceals the face, perfect for stealth."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK04_NAME",
+            "value": "Ninja Mask IV"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK04_DESC",
+            "value": "A dark mask that conceals the face, perfect for stealth."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK05_NAME",
+            "value": "Ninja Mask V"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK05_DESC",
+            "value": "A dark mask that conceals the face, perfect for stealth."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK06_NAME",
+            "value": "Ninja Mask VI"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK06_DESC",
+            "value": "A dark mask that conceals the face, perfect for stealth."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK07_NAME",
+            "value": "Ninja Mask VII"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK07_DESC",
+            "value": "A dark mask that conceals the face, perfect for stealth."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK08_NAME",
+            "value": "Ninja Mask VIII"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK08_DESC",
+            "value": "A dark mask that conceals the face, perfect for stealth."
+        },
+        {
+            "key": "ITEM_AC09_RIBBON_NAME",
+            "value": "Ribbon"
+        },
+        {
+            "key": "ITEM_AC09_RIBBON_DESC",
+            "value": "A decorative ribbon for an elegant touch."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE01_NAME",
+            "value": "Classic Mustache"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE01_DESC",
+            "value": "A classic, neat, well-groomed mustache."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE02_NAME",
+            "value": "Thin Mustache"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE02_DESC",
+            "value": "A thin, discreet mustache."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE03_NAME",
+            "value": "Curly Mustache"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE03_DESC",
+            "value": "A mustache with the tips curled upward."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE04_NAME",
+            "value": "Bushy Mustache"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE04_DESC",
+            "value": "A thick, bushy mustache."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE05_NAME",
+            "value": "Elegant Mustache"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE05_DESC",
+            "value": "A refined mustache with a noble touch."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE06_NAME",
+            "value": "Extravagant Mustache"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE06_DESC",
+            "value": "A huge, eye-catching mustache."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE01_NAME",
+            "value": "Mustache & Short Beard"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE01_DESC",
+            "value": "A mustache paired with a short, neat beard."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE02_NAME",
+            "value": "Mustache & Goatee"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE02_DESC",
+            "value": "A mustache paired with a goatee."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE03_NAME",
+            "value": "Mustache & Long Beard"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE03_DESC",
+            "value": "A mustache paired with a long, full beard."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE04_NAME",
+            "value": "Mustache & Braided Beard"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE04_DESC",
+            "value": "A mustache paired with a braided beard."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE05_NAME",
+            "value": "Royal Mustache"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE05_DESC",
+            "value": "A mustache and beard fit for a king."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE06_NAME",
+            "value": "Magic Mustache"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE06_DESC",
+            "value": "A mustache and beard with a strange arcane sheen."
         }
     ]
 }

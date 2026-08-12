@@ -3,7 +3,7 @@
 **Motor:** Unity 6 (6000.5.4f1)  
 **Pipeline:** URP  
 **Input:** Unity Input System (nuevo) + Invector (movimiento base del jugador)  
-**Última revisión:** Agosto 2026
+**Última revisión:** 12 de agosto de 2026 (unificación de toda la documentación del proyecto en este único archivo — ver § 20)
 
 ---
 
@@ -26,6 +26,9 @@
 15. [Análisis: Unificación del Grafo Narrativo](#15-análisis-unificación-del-grafo-narrativo-y-viabilidad-como-asset-vendible)
 16. [Diseño: Cielo, Clima y Cielo Nocturno](#16-diseño-cielo-unificado-clima-dinámico-y-cielo-nocturno-temático-nubes-estrellas-arcoíris)
 17. [Diseño: Refugio de NPCs bajo la Lluvia + Relaciones Sociales](#17-diseño-refugio-de-npcs-bajo-la-lluvia--relaciones-sociales-dinámicas)
+18. [Checklist: Demo de Steam](#18-checklist-demo-de-steam)
+19. [Auditorías](#19-auditorías)
+20. [Convenciones de Documentación del Proyecto](#20-convenciones-de-documentación-del-proyecto)
 
 ---
 
@@ -45,6 +48,30 @@ Puedes hacer Play desde cualquier escena (MainWorld, Woods, etc.) sin configurac
 - El sistema inicializa todos los managers y posiciona al jugador en el último anchor guardado (o el del preset de testing activo).
 
 **Requisito:** Start.unity debe estar en Build Settings (posición 0).
+
+### Entrada a MainMenu (BootLoader)
+
+- **Start → MainMenu:** el GameObject `START_BootLoader` en `Start.unity` lleva el componente `BootLoader.cs` (`sceneToLoad: MainMenu`), que hace `SceneManager.LoadScene("MainMenu")` (no aditivo) en su `Start()`. No hay condición de carrera con `GameBootService`: todos los `Awake()` de la escena (incluido el de `GameBootService`, execution order -1000) se ejecutan antes que cualquier `Start()`, así que el arranque ya está resuelto cuando `BootLoader` dispara la carga. Los managers persistentes sobreviven por ser `DontDestroyOnLoad`. (Verificado Agosto 2026 — antes no estaba documentado aquí.)
+
+### Dónde encontrar información
+
+| Qué | Dónde |
+|-----|-------|
+| Arquitectura completa, API de sistemas, bugs, auditorías | Este documento (`TDD.md`) — fuente de verdad única |
+| Portada del repo / overview para quien llega nuevo | `README.md` |
+| Configuración de NPCs, quests, hechizos | Assets SO en `_NPCs/`, `_QUEST/`, `_SPELLS/` |
+| Localización (ES/EN) | `Assets/Resources/Localization/*.json` |
+| Managers persistentes | `Assets/Scripts/Core/` |
+| FSM de NPCs | `Assets/Scripts/Behaviour NPC/` |
+| Grafo narrativo (runtime) | `Assets/NarrativeGraph/Runtime/` |
+| Escenas de test | `Assets/Scenes/Test/` |
+| Presets de testing | `Assets/_BootProfile/` |
+| Debug visual en runtime | F3 (NPCs), F4 (panel general) |
+
+### Herramientas de desarrollo
+
+- **F3** — debug visual de NPCs · **F4** — panel de debug general
+- `El Sendero/Narrativa/Validar Interactive vs Grafo (proyecto completo)` — valida que quests/eventos no estén referenciados a la vez por el grafo y por el sistema legacy (ver § 10 — Política formal: convivencia Interactive ↔ Grafo narrativo)
 
 ### Presets de testing vs partida guardada
 
@@ -104,6 +131,35 @@ Frame 1+: SpawnManager, WorldBootstrap y demás reciben el evento y se inicializ
 ```
 
 El delay de un frame en `NotifyProfileReadyDelayed` garantiza que todos los `OnEnable` del frame 0 hayan suscrito antes de que el evento se dispare.
+
+### Estructura de carpetas
+
+```
+Assets/
+├── Scenes/
+│   ├── Systems/        ← Start, MainMenu, LoadingScreen
+│   ├── Main World/     ← MainWorld y escenas de mundo
+│   ├── Cinematics/     ← cinemáticas y prólogo
+│   └── Test/           ← escenas de prueba
+├── Scripts/
+│   ├── Core/               ← GameBootService, ServiceLocator, PlayerService, SaveSystem
+│   ├── Behaviour NPC/      ← FSM de NPCs
+│   ├── NarrativeGraph/     ← grafo narrativo (nodos, runner)
+│   ├── Narrative/          ← sistema legacy "Interactive"
+│   ├── Quests/, Dialogue/, Audio/, Inventory/, Puzzle/, UI/, ...
+├── NarrativeGraph/      ← assets runtime del grafo (MainNarrative.asset, etc.)
+├── _BootProfile/        ← presets de testing (ScriptableObjects)
+├── Resources/Localization/  ← JSON de localización (ES/EN)
+└── Plugins/             ← Invector 3rd Person Controller, DOTween, etc.
+```
+
+### Stack técnico
+
+- Unity 6 · URP 17.5
+- Unity Input System 1.19 (input centralizado por eventos)
+- Cinemachine 3.1.7 · Timeline 1.8.12 · AI Navigation 2.0.13
+- Invector 3rd Person Controller (base de movimiento del jugador) · DOTween
+
 
 ---
 
@@ -541,6 +597,37 @@ Toda cinemática nueva (`XxxSequencer : CinematicSequencerBase`) se diseña **an
 
 Este desglose se escribe primero (como documento o mensaje) y solo después se traduce a `Co_Sequence()` en el `Sequencer`. Sirve de contrato de lo que hay que montar en el Editor (Timeline, Volumes, prefabs, VFX) sin depender de tener la escena abierta para razonar sobre la secuencia. Ejemplos ya construidos con esta estructura implícita en el código: `StarAwakeningSequencer`, `TabernaSequencer`, `LiamGolemSummonSequencer`.
 
+### Invariantes críticas del grafo narrativo — NO violar
+
+El grafo narrativo (`MainNarrative.asset`) y sus runners son `DontDestroyOnLoad`. Estas reglas son críticas:
+
+**Regla 1 — Test mode = vuelco EXACTO del bootPreset, sin mezcla con JSON.**
+En `GameBootService.PrepareActivePreset()` modo testeo NUNCA leer el JSON. Solo `EnsureRuntimePresetFromTemplate(bootPreset)` + `ApplyPresetAsLoadedGame()`.
+
+**Regla 2 — Al "cargar partida" en test mode, siempre recargar desde bootPreset.**
+`GameBootService.ReloadTestPreset()` hace: (1) `hub.StopAllRunners()`, (2) `EnsureRuntimePresetFromTemplate(bootPreset)`, (3) `ApplyPresetAsLoadedGame()`. `MainMenuController.OnClickContinue()` lo llama en test mode.
+
+**Regla 3 — `NarrativeRunner.StartFromStartNode` / `StartFromNode` deben llamar `StopExecution()` primero.**
+Sin esto se acumulan runners paralelos que ejecutan nodos en la sesión incorrecta.
+
+**Regla 4 — NO tocar `WaitQuestCompleteNode` ni la fork detection de `StartFromStartNode`.**
+El `Advance()` ya maneja fork detection. El `WaitCustomEventNode` ya tiene su mecanismo `__event_{guid}_{key}_received`. Consultar § 13 (Bugs Conocidos Pendientes) antes de tocar nodos narrativos.
+
+**Regla 5 — `DefaultNarrativeSignals._raised` es el backup persistente de señales.**
+`RaiseCustom` añade a `_pending` y `_raised`. `ResetState(preservePending:true)` preserva los dos. No eliminar `_raised`.
+
+**Sobre presets de testing:** si un preset fue capturado después de que un trigger se activó, contiene el flag `__event_XXX_received = 1` en el blackboard. El runner saltará ese nodo. Para resetear, eliminar el flag manualmente del asset del preset.
+
+### Política formal: convivencia Interactive ↔ Grafo narrativo
+
+El proyecto tiene **dos motores narrativos en paralelo**: `NarrativeGraph`/`NarrativeRunner` y el sistema legacy "Interactive" (`NPCInteractiveNarrativeExecutor` + `NPCInteractiveNarrativeConfig`/`ConditionalNarrative`/`NarrativeCondition`), más `NPCQuestConfig` para diálogo-por-estado-de-quest fuera del grafo. Un intento de unificarlos en un único sistema rompió el juego (Agosto 2026); con el proyecto tan avanzado, **no se intenta fusionarlos**. En su lugar:
+
+- **`NPCInteractiveNarrativeExecutor` queda congelado.** No añadir `NarrativeActionType` nuevos ni NPCs nuevos a su catálogo (`ConditionalNarrative`/`NPCInteractiveNarrativeConfig`).
+- **Todo NPC o quest nueva se construye en `NarrativeGraph`.** Usa los nodos ya existentes (`StartQuestNode`, `CompleteQuestStepsNode`, `PlayDialogueNode`, `WaitCustomEventNode`, etc.). El puente `NPCBrain.HandleInteraction()` ya emite `NPC_INTERACT_{persistenceId}` por `DefaultNarrativeSignals` en cada interacción, así que un grafo puede reaccionar a "hablar con NPC X" sin tocar el executor legacy.
+- **Antes de dar por buena una entrega**, correr `El Sendero/Narrativa/Validar Interactive vs Grafo (proyecto completo)` (`Assets/NarrativeGraph/Editor/Validation/CrossSystemNarrativeValidator.cs`). Avisa si la misma quest o el mismo evento custom está referenciado a la vez por el grafo y por el sistema Interactive sin estar enlazado — el mismo patrón que causó INC-020 (consumo duplicado de ítems de quest en dos sitios que no se conocían entre sí).
+- Los NPCs existentes que ya funcionan con `NPCQuestConfig`/`NPCInteractiveNarrativeConfig` **no se migran** salvo que se toquen por otro motivo. No es deuda urgente, es una decisión de arquitectura aceptada.
+
+
 ---
 
 ## 11. UI
@@ -620,6 +707,19 @@ void Awake() { _enemyBossLayer = LayerMask.GetMask("Enemy", "Boss"); }
 ```
 
 **Reflection:** no usar `System.Reflection` en código de runtime frecuente. Es lento y frágil en IL2CPP. Si se necesita acceder a un miembro privado de Invector u otro plugin, crear una wrapper class o subclass.
+
+### Distinguir personajes de geometría en raycasts/obstrucciones
+
+los personajes (player, NPCs, party members) no tienen una capa propia — todos viven en `Default` junto con la mayoría de la geometría estática del mundo (confirmado en `Prefabs/_LIAM.prefab`, todo a `m_Layer: 0`). Por eso la capa sola no sirve para que un raycast de "¿hay pared/puerta en medio?" ignore a los personajes. Usar `NPCSimpleAnimator` como marcador fiable: lo tiene el player y TODOS los NPCs (mismo criterio que ya usa `DialogueManager.IsActualNPC`), y ningún objeto de escenario (puertas, muebles, props). Patrón:
+```csharp
+Transform root = hit.collider.transform.root;
+if (root.GetComponent<NPCSimpleAnimator>() != null) continue; // es un personaje, no una obstrucción
+```
+Ejemplo real: `PlayerParty.FindClearDialogueFormationPosition` — evita teletransportar a un party member al otro lado de una puerta cerrada al posicionarlo para un diálogo (bug: NPC hablando desde detrás de una puerta, cámara pegada a la hoja).
+
+### Convenciones de idioma
+
+comentarios, documentación y mensajes de commit **en español**.
 
 ### Instancias y pools
 
@@ -703,7 +803,7 @@ Igual que con los críticos: verificado Julio 2026, la mayoría ya estaba resuel
 
 | # | Sistema | Archivo | Descripción | Estado |
 |---|---------|---------|-------------|--------|
-| U1 | Diálogo | `DialogueManager.cs` / TextMeshPro (com.unity.ugui) | Bug de motor en `TMP_Text.SaveSpriteVertexInfo`: `NullReferenceException` al generar el mesh de un texto con `<sprite name="X">` cuando ese sprite se resuelve a través de la lista `fallbackSpriteAssets` (en vez de estar definido directamente en el sprite asset asignado al componente). `DialogueIcons.asset` (el sprite asset de `bodyText`) solo define `interactable_A` en su propia tabla; el resto de iconos usados en diálogo (`algas`, `boots`, `interactable_b/dpad/Joystick/lb/lt/rb/rt/x/y`, `lifePotion`, `start`) viven cada uno en su propio sub-asset fallback, así que cualquier línea con uno de esos iconos disparaba potencialmente el bug bajo word-wrap. Sin fix oficial de Unity (confirmado en el hilo de Unity Discussions "Nullreference in SaveSpriteVertexInfo": ni causa ni solución oficial, solo diagnóstico de que `m_currentSpriteAsset`/`spriteSheet` quedan null en el repaso interno). Verificado Agosto 2026. | **Mitigado en 3 capas** (`DialogueManager.cs`, comentario junto a `TryForceMeshUpdate`): **(0) raíz** — `PinSpriteTagsToExplicitAsset` reescribe `<sprite name="X">` a `<sprite="X" name="X">` antes de asignar el texto, forzando a TMP a resolver el sprite asset por nombre en vez de recorrer la cadena de fallbacks (evita que la excepción se dispare en el caso normal); **(1)** `ProtectSpriteTagsFromWordWrap` envuelve cada tag en `<nobr>`; **(2) red de seguridad** — `TryForceMeshUpdate` captura la excepción si aun así ocurre (p.ej. un icono nuevo sin cubrir) y hace `Debug.LogWarning` (no `LogError`, a propósito, para no disparar "Error Pause" de la consola del Editor durante playtesting) dejando el diálogo en estado usable. **Límite conocido:** la capa 2 solo cubre la llamada explícita a `ForceMeshUpdate()`; el rebuild automático de Canvas (`Canvas.SendWillRenderCanvases` → `TextMeshProUGUI.OnPreRenderCanvas`) no pasa por nuestro código y, si el bug se disparara ahí, saldría como excepción no capturada. Si vuelve a aparecer un log de este tipo con un icono no reescrito por la capa 0 (revisar que el `<sprite name="...">` de la línea nueva coincide exactamente con el nombre de archivo del sub-asset en `Assets/Art/UI/DialogueIcons/`), añadir ese icono a la tabla propia de `DialogueIcons.asset` en vez de dejarlo solo en fallback. |
+| U1 | Diálogo | `DialogueManager.cs` / TextMeshPro (com.unity.ugui) | Bug de motor en `TMP_Text.SaveSpriteVertexInfo`: `NullReferenceException` al generar el mesh de un texto con `<sprite name="X">` cuando ese sprite se resuelve a través de la lista `fallbackSpriteAssets` (en vez de estar definido directamente en el sprite asset asignado al componente). `DialogueIcons.asset` (el sprite asset de `bodyText`) solo define `interactable_A` en su propia tabla; el resto de iconos usados en diálogo (`algas`, `boots`, `interactable_b/dpad/Joystick/lb/lt/rb/rt/x/y`, `lifePotion`, `start`) viven cada uno en su propio sub-asset fallback, así que cualquier línea con uno de esos iconos disparaba potencialmente el bug bajo word-wrap. Sin fix oficial de Unity (confirmado en el hilo de Unity Discussions "Nullreference in SaveSpriteVertexInfo": ni causa ni solución oficial, solo diagnóstico de que `m_currentSpriteAsset`/`spriteSheet` quedan null en el repaso interno). Verificado Agosto 2026. | **Mitigado (`DialogueManager.cs`, comentario junto a `TryForceMeshUpdate`).** **(0) raíz — DESACTIVADA 2026-08-12:** `PinSpriteTagsToExplicitAsset` reescribía `<sprite name="X">` a `<sprite="X" name="X">`, pero revisando el código fuente de TMP se confirmó que esa forma explícita NO recorre `fallbackSpriteAssets` (busca el asset por nombre en `MaterialReferenceManager`/`Resources`, que nunca lo encuentra para estos sub-assets) — rompía SIEMPRE el icono en vez de evitar el crash. Se dejó como no-op; los iconos vuelven a resolver por la vía de carácter de TMP (`SearchForSpriteByHashCode`, que sí recorre fallbacks y es la única que funciona con el montaje actual de `DialogueIcons.asset`). **(1)** `ProtectSpriteTagsFromWordWrap` envuelve cada tag en `<nobr>`. **(2) red de seguridad** — `TryForceMeshUpdate` captura la excepción si ocurre y hace `Debug.LogWarning` (no `LogError`, a propósito, para no disparar "Error Pause" en el Editor durante playtesting), dejando el diálogo en estado usable. **Límite conocido — CERRADO 2026-08-12:** la capa 2 solo cubría la llamada explícita a `ForceMeshUpdate()` al inicio de línea; cada asignación posterior a `bodyText.maxVisibleCharacters` (typewriter frame a frame en `TypeRoutine()`, y el camino sin typewriter en `ShowLine()`) dejaba el rebuild para el próximo pase automático de Canvas (`Canvas.SendWillRenderCanvases` → `TextMeshProUGUI.OnPreRenderCanvas`), que no pasa por nuestro código y no captura el NRE si salta ahí — exactamente el stack trace real reportado (sin ningún frame de `DialogueManager` en medio). Ahora esas asignaciones van seguidas de un `TryForceMeshUpdate()` explícito, así que el bug (si se dispara) queda dentro del try/catch en vez de como excepción no capturada. **Arreglo definitivo pendiente (requiere Editor de Unity):** mover el glyph de cada icono afectado a la tabla PROPIA de `DialogueIcons.asset` (como ya está `interactable_A`) en vez de dejarlo como sub-asset fallback. |
 
 ### Sesión Agosto 2026 — arreglos aplicados
 
@@ -719,7 +819,7 @@ Auditoría de conflictos entre Quests / grafo narrativo / FSM de NPCs, más limp
 
 **Herramienta nueva:** `Assets/NarrativeGraph/Editor/Validation/CrossSystemNarrativeValidator.cs` — menú `El Sendero/Narrativa/Validar Interactive vs Grafo (proyecto completo)`. Recorre todos los `NarrativeGraph`, `NPCQuestConfig` y `NPCInteractiveNarrativeConfig` del proyecto vía `AssetDatabase` y avisa (no bloquea, no modifica nada) cuando: la misma quest está referenciada a la vez por un nodo del grafo (`StartQuestNode`/`CompleteQuestStepsNode`/etc.) y por `NPCQuestConfig.questChain` o `NarrativeCondition.targetQuest`; o el mismo evento custom es esperado por un `WaitCustomEventNode` y también usado por una `NarrativeCondition`/`ConditionalNarrative` del sistema Interactive. Es la red de seguridad para no repetir el patrón de INC-020 (estado duplicado sin vínculo entre los dos sistemas). Pensada para correr manualmente antes de una entrega, no en cada carga de escena.
 
-**Política formal (ver también CLAUDE.md §7):** los dos motores narrativos (`NarrativeGraph` y `NPCInteractiveNarrativeExecutor`) siguen coexistiendo a propósito — un intento previo de unificarlos rompió el juego y el proyecto está demasiado avanzado para asumir ese riesgo ahora. `NPCInteractiveNarrativeExecutor` queda congelado: no se le añaden `NarrativeActionType` nuevos ni NPCs nuevos a su catálogo. Todo NPC o quest nueva se construye en `NarrativeGraph`. Antes de dar por buena una entrega, correr `El Sendero/Narrativa/Validar Interactive vs Grafo`.
+**Política formal (ver también § 10 — Política formal: convivencia Interactive ↔ Grafo narrativo):** los dos motores narrativos (`NarrativeGraph` y `NPCInteractiveNarrativeExecutor`) siguen coexistiendo a propósito — un intento previo de unificarlos rompió el juego y el proyecto está demasiado avanzado para asumir ese riesgo ahora. `NPCInteractiveNarrativeExecutor` queda congelado: no se le añaden `NarrativeActionType` nuevos ni NPCs nuevos a su catálogo. Todo NPC o quest nueva se construye en `NarrativeGraph`. Antes de dar por buena una entrega, correr `El Sendero/Narrativa/Validar Interactive vs Grafo`.
 
 ---
 
@@ -788,6 +888,8 @@ Documentar en el nombre del asset el estado de juego que representa (ej: `Preset
 ---
 
 > **Nota (unificación de documentación, Agosto 2026):** las secciones 15-17 de abajo eran antes archivos `.md` sueltos en la raíz del proyecto (`ANALISIS_UNIFICACION_NARRATIVA.md`, `Diseno_Cielo_Nubes_y_Estrellas.md`, `Diseno_Refugio_Lluvia_y_Relaciones_NPC.md`). Se han movido aquí íntegros para que todo el proyecto se lea desde un único documento. Son documentos de **análisis/diseño**, no estado actual verificado del código como las secciones 1-14 — revisar su fecha y su propio estado de progreso interno antes de asumir que algo descrito ahí ya está implementado.
+>
+> **Segunda pasada (12 de agosto de 2026):** se ha hecho lo mismo con `STEAM_DEMO_CHECKLIST.md` y las tres auditorías (`AUDITORIA_CODIGO_2026-08-07.md`, `AUDITORIA_COMPLETA_ENTREGABILIDAD_2026-08-08.md`, `AUDITORIA_SISTEMAS_OBSOLETOS_2026-08-07.md`) — su contenido, sin duplicados, vive ahora integrado en las secciones 12, 18 y 19 de este documento, y esos 4 archivos ya no existen sueltos en la raíz. `AGENTS.md`/`CLAUDE.md` y `README.md` son distintos: son archivos que herramientas de IA y GitHub leen automáticamente, así que **siguen existiendo como archivos aparte** — se han recortado a un resumen corto con pointers a las secciones 1, 2, 10 y 12 de aquí en vez de duplicar el contenido completo (ver § 20).
 
 ---
 
@@ -1512,3 +1614,543 @@ Con los tres puntos, la combinación (más alcance, más ventanas de detección,
 - Umbrales de `bondScore` (10/30/60) y velocidad de acumulación: valores de partida, se ajustan jugando.
 - ¿Quién llama a `NPCWeatherAwareness.Resubscribe()` tras cada carga aditiva de escena? Propuesto `WorldBootstrap`, a confirmar mirando su `Start()` real.
 - Lista de NPCs que deben quedar excluidos del refugio de lluvia (guardias apostados, vendedores con puesto fijo, cualquiera con `narrativeID` activo) — se puede generar automáticamente o requerir marcado manual en el inspector; recomendado automático con override manual.
+
+
+---
+
+## 18. Checklist: Demo de Steam
+
+> Trasladado desde `STEAM_DEMO_CHECKLIST.md` (unificación de documentación, 12 de agosto de 2026). Checklist operativo para publicar la demo en Steam, partiendo de cero (sin cuenta de Steamworks todavía).
+
+Partiendo de cero (sin cuenta de Steamworks todavía). Orden real de dependencias: hay pasos que bloquean a otros (el fee bloquea la app, la app bloquea la demo, la store page bloquea el lanzamiento).
+
+---
+
+### Fase 1 — Cuenta y papeleo (Valve, no técnico)
+
+- [ ] Tener una cuenta de Steam normal con **al menos $5 gastados** (requisito para poder crear cuenta de Steamworks).
+- [ ] Crear la cuenta de socio en **partner.steamgames.com**.
+- [ ] Rellenar el cuestionario fiscal (tax interview) y datos bancarios para poder cobrar.
+- [ ] Verificar identidad cuando Steamworks lo pida.
+- [ ] Pagar el **fee de Steam Direct: $100** por el juego base (no hace falta pagar otro fee para la demo, se cuelga de la misma app).
+  - Es reembolsable una vez el juego alcance $1,000 de ingresos brutos ajustados.
+- [ ] Tras el pago hay una **espera obligatoria de 30 días** antes de poder publicar nada. Valve la usa para verificar quién eres. **Esto es lo primero que deberías arrancar**, porque corre en paralelo a todo lo demás.
+
+---
+
+### Fase 2 — Crear la app y la app de demo
+
+- [ ] En Steamworks, crear la **app del juego base** (aunque el lanzamiento completo esté lejos, la demo cuelga de esta app).
+- [ ] Crear una **segunda app separada de tipo "Demo"**.
+  - En su configuración general hay que introducir el **App ID del juego base** para enlazarlas.
+  - Se crea un depot automáticamente para la demo (debería verse exactamente uno en la pantalla de depots).
+- [ ] Decidir la store page de la demo: se puede configurar una página propia completa, o simplemente aportar assets para que la demo aparezca dentro de la store page del juego base. Para una demo temprana, lo normal es la segunda opción (más simple, menos mantenimiento).
+
+---
+
+### Fase 3 — Contenido de la demo (esto ya lo tienes decidido)
+
+Ya que sabes qué escenas/tramo entra en la demo, solo queda:
+
+- [ ] Confirmar que ese tramo es jugable de principio a fin sin dependencias de sistemas que aún no estén cerrados (guardado, quests, etc. — revisa `TDD.md` § 13 por si hay bugs conocidos que afecten justo a esas escenas).
+- [ ] Añadir una pantalla o mensaje de "fin de la demo" al terminar el tramo (evita que el jugador se quede colgado o salga del contenido probado).
+- [ ] Revisar que el flujo de arranque (`Start.unity` con los managers persistentes) funciona igual en un build standalone que en el editor — probar el build, no solo Play en el editor.
+
+---
+
+### Fase 4 — Store page (assets y textos)
+
+- [ ] Al menos **5 capturas de pantalla**.
+- [ ] Un **tráiler** (recomendado, casi obligatorio en la práctica para conversión de la página).
+- [ ] Descripción corta y descripción larga del juego.
+- [ ] Tags / categorías.
+- [ ] Precio (o marcar como gratis si la demo se distribuye independiente, aunque normalmente la demo es gratis por definición y el juego base lleva su precio).
+- [ ] Assets gráficos con tamaños exactos (Valve rechaza por 1-2 px de diferencia):
+  - Header Capsule: 920×430 px
+  - Small Capsule: 462×174 px
+  - Main Capsule: 1232×706 px
+  - Vertical Capsule: 748×896 px
+  - Library Capsule: 600×900 px
+  - Todos JPG o PNG, máx. 2 MB.
+- [ ] Desde septiembre 2022 la capsule base solo puede llevar: arte del juego, nombre del juego, subtítulo oficial. Nada de puntuaciones, premios ni texto de marketing — si no, Valve penaliza visibilidad en tienda.
+- [ ] **La store page debe estar publicada (visible) al menos 2 semanas antes de poder lanzar** cualquier build, incluida la demo.
+
+---
+
+### Fase 5 — Build técnico y subida (SteamPipe)
+
+- [ ] Descargar el **Steamworks SDK** (ContentBuilder).
+- [ ] Generar el build de Unity para Windows (mínimo; valorar Mac/Linux según alcance).
+  - Revisar Player Settings: `companyName: Liyodev`, `productName: El Sendero de las Estrellas`, versión actual `0.1.0` — decidir si la demo lleva su propio número de versión visible.
+- [ ] Configurar los scripts `.vdf` de `app_build` y `depot_build` con el App ID de la demo y el depot creado en Fase 2.
+- [ ] Subir con `steamcmd` (o Web Upload / ZIP si se prefiere algo más simple para una primera subida).
+- [ ] Probar el build subido desde una **branch privada de Steamworks** (no la `default`) antes de hacerlo público, para no exponer una demo rota.
+- [ ] Cuando esté validado, mover a la branch pública.
+
+---
+
+### Fase 6 — Lanzamiento
+
+- [ ] Confirmar que ya pasaron los 30 días de espera de Valve.
+- [ ] Confirmar que la store page lleva ≥2 semanas visible.
+- [ ] Publicar la demo (cambiar de "coming soon" / oculta a visible/jugable).
+- [ ] Anunciar (redes, Discord, etc. — fuera del alcance técnico, pero es el paso que de verdad mueve wishlists).
+
+---
+
+### Notas
+
+- El fee y la espera de 30 días son lo más largo del proceso y no dependen de ti una vez pagado — conviene arrancar la Fase 1 ya, en paralelo a pulir el tramo jugable de la demo.
+- Los tamaños de capsule y las reglas de contenido cambian de vez en cuando; si tardas meses en llegar a la Fase 4, vale la pena revalidar contra la documentación oficial de Steamworks antes de subir el arte final.
+
+**Fuentes:**
+- [Steam Direct Fee — Steamworks Documentation](https://partner.steamgames.com/doc/gettingstarted/appfee)
+- [Demos — Steamworks Documentation](https://partner.steamgames.com/doc/store/application/demos)
+- [Store Graphical Assets — Steamworks Documentation](https://partner.steamgames.com/doc/store/assets/standard)
+- [Testing On Steam — Steamworks Documentation](https://partner.steamgames.com/doc/store/testing)
+
+
+---
+
+## 19. Auditorías
+
+> Esta sección reúne, sin alterar su contenido sustantivo, las auditorías realizadas sobre el proyecto (trasladadas aquí el 12 de agosto de 2026 desde sus archivos `.md` originales). Son informes **fechados**: retratan el estado del código en el momento en que se escribieron, no el estado actual — conviene leer cada uno con su fecha en mente y verificar contra el código real antes de asumir que un hallazgo sigue vigente. Las referencias que hacen a `CLAUDE.md`/`AGENTS.md` corresponden hoy a secciones de este mismo documento: los invariantes narrativos y la política de convivencia Interactive↔Grafo están en el § 10, y las reglas de código no negociables en el § 12.
+
+### 19.1 Auditoría de código — 7 de agosto de 2026
+
+**Fecha:** 7 de agosto de 2026 · **Ámbito:** 530 archivos C# (Assets/Scripts, Assets/NarrativeGraph, Assets/Editor) · **Método:** 5 revisiones paralelas por subsistema + barrido automático de patrones + verificación manual de los hallazgos críticos (todos los citados como críticos han sido comprobados línea a línea sobre el código actual).
+
+---
+
+#### Veredicto general
+
+El proyecto está en buena forma. La disciplina micro es notable y muy por encima de lo habitual en un proyecto indie: cero `OverlapSphere` sin NonAlloc en todo el código, buffers cacheados, hashes de animator, `sqrMagnitude`, ResetStatics presente en la gran mayoría de singletons, y las correcciones C1–C6 y la pasada "Fase 2" están confirmadas en el código real. Los invariantes del grafo narrativo (CLAUDE.md §4) **se cumplen hoy**: test mode no mezcla JSON, `ReloadTestPreset` sigue la secuencia correcta, `StartFromNode/StartFromStartNode` llaman a `StopExecution()` primero, y `_raised` se preserva bien.
+
+El punto débil no está en el rendimiento por frame (que está sano) sino en **el ciclo de vida de las interrupciones**: qué pasa cuando una corrutina que dejó estado global a medias (input bloqueado, timeScale alterado, renderers apagados, puertas cerradas) muere porque algo la interrumpe — muerte, cambio de escena, cinemática, desactivación del GameObject. Ese patrón se repite en al menos 8 sistemas distintos y es el origen de casi todos los críticos de abajo.
+
+Hay 4 temas transversales que, arreglados una vez, eliminan familias enteras de bugs:
+
+1. **`PushMode` sin refcount** — dos sistemas que empujan el mismo `ActionMode` se roban el Pop entre sí (detalle en C2). Un solo fix arregla conflictos diálogo↔cinemática↔victoria↔stun.
+2. **`Time.timeScale` sin árbitro** — lo tocan al menos 4 actores sin coordinarse (hitstop, muerte, cinemáticas, OnDestroy de NPCs). Un servicio central con contador/baseline elimina el "slow-mo permanente" y el "pausa rota".
+3. **Corrutinas que restauran estado al final sin `OnDisable` de seguridad** — knockback aéreo, secuencia de victoria, cast con carga, parpadeo de invulnerabilidad, fades. El patrón correcto ya existe en el propio proyecto (`PlayerFlyingController.OnDisable`, `CinematicSequencerBase.Co_SequenceGuarded`): replicarlo.
+4. **Logging sin guarda `#if UNITY_EDITOR || DEVELOPMENT_BUILD`** en rutas calientes de combate — es la mayor penalización de rendimiento evitable en builds (cientos de allocs de string por segundo con varios NPCs peleando). Viola la propia regla §2 del proyecto.
+
+---
+
+#### CRÍTICOS — pueden colgar una partida en flujos normales de juego
+
+##### C1. Reentrada en `DialogueManager.StartDialogue` → grafo narrativo colgado para siempre
+`Assets/Scripts/Dialogue/DialogueManager.cs:319` *(verificado)*
+
+`StartDialogue` no comprueba `IsOpen`: sobrescribe `_current` y `_onEnd` **sin invocar el callback del diálogo anterior**. `PlayDialogueNode` (`NarrativeGraph/Runtime/Graph/NodeTypes/PlayDialogueNode.cs:81-89`) espera `while (!completed)` sobre ese callback. Escenario real: al completarse una quest reaccionan a la vez el grafo (siguiente `PlayDialogueNode`) y la post-action de `NPCQuestActionExecutor` (que también abre diálogo, con ventanas de 0.5 s en su chequeo de `IsOpen`). El que llega segundo pisa al primero → la rama del grafo queda bloqueada eternamente. Es el punto único de fallo donde convergen grafo, Interactive y post-actions.
+
+**Fix:** si `IsOpen`, encolar o rechazar; y si se decide pisar, invocar el `_onEnd` anterior antes de sustituirlo.
+
+##### C2. `PushMode` dedupe sin refcount roba el Pop entre sistemas
+`Assets/Scripts/Player/PlayerActionManager.cs:249-274` *(verificado; detectado independientemente por dos revisores)*
+
+`if (Top == mode) return;` ignora el segundo Push del mismo modo, pero el segundo sistema hará su Pop igualmente y eliminará la entrada del primero. `Cinematic` lo usan DialogueManager, SleepTrigger, CinematicSequencerBase y PlayVictorySequence; `Stunned` lo usan AerialKnockback y PlayerCarrySystem. Escenarios reales: victoria de combate con diálogo abierto → input desbloqueado en mitad del diálogo; diálogo abierto durante cinemática → jugador controlable en mitad de la cinemática.
+
+**Fix:** refcount por modo, o permitir entradas repetidas en la pila (quitar el early-return; el Pop ya elimina solo una instancia).
+
+##### C3. Teleport a anchor inexistente → jugador sin input permanentemente
+`Assets/Scripts/Teleport/TeleportSystem.cs:211` + `Assets/Scripts/World/TeleportService.cs:99-116` *(verificado)*
+
+`TeleportSequence` empuja `Cutscene`, deshabilita el input y espera `WaitUntil(() => transitionEnded)`, que depende de `OnTeleportEnded`. Pero `TeleportService.TeleportToAnchor` retorna temprano **sin emitir ningún evento** si `Inst` es null o el anchor no se encuentra (solo un LogWarning). Resultado: input muerto, fase Cutscene y `IsTeleporting=true` para siempre (bloquea además todos los teleports futuros).
+
+**Fix:** emitir siempre `OnTeleportEnded` en los paths de fallo, más un timeout de seguridad en el `WaitUntil`.
+
+##### C4. `NarrativeGraphStarter` restaura blackboards rancios en cada carga de escena → ítems duplicados (patrón INC-020)
+`Assets/NarrativeGraph/Runtime/Integration/NarrativeGraphStarter.cs:98,159`
+
+Restaura `preset.narrativeBlackboards` cada vez que una escena de gameplay se activa, pero ese snapshot solo se refresca al guardar en un SavePoint (`GameBootProfile.cs:715` ← `SavePoint.cs:168`). Secuencia normal: guardas → avanzas el grafo (recibes ítem vía `GiveInventoryItemNode`) → cambias de escena sin guardar → el blackboard retrocede al save: el flag `INV_GIVEN` desaparece pero el inventario no se revierte → **el nodo vuelve a entregar el ítem**. Diálogos sin `oneShotFlag` se repiten y el grafo se desincroniza del QuestManager.
+
+**Fix:** capturar blackboards al preset en cada transición de escena, o restaurar solo una vez por sesión (tras load real), no en cada `Start()`.
+
+##### C5. Interrumpir la cinemática de un NPC → corrutina zombie y secuenciadores colgados
+`Assets/Scripts/Behaviour NPC/States/CinematicState.cs:562` + `NPCBehaviourManagerV2.cs:655-659` *(verificado)*
+
+`Cleanup()` (salida forzada del estado) detiene la corrutina y restaura avoidance, pero **no marca `IsCompleted = true`** (solo `CleanupAndComplete` lo hace). `WaitForSequence` hace `while (!seq.IsCompleted) yield return null;` → si el NPC sale de `CinematicState` a mitad de secuencia, esa espera gira para siempre y el `onComplete` no dispara. Y hay una vía fácil de provocarlo: `NPCCombatLifecycleHandler.OnDamaged` llama `ForceEnterCombat` **sin comprobar `IsInCinematic`** — golpear a un NPC durante una cinemática cuelga los secuenciadores que encadenan pasos vía `onComplete` (MountainSequencer, ReinoExitBanterSequencer). Relacionado: `CheckTransitions` de CinematicState tampoco mira `WasDefeatedInCombat` → NPC que muere en cinemática queda atrapado en el estado.
+
+**Fix:** `IsCompleted = true` en `Cleanup()`, gate de `IsInCinematic` en `OnDamaged`/`ForceEnterCombat`, y prioridad `WasDefeatedInCombat → DeadState` en `CheckTransitions`.
+
+##### C6. Hitstops solapados dejan el juego en cámara lenta permanente
+`Assets/Scripts/Core/Feedback/SimpleHitStopProvider.cs:18-29`
+
+Cada `Co_HitStop` captura `original = Time.timeScale` al empezar y lo restaura al acabar, sin cancelar el anterior. Dos golpes en <0.2 s (trivial en combate): A captura 1.0, B captura el 0.1 que puso A → A restaura 1.0, B restaura 0.1 → **slow-mo permanente**. Además pelea con el menú de pausa y con `DeathCameraEffect` (que fuerza `timeScale = 1` incondicional al final, rompiendo una pausa activa). Misma familia: `NPCCombatLifecycleHandler.OnDestroy` fuerza `timeScale = 1` si no es 1 — descargar una escena con NPCs estando en pausa revierte la pausa.
+
+**Fix:** árbitro central de timeScale (contador de efectos + baseline gestionado). Un solo servicio resuelve los 4 actores.
+
+##### C7. Knockback aéreo interrumpido → input bloqueado para siempre
+`Assets/Scripts/Attacks/AerialKnockbackReceiver.cs:147-289`
+
+`LaunchRoutine` empuja `Stunned`, deshabilita el controller y pone el Rigidbody kinemático; la restauración está al final de la corrutina y **no hay `OnDisable`**. Si el componente se desactiva a mitad del arco (~0.6 s) — cinemática con `ModeRule.disableComponents`, muerte, cambio de escena — quedan: `Stunned` pushed para siempre, controller deshabilitado, RB sin gravedad y `_isLaunching=true` (bloquea futuros knockbacks). El propio proyecto tiene el patrón correcto en `PlayerFlyingController.OnDisable` y `PlayerSwimmingController.OnDisable`.
+
+**Fix:** `OnDisable` que restaure RB/controller/rootMotion y haga `PopMode(Stunned)`.
+
+---
+
+#### ALTOS — rompen sistemas concretos o corrompen estado en escenarios alcanzables
+
+##### A1. `ActiveCombatRegistry` retiene enemigos destruidos → player atrapado en modo combate
+`Assets/Scripts/Attacks/ActiveCombatRegistry.cs:164` + `Player/PlayerBattleModeController.cs:311`
+
+`Count` no limpia referencias fake-null. Un enemigo destruido sin `UnregisterNPC` (Destroy directo, descarga de escena aditiva — `ClearAll` solo se llama en GameOver) deja `Count>0` para siempre → Battle Mode + `ActionMode.Combat` permanentes (que además bloquea `Interact`). `InteractionDetector` ya se defiende con `CleanupDestroyedNPCs()`; los otros dos consumidores no. **Fix:** limpieza dentro de `Count` o auto-unregister en `OnDestroy` del NPC.
+
+##### A2. `BossArenaController`: arena cerrada sin salida si el boss se destruye sin morir
+`Assets/Scripts/Rooms/BossArenaController.cs:585-591`
+
+Si el boss desaparece sin pasar por `Damageable.OnDied` (killzone, despawn, limpieza externa), el path de emergencia solo hace `started=false`: no reabre puertas, no llama `UnlockArea()` ni `RestoreBattleDisables()`, ni cierra la música de batalla → jugador encerrado con música infinita y sin posibilidad de re-disparar el trigger. **Fix:** en ese path, restaurar puertas/área/disables y `AudioService.EndBattleById`.
+
+##### A3. Pooling: devolución doble corrompe el pool y los parents destruidos lo agotan
+`Assets/Scripts/Core/Pooling/ObjectPool.cs:114-121` *(verificado)* + `VfxPoolService.cs:74-119`
+
+`Return()` detecta la devolución doble pero **aun así hace push** → la misma instancia dos veces en la pila → dos `Get()` devuelven el mismo Transform. Y `VfxPoolService.Play` con `parent` externo: si el parent se destruye, el VFX muere con él pero `_inUse` del ObjectPool lo cuenta para siempre → tras `MaxPoolSizePerPrefab` (64) instancias muertas, ese VFX **deja de verse el resto de la sesión**. **Fix:** `if (!_inUse.Remove(obj)) return;` y, en la rama `instance == null` del Update del servicio, purgar también `_instancePool`/`_inUse`.
+
+##### A4. Save corrupto arranca el juego en estado indefinido
+`Assets/Scripts/Core/GameBootService.cs:280` *(verificado)*
+
+En el arranque normal, `_profile.LoadProfile(_saveSystem)` **ignora el valor de retorno**. Si el JSON está corrupto (cierre forzado a mitad de escritura), `LoadProfile` devuelve false y no hay fallback al `defaultPlayerPreset`: el juego arranca con el runtimePreset residual, sin HP/inventario/flags coherentes. **Fix (2 líneas):** `if (!_profile.LoadProfile(_saveSystem))` → rama del preset por defecto.
+
+Relacionado (MEDIO): `SaveSystem.Save` hace `File.Delete` + `File.Move` *(verificado)* — hay una ventana sin ningún save en disco; usar `File.Replace`, o leer `save.json.tmp` como fallback en `Load()`. Y `PlayerSaveData` no tiene campo de versión de esquema: cualquier renombrado de campo hará que saves antiguos carguen en silencio con defaults. Añadir `saveVersion` antes de la demo de Steam.
+
+##### A5. Señales narrativas sticky consumidas por el sistema equivocado
+`Assets/NarrativeGraph/Runtime/Integration/DefaultNarrativeSignals.cs:350-361` + `NPCInteractiveNarrativeExecutor.cs:342-349`
+
+`OnCustom` consume `_pending`/`_raised` en el momento de suscribirse, y el executor Interactive se re-suscribe durante la carga **antes** de que los runners restauren blackboards y suscriban sus `WaitCustomEventNode`. Una señal pendiente puede ser consumida por el executor (que luego la ignora por `singleUse`/preset) → el `WaitCustomEventNode` del grafo nunca la ve → grafo bloqueado. Es la versión runtime del conflicto que el `CrossSystemNarrativeValidator` solo detecta en editor. **Fix:** consumo por-suscriptor, o que el executor re-emita la señal cuando decide ignorarla.
+
+##### A6. Ramas fork del grafo: `Exit()` nunca se llama y el estado de suscripción vive en el asset compartido
+`Assets/NarrativeGraph/Runtime/Graph/NarrativeRunner.cs:327-457`
+
+Las ramas fork hacen `Enter` de cada nodo pero jamás `Exit`; `StopExecution()` solo hace `Exit` del nodo del camino principal. Nodos en espera dentro de ramas (`WaitQuestCompleteNode._cb`, `StartBattleNode._onBattleWonCb`) quedan suscritos tras `StopAllRunners`/recarga — y esos campos viven en el `NarrativeNode` serializado del asset compartido, así que una re-entrada pisa `_cb` y el `Exit` posterior ya no puede desuscribir el callback viejo → **callbacks fantasma de sesiones muertas ejecutando side effects reales** (completar quests al ganar una batalla de la sesión nueva). **Fix:** rastrear los nodos activos por rama y hacer su `Exit` en `StopExecution`; mover el estado de suscripción a un diccionario por runner.
+
+Relacionados en el mismo archivo: el resume de forks re-ejecuta el `Enter` del nodo fork en cada carga (si es `RaiseCustomEventNode`, re-emite la señal en cada load); y `RequireInventoryItemNode.HandleMissing` usa `ForceJumpToOutput` (mecanismo del camino principal) desde ramas → rama nunca marcada `__DONE__` y `__currentNodeGuid` corrupto; además con `consumeOnSuccess` + `completeQuestInstead` el ítem puede consumirse dos veces (el guard `_itemsConsumedForQuest` no cubre el consumo hecho por el nodo).
+
+##### A7. `Transition.cs`: fuga de `sceneLoaded` + disparo prematuro con cargas aditivas
+`Assets/Scripts/Core/EasyTransitions/Scripts/Transition.cs:99`
+
+Suscribe `SceneManager.sceneLoaded` y no existe `OnDestroy` que desuscriba (el objeto muere con `Destroy(gameObject, destroyTime)`). En un proyecto multi-escena **aditiva**, además, cualquier carga aditiva durante la espera dispara `OnSceneLoad` prematuramente (no filtra por `LoadSceneMode`). **Fix:** `OnDestroy` desuscribiendo + ignorar `mode == Additive`. En la misma familia: `TeleportService.cs:226` y `CinematicSequencerBase.cs:266-279` dejan handlers de `onTransitionCutPointReached` suscritos al TransitionManager persistente si la transición se interrumpe → la siguiente transición de cualquier sistema puede teleportar al jugador al destino antiguo o ejecutar `BeginCinematic()` de un sequencer destruido. Desuscribir en `OnDestroy`/finally.
+
+##### A8. `DayNightCycle`: oscurecimiento por lluvia compuesto exponencialmente y luz clavada tras la lluvia
+`Assets/Scripts/World/DayNightCycle.cs:379-386` *(verificado)*
+
+`LateUpdate` lee `directionalLight.intensity` (ya oscurecida el frame anterior) y la vuelve a multiplicar cada frame — exactamente el bug que ya se corrigió para la niebla con `_baseFogDensity` (el comentario de las líneas 248-253 lo documenta), pero sin aplicar a la luz. En ~4 frames la luz cae al suelo (0.28) y al terminar la lluvia **se queda ahí** hasta la siguiente transición de periodo. **Fix:** cachear `_baseLightIntensity` igual que la niebla.
+
+##### A9. `SimpleCinematicDirector`: estado global compartido entre instancias
+`Assets/Scripts/Cinematics/SimpleCinematicDirector.cs:214-240`
+
+`OnDisable`/`OnDestroy` deciden con el flag **estático** `IsAnyCinematicPlaying`: si el director A reproduce y un director B (que nunca reprodujo) se desactiva por descarga de escena, B resetea el flag global, fuerza `timeScale=1` y cierra el override de A. La limpieza de interrupción además no restaura HUD/minimapa ni prioridad de cámara. Y `PlayRoutine` no está blindada con try/finally (a diferencia de `CinematicSequencerBase.Co_SequenceGuarded`, que sí lo está): una NRE deja flag global, HUD y cámara en estado de cinemática. El campo `lockPlayer` no se usa en ninguna parte. **Fix:** flag de instancia, rutina de restauración completa, y el patrón guarded de la clase base.
+
+##### A10. Muerte y revive del player sin limpiar contexto
+`Assets/Scripts/Player/PlayerHealthSystem.cs:182-225, 363-408, 501-513`
+
+`TakeDamage`/`Die` no comprueban Cinematic (un AoE residual puede matar al player en mitad de una cinemática y disparar el GameOver dentro de ella); `Die()`/`ReviveInternal` no tocan la pila de modos (morir con `Flying`/`Carrying` pushed los deja vivos de cara al respawn) ni conceden invulnerabilidad temporal al revivir. Y `InvulnerabilityFlashCoroutine` apaga renderers: si el GO se desactiva en el medio ciclo apagado, **el player queda invisible permanente** (nadie llama a `ResetDamageVisuals` al reactivar). **Fix:** god-frame en Cinematic, reset de pila en muerte/revive, `OnDisable → ResetDamageVisuals()`.
+
+##### A11. Bosses: pasada de higiene propia
+- `GolemBossAI.cs` — muerte a mitad de salto/embestida deja cadáver flotando (agente desactivado que `StopAgent` no puede parar) y `animator.speed` en 1.8; onda expansiva con `OverlapSphereNonAlloc` **sin layermask** y buffer de 32 en un mundo donde todo vive en `Default` → en zonas densas el player puede quedar fuera del buffer y no recibir daño; reflection en runtime (`GetMethod("Shake")`) cuando el propio archivo ya usa `FeedbackService.CameraShake`; `SetDestination` por frame en embestida.
+- `ImpDemonAI.cs` — `PlayAnimation` hace `animator.Play(hash, layer, 0f)` **cada frame** sin guard → reinicia la animación en el frame 0 continuamente (animación congelada + coste). `Spider1AI.cs:387` tiene el guard correcto: portarlo. VFX de casteo/lluvia instanciados sin `Destroy` programado ni pool.
+- `Spider1AI.cs` — `StopCoroutineSafe(AttackPlayer())` crea un enumerator nuevo y el helper está vacío: la "cancelación" no cancela nada; el daño se aplica aunque la araña esté en stun. `SetDestination` cada frame en persecución (y las arañas atacan en grupo).
+
+##### A12. Swap de personaje sin gating por estado
+`Assets/Scripts/Player/PartyControlManager.cs:102-119`
+
+`HandleInput` solo comprueba `IsInUIMode`: se puede hacer swap en pleno vuelo/nado/carry/knockback, aplicando el controller a un personaje que quizá no tiene esa habilidad, con los modos aún en la pila. **Fix:** rechazar swap salvo `Top == Default || Combat`.
+
+---
+
+#### MEDIOS — deuda que conviene saldar, sin urgencia de hotfix
+
+**M1. `_questChainIndex` depende de qué escena esté cargada** (`QuestManager.cs:947-963`): solo indexa NPCs activos de escenas cargadas. Si una quest se completa donde su NPC dueño no está cargado, no se consumen ítems y el autocompletado se omite en silencio; el paso 5 de `RestoreFromProfileFlags` en boot sufre lo mismo. Mover los `QuestChainEntry` a un catálogo SO independiente de escena.
+
+**M2. `RestoreFromProfileFlags` dispara post-actions durante la carga** (`QuestManager.cs:642-647`): `CompleteQuest` emite `OnQuestCompleted` síncrono en plena restauración → los ejecutores lanzan diálogos/moves de NPC durante la carga. Añadir flag "restaurando".
+
+**M3. `NPCQuestActionExecutor`** (`:60-72, 239/377`): sin reintento de suscripción si `QuestManager.Instance` era null en `Start` (queda sordo toda la sesión), y `_isExecutingPostAction` nunca se limpia si el GO se desactiva a mitad → todas las post-actions futuras ignoradas. Reintento + limpiar en `OnDisable`.
+
+**M4. `AudioService`** — `ReturnWhenDone` usa `WaitForSeconds` **escalado**: en pausa (`timeScale=0`) las fuentes SFX no vuelven al pool y `Rent2D` crea `SFX2D_dyn` sin límite mientras dure la pausa; además aloca un `WaitForSeconds` nuevo por SFX (hot path: cada pisada). Usar `WaitForSecondsRealtime` o devolución por `!isPlaying` en un update centralizado. Y el fade-out de `StopLoopingSFX` no se cancela al rearrancar el mismo `loopId` → el loop nuevo se corta en seco cuando el fade viejo termina.
+
+**M5. `FeedbackService.ScreenFade`** lanza corrutinas sin cancelar la anterior (N llamadas = N corrutinas escribiendo el mismo `img.color`) → pantalla que puede quedarse en negro según cuál termine última. Igual el shake de `TransformPivotCameraShakeProvider`: dos shakes solapados dejan offset residual permanente en el pivot de cámara.
+
+**M6. `BossProgressPersistenceBridge` + test mode**: el bridge se desuscribe de `OnProfileReady` tras la primera aplicación; `ReloadTestPreset` re-invoca el evento confiando en él → tras derrotar un boss y recargar el preset de testeo, el boss sigue derrotado. Afecta solo al flujo de testeo, pero es justo el flujo que usas a diario.
+
+**M7. `InteractionDetector.FindNearest`** (`:283`): el SphereCast de línea de visión acepta al candidato si golpea *cualquier cosa* (incluida una pared entre medias → interactuar a través de muros) y lo rechaza si no golpea nada (interactuable solo-trigger en espacio abierto nunca seleccionable). Además corre cada frame sin throttle (PlayerTargeting ya usa 10 Hz: aplicar lo mismo).
+
+**M8. `MagicProjectil`**: `_cfg.hitLayers`/`collisionLayers` se leen del SO pero **nunca se usan** — el AoE golpea a cualquier `Damageable` en el radio, aliados del party incluidos; detección de arenas por `name.Contains("Arena")` (frágil + allocs por trigger). Y `MagicProjectileSpawner.Co_SpawnWithCharge`: si el spawner se desactiva durante la carga, el orbe queda pegado a la mano para siempre si `lifeTime==0`.
+
+**M9. Estáticos sin `ResetStatics`** (violación del patrón obligatorio §3) — lista consolidada y verificada: `TeleportService` (instancia + 3 eventos + `_sTransitionInProgress`), `BossArenaController` (`s_arenaRegistry` + 2 eventos), `LevitationTarget` (2 eventos), `FeedbackService` (instancia + 5 providers), `PlayerService` (2 eventos), `PlayerSettings` (4 eventos), `MagicProjectileSpawner` (`OnPlayerAttacked`), `ProfileReadyDiagnostics` (todo su estado), `EnvironmentController` (su ResetStatics existe pero no limpia `OnInteriorEntered/Exited`), `AudioService.MuteNextBaseSceneMusic`. Solo afecta al editor sin domain reload, pero es exactamente el entorno en el que trabajas.
+
+**M10. UI**: `MenuNavigator` hace `GetComponent<Button>` por frame y, si nada es seleccionable, `GetComponentsInChildren + Array.Sort` **cada frame**; `EquipmentView.SetVisible(false)` no desuscribe `OnWardrobeChanged` (asimetría con InventoryView, que sí lo hace) → refrescos fantasma de un canvas oculto; `TagMinigameController` asigna `timerText.text` interpolado cada frame (cachear el segundo entero).
+
+**M11. `EnvironmentController`** suscribe `sceneLoaded`/`activeSceneChanged` con **lambdas anónimas** sin `OnDestroy` — imposibles de desuscribir jamás. `LevelExit` carga en modo **Single** (contra la arquitectura aditiva) y sin guard de re-entrada → doble carga posible. `WarmLightFlicker`: interrumpir el fade puede perder el parpadeo para siempre y su `Update` escribe la luz cada frame incluso sin flicker.
+
+**M12. Vigilancia anti-movimiento duplicada en Idle**: `IdleState` fuerza `isStopped/ResetPath` cada frame y `NPCBehaviourManagerV2.LateUpdate` repite el mismo chequeo con comparación de **string** (`StateName == "Idle"`) por NPC y frame. Unificar en una sola vigilancia por intervalo y comparar por tipo.
+
+**M13. Logging sin guardas en rutas calientes** — los focos gordos, por coste real en build: `NPCCombatBrain` (107 logs, 3 guardados), `NPCCombatLifecycleHandler` (103, cero), `GolemBossAI` (log por collider evaluado en cada golpe/onda), `ActiveCombatRegistry.GetClosestCombatNPC` (por-NPC, llamado cada 0.5 s todo el combate), `Damageable` (log en el path de daño ignorado — por frame en AoE), `QuestManager.OnPartyMemberJoined` (~25 por evento), `DefaultNarrativeSignals.RaiseCustom` (además hace `GetInvocationList()` — alloc — solo para el log), `BossArenaController.OnTriggerEnter` (cada collider en build), toda la secuencia de victoria de `PlayerBattleModeController`. Envolver en `#if UNITY_EDITOR || DEVELOPMENT_BUILD` (regla §2 propia).
+
+---
+
+#### BAJOS — apuntados para cuando toque pasar por ahí
+
+`GamepadInputReader`: `InputSystem.onAfterUpdate += PollHardwareFallback` nunca se desuscribe (se acumula un registro por sesión de PlayMode) y `_controls` cacheado podría apuntar a un asset dispuesto si PlayerInputManager se recrea · `PlayerHealthSystem.cs:172`: `new Material(renderer.material)` duplica la instancia y ninguna se destruye (fuga por respawn) · `TransitionManager`: si un suscriptor del cut point lanza excepción, `runningTransition` queda en true para siempre (todas las transiciones futuras ignoradas) y su `Start()` es un poll infinito inútil cada 1 s · `PersistOnLoad`: singleton por **clase** — el segundo GameObject distinto con el componente se autodestruye en silencio · `ProjectilePoolManager.cs`: archivo vacío (0 bytes) — eliminar · `PlayerService` declara `[DefaultExecutionOrder(-600)]` pero CLAUDE.md documenta -900 — alinear · `ServiceLocator.TryGet` de un servicio ausente hace `FindAnyObjectByType` en cada llamada sin caché negativa — peligroso si alguien lo sondea por frame · `PlayerSettings.SaveToDisk` escribe a disco síncronamente en cada notch del slider de volumen · Executor Interactive: dos `ConditionalNarrative` del mismo NPC con la misma `customEventKey` → solo la primera recibe el evento (trampa de datos que el validador no cubre; sistema congelado, solo documentarlo) · `NarrativeGraphHub.RestoreBlackboards` no limpia runners sin snapshot (un grafo no empezado en el save conserva el progreso de la sesión anterior en memoria) y `RelaunchForkBranches` con GUID desaparecido (grafo editado tras el save) mata la rama en silencio en vez de relanzarla desde `branchStartGuid` · `Assets/t2.txt` y `Assets/test_delete_me.txt` — basura de pruebas en el raíz de Assets.
+
+---
+
+#### Lo que está bien (y merece decirse)
+
+La gestión de corrutinas de música de `AudioService` (referencias explícitas, INC-056 documentado en código) está muy cuidada. `VfxPoolService` con un único Update centralizado es el patrón correcto. `PlayerInputManager` resuelve con elegancia un problema real del Input System (cambios de mapa diferidos a `onAfterUpdate`). `CinematicSequencerBase.Co_SequenceGuarded`, `TagMinigameController`, `Inventory/Shop` y `CloudCoverSpawner` están bien blindados. La FSM de NPCs (Brain/Context/States) es sólida, con throttling y NonAlloc bien aplicados. Los registros de NPCs (registro/desregistro en escenas aditivas) están correctos. Y los invariantes narrativos de §4 se cumplen íntegramente.
+
+El patrón general es claro: la infraestructura reciente es de buena calidad; los sistemas más antiguos (TeleportService/System, BossArenaController, SimpleCinematicDirector, DayNightCycle, los tres bosses) arrastran los mismos problemas que el proyecto ya identificó y corrigió en otros sitios. No hace falta rediseñar nada: hace falta llevar los patrones buenos que ya existen a los archivos que se quedaron atrás.
+
+#### Orden de ataque sugerido
+
+1. **C2 (PushMode refcount)** — el fix más rentable: una tarde, elimina una familia entera de conflictos entre diálogo, cinemáticas, victoria y stun.
+2. **C1 (reentrada DialogueManager)** — el soft-lock narrativo más probable en juego normal.
+3. **C4 (blackboards rancios)** — duplicación de ítems con la secuencia guardar→avanzar→cambiar de escena; directo contra la demo.
+4. **C6 + M4-parcial (árbitro de timeScale)** — un servicio pequeño, cierra 4 bugs.
+5. **C3, C5, C7, A1, A2** — los "jugador/NPC bloqueado"; todos son fixes locales de pocas líneas.
+6. **A4 (save corrupto, 2 líneas) + versionado del save** — antes de que haya saves de jugadores reales.
+7. La pasada de logging (M13) y los bosses (A11) cuando toque optimizar la build.
+
+### 19.2 Auditoría completa de entregabilidad — 8 de agosto de 2026
+
+**Fecha:** 8 de agosto de 2026 · **Autor:** Claude (Cowork), a petición de Raúl · **Objetivo:** valorar si el proyecto está en condiciones de ser mostrado a un estudio/publisher o de salir como demo pública, y qué falta para ese nivel.
+
+**Método:** esta auditoría no repite desde cero el trabajo de código ya hecho ayer (`AUDITORIA_CODIGO_2026-08-07.md` y `AUDITORIA_SISTEMAS_OBSOLETOS_2026-08-07.md`, 530 archivos revisados) — lo verifica puntualmente y lo integra. El foco de hoy es todo lo que esas dos auditorías **no** cubren: testing/QA, ajustes de rendimiento y FPS a nivel de Project Settings, preparación de build para tienda, higiene de repositorio y paquetes. Verifiqué en vivo contra el código y los `.asset` reales: `ProjectSettings.asset`, `QualitySettings.asset`, `GraphicsSettings.asset`, `DynamicsManager.asset`, `Packages/manifest.json`, `.gitignore`/`.gitattributes`, `EditorBuildSettings.asset`, `git log`, y releí `DialogueManager.cs`/`PlayerActionManager.cs` línea a línea para confirmar que dos de los bugs "críticos" de ayer siguen presentes hoy.
+
+---
+
+#### 0. Veredicto general
+
+El código en sí está en **muy buen estado para un proyecto indie en solitario** — la auditoría de ayer ya lo dice y hoy lo confirmo: cero `OverlapSphere` sin `NonAlloc`, buffers cacheados, FSM sólida, pooling de VFX centralizado, sistema de guardado con escritura atómica. Eso no es lo que separa este proyecto de "nivel estudio" ahora mismo.
+
+Lo que sí lo separa son tres cosas que no son bugs de código sino **ausencias de proceso**, y son las que una empresa grande mira primero:
+
+1. **Cero tests automatizados.** El proyecto tiene instalados `com.unity.test-framework`, `test-framework.performance` y `testtools.codecoverage` en `manifest.json` — pero no existe ni un solo archivo de test (`*Test*.cs`, `.asmdef` de tests) en todo `Assets/`. Los paquetes están puestos pero nunca usados.
+2. **El identificador de build sigue siendo el del template de Unity.** `applicationIdentifier` es literalmente `com.Unity-Technologies.com.unity.template.urp-blank` (Standalone/iOS) y `com.UnityTechnologies.com.unity.template.urp-blank` (Android). `projectName: Test`. Esto no es un detalle: si mañana se sube un build a Steam o a cualquier tienda tal cual está, sale con la identidad del blank template de Unity, no la del juego.
+3. **No hay ningún proceso de verificación automatizado** (CI, build check, ni siquiera un test runner) — ni falta hace decirlo, dado el punto 1, pero es la razón estructural por la que las regresiones se detectan jugando manualmente y no antes de tocar código.
+
+Ninguna de las tres es difícil de arreglar. Ninguna requiere rediseñar nada. Pero las tres son exactamente lo que un revisor externo (publisher, QA de una empresa grande, o un port house) señalaría en los primeros 10 minutos, antes incluso de mirar una línea de gameplay.
+
+Por debajo de esto, el resto del proyecto — arquitectura, rendimiento por frame, higiene de Git — está genuinamente bien y no necesita una "limpieza de choque", solo rematar lo que ya está empezado.
+
+---
+
+#### 1. Bloqueadores reales para "entregable" (arreglar antes que nada)
+
+##### 1.1 Identidad del proyecto sin configurar — **bloqueante para cualquier build público**
+`ProjectSettings/ProjectSettings.asset`
+
+```
+applicationIdentifier:
+  Android: com.UnityTechnologies.com.unity.template.urp-blank
+  Standalone: com.Unity-Technologies.com.unity.template.urp-blank
+  iPhone: com.Unity-Technologies.com.unity.template.urp-blank
+projectName: Test
+organizationId: luarbaz
+templateDefaultScene: Assets/Scenes/SampleScene.unity   (vestigio, no afecta al build real)
+metroPackageName: Test
+metroApplicationDescription: Test
+```
+
+El proyecto nace de `com.unity.template.urp-blank` (`clonedFromGUID` + `templatePackageId` lo confirman) y esos campos nunca se tocaron. `companyName: Liyodev` y `productName: El Sendero de las Estrellas` sí están bien puestos — son los que se ven en la ventana del juego y en el `.exe` — pero el `applicationIdentifier` (bundle ID) es el que usan Steam, Google Play y Apple para identificar la app de forma única, y ahora mismo apunta al paquete de ejemplo de Unity. Si se sube así, choca de bruces con cualquier control de calidad de tienda.
+
+**Fix:** Project Settings → Player → Other Settings → Identification. Poner algo tipo `com.liyodev.elsenderodelasestrellas` en las tres plataformas, y `projectName` a un nombre real. Es un cambio de 2 minutos, cero riesgo — pero es el que más "vergüenza empresa grande" causaría de los tres si se pasa por alto.
+
+##### 1.2 Cero tests automatizados — infraestructura instalada, cero uso
+`Packages/manifest.json` tiene:
+```
+"com.unity.test-framework": "1.7.0",
+"com.unity.test-framework.performance": "3.5.0",
+"com.unity.testtools.codecoverage": "1.3.0",
+```
+Búsqueda exhaustiva en los 445 `.cs` de `Assets/Scripts` (más `NarrativeGraph`, `Editor`): **cero** archivos de test, **cero** `.asmdef` de tipo Tests (de hecho cero `.asmdef` en todo el proyecto — ver §3). `playModeTestRunnerEnabled: 0` en Player Settings. `TDD.md`, el documento que el propio proyecto declara "fuente de verdad", no tiene ninguna sección de testing/QA en su índice (14 secciones: arquitectura, NPCs, jugador, sistemas core, audio, quests, diálogos, guardado, narrativa, UI, rendimiento, bugs, troubleshooting — ninguna de QA).
+
+Esto no significa que el juego no se pruebe — claramente se prueba mucho a mano (los presets de `_BootProfile`, F3/F4 de debug, las escenas de `Test/` lo demuestran) — pero **cero de esa cobertura sobrevive de una sesión a otra**. Cualquier regresión se descubre jugando, no en segundos al guardar un archivo.
+
+Dado que el árbitro de rendimiento y los bugs de ciclo de vida de corrutinas de la auditoría de ayer (C1–C7) son exactamente el tipo de bug que un test de EditMode/PlayMode atraparía en segundos (p. ej. "abrir dos diálogos seguidos no debe perder el callback del primero"), esto no es un "nice to have" de proceso — es la razón concreta por la que esa familia de bugs lleva tiempo sin detectarse.
+
+**Recomendación realista (no "hacer TDD retroactivo de todo el juego", que no es viable para un dev en solitario):**
+- Empezar por 5-8 tests de EditMode que cubran los invariantes ya documentados como "no negociables" en CLAUDE.md §4 (los del grafo narrativo) — son los que más cuestan un bug de producción si se rompen.
+- Un test de PlayMode que reproduzca exactamente el escenario de C1 (`DialogueManager.StartDialogue` reentrante) y C2 (`PushMode` sin refcount) de la auditoría de ayer — ambos siguen presentes hoy (ver §2), y son perfectos como primer par de tests porque el bug y el fix ya están identificados.
+- Activar `com.unity.testtools.codecoverage` en el runner para tener una cifra objetiva de cobertura, aunque empiece en un dígito bajo.
+
+##### 1.3 Sin CI ni verificación automática de build
+No hay carpeta `.github/` (ni ningún otro CI) en el repo. Ningún hook de pre-commit corre tests o valida compilación. El validador narrativo (`CrossSystemNarrativeValidator`, mencionado en CLAUDE.md §7) existe pero es una `MenuItem` manual del editor, no algo que corra solo. Para un proyecto en solitario esto es razonable hoy, pero es lo primero que pediría un equipo de QA externo antes de aceptar builds regulares: al menos un job que compile el proyecto (o corra las escenas de test) en cada push.
+
+---
+
+#### 2. Estado real de los críticos de la auditoría de ayer (verificado hoy, no asumido)
+
+Releí `DialogueManager.cs` y `PlayerActionManager.cs` línea a línea contra el código actual (no contra la copia de ayer):
+
+- **C1 (reentrada en `DialogueManager.StartDialogue`) — CONFIRMADO, sigue abierto hoy.** Línea 319-326: `StartDialogue` sobrescribe `_current`/`_onEnd` sin comprobar `IsOpen` (línea 92) ni invocar el `_onEnd` anterior. El fix propuesto ayer sigue siendo válido y no se ha aplicado.
+- **C2 (`PushMode` sin refcount) — CONFIRMADO, sigue abierto hoy.** Línea 251: `if (Top == mode) return;` sigue ahí exactamente como se describió. `PopMode` (línea 259-274) sigue quitando una entrada del stack aunque el segundo `Push` haya sido ignorado por el early-return.
+
+No relanzo el resto de la lista de ayer (sería redundante con `AUDITORIA_CODIGO_2026-08-07.md`, que ya la tiene priorizada con el "orden de ataque" al final). El dato importante es que esta auditoría se apoya en hallazgos reales de hace 24h, no en una foto vieja — y que el fix de más impacto (C2, refcount de `PushMode`) sigue siendo la tarea más rentable: una tarde de trabajo, elimina de un plumazo los conflictos diálogo↔cinemática↔victoria↔stun.
+
+---
+
+#### 3. Rendimiento y FPS — lo que no cubrió la auditoría de código
+
+La auditoría de ayer ya cubrió el rendimiento *por frame* (Update/FixedUpdate, NonAlloc, GC). Esto es lo que falta a nivel de configuración de proyecto:
+
+**Sin arquitectura de compilación (`.asmdef`).** Cero archivos `.asmdef` en todo el proyecto — 445 scripts compilan como un único `Assembly-CSharp` monolítico. No afecta al rendimiento en runtime, pero sí a la velocidad de iteración (cualquier cambio en un script recompila los 445) y es una práctica estándar en proyectos "AAA" que aquí falta por completo. Dividir al menos `Core`/`Runtime` de `Editor`/`Tests` sería el primer paso — y además es un prerrequisito real para poder tener tests de EditMode aislados (§1.2).
+
+**Layer Collision Matrix sin configurar — `DynamicsManager.asset`:**
+```
+m_LayerCollisionMatrix: ffffffff... (todo colisiona con todo, el default de Unity)
+```
+El proyecto tiene capas dedicadas (`Enemy`, `Player`, `Projectile`, `ProjectileEnemy`, `Interactable`, `Floor`, `Obstacle`, `Climb`, `UI`, `Water`...) pero la matriz de colisión física nunca se personalizó: sigue siendo la que trae Unity por defecto, donde absolutamente todas las capas colisionan entre sí. Esto es tanto un tema de rendimiento (el motor de físicas evalúa pares de colliders que nunca deberían tocarse, p. ej. `UI` contra `Floor`) como de corrección — es la misma raíz del problema que CLAUDE.md ya documenta a mano ("los personajes no tienen capa propia, viven en `Default`"): el proyecto compensa con chequeos por componente (`NPCSimpleAnimator`) en tiempo de ejecución un problema que la matriz de colisión debería filtrar en el motor de físicas, gratis y antes de que el código de gameplay se entere. **Recomendación:** dar a los personajes una capa `Character` propia y configurar la matriz (p. ej. `Projectile` no debería colisionar con `ProjectileEnemy`, `UI` no debería colisionar con nada físico).
+
+**Anti-aliasing desactivado en ambas calidades — `QualitySettings.asset`:**
+```
+name: Mobile → antiAliasing: 0
+name: PC     → antiAliasing: 0
+```
+Con URP y MSAA/TAA disponibles, un proyecto que aspira a mostrarse con pulido visual "AAA" normalmente al menos ofrece una opción de AA en la calidad PC. Ahora mismo ninguna de las dos calidades la trae por defecto — puede ser intencional (rendimiento en gama baja), pero vale la pena una decisión explícita en vez de heredarlo del blank template.
+
+**`vSyncCount: 0` en ambas calidades.** No hay VSync por defecto en ningún tier — coherente con dejar el framerate sin techo en manos de `Application.targetFrameRate` en código (no verificado aquí a nivel de script; merece una comprobación rápida de que existe un cap explícito, porque sin VSync ni target framerate el juego corre a la FPS que dé la GPU, con el consumo/calentamiento que eso implica en un build de demo).
+
+**Puntos positivos que sí valen la pena mencionar (no solo hay que apuntar problemas):** `gcIncremental: 1` (GC incremental activado — reduce los picos de frame por recolección de basura, justo lo que un juego de acción/combate necesita), `m_MTRendering: 1` (renderizado multihilo activo), `m_BuildTargetBatching` con `m_StaticBatching: 1` para Standalone, y URP con SRP configurado correctamente (`m_CustomRenderPipeline` apuntando al asset URP en ambas calidades). La base de configuración de rendimiento está bien elegida donde importa; lo que falta es terminar de personalizar lo que aún trae el valor por defecto del template.
+
+**Logging en rutas calientes (ya señalado ayer, lo confirmo como el hallazgo de rendimiento más rentable de arreglar antes de un build de demo):** `NPCCombatBrain` (107 logs, 3 guardados con `#if`), `NPCCombatLifecycleHandler` (103, cero guardados) son los focos gordos. Es una regla que el propio CLAUDE.md §2 ya exige ("todo `Debug.Log` bajo `#if UNITY_EDITOR || DEVELOPMENT_BUILD`") y que en estos dos archivos no se cumple — coste real en build de combates con varios NPCs.
+
+---
+
+#### 4. Higiene de proyecto y repositorio
+
+**Git — en buen estado, sin acción urgente.** `.gitignore` cubre correctamente `Library/`, `Temp/`, `Logs/`, `UserSettings/`, `obj/`, builds y archivos temporales de análisis; ningún artefacto pesado colándose en el repo hoy (los `t2.txt`/`test_delete_me.txt` que señalaba la auditoría de sistemas obsoletos de ayer ya no están en `Assets/`, así que o se limpiaron o el hallazgo ya está resuelto). `.gitattributes` configura Git LFS correctamente para texturas, modelos, audio y vídeo, con normalización de line endings a LF y el merge driver de Unity YAML documentado. El historial de commits es activo y descriptivo (mezcla español/inglés, pero mensajes con sustancia, no "wip" sueltos). Único matiz: 8 de los 25 últimos commits llevan mensaje en inglés pese a que CLAUDE.md §2 pide "mensajes de commit en español" — inconsistencia menor, cero impacto funcional.
+
+**Documentación — mayormente ejemplar, con una fecha que no cuadra.** Tener `CLAUDE.md`/`AGENTS.md`/`TDD.md`/`README.md` tan cuidados y actualizados es, honestamente, mejor práctica de la que tienen muchos estudios pequeños. El único hallazgo real: `TDD.md` se autodescribe como "Motor: Unity 2022.3+" y "Última revisión: Mayo 2026", pero el proyecto corre hoy sobre Unity 6000.5.4f1 y CLAUDE.md/README ya lo tienen actualizado a "Unity 6 + URP 17.5". Si `TDD.md` es la fuente de verdad declarada, vale la pena una pasada de actualización del encabezado — no cambia nada técnico, pero alguien externo que abra ese archivo primero se lleva una impresión de documentación desactualizada que no es real.
+
+**Paquetes — dos candidatos a revisar, no a borrar a ciegas.** `manifest.json` incluye `com.unity.ads` (4.19.0) y `com.unity.analytics` (3.8.2). No pude confirmar desde aquí si se usan en código (requeriría grep de contenido sobre los 445 scripts, fuera del alcance de esta pasada), pero ninguno de los dos aparece mencionado en TDD.md/CLAUDE.md como sistema activo, y `com.unity.analytics` es el paquete legacy que Unity fue sustituyendo por Unity Gaming Services. Vale la pena una comprobación de 5 minutos (`grep -r "UnityEngine.Advertisements\|UnityEngine.Analytics"` sobre `Assets/`) antes de decidir si se quitan — cada paquete de más es superficie de mantenimiento y tiempo de import.
+
+---
+
+#### 5. Lo que ya está a nivel de estudio grande (para que quede dicho, no solo lo que falta)
+
+- La disciplina de rendimiento por frame (NonAlloc, buffers cacheados, hashes de animator) está por encima de la media indie, confirmado independientemente hoy en los dos archivos que releí.
+- El patrón `ResetStatics` para limpiar estado estático entre sesiones de PlayMode, aplicado en la mayoría de singletons, es exactamente el tipo de disciplina que evita bugs "solo en el editor" — la lista de excepciones (M9 en la auditoría de ayer) es corta y ya está identificada.
+- El sistema de guardado con escritura atómica (`.tmp` + `File.Move`) es la práctica correcta para no corromper saves ante un crash.
+- La decisión documentada de **no** fusionar los dos motores narrativos (CLAUDE.md §7) tras un intento fallido es exactamente la clase de decisión de arquitectura madura que un equipo grande valora — reconocer cuándo no tocar algo que funciona es tan importante como refactorizar.
+- Convención de idioma, estructura de carpetas y nomenclatura consistentes en todo el proyecto.
+
+---
+
+#### 6. Plan de acción priorizado para "entregable"
+
+1. **Identidad del build** (§1.1) — 2 minutos, cero riesgo, bloqueante para cualquier subida a tienda. Hacerlo ya, antes de generar ningún build de demo.
+2. **C2 — refcount en `PushMode`** (§2) — una tarde, el fix de código más rentable de todo el informe de ayer.
+3. **C1 — reentrada en `DialogueManager`** (§2) — el soft-lock narrativo más probable en una sesión de demo real.
+4. **Layer Collision Matrix** (§3) — una tarde: crear capa `Character`, revisar la matriz. Beneficio de rendimiento y de corrección a la vez.
+5. **Primeros 5-8 tests** (§1.2) — empezar por los invariantes narrativos de CLAUDE.md §4 y por reproducir C1/C2 como test antes de arreglarlos (así queda el test como red de seguridad permanente, no solo el fix puntual).
+6. **Logging en rutas calientes de combate** (M13 de ayer / §3 aquí) — antes de cualquier build de rendimiento medido con perfilador.
+7. Resto de críticos/altos de `AUDITORIA_CODIGO_2026-08-07.md` en el orden que ya proponía ese documento (C3, C4, C5, C6, C7, A1-A12).
+8. Antes de la demo de Steam específicamente: todo lo de `STEAM_DEMO_CHECKLIST.md` sigue siendo el checklist correcto — esta auditoría no lo sustituye, lo complementa (el punto 1 de aquí, identidad del build, es un prerrequisito técnico que ese checklist da por hecho pero no verifica explícitamente).
+
+Nada de esto exige parar el desarrollo ni rehacer sistemas. El patrón general, otra vez: la infraestructura y el código reciente son de buena calidad; lo que falta es peinar la configuración de proyecto heredada del template y cerrar el hueco de proceso (tests, CI) que hoy hace que cada verificación dependa de jugar a mano.
+
+### 19.3 Addendum — Código y sistemas obsoletos — 7 de agosto de 2026
+
+**Fecha:** 7 de agosto de 2026 · Complementa a `AUDITORIA_CODIGO_2026-08-07.md`. **Método:** cada hallazgo de este documento está verificado contra el proyecto real (no solo contra el código): para todo lo que se marca "sin uso" comprobé el GUID del script en `Assets/Scenes`, `Assets/Prefabs` y las carpetas de datos (`_NPCs`, `_QUEST`, `_DIALOGUES`, `_BootProfile`, `NarrativeGraph`, `Resources`) para confirmar que ningún GameObject ni asset lo referencia. Nada de esta lista es "probablemente muerto": o está confirmado muerto, o está confirmado vivo y se dice explícitamente.
+
+---
+
+#### 1. Archivos completamente vacíos — cero uso confirmado, borrado seguro
+
+Estos 9 archivos `.cs` no contienen ninguna clase, están vacíos o son solo un BOM/espacios en blanco, y **ningún prefab, escena ni asset del proyecto referencia su GUID**. Son husks: restos de un refactor donde se movió o eliminó el contenido pero no se borró el archivo (y Unity, al no tener el `.meta` borrado, los mantiene compilando como archivos vacíos sin más).
+
+| Archivo | Contenido |
+|---|---|
+| `Assets/Scripts/Behaviour NPC/Initialization/NPCInitializer.cs` | vacío — **ver nota especial abajo** |
+| `Assets/Scripts/UI/LocalizedMessage.cs` | vacío |
+| `Assets/Scripts/IA/AmbientAnimatorBridge.cs` | vacío |
+| `Assets/Scripts/World/SaveGameService.cs` | vacío (solo BOM) |
+| `Assets/Scripts/Editor/ProfileDiagnosticsEditorTools.cs` | vacío |
+| `Assets/Scripts/VFX/BarrierScanURP.cs` | vacío |
+| `Assets/Scripts/Core/Pooling/IPoolable.cs` | vacío |
+| `Assets/Scripts/Core/Pooling/ProjectilePoolManager.cs` | vacío |
+
+**Nota especial — duplicado real:** `Assets/Scripts/Behaviour NPC/Initialization/NPCInitializer.cs` (vacío) convive con `Assets/Scripts/Behaviour NPC/NPCInitializer.cs` (53 líneas, la clase real y en uso — sistema de inicialización de NPCs sin coroutines). Es el resto de una carpeta `Initialization/` que se dejó de usar cuando la clase se movió a la carpeta padre. La carpeta `Initialization/` no contiene nada más.
+
+**Recomendación:** borrar los 8 archivos y sus `.meta`, y la carpeta `Initialization/` vacía resultante. Cero riesgo — no hay ninguna referencia que romper.
+
+`SaveGameService.cs` merece una mención aparte: por el nombre, uno esperaría que sea "el" servicio de guardado — pero está vacío. El sistema de guardado real y activo es `Assets/Scripts/Core/SaveSystem.cs` (el auditado en el informe principal, con escritura atómica). No hay confusión posible en el código actual, pero si alguna vez tienes que tocar el guardado, el nombre puede despistar — otro motivo para borrarlo.
+
+---
+
+#### 2. Sistema completo escrito y nunca conectado: `NPCMovementController`
+
+`Assets/Scripts/Behaviour NPC/Movement/NPCMovementController.cs`
+
+Este archivo no está vacío — es una clase completa y cuidada (eventos `OnDestinationReached`/`OnMovementBlocked`/`OnMovementStarted`, `[RequireComponent(typeof(NavMeshAgent))]`, comentario de cabecera: *"Sistema centralizado de movimiento para NPCs. TODO el movimiento de NPCs (Combat, Party, States) pasa por aquí. CERO delays, CERO yield return null, sistema profesional y robusto."*).
+
+El problema: **no lo usa nadie**. Ninguna otra clase del proyecto lo menciona, y no está adjunto a ningún GameObject en ninguna escena ni prefab (confirmado por GUID). El movimiento real de los NPCs pasa hoy por `NavMeshAgentUtility` y la lógica propia de cada estado de la FSM (`IdleState`, `WanderState`, `FollowPlayerState`, etc.), tal como se documenta en el informe principal.
+
+Todo indica que este archivo es un intento de centralizar el movimiento que se escribió pero nunca se terminó de adoptar — el proyecto siguió con el patrón descentralizado por estado. No es peligroso tal cual está (no se ejecuta), pero es ruido: cualquiera que lo encuentre puede asumir que "así es como se mueve un NPC" y perder tiempo, o peor, empezar a usarlo en paralelo al sistema real y crear justo el tipo de sistema-fantasma-duplicado del que hablas.
+
+**Recomendación:** o se borra, o si la idea de centralizar sigue viva, se anota con un comentario claro tipo `// EXPERIMENTAL — no conectado, ver Behaviour NPC/States/ para el movimiento real` para que no se confunda con código en producción.
+
+---
+
+#### 3. Nodos del grafo narrativo marcados `[Obsolete]` — la higiene ya existe, un paso más la completa
+
+`Assets/NarrativeGraph/Runtime/Graph/NodeTypes/`: `DeliverItemProximityNode`, `DeliverQuestCompleteNode`, `BranchBoolNode`, `ActivateGameObjectNode`, `UnlockTriggerNode`, `PlayTimelineNode`, `WaitBattleWinNode`, `OfferQuestNode`.
+
+Esto es al revés de un problema: es la parte del proyecto donde la deprecación está **mejor hecha**. Cada uno tiene el atributo `[Obsolete("...")]` con una explicación de qué usar en su lugar, y `NarrativeGraphWindow` los filtra del menú "Añadir Nodo" para que nadie los arrastre por error a un grafo nuevo. `BranchBoolNode` incluso documenta en un comentario por qué está roto (*"no bifurca de verdad... confirmado sin uso en ningún grafo del proyecto (Agosto 2026)"*).
+
+Lo comprobé contra los 7 assets reales del grafo (`MainNarrative.asset` + `MainNarrative_Cap1` a `Cap6`, que son los únicos grafos del proyecto): **ninguno de estos 8 tipos de nodo aparece en ningún grafo actual.** No son compatibilidad hacia atrás para datos que sigan vivos — son cadáveres ya completamente aislados.
+
+**Recomendación:** dado que confirmadamente no hay ningún dato que dependa de ellos, se pueden borrar del todo (no solo marcar `[Obsolete]`) sin perder nada. Si prefieres quedarte con el margen de seguridad de "por si acaso", déjalos como están — el patrón actual ya es correcto y no genera ningún riesgo, solo ocupa espacio.
+
+---
+
+#### 4. Herramientas de editor de un solo uso — no son bugs, pero son candidatas a archivar
+
+`Assets/Editor/MigrateNarrativeConfigToBehaviourManager.cs` (migra campos legacy de `NPCInteractiveNarrativeConfig` a `NPCBehaviourManagerV2` en todas las escenas/prefabs) y `Assets/Editor/ReserializeOldAssets.cs` (reserializa materiales viejos de un pack de la Asset Store para silenciar warnings de consola) son utilidades de migración de un solo uso, con su propio `[MenuItem]` en el menú "El Sendero". Si ya ejecutaste la migración de NPCs y no tienes más warnings de reserialización pendientes, ninguna de las dos hace falta ya.
+
+No son peligrosas si se quedan (no se ejecutan solas), pero si algún día limpias el menú de Editor, son las primeras candidatas — junto con el resto de setup tools de un solo uso que aparecieron en el barrido (`NPCFacePartsSetup`, `NPCIdleVariationSetup`, `CrystalBallVisionSetup`, `ModularCharacterBaker`, `StartProductionBake`, `QuickDemoBake`, `SettingsMenuCreator`, `QuestMenuCreator`): todas son herramientas de construcción de contenido normales en un proyecto indie, no deuda técnica.
+
+---
+
+#### 5. Verificado como "no obsoleto" a pesar de las apariencias: `BootLoader`
+
+`Assets/Scripts/Core/BootLoader.cs` — antes de escribir este addendum parecía un candidato obvio: un `MonoBehaviour` genérico de 30 líneas, con nombre parecido a `GameBootService` (el orquestador real y documentado en CLAUDE.md), sin ninguna otra clase del código que lo referencie, y que hace `SceneManager.LoadScene(sceneToLoad)` — carga **no aditiva** — algo que en un proyecto multi-escena como este suena a bandera roja inmediata.
+
+Lo comprobé contra la escena real y **está vivo y en uso**: hay un GameObject `START_BootLoader` en `Assets/Scenes/Systems/Start.unity`, activo, con `sceneToLoad: MainMenu` y `delaySeconds: 0`. Es el mecanismo que lleva de la escena `Start` al `MainMenu` una vez arrancan los managers. No es peligroso: `GameBootService` tiene execution order -1000 y hace todo su trabajo de arranque en `Awake()`, que Unity garantiza que se ejecuta (para todos los objetos de la escena) antes que cualquier `Start()` — incluido el de `BootLoader` — así que no hay condición de carrera. Y como todos los managers persistentes están en `DontDestroyOnLoad`, la carga no-aditiva de `MainMenu` no se los lleva por delante.
+
+**El único hallazgo real aquí es documental:** ni `CLAUDE.md` ni `TDD.md` mencionan `BootLoader` como parte del flujo de arranque — solo documentan `GameBootService`/`AutoBootstrapOnPlay`. Si algún día tocas el arranque, es fácil no saber que este componente existe y que es él quien dispara la transición a `MainMenu`. Vale la pena añadir una línea a CLAUDE.md §1.
+
+---
+
+#### 6. Los dos motores narrativos (Grafo vs. Interactive) — dato objetivo, no juicio
+
+Esto ya lo documenta tu propio CLAUDE.md §7 como decisión de arquitectura aceptada ("un intento de unificarlos rompió el juego en Agosto 2026; no se intenta fusionar"), así que no lo reporto como problema. Solo te dejo el dato objetivo por si te sirve para decidir cuánto pesa mantenerlo: de los NPCs con `NPCBehaviourManagerV2` en prefabs/`_NPCs`, **13 siguen usando el executor Interactive** (`NPCInteractiveNarrativeExecutor`/`NPCInteractiveNarrativeConfig`) frente al total de NPCs con FSM. No es un sistema residual de dos o tres NPCs sueltos — sigue siendo una parte real y viva del contenido, así que la política de "congelado pero no migrado" del CLAUDE.md sigue siendo la decisión correcta: no es candidato a borrado, solo a no crecer más (que es exactamente lo que ya dice tu documentación).
+
+---
+
+#### Resumen accionable
+
+| Acción | Archivos | Riesgo de borrar |
+|---|---|---|
+| Borrar ya | 8 archivos vacíos (§1) + carpeta `Initialization/` | Ninguno — verificado sin referencias |
+| Borrar o dejar como está (ya bien marcado) | 8 nodos `[Obsolete]` del grafo (§3) | Ninguno — verificado sin uso en ningún grafo |
+| Decidir: borrar o marcar claramente como experimental | `NPCMovementController.cs` (§2) | Ninguno — verificado sin uso |
+| Archivar cuando confirmes que ya no hacen falta | `MigrateNarrativeConfigToBehaviourManager.cs`, `ReserializeOldAssets.cs` (§4) | Bajo — son ejecutables manuales, no se llaman desde código |
+| Documentar en CLAUDE.md, no tocar el código | `BootLoader.cs` (§5) | N/A — está vivo y funcionando |
+| No tocar — decisión ya correcta | Dualidad Grafo/Interactive (§6) | N/A |
+
+Nada de lo encontrado aquí es urgente ni arriesgado — es limpieza de bajo riesgo. Lo más valioso es el `NPCMovementController`: si alguna vez alguien (tú u otra persona ayudando en el proyecto) lo encuentra y asume que ahí es donde hay que tocar el movimiento de NPCs, perderá tiempo con un sistema que no hace nada.
+
+
+---
+
+## 20. Convenciones de documentación del proyecto
+
+Desde el 12 de agosto de 2026, este proyecto mantiene su documentación en un único sitio para que no se disperse en archivos `.md` sueltos que nadie vuelve a mirar. La regla, a partir de ahora:
+
+- **`TDD.md` (este documento) es la fuente de verdad única** para toda la documentación técnica: arquitectura, sistemas, reglas de código, bugs conocidos, troubleshooting, diseños en curso, checklists de proceso y auditorías.
+- **Cualquier `.md` nuevo que documente algo de sustancia** (una auditoría, un análisis de diseño, una decisión de arquitectura, un checklist) **se añade como sección nueva de este documento**, no como archivo suelto en la raíz del proyecto. Al añadirlo: crear la sección al final (o dentro de la sección temática que corresponda si es una ampliación de algo ya documentado), actualizar el índice, y evitar repetir contenido que ya exista en otra sección — enlazar a ella en su lugar de copiarlo.
+- **Excepciones — se quedan como archivos aparte, pero cortos y sin contenido duplicado:**
+  - **`README.md`** — la portada del repositorio, lo primero que ve alguien en GitHub. Overview y enlaces, nunca el detalle técnico.
+  - **`AGENTS.md` / `CLAUDE.md`** — herramientas de IA (Claude Code, Cursor, etc.) los leen **automáticamente** como contexto de proyecto en cada sesión; no son solo documentación para humanos y por eso no se retiran ni se fusionan aquí dentro. Se mantienen como resumen corto de las reglas no negociables con pointers a este documento para el detalle — nunca como copia completa de §10/§12. Si TDD.md cambia una regla no negociable o un invariante narrativo, hay que reflejar el resumen en estos dos archivos también (se mantienen sincronizados, no es "documentación muerta").
+- Cualquier otro `.md` de sustancia que hoy exista o se cree en el futuro (una auditoría, un checklist, un análisis) va como sección de `TDD.md`, no como archivo nuevo en la raíz.

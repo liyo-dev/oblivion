@@ -17,6 +17,8 @@ MonoBehaviour:
   displayName: FUEGOFATUO_NAME
   descriptionId: FUEGOFATUO_DESC
   description: 
+  detailedDescriptionId: FUEGOFATUO_DETAIL
+  detailedDescription: 
   steps:
   - descriptionId: FUEGOFATUO_DESC_01
     description: Buscar provisiones con Estela

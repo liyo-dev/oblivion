@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 using Core;
+using Core.InputGlyphs;
 using DG.Tweening;
 using Sendero.Core.Feedback;
 
@@ -874,7 +875,7 @@ public class DialogueManager : MonoBehaviour
             else
                 textToShow = string.Empty;
         }
-        _currentText = ProtectSpriteTagsFromWordWrap(PinSpriteTagsToExplicitAsset(textToShow));
+        _currentText = ProtectSpriteTagsFromWordWrap(PinSpriteTagsToExplicitAsset(ResolveDeviceConditionalText(textToShow)));
 
         // --- PORTRAIT (se mantiene si viene null) ---
         if (portraitImage && line.portrait != null)
@@ -907,6 +908,11 @@ public class DialogueManager : MonoBehaviour
             {
                 if (verboseLogging) Debug.Log($"[DialogueManager] TYPEWRITER DESACTIVADO - Mostrando texto completo instantáneamente");
                 bodyText.maxVisibleCharacters = int.MaxValue;
+                // Forzamos el rebuild aquí (dentro del try/catch de TryForceMeshUpdate) en vez de
+                // dejarlo para el próximo pase automático de Canvas.SendWillRenderCanvases, que no
+                // pasa por nuestro código y por tanto no captura el NRE de SaveSpriteVertexInfo si
+                // salta (ver TDD.md § 13 U1 - "límite conocido").
+                TryForceMeshUpdate();
             }
         }
     }
@@ -965,16 +971,30 @@ public class DialogueManager : MonoBehaviour
             }
             
             bodyText.maxVisibleCharacters = shown;
-            
+            // Forzamos el rebuild aquí, dentro del try/catch de TryForceMeshUpdate, en vez de
+            // dejar que lo dispare el próximo Canvas.SendWillRenderCanvases automático (fuera de
+            // nuestro código, no captura el NRE de SaveSpriteVertexInfo - ver TDD.md § 13 U1).
+            if (!TryForceMeshUpdate())
+            {
+                // Abortamos el typewriter a mitad de línea y mostramos el texto completo en vez
+                // de arriesgarnos a que el próximo frame dispare la excepción sin capturar.
+                bodyText.maxVisibleCharacters = int.MaxValue;
+                _isTyping = false;
+                _typeRoutine = null;
+                ShowSubmitHintWithAnimation();
+                yield break;
+            }
+
             yield return null;
         }
-        
+
         Debug.Log($"[DialogueManager TypeRoutine] ✅ Completado - {shown}/{total} caracteres mostrados");
 
         bodyText.maxVisibleCharacters = total;
+        TryForceMeshUpdate();
         _isTyping = false;
         _typeRoutine = null;
-        
+
         // Mostrar el icono de Submit con animación cuando el texto está completo
         ShowSubmitHintWithAnimation();
     }
@@ -1040,6 +1060,18 @@ public class DialogueManager : MonoBehaviour
     // en vez de dejarlo solo como sub-asset fallback — así ni siquiera hace falta recorrer la cadena
     // de fallbacks para encontrarlo. Requiere el Editor de Unity, no se puede hacer editando el
     // .asset a mano seguro.
+    //
+    // 2026-08-12 — CIERRE DEL "LÍMITE CONOCIDO": hasta ahora TryForceMeshUpdate() solo protegía las
+    // llamadas explícitas a ForceMeshUpdate() (inicio de línea / CompleteCurrentLineInstant). Cada
+    // vez que TypeRoutine() tocaba bodyText.maxVisibleCharacters frame a frame (o ShowLine() cuando
+    // useTypewriter=false), el rebuild del mesh quedaba para el próximo pase automático de
+    // Canvas.SendWillRenderCanvases → TextMeshProUGUI.OnPreRenderCanvas, que NO pasa por nuestro
+    // código y por tanto no captura el NRE si salta ahí (justo el stack trace real reportado:
+    // Canvas:SendWillRenderCanvases() → ... → TMP_Text.SaveSpriteVertexInfo, sin ningún frame de
+    // DialogueManager en medio). Ahora cada asignación a maxVisibleCharacters (en TypeRoutine y en
+    // la rama sin typewriter de ShowLine) va seguida de un TryForceMeshUpdate() explícito, así que
+    // si el bug se dispara, ocurre dentro de nuestro try/catch (LogWarning + fallback a texto
+    // completo) en vez de como excepción no capturada en el pase de render.
     private static readonly System.Text.RegularExpressions.Regex _spriteTagRegex =
         new System.Text.RegularExpressions.Regex("<sprite[^>]*>", System.Text.RegularExpressions.RegexOptions.Compiled);
 
@@ -1058,6 +1090,44 @@ public class DialogueManager : MonoBehaviour
     private static string PinSpriteTagsToExplicitAsset(string text)
     {
         return text;
+    }
+
+    // 2026-08-12 — Segmentos de contenido de diálogo que solo tienen sentido para MANDO, envueltos
+    // en el JSON de localización como "<gpadonly>...</gpadonly>". Caso que lo motiva: líneas tipo
+    // "puedes usar <sprite name=\"interactable_dpad_up\"> <gpadonly>ARRIBA</gpadonly>." — la
+    // palabra "ARRIBA" describe la dirección del D-Pad físico en un mando, pero en Teclado&Ratón el
+    // icono ya es la tecla concreta (p.ej. "J", ver InputGlyphNames.DpadUp/InputGlyphLabels), así
+    // que repetir "ARRIBA" al lado no aporta nada — "J" no es "arriba" para nadie que no conozca ese
+    // binding de memoria. En mando el tag se resuelve dejando el texto tal cual (sin las etiquetas);
+    // en teclado se elimina el segmento entero (etiquetas + contenido).
+    //
+    // LÍMITE CONOCIDO: el texto de la línea se resuelve una única vez, en el momento en que Next()
+    // la muestra (ver _currentText más arriba) — a diferencia de los sprites, que sí se refrescan en
+    // caliente vía InputGlyphService.FamilyChanged. Si la persona cambia de mando a teclado (o
+    // viceversa) A MITAD de una línea que ya se está mostrando, la palabra "ARRIBA" no
+    // aparece/desaparece retroactivamente hasta la siguiente línea. Caso límite aceptado: cambiar de
+    // familia de dispositivo a mitad de una frase ya visible es raro y el peor caso es una palabra
+    // de más/de menos, no un icono equivocado.
+    private static readonly System.Text.RegularExpressions.Regex _gamepadOnlyTagRegex =
+        new System.Text.RegularExpressions.Regex(
+            "<gpadonly>(.*?)</gpadonly>",
+            System.Text.RegularExpressions.RegexOptions.Compiled | System.Text.RegularExpressions.RegexOptions.Singleline);
+
+    private static string ResolveDeviceConditionalText(string text)
+    {
+        if (string.IsNullOrEmpty(text) || !text.Contains("<gpadonly>"))
+            return text;
+
+        bool isKeyboard = InputGlyphService.CurrentFamily == InputGlyphDeviceFamily.KeyboardMouse;
+        text = _gamepadOnlyTagRegex.Replace(text, m => isKeyboard ? string.Empty : m.Groups[1].Value);
+
+        // Limpieza de espacios sueltos que deja la eliminación del segmento en teclado, p.ej.
+        // "usar <sprite name=\"interactable_dpad_up\"> <gpadonly>ARRIBA</gpadonly>." pasa a
+        // "usar <sprite name=\"interactable_dpad_up\">  ." (doble espacio + espacio antes del
+        // punto) si no se normaliza.
+        text = System.Text.RegularExpressions.Regex.Replace(text, " {2,}", " ");
+        text = System.Text.RegularExpressions.Regex.Replace(text, " +([.,!?])", "$1");
+        return text.Trim();
     }
 
     private static string ProtectSpriteTagsFromWordWrap(string text)

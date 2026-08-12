@@ -17,6 +17,8 @@ MonoBehaviour:
   displayName: QUEST_ELDRAN_MISSION5_NAME
   descriptionId: QUEST_ELDRAN_MISSION5_DESC
   description: 
+  detailedDescriptionId: QUEST_ELDRAN_MISSION5_DETAIL
+  detailedDescription: 
   steps:
   - descriptionId: QUEST_ELDRAN_MISSION5_DESC_01
     description: Capa de Mago

@@ -78,7 +78,28 @@ public class QuestMenuManager : MonoBehaviour
             _bPressed = false;
         }
 
+        HandleTabSwitchInput();
+
         RefreshMenuRegistration();
+    }
+
+    /// <summary>
+    /// Cambia entre misiones visibles/archivadas mientras el menú principal está abierto.
+    /// IMPORTANTE: se lee del Action Map UI (LeftShoulderPressedUI/RightShoulderPressedUI), NO del
+    /// evento LeftShoulder/RightShoulder del Action Map GamePlay. Ese Action Map se deshabilita
+    /// mientras el menú principal está abierto (ver PlayerInputManager.PushUIMode), así que la
+    /// rueda del ratón (mapeada a GamePlay.ShoulderLeft/ShoulderRight en teclado+ratón) dejaba de
+    /// responder justo cuando el panel estaba visible. LB/RB del Action Map UI sí permanecen
+    /// activos en ese momento.
+    /// </summary>
+    private void HandleTabSwitchInput()
+    {
+        if (mainMenu == null || !mainMenu.IsOpen) return;
+
+        if (GamepadInputReader.LeftShoulderPressedUI)
+            mainMenu.ShowVisibleTab();
+        else if (GamepadInputReader.RightShoulderPressedUI)
+            mainMenu.ShowHiddenTab();
     }
 
     private void HandleGamepadInput(GamepadInputReader.InputEvent input)
@@ -100,14 +121,10 @@ public class QuestMenuManager : MonoBehaviour
             case GamepadInputReader.InputEventType.Navigate:
                 HandleNavigateInput(input);
                 break;
-            case GamepadInputReader.InputEventType.LeftShoulder when input.Phase == InputActionPhase.Performed:
-                if (mainMenu != null && mainMenu.IsOpen)
-                    mainMenu.ShowVisibleTab();
-                break;
-            case GamepadInputReader.InputEventType.RightShoulder when input.Phase == InputActionPhase.Performed:
-                if (mainMenu != null && mainMenu.IsOpen)
-                    mainMenu.ShowHiddenTab();
-                break;
+            // LeftShoulder/RightShoulder (Action Map GamePlay) YA NO se usan aquí para cambiar de
+            // pestaña: ese Action Map se deshabilita mientras el menú principal está abierto (modo
+            // UI), justo cuando este atajo hace falta. Ver HandleTabSwitchInput(), que lee del
+            // Action Map UI en su lugar y sí sigue activo con el menú abierto.
         }
     }
 

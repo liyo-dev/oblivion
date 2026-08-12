@@ -42,7 +42,7 @@ namespace Core.InputGlyphs
         const float MouseMoveThresholdSqr = 4f;   // px de movimiento de ratón por frame para contar como actividad
         const float StickThresholdSqr = 0.35f * 0.35f; // deadzone para contar el stick como actividad
 
-        static readonly Dictionary<InputGlyphDeviceFamily, TMP_SpriteAsset> _tmpAssetsByFamily = new();
+        static readonly Dictionary<InputGlyphDeviceFamily, List<TMP_SpriteAsset>> _tmpAssetsByFamily = new();
         static readonly Dictionary<InputGlyphDeviceFamily, Dictionary<string, Sprite>> _rawSpritesByFamily = new();
 
         static TMP_SpriteAsset _dialogueIcons;
@@ -175,7 +175,7 @@ namespace Core.InputGlyphs
 
             var raw = LoadFamilySprites(family);
             _rawSpritesByFamily[family] = raw;
-            _tmpAssetsByFamily[family] = BuildTmpSpriteAsset(raw, "InputGlyphs_" + family);
+            _tmpAssetsByFamily[family] = BuildTmpSpriteAssets(raw, "InputGlyphs_" + family);
 
             // Si es la primera vez que se construye la familia activa, hay que aplicarla ya
             // (por ejemplo la primera llamada a EnsureFamilyBuilt desde Bootstrap).
@@ -264,7 +264,7 @@ namespace Core.InputGlyphs
             return result;
         }
 
-        // Calibración de tamaño para los sprites inyectados en TMP (ver BuildTmpSpriteAsset). Antes de
+        // Calibración de tamaño para los sprites inyectados en TMP (ver BuildTmpSpriteAssets). Antes de
         // este servicio, DialogueIcons.asset ya tenía a mano una entrada "interactable_A" con métricas
         // afinadas por prueba y error para que el icono (arte Xbox real, 832×1248 px) se viera bien
         // insertado en medio de una línea de diálogo: ancho 832, alto 1248, bearingX -60, bearingY 700,
@@ -284,61 +284,89 @@ namespace Core.InputGlyphs
 
         /// <summary>
         /// Empaqueta un diccionario nombre→sprite ya cargado (ver <see cref="LoadFamilySprites"/>) en
-        /// un <see cref="TMP_SpriteAsset"/> nuevo, para que TMP pueda resolver
-        /// &lt;sprite name="..."&gt; en los textos de diálogo. Esto NO genera imágenes, solo envuelve
-        /// sprites ya existentes en la estructura que TMP necesita.
+        /// UN <see cref="TMP_SpriteAsset"/> POR SPRITE (no uno solo con todos los glifos dentro), para
+        /// que TMP pueda resolver &lt;sprite name="..."&gt; en los textos de diálogo. Esto NO genera
+        /// imágenes, solo envuelve sprites ya existentes en la estructura que TMP necesita — igual que
+        /// hace a mano <c>DialogueIcons.asset</c> con sus 18 fallbacks originales, que también son uno
+        /// por sprite (ver comentario en <see cref="StripDirectButtonEntries"/>).
+        ///
+        /// Es imprescindible un asset por sprite y no uno compartido con varios glifos: TMP calcula las
+        /// UV de cada carácter-sprite dividiendo <c>glyphRect</c> entre el tamaño de
+        /// <c>TMP_SpriteAsset.spriteSheet</c> (ver <c>TMP_Text.SaveSpriteVertexInfo</c>), es decir que
+        /// TODOS los glifos de un mismo asset comparten forzosamente una única textura de fondo. Como
+        /// cada botón viene de su propio PNG independiente (no de un atlas empaquetado), la única forma
+        /// de que esa división salga bien para cada uno es darle a cada glifo su propio asset con
+        /// <c>spriteSheet</c> apuntando exactamente a la textura de SU sprite. Antes esta función metía
+        /// los 11-17 botones de una familia en un único asset sin asignar <c>spriteSheet</c> en
+        /// absoluto (quedaba null): en cuanto un diálogo insertaba uno de estos sprites, TMP intentaba
+        /// leer <c>spriteSheet.width</c> sobre null y lanzaba el NullReferenceException en
+        /// <c>SaveSpriteVertexInfo</c> que rompía el renderizado del texto (y de paso el
+        /// diálogo/cinemática que lo mostraba).
         /// </summary>
-        static TMP_SpriteAsset BuildTmpSpriteAsset(Dictionary<string, Sprite> sprites, string assetName)
+        static List<TMP_SpriteAsset> BuildTmpSpriteAssets(Dictionary<string, Sprite> sprites, string assetNamePrefix)
         {
-            var asset = ScriptableObject.CreateInstance<TMP_SpriteAsset>();
-            asset.name = assetName;
+            var result = new List<TMP_SpriteAsset>(sprites.Count);
 
-            var shader = Shader.Find("TextMeshPro/Sprite");
-            var material = new Material(shader) { name = assetName + " Material" };
-
-            // TMP_SpriteAsset trae un modo de migración pensado para assets viejos creados en el
-            // Editor: en cuanto el asset tiene material asignado y su campo interno "version" está
-            // vacío (el caso de CUALQUIER instancia recién creada por código), la primera llamada a
-            // UpdateLookupTables() dispara UpgradeSpriteAsset(), que vacía spriteCharacterTable/
-            // spriteGlyphTable y los reconstruye leyendo el campo legado "spriteInfoList" — que en una
-            // instancia nueva es null (a diferencia de spriteCharacterTable/spriteGlyphTable, este NO
-            // se inicializa solo), así que revienta con NullReferenceException en cuanto se le asigna
-            // material y se llama a UpdateLookupTables(). "version" tiene setter interno al ensamblado
-            // de TMP, así que en vez de tocarlo por reflection dejamos que esa migración se dispare una
-            // única vez, de forma inofensiva, con spriteInfoList ya vacío (no null) y las tablas de
-            // glifos todavía sin rellenar: así el asset queda marcado como "ya migrado" antes de
-            // volcarle nuestros sprites reales.
-            asset.spriteInfoList = new List<TMP_Sprite>();
-            asset.material = material;
-            asset.UpdateLookupTables();
-
-            // spriteCharacterTable/spriteGlyphTable son propiedades de solo lectura (el setter es
-            // interno al paquete de TMP) — tras la migración de arriba ya están inicializadas a listas
-            // vacías, así que basta con vaciarlas por si acaso y rellenarlas con Add() en vez de
-            // reasignarlas.
-            asset.spriteCharacterTable?.Clear();
-            asset.spriteGlyphTable?.Clear();
-
-            uint glyphIndex = 0;
             foreach (var kvp in sprites)
             {
                 var sprite = kvp.Value;
                 if (sprite == null) continue;
 
-                float w = sprite.rect.width;
-                float h = sprite.rect.height;
-                // Escala inversamente proporcional a la altura real del PNG para que TODOS los
-                // botones se vean del mismo tamaño en pantalla dentro del texto, sea cual sea la
-                // resolución de origen (ver constantes Ref* arriba) — sin esto, un placeholder de
-                // 96 px queda minúsculo (o el arte Xbox de 1248 px queda gigante y recortado) frente
-                // al calibrado original.
+                var texture = sprite.texture;
+                if (texture == null) continue;
+
+                var assetName = assetNamePrefix + "_" + kvp.Key;
+                var asset = ScriptableObject.CreateInstance<TMP_SpriteAsset>();
+                asset.name = assetName;
+
+                var shader = Shader.Find("TextMeshPro/Sprite");
+                var material = new Material(shader) { name = assetName + " Material" };
+                material.SetTexture(ShaderUtilities.ID_MainTex, texture);
+
+                // TMP_SpriteAsset trae un modo de migración pensado para assets viejos creados en el
+                // Editor: en cuanto el asset tiene material asignado y su campo interno "version" está
+                // vacío (el caso de CUALQUIER instancia recién creada por código), la primera llamada a
+                // UpdateLookupTables() dispara UpgradeSpriteAsset(), que vacía spriteCharacterTable/
+                // spriteGlyphTable y los reconstruye leyendo el campo legado "spriteInfoList" — que en
+                // una instancia nueva es null (a diferencia de spriteCharacterTable/spriteGlyphTable,
+                // este NO se inicializa solo), así que revienta con NullReferenceException en cuanto se
+                // le asigna material y se llama a UpdateLookupTables(). "version" tiene setter interno
+                // al ensamblado de TMP, así que en vez de tocarlo por reflection dejamos que esa
+                // migración se dispare una única vez, de forma inofensiva, con spriteInfoList ya vacío
+                // (no null) y las tablas de glifos todavía sin rellenar: así el asset queda marcado
+                // como "ya migrado" antes de volcarle nuestro sprite real.
+                asset.spriteInfoList = new List<TMP_Sprite>();
+                asset.material = material;
+                asset.spriteSheet = texture;
+                asset.UpdateLookupTables();
+
+                // spriteCharacterTable/spriteGlyphTable son propiedades de solo lectura (el setter es
+                // interno al paquete de TMP) — tras la migración de arriba ya están inicializadas a
+                // listas vacías, así que basta con vaciarlas por si acaso y rellenarlas con Add() en vez
+                // de reasignarlas.
+                asset.spriteCharacterTable?.Clear();
+                asset.spriteGlyphTable?.Clear();
+
+                // Usamos sprite.textureRect (posición + tamaño DENTRO de sprite.texture) en vez de
+                // sprite.rect: si el sprite viniera de un atlas empaquetado por Unity, sprite.texture
+                // sería la textura del atlas completo y el icono ocuparía solo una región de ella, no
+                // toda — textureRect es la que da esa región real. Para un PNG suelto (el caso normal
+                // aquí) coincide con (0, 0, ancho, alto) igual que antes.
+                Rect texRect = sprite.textureRect;
+                float w = texRect.width;
+                float h = texRect.height;
+                // Escala inversamente proporcional a la altura real del PNG para que TODOS los botones
+                // se vean del mismo tamaño en pantalla dentro del texto, sea cual sea la resolución de
+                // origen (ver constantes Ref* arriba) — sin esto, un placeholder de 96 px queda
+                // minúsculo (o el arte Xbox de 1248 px queda gigante y recortado) frente al calibrado
+                // original.
                 float characterScale = h > 0f ? (RefHeight * RefCharacterScale) / h : RefCharacterScale;
 
                 var glyph = new TMP_SpriteGlyph
                 {
-                    index = glyphIndex,
+                    index = 0,
                     metrics = new GlyphMetrics(w, h, RefBearingXRatio * w, RefBearingYRatio * h, RefAdvanceRatio * w),
-                    glyphRect = new GlyphRect(0, 0, (int)w, (int)h),
+                    glyphRect = new GlyphRect((int)texRect.x, (int)texRect.y, (int)w, (int)h),
                     scale = 1f,
                     atlasIndex = 0,
                     sprite = sprite,
@@ -348,11 +376,11 @@ namespace Core.InputGlyphs
                 var character = new TMP_SpriteCharacter(0xFFFE, glyph) { name = kvp.Key, scale = characterScale };
                 asset.spriteCharacterTable.Add(character);
 
-                glyphIndex++;
+                asset.UpdateLookupTables();
+                result.Add(asset);
             }
 
-            asset.UpdateLookupTables();
-            return asset;
+            return result;
         }
 
         static void ApplyToDialogueIcons(InputGlyphDeviceFamily family)
@@ -360,10 +388,11 @@ namespace Core.InputGlyphs
             if (_dialogueIcons == null) return;
             if (!_tmpAssetsByFamily.TryGetValue(family, out var generated)) return;
 
-            // El generado va primero: TMP resuelve cada <sprite name="..."> recorriendo la lista de
+            // Los generados van primero: TMP resuelve cada <sprite name="..."> recorriendo la lista de
             // fallback en orden y se queda con la primera coincidencia, así que esto pisa únicamente
-            // los 11 nombres de botón que generamos y deja intactos el resto de iconos originales.
-            var merged = new List<TMP_SpriteAsset>(_originalFallbacks.Count + 1) { generated };
+            // los nombres de botón que generamos y deja intactos el resto de iconos originales.
+            var merged = new List<TMP_SpriteAsset>(_originalFallbacks.Count + generated.Count);
+            merged.AddRange(generated);
             merged.AddRange(_originalFallbacks);
             _dialogueIcons.fallbackSpriteAssets = merged;
         }

@@ -303,7 +303,20 @@ public class InteractionDetector : MonoBehaviour
             var it = c.GetComponentInParent<Interactable>();
             if (!it || !it.CanInteract(gameObject)) continue;
 
+            // FIX (2026-08-12): la línea de visión se comprobaba contra it.transform.position,
+            // que en un NPC es la base/los pies. Cualquier mueble de altura media entre el player
+            // y el NPC (mostrador de tienda, mesa, valla baja...) queda literalmente a esa altura
+            // y se detecta como obstrucción real, aunque el jugador vea perfectamente la cabeza y
+            // el torso del NPC por encima — el hint nunca llega a mostrarse en ningún vendedor con
+            // mostrador delante. En vez de re-etiquetar cada mueble de cada tienda (fragil: hay que
+            // acordarse de hacerlo por cada objeto nuevo, y mover objetos de layer tiene efectos
+            // secundarios en renderizado/física que no queremos tocar), se apunta la comprobación
+            // al mismo punto donde ya se muestra el icono de interactuar (Interactable.SightPoint,
+            // por defecto la posición del propio hint, que está a la altura de la cabeza/encima).
+            // Si el jugador puede ver ese punto, el mostrador ya no cuenta como obstrucción.
+            Vector3 sightPoint = it.SightPoint;
             float d = Vector3.Distance(origin, it.transform.position);
+            float sightDistance = Vector3.Distance(origin, sightPoint);
             if (d < best)
             {
                 // FIX M7 (auditoría 2026-08-07): la comprobación estaba invertida. Antes se
@@ -318,8 +331,8 @@ public class InteractionDetector : MonoBehaviour
                 // el suelo ("Floor"), marcando el interactuable como obstruido siempre. Se usa
                 // _obstructionMask (cacheado en Awake), que además excluye la capa del propio
                 // jugador y "Floor", pero SIGUE incluyendo muros/puertas/obstáculos.
-                Vector3 dir = (it.transform.position - origin).normalized;
-                bool obstructed = Physics.SphereCast(origin, focusRadius, dir, out _, d, _obstructionMask, QueryTriggerInteraction.Ignore);
+                Vector3 dir = (sightPoint - origin).normalized;
+                bool obstructed = Physics.SphereCast(origin, focusRadius, dir, out _, sightDistance, _obstructionMask, QueryTriggerInteraction.Ignore);
                 if (!obstructed)
                 {
                     best = d;

@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99a46ebbd4e14370bc8f63c70e81d7ac, type: 3}
+  m_Name: WardrobeItem_Body13
+  m_EditorClassIdentifier: Assembly-CSharp::WardrobeItemSO
+  wardrobeId: Body13
+  category: 0
+  partName: Body13
+  displayNameId: WARDROBE_BODY13_NAME
+  displayName: Traje de bardo
+  descriptionId: WARDROBE_BODY13_DESC
+  description: "Colores vivos que llaman la atenci\xF3n en cualquier taberna."
+  icon: {fileID: 21300000, guid: be54951a1fc44c9eb901d6a793f3612c, type: 3}

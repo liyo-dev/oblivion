@@ -731,6 +731,454 @@
         {
             "key": "SHOP_ITEM_AVAILABLE",
             "value": "Disponible"
+        },
+        {
+            "key": "WARDROBE_BODY01_NAME",
+            "value": "Ropa de campesino"
+        },
+        {
+            "key": "WARDROBE_BODY01_DESC",
+            "value": "Ropa sencilla y remendada, típica de quien trabaja la tierra."
+        },
+        {
+            "key": "WARDROBE_BODY02_NAME",
+            "value": "Ropa de viajero"
+        },
+        {
+            "key": "WARDROBE_BODY02_DESC",
+            "value": "Capas ligeras pensadas para largas caminatas por el Sendero."
+        },
+        {
+            "key": "WARDROBE_BODY03_NAME",
+            "value": "Túnica humilde"
+        },
+        {
+            "key": "WARDROBE_BODY03_DESC",
+            "value": "Una túnica sin adornos, cómoda para el día a día."
+        },
+        {
+            "key": "WARDROBE_BODY04_NAME",
+            "value": "Ropa de cazador"
+        },
+        {
+            "key": "WARDROBE_BODY04_DESC",
+            "value": "Cuero curtido que protege entre la maleza del bosque."
+        },
+        {
+            "key": "WARDROBE_BODY06_NAME",
+            "value": "Uniforme de guardia"
+        },
+        {
+            "key": "WARDROBE_BODY06_DESC",
+            "value": "El uniforme reglamentario de la guardia del pueblo."
+        },
+        {
+            "key": "WARDROBE_BODY07_NAME",
+            "value": "Túnica de aprendiz de mago"
+        },
+        {
+            "key": "WARDROBE_BODY07_DESC",
+            "value": "Tela impregnada de un leve resplandor arcano."
+        },
+        {
+            "key": "WARDROBE_BODY08_NAME",
+            "value": "Delantal de herrero"
+        },
+        {
+            "key": "WARDROBE_BODY08_DESC",
+            "value": "Cuero grueso resistente a chispas y al calor de la fragua."
+        },
+        {
+            "key": "WARDROBE_BODY09_NAME",
+            "value": "Ropa de pescador"
+        },
+        {
+            "key": "WARDROBE_BODY09_DESC",
+            "value": "Impermeable y ligera, ideal para los días junto al río."
+        },
+        {
+            "key": "WARDROBE_BODY10_NAME",
+            "value": "Traje de comerciante"
+        },
+        {
+            "key": "WARDROBE_BODY10_DESC",
+            "value": "Elegante pero práctico, pensado para cerrar buenos tratos."
+        },
+        {
+            "key": "WARDROBE_BODY11_NAME",
+            "value": "Vestido de noble"
+        },
+        {
+            "key": "WARDROBE_BODY11_DESC",
+            "value": "Terciopelo y bordados dignos de la corte real."
+        },
+        {
+            "key": "WARDROBE_BODY12_NAME",
+            "value": "Túnica de erudito"
+        },
+        {
+            "key": "WARDROBE_BODY12_DESC",
+            "value": "Bolsillos llenos de notas y manchas de tinta."
+        },
+        {
+            "key": "WARDROBE_BODY13_NAME",
+            "value": "Traje de bardo"
+        },
+        {
+            "key": "WARDROBE_BODY13_DESC",
+            "value": "Colores vivos que llaman la atención en cualquier taberna."
+        },
+        {
+            "key": "WARDROBE_BODY14_NAME",
+            "value": "Sotana de sacerdote"
+        },
+        {
+            "key": "WARDROBE_BODY14_DESC",
+            "value": "Tela sobria bendecida en los templos del Sendero."
+        },
+        {
+            "key": "WARDROBE_BODY15_NAME",
+            "value": "Ropa de ladrón"
+        },
+        {
+            "key": "WARDROBE_BODY15_DESC",
+            "value": "Tonos oscuros pensados para pasar desapercibido."
+        },
+        {
+            "key": "WARDROBE_BODY16_NAME",
+            "value": "Armadura ligera de guerrero"
+        },
+        {
+            "key": "WARDROBE_BODY16_DESC",
+            "value": "Placas ligeras que no sacrifican movilidad."
+        },
+        {
+            "key": "WARDROBE_BODY17_NAME",
+            "value": "Ropa de anciano"
+        },
+        {
+            "key": "WARDROBE_BODY17_DESC",
+            "value": "Abrigada y cómoda, perfecta para los años de sabiduría."
+        },
+        {
+            "key": "WARDROBE_BODY18_NAME",
+            "value": "Delantal de panadero"
+        },
+        {
+            "key": "WARDROBE_BODY18_DESC",
+            "value": "Huele siempre a pan recién hecho."
+        },
+        {
+            "key": "WARDROBE_BODY19_NAME",
+            "value": "Ropa de herbolario"
+        },
+        {
+            "key": "WARDROBE_BODY19_DESC",
+            "value": "Múltiples bolsillos para guardar hierbas y remedios."
+        },
+        {
+            "key": "WARDROBE_BODY20_NAME",
+            "value": "Traje de fiesta"
+        },
+        {
+            "key": "WARDROBE_BODY20_DESC",
+            "value": "Reservado para las grandes celebraciones del pueblo."
+        },
+        {
+            "key": "ITEM_AC01_HEART_NAME",
+            "value": "Corazón"
+        },
+        {
+            "key": "ITEM_AC01_HEART_DESC",
+            "value": "Un pequeño colgante con forma de corazón."
+        },
+        {
+            "key": "ITEM_AC02_LEAF_NAME",
+            "value": "Hoja"
+        },
+        {
+            "key": "ITEM_AC02_LEAF_DESC",
+            "value": "Una hoja otoñal prendida como adorno."
+        },
+        {
+            "key": "ITEM_AC03_BLACKGLASS_NAME",
+            "value": "Gafas Negras"
+        },
+        {
+            "key": "ITEM_AC03_BLACKGLASS_DESC",
+            "value": "Gafas de cristal oscuro, ideales para pasar desapercibido."
+        },
+        {
+            "key": "ITEM_AC03_HEAVYMETALGLASS_NAME",
+            "value": "Gafas Heavy Metal"
+        },
+        {
+            "key": "ITEM_AC03_HEAVYMETALGLASS_DESC",
+            "value": "Gafas con un aire rockero y rebelde."
+        },
+        {
+            "key": "ITEM_AC03_NERDGLASS_NAME",
+            "value": "Gafas de Empollón"
+        },
+        {
+            "key": "ITEM_AC03_NERDGLASS_DESC",
+            "value": "Gafas de pasta gruesa, muy intelectuales."
+        },
+        {
+            "key": "ITEM_AC03_NIGHTVISION_NAME",
+            "value": "Gafas de Visión Nocturna"
+        },
+        {
+            "key": "ITEM_AC03_NIGHTVISION_DESC",
+            "value": "Permiten ver mejor en la oscuridad... o eso parece."
+        },
+        {
+            "key": "ITEM_AC04_ANTHENAEARS_NAME",
+            "value": "Orejas de Antena"
+        },
+        {
+            "key": "ITEM_AC04_ANTHENAEARS_DESC",
+            "value": "Orejas con antenas, como de otro mundo."
+        },
+        {
+            "key": "ITEM_AC04_SHORTEARS_NAME",
+            "value": "Orejas Cortas"
+        },
+        {
+            "key": "ITEM_AC04_SHORTEARS_DESC",
+            "value": "Un par de orejas pequeñas y discretas."
+        },
+        {
+            "key": "ITEM_AC05_HORN01_NAME",
+            "value": "Cuerno Curvo"
+        },
+        {
+            "key": "ITEM_AC05_HORN01_DESC",
+            "value": "Un cuerno curvo, de aspecto demoníaco."
+        },
+        {
+            "key": "ITEM_AC05_HORN02_NAME",
+            "value": "Cuerno Recto"
+        },
+        {
+            "key": "ITEM_AC05_HORN02_DESC",
+            "value": "Un cuerno recto y afilado."
+        },
+        {
+            "key": "ITEM_AC05_HORN03_NAME",
+            "value": "Cuerno Doble"
+        },
+        {
+            "key": "ITEM_AC05_HORN03_DESC",
+            "value": "Dos pequeños cuernos gemelos."
+        },
+        {
+            "key": "ITEM_AC05_HORN04_NAME",
+            "value": "Cuerno de Dragón"
+        },
+        {
+            "key": "ITEM_AC05_HORN04_DESC",
+            "value": "Un imponente cuerno con forma de dragón."
+        },
+        {
+            "key": "ITEM_AC06_CROWN01_NAME",
+            "value": "Corona de Oro"
+        },
+        {
+            "key": "ITEM_AC06_CROWN01_DESC",
+            "value": "Una corona reluciente digna de la realeza."
+        },
+        {
+            "key": "ITEM_AC06_CROWN02_NAME",
+            "value": "Corona de Plata"
+        },
+        {
+            "key": "ITEM_AC06_CROWN02_DESC",
+            "value": "Una corona sobria de plata pulida."
+        },
+        {
+            "key": "ITEM_AC06_CROWN03_NAME",
+            "value": "Corona de Flores"
+        },
+        {
+            "key": "ITEM_AC06_CROWN03_DESC",
+            "value": "Una corona tejida con flores del Sendero."
+        },
+        {
+            "key": "ITEM_AC07_PIRATEPATCH_NAME",
+            "value": "Parche de Pirata"
+        },
+        {
+            "key": "ITEM_AC07_PIRATEPATCH_DESC",
+            "value": "Un parche que oculta un ojo... o un secreto."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK01_NAME",
+            "value": "Máscara Ninja I"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK01_DESC",
+            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK02_NAME",
+            "value": "Máscara Ninja II"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK02_DESC",
+            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK03_NAME",
+            "value": "Máscara Ninja III"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK03_DESC",
+            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK04_NAME",
+            "value": "Máscara Ninja IV"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK04_DESC",
+            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK05_NAME",
+            "value": "Máscara Ninja V"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK05_DESC",
+            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK06_NAME",
+            "value": "Máscara Ninja VI"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK06_DESC",
+            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK07_NAME",
+            "value": "Máscara Ninja VII"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK07_DESC",
+            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK08_NAME",
+            "value": "Máscara Ninja VIII"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK08_DESC",
+            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
+        },
+        {
+            "key": "ITEM_AC09_RIBBON_NAME",
+            "value": "Lazo"
+        },
+        {
+            "key": "ITEM_AC09_RIBBON_DESC",
+            "value": "Un lazo decorativo para dar un toque elegante."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE01_NAME",
+            "value": "Bigote Clásico"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE01_DESC",
+            "value": "Un bigote clásico, pulcro y bien peinado."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE02_NAME",
+            "value": "Bigote Fino"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE02_DESC",
+            "value": "Un bigote fino y discreto."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE03_NAME",
+            "value": "Bigote Rizado"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE03_DESC",
+            "value": "Un bigote con las puntas rizadas hacia arriba."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE04_NAME",
+            "value": "Bigote Grueso"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE04_DESC",
+            "value": "Un bigote grueso y frondoso."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE05_NAME",
+            "value": "Bigote Elegante"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE05_DESC",
+            "value": "Un bigote fino con un toque señorial."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE06_NAME",
+            "value": "Bigote Extravagante"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE06_DESC",
+            "value": "Un bigote enorme y muy llamativo."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE01_NAME",
+            "value": "Bigote y Barba Corta"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE01_DESC",
+            "value": "Un bigote combinado con una barba corta y cuidada."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE02_NAME",
+            "value": "Bigote y Perilla"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE02_DESC",
+            "value": "Un bigote combinado con perilla."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE03_NAME",
+            "value": "Bigote y Barba Larga"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE03_DESC",
+            "value": "Un bigote combinado con una barba larga y poblada."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE04_NAME",
+            "value": "Bigote y Barba Trenzada"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE04_DESC",
+            "value": "Un bigote combinado con una barba trenzada."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE05_NAME",
+            "value": "Bigote Real"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE05_DESC",
+            "value": "Un bigote y barba dignos de un rey."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE06_NAME",
+            "value": "Bigote Mágico"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE06_DESC",
+            "value": "Un bigote y barba con un extraño brillo arcano."
         }
     ]
 }

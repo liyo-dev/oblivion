@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99a46ebbd4e14370bc8f63c70e81d7ac, type: 3}
+  m_Name: WardrobeItem_Body02
+  m_EditorClassIdentifier: Assembly-CSharp::WardrobeItemSO
+  wardrobeId: Body02
+  category: 0
+  partName: Body02
+  displayNameId: WARDROBE_BODY02_NAME
+  displayName: Ropa de viajero
+  descriptionId: WARDROBE_BODY02_DESC
+  description: Capas ligeras pensadas para largas caminatas por el Sendero.
+  icon: {fileID: 21300000, guid: bd13f6a5af7e4c6ab1d62f5be48cbdbe, type: 3}

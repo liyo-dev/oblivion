@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99a46ebbd4e14370bc8f63c70e81d7ac, type: 3}
+  m_Name: WardrobeItem_AC05_Horn02
+  m_EditorClassIdentifier: Assembly-CSharp::WardrobeItemSO
+  wardrobeId: AC05_Horn02
+  category: 8
+  partName: AC05_Horn02
+  displayNameId: ITEM_AC05_HORN02_NAME
+  displayName: Cuerno Recto
+  descriptionId: ITEM_AC05_HORN02_DESC
+  description: Un cuerno recto y afilado.
+  icon: {fileID: 21300000, guid: 8dcd34294e0540458cb1766d559dc8f7, type: 3}

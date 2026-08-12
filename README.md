@@ -1,8 +1,8 @@
-﻿# 🌟 El Sendero de las Estrellas
+# 🌟 El Sendero de las Estrellas
 
 RPG de acción/aventura en 3D, desarrollado en solitario por [Raúl Báez](https://github.com/liyo-dev).
 
-**Motor:** Unity 6 (6000.5.x) · **Render pipeline:** URP 17.5 · **Estado:** en desarrollo activo
+**Motor:** Unity 6 (6000.5.4f1) · **Render pipeline:** URP 17.5 · **Estado:** en desarrollo activo
 
 <!--
 TODO: capturas de pantalla / GIF de gameplay aquí.
@@ -18,30 +18,28 @@ Un RPG de acción/aventura construido sobre una arquitectura multi-escena aditiv
 
 ## 📘 Documentación
 
+Toda la documentación técnica del proyecto vive en un único documento — sin archivos `.md` sueltos por la raíz que se queden desactualizados:
+
 | Documento | Contenido |
 |---|---|
-| **[CLAUDE.md](CLAUDE.md)** | Guía de arquitectura, reglas de código no negociables y convenciones del proyecto |
-| **[TDD.md](TDD.md)** | Documento técnico de diseño completo: todos los sistemas, API interna, troubleshooting |
-| **[STEAM_DEMO_CHECKLIST.md](STEAM_DEMO_CHECKLIST.md)** | Checklist para publicar la demo en Steam |
+| **[TDD.md](TDD.md)** | Documento técnico de diseño completo y **fuente de verdad única**: arquitectura, API interna de cada sistema, reglas de código no negociables, invariantes del grafo narrativo, bugs conocidos, troubleshooting, diseños en curso, checklist de publicación en Steam y auditorías del proyecto. |
+| **README.md** (este archivo) | Portada del repositorio — overview rápido para quien llega nuevo. |
 
-`TDD.md` es la fuente de verdad técnica del proyecto — ante cualquier duda de arquitectura, se consulta ahí primero.
+Ante cualquier duda de arquitectura, se consulta `TDD.md` primero. Si vas a añadir documentación nueva de sustancia (una auditoría, un diseño, un checklist), añádela como sección de `TDD.md` en vez de crear otro `.md` suelto — la convención está descrita en `TDD.md` § 20.
+
+## ✅ Estado del proyecto
+
+La auditoría más reciente (`TDD.md` § 19) confirma que el código está en muy buen estado para un proyecto indie en solitario: disciplina de rendimiento por frame por encima de la media (sin `OverlapSphere` sin `NonAlloc`, buffers cacheados, hashes de animator cacheados), guardado con escritura atómica, y una FSM de NPCs sólida. Lo que falta para nivel "estudio" no son bugs de código sino ausencias de proceso — tests automatizados, identidad de build configurada, CI — y ya está priorizado en `TDD.md` § 19.2 y § 19.3.
 
 ## 🚀 Quick start
 
-1. Abre el proyecto con **Unity 6 (6000.5.x)** o superior.
+1. Abre el proyecto con **Unity 6 (6000.5.4f1)** o superior.
 2. La escena de entrada es `Assets/Scenes/Systems/Start.unity` — contiene todos los managers persistentes (`DontDestroyOnLoad`) y siempre debe estar cargada.
 3. Para testear cualquier otra escena (mundo, cinemática, etc.), ábrela directamente y dale a Play: `AutoBootstrapOnPlay.cs` detecta que no es `Start` y la carga aditivamente antes de entrar en PlayMode. No hace falta configuración manual.
 
 **Requisito:** `Start.unity` debe estar en la posición 0 de Build Settings.
 
-### Script Execution Order crítico
-
-```
-GameBootService   -1000   (primero)
-PlayerService      -900
-ServiceLocator     -800
-WorldBootstrap      +200
-```
+Detalle completo del arranque (incluido el paso `Start → MainMenu` vía `BootLoader`), Script Execution Order y presets de testing: `TDD.md` § 1.
 
 ## 🏗️ Arquitectura clave
 
@@ -50,9 +48,9 @@ WorldBootstrap      +200
 - **ScriptableObjects como datos** — configuración de NPCs, quests, hechizos y presets. Nunca lógica.
 - **Eventos C# (`Action<T>`)** — comunicación desacoplada entre sistemas, sin referencias directas entre managers.
 - **FSM de NPCs:** `NPCBehaviourManagerV2 → NPCBrain → NPCStateContext → INPCState` (`Assets/Scripts/Behaviour NPC/`).
-- **Narrativa:** `NarrativeGraph` (grafo de nodos, sistema activo para todo NPC/quest nueva) conviviendo con el executor legacy `NPCInteractiveNarrativeExecutor` (congelado, sin nuevos NPCs). Detalle completo en `CLAUDE.md` § 7.
+- **Narrativa:** `NarrativeGraph` (grafo de nodos, sistema activo para todo NPC/quest nueva) conviviendo con el executor legacy `NPCInteractiveNarrativeExecutor` (congelado, sin nuevos NPCs) — política formal completa en `TDD.md` § 10.
 
-Detalle completo de cada sistema, reglas de rendimiento y bugs conocidos: ver `TDD.md` y `CLAUDE.md`.
+Detalle completo de cada sistema, reglas de rendimiento y bugs conocidos: ver `TDD.md`.
 
 ## 📂 Estructura del proyecto
 
@@ -75,6 +73,8 @@ Assets/
 └── Plugins/             ← Invector 3rd Person Controller, DOTween, etc.
 ```
 
+Árbol completo y detalle de cada carpeta: `TDD.md` § 2.
+
 ## 🎮 Stack técnico
 
 - Unity 6 · URP 17.5
@@ -84,7 +84,7 @@ Assets/
 
 ## 📝 Convenciones de código (resumen)
 
-Reglas completas y no negociables en [CLAUDE.md](CLAUDE.md#2-reglas-de-código--no-negociables). Las más importantes:
+Reglas completas y no negociables en [`TDD.md` § 12](TDD.md#12-reglas-de-rendimiento). Las más importantes:
 
 ```csharp
 // ❌ Nunca en Update/LateUpdate/FixedUpdate
@@ -104,8 +104,12 @@ QuestManager.OnQuestCompleted += HandleQuestComplete;
 ## 🔧 Herramientas de desarrollo
 
 - **F3** — debug visual de NPCs · **F4** — panel de debug general
-- `El Sendero/Narrativa/Validar Interactive vs Grafo (proyecto completo)` — valida que quests/eventos no estén referenciados a la vez por el grafo y por el sistema legacy (ver `CLAUDE.md` § 7)
+- `El Sendero/Narrativa/Validar Interactive vs Grafo (proyecto completo)` — valida que quests/eventos no estén referenciados a la vez por el grafo y por el sistema legacy (política completa en `TDD.md` § 10)
+
+## 🚢 Publicación
+
+Checklist paso a paso para subir la demo a Steam (cuenta de Steamworks, store page, build técnico con SteamPipe): `TDD.md` § 18.
 
 ---
 
-Consulta [TDD.md](TDD.md) para la documentación técnica completa y [CLAUDE.md](CLAUDE.md) para las reglas de arquitectura del proyecto.
+Consulta [TDD.md](TDD.md) para toda la documentación técnica del proyecto: arquitectura, sistemas, reglas de código, bugs conocidos, diseños en curso, checklist de Steam y auditorías.

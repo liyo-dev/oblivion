@@ -514,7 +514,7 @@
         },
         {
             "key": "DLG_ESTELA_BOSQUE_05",
-            "value": "And now, thanks to me, you can also switch characters. Press <sprite name=\"interactable_dpad\"> to the right to switch."
+            "value": "And now, thanks to me, you can also switch characters. Press <sprite name=\"interactable_dpad_right\"> to the right to switch."
         },
         {
             "key": "DLG_ESTELA_PRISION_00",
@@ -770,11 +770,11 @@
         },
         {
             "key": "DLG_LEONARDO_03",
-            "value": "To open the quest menu, press <sprite name=\"interactable_dpad\"> twice."
+            "value": "To open the quest menu, press <sprite name=\"interactable_dpad_up\"> twice."
         },
         {
             "key": "DLG_LEONARDO_04",
-            "value": "To open the inventory panel, press <sprite name=\"interactable_dpad\">."
+            "value": "To open the inventory panel, press <sprite name=\"interactable_dpad_up\">."
         },
         {
             "key": "DLG_LETTER_INTRO_01",
@@ -906,11 +906,11 @@
         },
         {
             "key": "DLG_OLIVER_MENUS_06",
-            "value": "Lastly, when you want to see your pending quests you can use <sprite name=\"interactable_dpad\"> UP."
+            "value": "Lastly, when you want to see your pending quests you can use <sprite name=\"interactable_dpad_up\"> <gpadonly>UP</gpadonly>."
         },
         {
             "key": "DLG_OLIVER_MENUS_07",
-            "value": "With the quest menu open, you can edit them if you press <sprite name=\"interactable_dpad\"> UP again."
+            "value": "With the quest menu open, you can edit them if you press <sprite name=\"interactable_dpad_up\"> <gpadonly>UP</gpadonly> again."
         },
         {
             "key": "DLG_OLIVER_MENUS_08",
@@ -1034,7 +1034,7 @@
         },
         {
             "key": "LORE_CELDA_12",
-            "value": "Press  <sprite name=\"interactable_dpad\"> down to join or split up the party."
+            "value": "Press  <sprite name=\"interactable_dpad_down\"> down to join or split up the party."
         },
         {
             "key": "LORE_CELDA_3",

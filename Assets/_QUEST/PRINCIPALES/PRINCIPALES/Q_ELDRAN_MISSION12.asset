@@ -17,6 +17,8 @@ MonoBehaviour:
   displayName: QUEST_ELDRAN_MISSION12_NAME
   descriptionId: QUEST_ELDRAN_MISSION12_DESC
   description: 
+  detailedDescriptionId: QUEST_ELDRAN_MISSION12_DETAIL
+  detailedDescription: 
   steps:
   - descriptionId: QUEST_ELDRAN_MISSION12_DESC
     description: 

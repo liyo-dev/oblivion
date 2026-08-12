@@ -17,6 +17,8 @@ MonoBehaviour:
   displayName: Q_ROBERTO
   descriptionId: QUEST_ROBERTO_MISSION1_DESC
   description: 
+  detailedDescriptionId: QUEST_ROBERTO_MISSION1_DETAIL
+  detailedDescription: 
   steps:
   - descriptionId: QUEST_ROBERTO_MISSION1_DESC
     description: 

@@ -17,6 +17,8 @@ MonoBehaviour:
   displayName: "CHAR_NI\xD1OPEZ"
   descriptionId: "QUEST_NI\xD1OPEZ_CARACOLA_DESC"
   description: 
+  detailedDescriptionId: QUEST_NIÑOPEZ_CARACOLA_DETAIL
+  detailedDescription: 
   steps:
   - descriptionId: "QUEST_NI\xD1OPEZ_CARACOLA_DESC"
     description: 
