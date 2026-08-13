@@ -208,7 +208,7 @@ public class PrologueDreamSequencer : CinematicSequencerBase
     // los campos son claves de evento (string), no AudioClip directos. Ver eventSfx en
     // Assets/_AUDIOPROFILE/AudioGraphProfile.asset (prefijo "Prologue_").
     [Header("Audio (claves del Audio Graph Profile — dejar vacío para omitir)")]
-    [SerializeField] private string      tinnitusSfxKey = "Prologue_Tinnitus";
+    [SerializeField] private string      tinnitusSfxKey = "";
     [SerializeField] private float       tinnitusVolume = 0.6f;
     [Tooltip("Bucle de latido de corazón durante toda la secuencia. NOTA: 'Prologue_Heartbeat' está registrada en el AudioGraphProfile pero sin clip asignado todavía — no hay ningún SFX de latido en la librería de audio del proyecto. Asignar uno en el AudioGraphProfile en cuanto se consiga.")]
     [SerializeField] private string      heartbeatSfxKey = "Prologue_Heartbeat";

@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9201a7fb4aa9c454bbc45285f1dc4852, type: 3}
+  m_Name: IT_W_AC11_Mustache02
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemId: w_ac11_mustache02
+  displayNameId: ITEM_AC11_MUSTACHE02_NAME
+  displayName: Bigote y Perilla
+  icon: {fileID: 21300000, guid: 5721d4dc8f5a4c4f8dc2f1c6d73a4ad5, type: 3}
+  usableFromInventory: 0
+  useEffects: []
+  useDescriptionId: ITEM_AC11_MUSTACHE02_DESC
+  useDescription: Un bigote combinado con perilla.
+  usageKind: 2
+  buyPrice: 0
+  sellValue: 0
+  wardrobeUnlock: {fileID: 11400000, guid: d27b409c54b44ce5b72e641886740690, type: 2}

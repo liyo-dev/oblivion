@@ -13,9 +13,31 @@ namespace Core.InputGlyphs
     /// no hay forma automática de derivarla desde aquí sin acoplar este archivo runtime al asset de
     /// Input System, así que hay que actualizarla a mano (igual que ya pasa con los sprites baked de
     /// Assets/_UI/InputGlyphFamilySpriteSet_*.asset, que tampoco se generan solos).
+    ///
+    /// Las etiquetas que son PALABRAS (no símbolos ni nombres de botón universales) pasan por
+    /// <see cref="LocalizationManager"/> con las claves GLYPH_* de ui_es.json/ui_en.json: sin esto,
+    /// jugando en inglés se veía "[D-Pad arriba] Quest Detail" en el HUD de misiones (y lo mismo en
+    /// el menú de controles, los prompts de tutorial y el minijuego del pilla-pilla, que comparten
+    /// esta tabla). Los literales que NO se traducen —"A"/"B"/"X"/"Y", "✕○□△", "L1"/"RT"/"L3",
+    /// "WASD", "Esc", "Ctrl", teclas sueltas ("E", "Q", "J", "G", ",", ".")— se quedan a pelo a
+    /// propósito: son idénticos en todos los idiomas y meterlos en el catálogo solo añadiría claves
+    /// que mantener.
     /// </summary>
     public static class InputGlyphLabels
     {
+        /// <summary>
+        /// Texto localizado de <paramref name="key"/>, con el español como fallback si todavía no hay
+        /// <see cref="LocalizationManager"/> (p.ej. una escena arrancada suelta en el editor antes de
+        /// que cargue Start.unity) o si falta la clave en el catálogo del idioma activo.
+        /// </summary>
+        static string Loc(string key, string fallbackEs)
+        {
+            var loc = LocalizationManager.Instance;
+            if (loc == null) return fallbackEs;
+            var text = loc.Get(key, fallbackEs);
+            return string.IsNullOrEmpty(text) ? fallbackEs : text;
+        }
+
         public static string GetLabel(string buttonName, InputGlyphDeviceFamily family)
         {
             bool kb = family == InputGlyphDeviceFamily.KeyboardMouse;
@@ -35,19 +57,19 @@ namespace Core.InputGlyphs
                 // Confirmar (UI/Submit) — prompts con GamePlay deshabilitado (cinemáticas). En mando
                 // es el mismo botón físico que South; en teclado es Espacio/Enter, NO la tecla E.
                 case InputGlyphNames.Confirm:
-                    if (kb) return "Espacio";
+                    if (kb) return Loc("GLYPH_KEY_SPACE", "Espacio");
                     return family == InputGlyphDeviceFamily.PlayStation ? "✕"
                          : family == InputGlyphDeviceFamily.Switch ? "B"
                          : "A";
 
                 case InputGlyphNames.East: // Ataque mágico derecho — <Mouse>/rightButton en teclado
-                    if (kb) return "clic derecho";
+                    if (kb) return Loc("GLYPH_CLICK_RIGHT", "clic derecho");
                     return family == InputGlyphDeviceFamily.PlayStation ? "○"
                          : family == InputGlyphDeviceFamily.Switch ? "A"
                          : "B";
 
                 case InputGlyphNames.West: // Ataque mágico izquierdo — <Mouse>/leftButton en teclado
-                    if (kb) return "clic izquierdo";
+                    if (kb) return Loc("GLYPH_CLICK_LEFT", "clic izquierdo");
                     return family == InputGlyphDeviceFamily.PlayStation ? "□"
                          : family == InputGlyphDeviceFamily.Switch ? "Y"
                          : "X";
@@ -59,13 +81,18 @@ namespace Core.InputGlyphs
                          : "Y";
 
                 case InputGlyphNames.ShoulderLeft: // <Mouse>/scroll/down en teclado
-                    if (kb) return "rueda ↓";
+                    // "rueda ↓" con la flecha Unicode no se veía: ni LiberationSans SDF (fallback
+                    // por defecto) ni Nunito-Bold SDF (fuente del menú) tienen ese glifo en su
+                    // atlas, así que TMP lo sustituía por un "□" y lo avisaba por consola en bucle.
+                    // Texto en vez de símbolo: se entiende igual y no depende de qué fuente esté
+                    // activa en cada sitio donde se use esta etiqueta.
+                    if (kb) return Loc("GLYPH_WHEEL_DOWN", "rueda abajo");
                     return family == InputGlyphDeviceFamily.PlayStation ? "L1"
                          : family == InputGlyphDeviceFamily.Switch ? "L"
                          : "LB";
 
                 case InputGlyphNames.ShoulderRight: // <Mouse>/scroll/up en teclado
-                    if (kb) return "rueda ↑";
+                    if (kb) return Loc("GLYPH_WHEEL_UP", "rueda arriba");
                     return family == InputGlyphDeviceFamily.PlayStation ? "R1"
                          : family == InputGlyphDeviceFamily.Switch ? "R"
                          : "RB";
@@ -86,40 +113,44 @@ namespace Core.InputGlyphs
 
                 // D-Pad de GamePlay (distinto de Move) — <Keyboard>/j, g, comma, period
                 case InputGlyphNames.Dpad:
-                    return kb ? "J/G/,/." : "el D-Pad";
+                    return kb ? "J/G/,/." : Loc("GLYPH_DPAD", "el D-Pad");
 
                 case InputGlyphNames.Stick: // Move — WASD/flechas en teclado, stick izquierdo en mando
-                    return kb ? "WASD" : "el Joystick";
+                    return kb ? "WASD" : Loc("GLYPH_STICK", "el Joystick");
 
                 case InputGlyphNames.Start: // <Keyboard>/escape
                     if (kb) return "Esc";
                     return family == InputGlyphDeviceFamily.PlayStation ? "Options"
                          : family == InputGlyphDeviceFamily.Switch ? "+"
-                         : "Menú";
+                         : Loc("GLYPH_MENU", "Menú");
 
                 // Sprint — GamePlay.Sprint. En teclado, Mayús izquierda; en mando, clic del stick
                 // izquierdo (L3), ver PlayerControls.inputactions. Sin sprite propio todavía (ver
                 // InputGlyphNames.Sprint), así que de momento es solo texto.
                 case InputGlyphNames.Sprint:
-                    if (kb) return "Mayús";
+                    if (kb) return Loc("GLYPH_KEY_SHIFT", "Mayús");
                     return family == InputGlyphDeviceFamily.PlayStation ? "L3"
-                         : family == InputGlyphDeviceFamily.Switch ? "clic del stick"
+                         : family == InputGlyphDeviceFamily.Switch ? Loc("GLYPH_STICK_CLICK", "clic del stick")
                          : "L3";
 
                 case InputGlyphNames.Teleport: // Mismo botón físico que North en mando; "T" en teclado
                     return kb ? "T" : GetLabel(InputGlyphNames.North, family);
 
                 case InputGlyphNames.DpadLeft: // "," en teclado
-                    return kb ? "," : "D-Pad izquierda";
+                    return kb ? "," : Loc("GLYPH_DPAD_LEFT", "D-Pad izquierda");
 
                 case InputGlyphNames.DpadRight: // "." en teclado
-                    return kb ? "." : "D-Pad derecha";
+                    return kb ? "." : Loc("GLYPH_DPAD_RIGHT", "D-Pad derecha");
 
-                case InputGlyphNames.DpadUp: // "J" en teclado, ver PlayerControls.inputactions
-                    return kb ? "J" : "D-Pad arriba";
+                // Faltaban estos dos casos: sin ellos caían en el "default" de abajo y devolvían
+                // "?" literal — es lo que se veía en el HUD de misiones ("[?] Quest Detail") en vez
+                // de la tecla/label real. Ver InputGlyphNames.DpadUp/DpadDown y
+                // InputGlyphFamilySpriteSet ("J" arriba / "G" abajo en teclado).
+                case InputGlyphNames.DpadUp: // "J" en teclado
+                    return kb ? "J" : Loc("GLYPH_DPAD_UP", "D-Pad arriba");
 
-                case InputGlyphNames.DpadDown: // "G" en teclado, ver PlayerControls.inputactions
-                    return kb ? "G" : "D-Pad abajo";
+                case InputGlyphNames.DpadDown: // "G" en teclado
+                    return kb ? "G" : Loc("GLYPH_DPAD_DOWN", "D-Pad abajo");
 
                 default:
                     return "?";

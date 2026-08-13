@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/images/banner.jpg" alt="El Sendero de las Estrellas" width="100%">
+</p>
+
 # 🌟 El Sendero de las Estrellas
 
 RPG de acción/aventura en 3D, desarrollado en solitario por [Raúl Báez](https://github.com/liyo-dev).
@@ -15,6 +19,23 @@ Sugerencias: una del mundo abierto, una de combate, una de diálogo con NPC.
 ## 📖 Sobre el proyecto
 
 Un RPG de acción/aventura construido sobre una arquitectura multi-escena aditiva: una escena `Start` con los managers persistentes (quests, diálogos, guardado, audio, input) y escenas de mundo que se cargan y descargan dinámicamente sobre ella. Los NPCs usan una FSM modular configurable desde ScriptableObjects, y la narrativa se dirige mediante un grafo de nodos visual (`NarrativeGraph`) más un sistema legacy de diálogo condicional para NPCs ya cerrados.
+
+## 🎨 Universo y personajes
+
+*Arte conceptual/promocional — no son capturas de gameplay.*
+
+<p align="center">
+  <img src="docs/images/valle.jpg" width="32%" alt="El valle inicial">
+  <img src="docs/images/magia.jpg" width="32%" alt="Magia y hechizos">
+  <img src="docs/images/amigos.jpg" width="32%" alt="Los tres amigos">
+</p>
+
+<p align="center">
+  <img src="docs/images/personajes/will.jpg" width="24%" alt="Will">
+  <img src="docs/images/personajes/liam.jpg" width="24%" alt="Liam">
+  <img src="docs/images/personajes/estela.jpg" width="24%" alt="Estela">
+  <img src="docs/images/personajes/eldran.jpg" width="24%" alt="Eldran">
+</p>
 
 ## 📘 Documentación
 

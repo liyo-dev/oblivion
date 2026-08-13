@@ -50,10 +50,11 @@ namespace Game.NPC.States
             if (!_manualExitActive) return;
 
             float speed = context.Config?.walkSpeed ?? 1.5f;
-            if (ManualApproachStep(context, context.ShelterEdgePosition, speed))
+            if (ManualApproachStep(context, context.ShelterEdgePosition, speed, context.ShelterEdgeOwnerCollider))
             {
                 EndManualApproach(context);
-                context.HasShelterEdgePosition = false;
+                context.HasShelterEdgePosition   = false;
+                context.ShelterEdgeOwnerCollider = null;
                 _manualExitActive = false;
                 StartNormalReturn(context);
             }

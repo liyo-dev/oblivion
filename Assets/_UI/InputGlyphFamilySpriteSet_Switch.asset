@@ -11,20 +11,20 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3f43311c27934016bba95f7ee8b47c23, type: 3}
   m_Name: InputGlyphFamilySpriteSet_Switch
-  m_EditorClassIdentifier: 
-  south: {fileID: 21300000, guid: 1b7ce2710dc2e55756ac85e20b247f4a, type: 3}
-  east: {fileID: 21300000, guid: 4094d80e94c0e337ae2c8ee98edf9a53, type: 3}
-  west: {fileID: 21300000, guid: 191a9d79bbc70ddcb7cb03765fcf5d6b, type: 3}
-  north: {fileID: 21300000, guid: e3d420ed2ef1efb31d5d287d3b50498d, type: 3}
-  shoulderLeft: {fileID: 21300000, guid: a3acdec3bdeacb0bcb8f0bde10913ad8, type: 3}
-  shoulderRight: {fileID: 21300000, guid: e61d9485c12edfe40934d68e46a59036, type: 3}
-  triggerLeft: {fileID: 21300000, guid: 5bf2491b78f1948ec36938d2fa994129, type: 3}
-  triggerRight: {fileID: 21300000, guid: 11f4fc3b3837d7686e031fb5c46959d9, type: 3}
-  dpad: {fileID: 21300000, guid: ea2cdad2383147aa7880958f8e2488c0, type: 3}
-  stick: {fileID: 21300000, guid: fe3dc239c7b2205077119060095c6e2d, type: 3}
-  start: {fileID: 21300000, guid: 3439f0cfaa8a1dc7a3cfd4ae682483e5, type: 3}
-  teleport: {fileID: 21300000, guid: e13774a5cbd6f4ec143c3536bc1e1054, type: 3}
-  dpadLeft: {fileID: 21300000, guid: b1b49feb590e424b933dc5e088d23aa4, type: 3}
-  dpadRight: {fileID: 21300000, guid: 3242ee2c40bb461c97d27644902b5d7a, type: 3}
-  dpadUp: {fileID: 21300000, guid: b71c65ed15054528b234e517da290458, type: 3}
-  dpadDown: {fileID: 21300000, guid: f05cefde01d845c184b92645e56e71f9, type: 3}
+  m_EditorClassIdentifier:
+  south: {fileID: 21300000, guid: 65628b0cf0a94405ba0407fb1ac0014e, type: 3}
+  east: {fileID: 21300000, guid: 3a804ca5570b4081a11606ffbd2c8ca9, type: 3}
+  west: {fileID: 21300000, guid: 6f6a8c815d7f49db81df43c05fb2dc47, type: 3}
+  north: {fileID: 21300000, guid: 6d38a25fbe13400892313074b9f38274, type: 3}
+  shoulderLeft: {fileID: 21300000, guid: 19cab4b2c6e640faa408d6ec94899d72, type: 3}
+  shoulderRight: {fileID: 21300000, guid: f3705fece7aa47479c68357b51a9734a, type: 3}
+  triggerLeft: {fileID: 21300000, guid: 66d7d6685e0d466eb0b818dacdd7ced8, type: 3}
+  triggerRight: {fileID: 21300000, guid: 99bcc8e3f9a9454f8502bff4ba2f01d6, type: 3}
+  dpad: {fileID: 21300000, guid: f8e2d1599af54ebbb2e92bb5eca2db6b, type: 3}
+  stick: {fileID: 21300000, guid: 41d65d9283d74e21a236a83beb27de15, type: 3}
+  start: {fileID: 21300000, guid: aeadf141f9134636b257442398cb3861, type: 3}
+  teleport: {fileID: 21300000, guid: 6d38a25fbe13400892313074b9f38274, type: 3}
+  dpadLeft: {fileID: 21300000, guid: bc61313da3fc42f69d82c745337d13e8, type: 3}
+  dpadRight: {fileID: 21300000, guid: f4b0698f18b94bdc86123d603f65ebbd, type: 3}
+  dpadUp: {fileID: 21300000, guid: d5621e8cc3c5440989462bde0418d169, type: 3}
+  dpadDown: {fileID: 21300000, guid: 225124867f54484fa4f55e0841c775bd, type: 3}

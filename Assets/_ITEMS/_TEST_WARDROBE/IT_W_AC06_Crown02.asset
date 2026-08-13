@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9201a7fb4aa9c454bbc45285f1dc4852, type: 3}
+  m_Name: IT_W_AC06_Crown02
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemId: w_ac06_crown02
+  displayNameId: ITEM_AC06_CROWN02_NAME
+  displayName: Corona de Plata
+  icon: {fileID: 21300000, guid: c03b5aca0547402f84afbeca9234d6ea, type: 3}
+  usableFromInventory: 0
+  useEffects: []
+  useDescriptionId: ITEM_AC06_CROWN02_DESC
+  useDescription: Una corona sobria de plata pulida.
+  usageKind: 2
+  buyPrice: 0
+  sellValue: 0
+  wardrobeUnlock: {fileID: 11400000, guid: 42585ee385144125b91a564e1e727986, type: 2}

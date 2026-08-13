@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ddb980a5a7fc48b984e8632fc7bfdcd1, type: 3}
   m_Name: TeleportHintIconSet
   m_EditorClassIdentifier: 
-  xbox: {fileID: 21300000, guid: c9975f26ad53cdb0b6fe7191db9b5f81, type: 3}
-  playStation: {fileID: 21300000, guid: cf0f6c1e497a8d0b53b625ec33dc0761, type: 3}
-  switchConsole: {fileID: 21300000, guid: e13774a5cbd6f4ec143c3536bc1e1054, type: 3}
-  keyboardMouse: {fileID: 21300000, guid: bfff1c03bb48ea359a4445038d18288a, type: 3}
+  xbox: {fileID: 21300000, guid: 5ef7048fb27b491bbeddd248b3b8b980, type: 3}
+  playStation: {fileID: 21300000, guid: ac7a82d52ea44f6da30f8149be875e01, type: 3}
+  switchConsole: {fileID: 21300000, guid: 6d38a25fbe13400892313074b9f38274, type: 3}
+  keyboardMouse: {fileID: 21300000, guid: 58c57f14b30442bc82cdbbc2dcae2f85, type: 3}

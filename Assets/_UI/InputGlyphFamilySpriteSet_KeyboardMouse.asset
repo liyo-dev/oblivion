@@ -11,21 +11,21 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3f43311c27934016bba95f7ee8b47c23, type: 3}
   m_Name: InputGlyphFamilySpriteSet_KeyboardMouse
-  m_EditorClassIdentifier: 
-  south: {fileID: 21300000, guid: d40cca85f0f54f30445a3577e18a0a5a, type: 3}
-  east: {fileID: 21300000, guid: b6c29163d00d68df6db75d0c3f7eb934, type: 3}
-  west: {fileID: 21300000, guid: 8d656ec4f3378c19cd5840f1aec544ad, type: 3}
-  north: {fileID: 21300000, guid: 81ee214e69886dd9078d3fe0a0887bee, type: 3}
-  shoulderLeft: {fileID: 21300000, guid: 177e7e8c92637e64b6ba0865ef5aa370, type: 3}
-  shoulderRight: {fileID: 21300000, guid: 81b34bf7e8df33809cd89bf6e31c021f, type: 3}
-  triggerLeft: {fileID: 21300000, guid: 03d76e82f142f51d1c30ea83859dafc1, type: 3}
-  triggerRight: {fileID: 21300000, guid: 74193304885ee914f149f83b5ae08e9d, type: 3}
-  dpad: {fileID: 0}
-  stick: {fileID: 21300000, guid: 95891fca76a9e28becdcb820372c310f, type: 3}
-  start: {fileID: 21300000, guid: e2ecff4615441050c5bf87362df09a5d, type: 3}
-  confirm: {fileID: 21300000, guid: 48e896c46e72439285c090b557805bb4, type: 3}
-  teleport: {fileID: 21300000, guid: bfff1c03bb48ea359a4445038d18288a, type: 3}
-  dpadLeft: {fileID: 21300000, guid: 961facda271c42c0b5bf47bbe559e99b, type: 3}
-  dpadRight: {fileID: 21300000, guid: ce03901976454189ade9c5d995052cbf, type: 3}
-  dpadUp: {fileID: 21300000, guid: 4a100340e2ab475e9814d79f25f9397a, type: 3}
-  dpadDown: {fileID: 21300000, guid: e82b907922ab41948f1638fdd3b9cb1b, type: 3}
+  m_EditorClassIdentifier:
+  south: {fileID: 21300000, guid: c3777e54fb874f4b8e7753a41f286b80, type: 3}
+  east: {fileID: 21300000, guid: e115de5992e74382b565bb966fd534fd, type: 3}
+  west: {fileID: 21300000, guid: f93a7b7d300b4dbb9e0ef711e25326b0, type: 3}
+  north: {fileID: 21300000, guid: 3038299619884ccdbca2679301bcaf39, type: 3}
+  shoulderLeft: {fileID: 21300000, guid: 9e858c852fd245d4b2428b4a42ea157c, type: 3}
+  shoulderRight: {fileID: 21300000, guid: 4a753237bb51430f88fec2e15734ef45, type: 3}
+  triggerLeft: {fileID: 21300000, guid: 2bf9980605984ff29da530e30f20afcb, type: 3}
+  triggerRight: {fileID: 21300000, guid: 2dca0cddef424edcba2e46c09575377d, type: 3}
+  dpad: {fileID: 21300000, guid: df0fa77a5de348ca833438dce0475765, type: 3}
+  stick: {fileID: 21300000, guid: 9ec101e7bbc14abfbc13cb873fb15b1b, type: 3}
+  start: {fileID: 21300000, guid: 5f7c4e856d964a2d8be08f611a0f1caa, type: 3}
+  confirm: {fileID: 21300000, guid: e4cfbce37f7242f3905a2669295f841d, type: 3}
+  teleport: {fileID: 21300000, guid: 58c57f14b30442bc82cdbbc2dcae2f85, type: 3}
+  dpadLeft: {fileID: 21300000, guid: 8eb45a6b9af04ddc832ab7f59731611f, type: 3}
+  dpadRight: {fileID: 21300000, guid: 486b37c6a1ed45579db518d9daa15756, type: 3}
+  dpadUp: {fileID: 21300000, guid: 5696e527acde44a085b569fefed84a97, type: 3}
+  dpadDown: {fileID: 21300000, guid: 7419ef8c1e464f758efcc8d8fab6900e, type: 3}

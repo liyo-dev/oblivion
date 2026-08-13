@@ -161,8 +161,13 @@ public static class SceneTransitionLoader
                     if (remaining > 0f) yield return new WaitForSecondsRealtime(remaining);
                 }
 
-                // Pequeño respiro antes de activar
-                yield return new WaitForSecondsRealtime(0.05f);
+                // Pequeño respiro antes de activar. Si hay overlay, se respeta como mínimo
+                // GestureHoldTime: es la ventana en la que Will/Estela/Liam ya están girados
+                // hacia cámara haciendo su gesto (ver LoadingScreenController.SetProgress) — sin
+                // esto, una carga muy rápida taparía la pantalla en negro antes de que se llegue
+                // a ver el gesto.
+                float prePause = (loadingUI != null) ? Mathf.Max(0.05f, loadingUI.GestureHoldTime) : 0.05f;
+                yield return new WaitForSecondsRealtime(prePause);
 
                 // Poner pantalla en negro ANTES de activar la escena para evitar el parpadeo:
                 // la overlay de carga sigue encima en este punto, así que no se ve nada raro

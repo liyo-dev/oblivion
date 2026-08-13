@@ -25,6 +25,62 @@
             "value": "Se borrarán los datos de la partida actual. ¿Quieres continuar?"
         },
         {
+            "key": "CONTROLS_CAMERA",
+            "value": "Cámara"
+        },
+        {
+            "key": "CONTROLS_CHARACTER_NEXT",
+            "value": "Cambiar de personaje (siguiente)"
+        },
+        {
+            "key": "CONTROLS_CHARACTER_PREV",
+            "value": "Cambiar de personaje (anterior)"
+        },
+        {
+            "key": "CONTROLS_INTERACT",
+            "value": "Interactuar (NPCs, puertas, objetos)"
+        },
+        {
+            "key": "CONTROLS_JUMP",
+            "value": "Saltar"
+        },
+        {
+            "key": "CONTROLS_MOVE",
+            "value": "Mover"
+        },
+        {
+            "key": "CONTROLS_PAUSE",
+            "value": "Pausa / Menú"
+        },
+        {
+            "key": "CONTROLS_SPELL_LEFT",
+            "value": "Hechizo — slot izquierdo"
+        },
+        {
+            "key": "CONTROLS_SPELL_RIGHT",
+            "value": "Hechizo — slot derecho"
+        },
+        {
+            "key": "CONTROLS_SPELL_SPECIAL",
+            "value": "Hechizo especial"
+        },
+        {
+            "key": "CONTROLS_SPRINT",
+            "value": "Correr"
+        },
+        {
+            "key": "CONTROLS_TARGET_NEXT",
+            "value": "Cambiar objetivo de combate (siguiente)"
+        },
+        {
+            "key": "CONTROLS_TARGET_PREV",
+            "value": "Cambiar objetivo de combate (anterior)"
+        },
+        {
+            "key": "CONTROLS_TELEPORT",
+            "value": "Teletransportarse al punto de guardado"
+        },
+        {
             "key": "Dialogue_Continue",
             "value": "Continuar"
         },
@@ -35,6 +91,70 @@
         {
             "key": "Dialogue_Skip",
             "value": "Saltar"
+        },
+        {
+            "key": "GLYPH_CLICK_LEFT",
+            "value": "clic izquierdo"
+        },
+        {
+            "key": "GLYPH_CLICK_RIGHT",
+            "value": "clic derecho"
+        },
+        {
+            "key": "GLYPH_DPAD",
+            "value": "el D-Pad"
+        },
+        {
+            "key": "GLYPH_DPAD_DOWN",
+            "value": "D-Pad abajo"
+        },
+        {
+            "key": "GLYPH_DPAD_LEFT",
+            "value": "D-Pad izquierda"
+        },
+        {
+            "key": "GLYPH_DPAD_RIGHT",
+            "value": "D-Pad derecha"
+        },
+        {
+            "key": "GLYPH_DPAD_UP",
+            "value": "D-Pad arriba"
+        },
+        {
+            "key": "GLYPH_KEY_SHIFT",
+            "value": "Mayús"
+        },
+        {
+            "key": "GLYPH_KEY_SPACE",
+            "value": "Espacio"
+        },
+        {
+            "key": "GLYPH_MENU",
+            "value": "Menú"
+        },
+        {
+            "key": "GLYPH_MOUSE",
+            "value": "Ratón"
+        },
+        {
+            "key": "GLYPH_STICK",
+            "value": "el Joystick"
+        },
+        {
+            "key": "GLYPH_STICK_CLICK",
+            "value": "clic del stick"
+        },
+        {
+            "key": "GLYPH_STICK_RIGHT",
+            "value": "Stick derecho"
+        },
+        {
+            "key": "GLYPH_WHEEL_DOWN",
+            "value": "rueda abajo"
+        },
+        {
+            "key": "GLYPH_WHEEL_UP",
+            "value": "rueda arriba"
         },
         {
             "key": "HUD_FOLLOW_STATUS_FOLLOWING",
@@ -87,6 +207,10 @@
         {
             "key": "MainMenu_Continue",
             "value": "Continuar"
+        },
+        {
+            "key": "MainMenu_Controls",
+            "value": "Controles"
         },
         {
             "key": "MainMenu_Exit",
@@ -370,7 +494,7 @@
         },
         {
             "key": "SHOP_PRICE_LABEL",
-            "value": "Precio: {0} 💰"
+            "value": "Precio: {0}"
         },
         {
             "key": "SHOP_STOCK_IN_STOCK",

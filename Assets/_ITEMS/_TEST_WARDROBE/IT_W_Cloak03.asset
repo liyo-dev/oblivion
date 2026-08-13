@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9201a7fb4aa9c454bbc45285f1dc4852, type: 3}
+  m_Name: IT_W_Cloak03
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemId: w_cloak03
+  displayNameId: WARDROBE_CLOAK03_NAME
+  displayName: Capa de mago avanzado.
+  icon: {fileID: 21300000, guid: fd1ab85e76cbb15418d8a761a8790a50, type: 3}
+  usableFromInventory: 0
+  useEffects: []
+  useDescriptionId: WARDROBE_CLOAK03_DESC
+  useDescription: "Capa m\xE1gica que portan los magos que dominan la magia."
+  usageKind: 2
+  buyPrice: 0
+  sellValue: 0
+  wardrobeUnlock: {fileID: 11400000, guid: 671ee65b95ed3b54ea4f853c1c30a568, type: 2}

@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9201a7fb4aa9c454bbc45285f1dc4852, type: 3}
+  m_Name: IT_W_AC10_Mustache06
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemId: w_ac10_mustache06
+  displayNameId: ITEM_AC10_MUSTACHE06_NAME
+  displayName: Bigote Extravagante
+  icon: {fileID: 21300000, guid: c7641681b292449f8acd6807bd9dd5e2, type: 3}
+  usableFromInventory: 0
+  useEffects: []
+  useDescriptionId: ITEM_AC10_MUSTACHE06_DESC
+  useDescription: Un bigote enorme y muy llamativo.
+  usageKind: 2
+  buyPrice: 0
+  sellValue: 0
+  wardrobeUnlock: {fileID: 11400000, guid: af4e27759e1d44b3b6102c30ce86976a, type: 2}

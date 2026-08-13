@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using DG.Tweening;
 using Core;
 
@@ -21,19 +22,21 @@ public class ShopUI : MonoBehaviour
     [SerializeField] private GameObject windowRoot;
     [SerializeField] private Transform itemListContainer;
     [SerializeField] private GameObject itemCardPrefab;
-    [SerializeField] private Text currencyText;
+    [SerializeField] private TextMeshProUGUI currencyText;
     [SerializeField] private Button closeButton;
-    
+    [Tooltip("ScrollRect de la lista de items, para que la card seleccionada se desplace a la vista al navegar con mando/teclado (ver ScrollOnSelectRelay en Shop_ItemCard).")]
+    [SerializeField] private ScrollRect itemScrollRect;
+
     [Header("Item Detail Panel")]
     [SerializeField] private GameObject detailPanel;
     [SerializeField] private Image detailIcon;
-    [SerializeField] private Text detailName;
-    [SerializeField] private Text detailDescription;
-    [SerializeField] private Text detailPrice;
-    [SerializeField] private Text detailStock;
+    [SerializeField] private TextMeshProUGUI detailName;
+    [SerializeField] private TextMeshProUGUI detailDescription;
+    [SerializeField] private TextMeshProUGUI detailPrice;
+    [SerializeField] private TextMeshProUGUI detailStock;
     [SerializeField] private Button buyButton;
     [SerializeField] private Button sellButton;
-    [SerializeField] private Text messageText;
+    [SerializeField] private TextMeshProUGUI messageText;
     [SerializeField] private float buyButtonPulseScale = 1.08f;
     [SerializeField] private float buyButtonPulseDuration = 0.14f;
     [SerializeField] private Ease buyButtonPulseEase = Ease.OutBack;
@@ -41,6 +44,11 @@ public class ShopUI : MonoBehaviour
     [SerializeField] private Color errorMessageColor = new Color(0.9f, 0.2f, 0.2f, 1f);
     [SerializeField] private float currencyPunchScale = 1.08f;
     [SerializeField] private float currencyPunchDuration = 0.18f;
+    [Header("Rediseño visual - chip de stock (icono real, ver ShopItemCard)")]
+    [Tooltip("Fondo tipo 'chip' detrás de detailStock. Se colorea según haya o no stock.")]
+    [SerializeField] private Image detailStockChipBackground;
+    [SerializeField] private Sprite stockChipSpriteAvailable;
+    [SerializeField] private Sprite stockChipSpriteUnavailable;
     [Header("Input")]
     [Tooltip("When the shop opens, ignore player input (submit/cancel/navigation) for this many seconds to avoid the 'close dialogue' button press from affecting the shop.")]
     [SerializeField, Min(0f)] private float openIgnoreInputDuration = 0.15f;
@@ -395,15 +403,17 @@ public class ShopUI : MonoBehaviour
         if (currencyText == null || _playerInventory == null || shopController == null)
             return;
         
+        // El icono de moneda ahora es un Image real (CoinIcon) junto a este texto en el
+        // prefab, así que aquí solo mostramos el número (ya no el emoji 💰 literal).
         var currencyItem = shopController.CurrencyItem;
         if (currencyItem != null)
         {
             int amount = _playerInventory.Count(currencyItem.itemId);
-            currencyText.text = $"💰 {amount}";
+            currencyText.text = $"{amount}";
             return;
         }
 
-        currencyText.text = "💰 0";
+        currencyText.text = "0";
     }
 
     void EnsurePlayerInventory()
@@ -473,6 +483,16 @@ public class ShopUI : MonoBehaviour
             else
             {
                 Debug.LogError($"[ShopUI] itemCardPrefab no tiene componente ShopItemCard");
+            }
+
+            // Conectar el auto-scroll: al seleccionar esta card (mando/teclado) o pasar el ratón
+            // por encima, ScrollOnSelectRelay la desplaza dentro del ScrollRect si queda fuera
+            // de la vista. Se reasigna en cada refresh porque las cards del pool se reutilizan.
+            var scrollRelay = cardObj.GetComponent<ScrollOnSelectRelay>();
+            if (scrollRelay != null && itemScrollRect != null)
+            {
+                scrollRelay.scrollRect = itemScrollRect;
+                scrollRelay.target = cardObj.transform as RectTransform;
             }
         }
 
@@ -544,9 +564,11 @@ public class ShopUI : MonoBehaviour
         if (detailPrice != null)
         {
             int price = _selectedEntry.GetBuyPrice();
+            // Ya no se usa el emoji 💰 literal: el icono de moneda es ahora el sprite
+            // real "coin.png" mostrado junto a CurrencyText en el header.
             string priceFormat = LocalizationManager.Instance != null
-                ? LocalizationManager.Instance.Get("SHOP_PRICE_LABEL", "Precio: {0} 💰")
-                : "Precio: {0} 💰";
+                ? LocalizationManager.Instance.Get("SHOP_PRICE_LABEL", "Precio: {0}")
+                : "Precio: {0}";
             detailPrice.text = string.Format(priceFormat, price);
         }
 
@@ -567,7 +589,16 @@ public class ShopUI : MonoBehaviour
                     : "Stock ilimitado";
             }
         }
-        
+
+        // Chip visual detrás de detailStock (rediseño "glass"): cambia de sprite según
+        // haya o no stock disponible. Puramente visual, no toca la lógica de compra.
+        if (detailStockChipBackground != null)
+        {
+            var chipSprite = _selectedEntry.HasStock ? stockChipSpriteAvailable : stockChipSpriteUnavailable;
+            if (chipSprite != null)
+                detailStockChipBackground.sprite = chipSprite;
+        }
+
         // El botón permanece deshabilitado hasta que se haga focus en él con Submit
         if (buyButton != null)
             buyButton.interactable = false;

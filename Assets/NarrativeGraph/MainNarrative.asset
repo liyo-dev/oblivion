@@ -910,8 +910,8 @@ MonoBehaviour:
         - 6f0c236c-9cf3-44bc-a968-f5ad724c845a
         action: 0
         text: Pulsa {BOTON} para despertar a Will
-        textId: 
-        icon: {fileID: 21300000, guid: b1bae50a86e690449a7ba8c03900f80e, type: 3}
+        textId: TUTORIAL_WAKE_UP
+        icon: {fileID: 21300000, guid: 2cbc9eb9e96b499bb24695fdc2c2f515, type: 3}
         buttonName: interactable_confirm
     - rid: 5290829367972725004
       type: {class: TutorialPromptNode, ns: , asm: Assembly-CSharp}
@@ -928,8 +928,8 @@ MonoBehaviour:
         outputs: []
         action: 0
         text: "Usa {BOTON} para mover a Will. Inspecciona la habitaci\xF3n."
-        textId: 
-        icon: {fileID: 21300000, guid: d8f997a4962ba6043a531732f1e8777a, type: 3}
+        textId: TUTORIAL_MOVE_INSPECT
+        icon: {fileID: 21300000, guid: 7ee57509d79a49b0adec369729ca33c2, type: 3}
         buttonName: interactable_Joystick
     - rid: 5290829367972725077
       type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}

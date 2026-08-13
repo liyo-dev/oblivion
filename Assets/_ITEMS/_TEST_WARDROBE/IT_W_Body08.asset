@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9201a7fb4aa9c454bbc45285f1dc4852, type: 3}
+  m_Name: IT_W_Body08
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemId: w_body08
+  displayNameId: WARDROBE_BODY08_NAME
+  displayName: Delantal de herrero
+  icon: {fileID: 21300000, guid: 2a461e294d664c5f9414d45af052a464, type: 3}
+  usableFromInventory: 0
+  useEffects: []
+  useDescriptionId: WARDROBE_BODY08_DESC
+  useDescription: Cuero grueso resistente a chispas y al calor de la fragua.
+  usageKind: 2
+  buyPrice: 0
+  sellValue: 0
+  wardrobeUnlock: {fileID: 11400000, guid: 762218ade3be4cea834d29e7fc2ee2e1, type: 2}

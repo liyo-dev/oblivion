@@ -109,7 +109,7 @@ namespace Game.NPC.States
                 if (_manualApproachActive)
                 {
                     float approachSpeed = context.Config?.walkSpeed ?? 1.5f;
-                    if (ManualApproachStep(context, _shelterPoint.InteractionPosition, approachSpeed))
+                    if (ManualApproachStep(context, _shelterPoint.InteractionPosition, approachSpeed, _shelterPoint.OwnerCollider))
                         Arrive(context);
                     return;
                 }
@@ -128,8 +128,9 @@ namespace Game.NPC.States
                         // El NavMeshAgent ha llegado al borde del área caminable, pero el punto
                         // real sigue más adentro (típico bajo copas de árbol, ver
                         // NPCStateBase.BeginManualApproach): completar el resto a mano.
-                        context.ShelterEdgePosition    = context.Transform.position;
-                        context.HasShelterEdgePosition = true;
+                        context.ShelterEdgePosition      = context.Transform.position;
+                        context.HasShelterEdgePosition   = true;
+                        context.ShelterEdgeOwnerCollider = _shelterPoint.OwnerCollider;
                         BeginManualApproach(context);
                         _manualApproachActive = true;
                     }

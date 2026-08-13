@@ -12550,7 +12550,7 @@ MonoBehaviour:
   interactAction: {fileID: 4603114644073994948, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
   jumpAction: {fileID: -4604816535962114212, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
   disableJumpWhenFocused: 1
-  hintReappearDelay: 1
+  hintReappearDelay: 0.15
 --- !u!114 &6570775665125871610
 MonoBehaviour:
   m_ObjectHideFlags: 0

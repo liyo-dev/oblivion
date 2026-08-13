@@ -128,11 +128,49 @@ namespace Game.NPC.States
         /// gira/anima al NPC a mano (SyncWithNavMeshAgent de NPCSimpleAnimator no hace nada
         /// mientras el agente esté fuera del NavMesh, así que hay que encargarse aquí). Devuelve
         /// true en cuanto llega.
+        ///
+        /// FIX INC-NPCS-EN-ARBOLES: el comentario de cabecera de BeginManualApproach asume que
+        /// bajo la copa del árbol no hay ningún obstáculo físico real, solo el hueco del bakeo —
+        /// pero eso solo es cierto si el área "Not Walkable" del árbol cubre TODA la copa. Si algún
+        /// árbol tiene el radio de exclusión ajustado solo al tronco (bake más pequeño que la
+        /// copa, o un NavMeshObstacle mal dimensionado), el paso recto de MoveTowards puede
+        /// atravesarlo visualmente — exactamente el bug reportado de NPCs metiéndose en los
+        /// árboles del bosque. En vez de confiar en que cada árbol de cada escena esté bakeado con
+        /// el radio "correcto" (trabajo manual por árbol, no escalable), se comprueba con un
+        /// Raycast (sin alloc, un único hit, igual de barato que el resto de chequeos de este
+        /// estado) si el siguiente paso choca contra geometría real. Los personajes (jugador/otros
+        /// NPCs, distinguibles por NPCSimpleAnimator — ver regla de AGENTS.md §2, "personajes vs.
+        /// geometría en raycasts") no cuentan como bloqueo, solo props de escenario como el tronco.
+        /// Si hay bloqueo, se da el tramo por completado ahí mismo (mismo criterio que ya usa
+        /// SeekShelterState cuando el punto real está demasiado lejos del borde del NavMesh) en
+        /// vez de quedarse congelado reintentando para siempre.
+        ///
+        /// FIX complementario (mismo INC): el propio collider del árbol/prop bajo el que está el
+        /// punto de refugio (ownerCollider, ver NPCShelterPoint) se ignora explícitamente — es
+        /// justo el obstáculo que esta aproximación manual existe para rodear, y bloquear contra él
+        /// reintroduciría el bug original que BeginManualApproach ya arreglaba (el NPC se quedaba
+        /// fuera de la copa, "respetando" ese mismo collider, en vez de llegar al punto real). Solo
+        /// bloquea contra obstáculos AJENOS al punto de refugio (otro árbol, una roca, un muro).
         /// </summary>
-        protected bool ManualApproachStep(Common.NPCStateContext context, Vector3 target, float speed)
+        protected bool ManualApproachStep(Common.NPCStateContext context, Vector3 target, float speed, Collider ignoreCollider = null)
         {
             Transform t = context.Transform;
             Vector3 next = Vector3.MoveTowards(t.position, target, Mathf.Max(0.01f, speed) * Time.deltaTime);
+
+            Vector3 step = next - t.position;
+            float stepDist = step.magnitude;
+            if (stepDist > 0.0001f &&
+                Physics.Raycast(t.position + Vector3.up, step / stepDist, out RaycastHit hit, stepDist, ~0, QueryTriggerInteraction.Ignore) &&
+                hit.collider != ignoreCollider &&
+                hit.transform.GetComponentInParent<NPCSimpleAnimator>() == null)
+            {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                context.LogWarning($"[ManualApproach] Paso bloqueado por '{hit.transform.name}' (posible tronco/prop) a {hit.distance:F2}m — no se atraviesa, se da el tramo por completado aquí.");
+#endif
+                context.Animator?.SetMovementSpeed(0f);
+                return true;
+            }
+
             t.position = next;
 
             Vector3 remaining = target - next;

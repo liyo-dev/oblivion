@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9201a7fb4aa9c454bbc45285f1dc4852, type: 3}
+  m_Name: IT_W_Body10
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemId: w_body10
+  displayNameId: WARDROBE_BODY10_NAME
+  displayName: Traje de comerciante
+  icon: {fileID: 21300000, guid: b5a7bf760a46405e9902aaac05557dd5, type: 3}
+  usableFromInventory: 0
+  useEffects: []
+  useDescriptionId: WARDROBE_BODY10_DESC
+  useDescription: "Elegante pero pr\xE1ctico, pensado para cerrar buenos tratos."
+  usageKind: 2
+  buyPrice: 0
+  sellValue: 0
+  wardrobeUnlock: {fileID: 11400000, guid: c436e387dffe41f9990bc22d3f6243b5, type: 2}

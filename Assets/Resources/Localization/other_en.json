@@ -91,6 +91,14 @@
         {
             "key": "MINIGAME_WIN",
             "value": "You escaped!"
+        },
+        {
+            "key": "TUTORIAL_MOVE_INSPECT",
+            "value": "Use {BOTON} to move Will. Inspect the room."
+        },
+        {
+            "key": "TUTORIAL_WAKE_UP",
+            "value": "Press {BOTON} to wake up Will"
         }
     ]
 }

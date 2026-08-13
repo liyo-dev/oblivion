@@ -43,6 +43,25 @@ public class NPCShelterPoint : MonoBehaviour
              "varios; las puertas de casa normalmente solo 1-2 para no saturar la entrada.")]
     public int capacity = 3;
 
+    [Header("Colisión propia a ignorar (aproximación manual)")]
+    [Tooltip("Collider físico del propio árbol/porche/puerta bajo el que está este punto (p.ej. el " +
+             "tronco). NPCStateBase.ManualApproachStep lo ignora al comprobar obstrucciones — es " +
+             "precisamente el obstáculo que este punto existe para rodear, no un bloqueo real. Si se " +
+             "deja vacío, se autodetecta en Awake buscando un Collider en este GameObject o en algún " +
+             "padre (funciona colocando el punto como hijo del árbol/prop, patrón recomendado). " +
+             "Otros obstáculos ajenos (otro árbol, una roca) SÍ siguen bloqueando la aproximación.")]
+    [SerializeField] private Collider ownerCollider;
+
+    public Collider OwnerCollider => ownerCollider;
+
+    void Awake()
+    {
+        // Autodetección única (no en Update/OnUpdate): coste cero en runtime, solo se paga una vez
+        // al cargar la escena. Si el diseñador ya asignó ownerCollider a mano, se respeta tal cual.
+        if (ownerCollider == null)
+            ownerCollider = GetComponentInParent<Collider>();
+    }
+
     private readonly List<Transform> _occupants = new();
 
     public bool IsFull => _occupants.Count >= capacity;

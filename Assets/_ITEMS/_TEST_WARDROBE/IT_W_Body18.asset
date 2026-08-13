@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9201a7fb4aa9c454bbc45285f1dc4852, type: 3}
+  m_Name: IT_W_Body18
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemId: w_body18
+  displayNameId: WARDROBE_BODY18_NAME
+  displayName: Delantal de panadero
+  icon: {fileID: 21300000, guid: ae022d9bc5604da0a36ffc61082f12c7, type: 3}
+  usableFromInventory: 0
+  useEffects: []
+  useDescriptionId: WARDROBE_BODY18_DESC
+  useDescription: "Huele siempre a pan reci\xE9n hecho."
+  usageKind: 2
+  buyPrice: 0
+  sellValue: 0
+  wardrobeUnlock: {fileID: 11400000, guid: 930dcef59a6942eebe747d242a23bf97, type: 2}

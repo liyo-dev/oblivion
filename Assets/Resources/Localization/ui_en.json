@@ -25,6 +25,62 @@
             "value": "Current save data will be deleted. Do you want to continue?"
         },
         {
+            "key": "CONTROLS_CAMERA",
+            "value": "Camera"
+        },
+        {
+            "key": "CONTROLS_CHARACTER_NEXT",
+            "value": "Switch character (next)"
+        },
+        {
+            "key": "CONTROLS_CHARACTER_PREV",
+            "value": "Switch character (previous)"
+        },
+        {
+            "key": "CONTROLS_INTERACT",
+            "value": "Interact (NPCs, doors, objects)"
+        },
+        {
+            "key": "CONTROLS_JUMP",
+            "value": "Jump"
+        },
+        {
+            "key": "CONTROLS_MOVE",
+            "value": "Move"
+        },
+        {
+            "key": "CONTROLS_PAUSE",
+            "value": "Pause / Menu"
+        },
+        {
+            "key": "CONTROLS_SPELL_LEFT",
+            "value": "Spell — left slot"
+        },
+        {
+            "key": "CONTROLS_SPELL_RIGHT",
+            "value": "Spell — right slot"
+        },
+        {
+            "key": "CONTROLS_SPELL_SPECIAL",
+            "value": "Special spell"
+        },
+        {
+            "key": "CONTROLS_SPRINT",
+            "value": "Run"
+        },
+        {
+            "key": "CONTROLS_TARGET_NEXT",
+            "value": "Switch combat target (next)"
+        },
+        {
+            "key": "CONTROLS_TARGET_PREV",
+            "value": "Switch combat target (previous)"
+        },
+        {
+            "key": "CONTROLS_TELEPORT",
+            "value": "Teleport to save point"
+        },
+        {
             "key": "Dialogue_Continue",
             "value": "Continue"
         },
@@ -35,6 +91,70 @@
         {
             "key": "Dialogue_Skip",
             "value": "Skip"
+        },
+        {
+            "key": "GLYPH_CLICK_LEFT",
+            "value": "Left click"
+        },
+        {
+            "key": "GLYPH_CLICK_RIGHT",
+            "value": "Right click"
+        },
+        {
+            "key": "GLYPH_DPAD",
+            "value": "the D-Pad"
+        },
+        {
+            "key": "GLYPH_DPAD_DOWN",
+            "value": "D-Pad Down"
+        },
+        {
+            "key": "GLYPH_DPAD_LEFT",
+            "value": "D-Pad Left"
+        },
+        {
+            "key": "GLYPH_DPAD_RIGHT",
+            "value": "D-Pad Right"
+        },
+        {
+            "key": "GLYPH_DPAD_UP",
+            "value": "D-Pad Up"
+        },
+        {
+            "key": "GLYPH_KEY_SHIFT",
+            "value": "Shift"
+        },
+        {
+            "key": "GLYPH_KEY_SPACE",
+            "value": "Space"
+        },
+        {
+            "key": "GLYPH_MENU",
+            "value": "Menu"
+        },
+        {
+            "key": "GLYPH_MOUSE",
+            "value": "Mouse"
+        },
+        {
+            "key": "GLYPH_STICK",
+            "value": "the Left Stick"
+        },
+        {
+            "key": "GLYPH_STICK_CLICK",
+            "value": "Stick click"
+        },
+        {
+            "key": "GLYPH_STICK_RIGHT",
+            "value": "Right stick"
+        },
+        {
+            "key": "GLYPH_WHEEL_DOWN",
+            "value": "Scroll down"
+        },
+        {
+            "key": "GLYPH_WHEEL_UP",
+            "value": "Scroll up"
         },
         {
             "key": "HUD_FOLLOW_STATUS_FOLLOWING",
@@ -87,6 +207,10 @@
         {
             "key": "MainMenu_Continue",
             "value": "Continue"
+        },
+        {
+            "key": "MainMenu_Controls",
+            "value": "Controls"
         },
         {
             "key": "MainMenu_Exit",
@@ -370,7 +494,7 @@
         },
         {
             "key": "SHOP_PRICE_LABEL",
-            "value": "Price: {0} 💰"
+            "value": "Price: {0}"
         },
         {
             "key": "SHOP_STOCK_IN_STOCK",

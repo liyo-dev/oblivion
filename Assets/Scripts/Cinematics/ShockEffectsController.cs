@@ -12,7 +12,7 @@ public class ShockEffectsController : MonoBehaviour
     [SerializeField] private Volume shockVolume;
 
     [Header("Audio tinnitus (clave del Audio Graph Profile)")]
-    [SerializeField] private string tinnitusSfxKey = "Tinnitus";
+    [SerializeField] private string tinnitusSfxKey = "";
     [SerializeField, Range(0f, 1f)] private float tinnitusVolume = 0.6f;
 
     [Header("Timing")]

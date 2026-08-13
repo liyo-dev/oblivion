@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9201a7fb4aa9c454bbc45285f1dc4852, type: 3}
+  m_Name: IT_W_AC11_Mustache04
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemId: w_ac11_mustache04
+  displayNameId: ITEM_AC11_MUSTACHE04_NAME
+  displayName: Bigote y Barba Trenzada
+  icon: {fileID: 21300000, guid: 08ba1dac07ea462981b3c6c5123066af, type: 3}
+  usableFromInventory: 0
+  useEffects: []
+  useDescriptionId: ITEM_AC11_MUSTACHE04_DESC
+  useDescription: Un bigote combinado con una barba trenzada.
+  usageKind: 2
+  buyPrice: 0
+  sellValue: 0
+  wardrobeUnlock: {fileID: 11400000, guid: ba2fa565df8c4592a47a78157f159f4a, type: 2}

@@ -43,12 +43,22 @@ public class RoomExitBlocker : MonoBehaviour
     [SerializeField] private float messageCooldown = 1.5f;
     [SerializeField] private bool debugLogs;
 
+    [Header("Seguridad")]
+    [Tooltip("Tiempo máximo (segundos, tiempo real) que se mantiene el freeze total aunque el " +
+             "jugador nunca llegue a separarse físicamente de la zona (OnTriggerExit/OnCollisionExit " +
+             "no se dispara). Caso real: nadando, la flotabilidad de PlayerSwimmingController mantiene " +
+             "al jugador pegado contra el collider sólido en vez de alejarlo, así que Exit nunca llega " +
+             "y el freeze quedaba activo para siempre (INC: 'nado bloqueado tras mensaje del guarda'). " +
+             "El collider sólido sigue bloqueando el paso aunque el freeze se libere por timeout.")]
+    [SerializeField] private float stopLockSafetyTimeout = 3f;
+
     private float _lastMessageTime;
     private Collider _col;
     private bool _isBlocked = true;
     private bool _subscribed;
     private bool _isShowingMessage;
     private Coroutine _waitCoroutine;
+    private Coroutine _safetyReleaseCoroutine;
     private bool _stopLockHeld;
 
     void Awake()
@@ -183,9 +193,17 @@ public class RoomExitBlocker : MonoBehaviour
 
     /// <summary>
     /// Congela al jugador POR COMPLETO (no responde a ningún input) mientras esté tocando la zona
-    /// bloqueada. Directo, sin corrutinas ni temporizadores: se adquiere en el momento del
-    /// contacto y se suelta en el momento en que deja de tocarla (OnTriggerExit/OnCollisionExit)
-    /// o en que deja de estar bloqueada (EvaluateAndApplyState). Idempotente.
+    /// bloqueada. Se adquiere en el momento del contacto y se suelta en el momento en que deja de
+    /// tocarla (OnTriggerExit/OnCollisionExit) o en que deja de estar bloqueada
+    /// (EvaluateAndApplyState). Idempotente.
+    ///
+    /// Además arranca un timeout de seguridad (Co_SafetyReleaseStopLock): si nada libera el lock
+    /// en stopLockSafetyTimeout segundos reales, se libera solo. Sin esto, cualquier caso en el
+    /// que el jugador nunca llegue a separarse físicamente del collider (p. ej. nadando, donde la
+    /// flotabilidad de PlayerSwimmingController lo mantiene pegado al muro sólido en vez de
+    /// alejarlo tras el freeze) deja a Exit sin disparar nunca y al jugador congelado para
+    /// siempre. El collider sigue sólido mientras el requisito no se cumpla, así que el timeout
+    /// no rompe el bloqueo real, solo evita el freeze total indefinido.
     /// </summary>
     private void AcquireStopLock()
     {
@@ -202,13 +220,32 @@ public class RoomExitBlocker : MonoBehaviour
 
         lockService.Acquire(this);
         _stopLockHeld = true;
+        _safetyReleaseCoroutine = StartCoroutine(Co_SafetyReleaseStopLock());
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"[RoomExitBlocker:{gameObject.name}] ⛔ Jugador congelado (zona bloqueada).");
 #endif
     }
 
+    private IEnumerator Co_SafetyReleaseStopLock()
+    {
+        yield return new WaitForSecondsRealtime(Mathf.Max(0.1f, stopLockSafetyTimeout));
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.LogWarning($"[RoomExitBlocker:{gameObject.name}] ⏱️ Timeout de seguridad ({stopLockSafetyTimeout}s) — " +
+                          "el freeze seguía activo sin OnTriggerExit/OnCollisionExit. Liberando para evitar bloqueo permanente.");
+#endif
+        _safetyReleaseCoroutine = null;
+        ReleaseStopLock();
+    }
+
     private void ReleaseStopLock()
     {
+        if (_safetyReleaseCoroutine != null)
+        {
+            StopCoroutine(_safetyReleaseCoroutine);
+            _safetyReleaseCoroutine = null;
+        }
+
         if (!_stopLockHeld) return;
 
         if (PlayerLockService.HasInstance)

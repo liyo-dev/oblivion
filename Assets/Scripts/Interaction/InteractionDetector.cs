@@ -37,7 +37,16 @@ public class InteractionDetector : MonoBehaviour
     private float _resumeAfterBlockAt;
 
     // ✅ OPTIMIZACIÓN FASE 2: Buffer reutilizable para Physics queries
-    private Collider[] _interactableBuffer = new Collider[16];
+    // FIX (2026-08-13): con buffer de 16, OverlapSphereNonAlloc() puede saturarse en zonas
+    // con muchos colliders en la capa "Interactable" cerca (tiendas con varios NPCs/objetos
+    // agrupados) y descarta candidatos en silencio sin avisar — el mismo patrón de bug ya
+    // catalogado para GolemBossAI (TDD.md §19, onda expansiva con buffer de 32). Si el NPC
+    // objetivo no entra en los primeros N resultados que devuelve la query, FindNearest()
+    // nunca lo ve ese frame; qué candidatos caen dentro del buffer puede variar con pequeños
+    // cambios de posición del jugador, lo que explica un hint que no aparece hasta "buscar la
+    // posición" o entrar/salir del rango varias veces. Se sube a 32 y se avisa si se satura
+    // (ver comprobación en FindNearest()).
+    private Collider[] _interactableBuffer = new Collider[32];
 
     // FIX (2026-08-11): la máscara de obstrucción del SphereCast de FindNearest() usaba
     // ~interactableMask, que solo excluye la capa "Interactable". Eso hace que el propio
@@ -304,8 +313,20 @@ public class InteractionDetector : MonoBehaviour
         int hitCount = Physics.OverlapSphereNonAlloc(origin, range, _interactableBuffer, interactableMask, QueryTriggerInteraction.Collide); // ✅ OPTIMIZACIÓN FASE 2: NonAlloc
         if (hitCount == 0) return null;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // FIX (2026-08-13): si el buffer se satura, la query puede estar descartando
+        // candidatos sin avisar (ver comentario junto a _interactableBuffer). Avisar en vez
+        // de fallar en silencio para poder diagnosticarlo si vuelve a pasar.
+        if (hitCount >= _interactableBuffer.Length)
+            Debug.LogWarning($"[InteractionDetector] ⚠️ Buffer de interactuables saturado ({hitCount}/{_interactableBuffer.Length}) cerca de {origin} — puede haber candidatos descartados. Considera subir el tamaño del buffer.");
+#endif
+
         float best = float.MaxValue;
         Interactable winner = null;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Interactable nearestObstructed = null;
+        float nearestObstructedDist = float.MaxValue;
+#endif
 
         for (int i = 0; i < hitCount; i++)
         {
@@ -342,16 +363,38 @@ public class InteractionDetector : MonoBehaviour
                 // _obstructionMask (cacheado en Awake), que además excluye la capa del propio
                 // jugador y "Floor", pero SIGUE incluyendo muros/puertas/obstáculos.
                 Vector3 dir = (sightPoint - origin).normalized;
-                bool obstructed = Physics.SphereCast(origin, focusRadius, dir, out _, sightDistance, _obstructionMask, QueryTriggerInteraction.Ignore);
+                bool obstructed = Physics.SphereCast(origin, focusRadius, dir, out RaycastHit obstructionHit, sightDistance, _obstructionMask, QueryTriggerInteraction.Ignore);
                 if (!obstructed)
                 {
                     best = d;
                     winner = it;
                 }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                else if (d < nearestObstructedDist)
+                {
+                    nearestObstructedDist = d;
+                    nearestObstructed = it;
+                    // Guardado para el log de abajo; evita repetir el SphereCast solo para diagnóstico.
+                    _lastObstructionHitName = obstructionHit.collider ? obstructionHit.collider.name : "(sin collider)";
+                }
+#endif
             }
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // FIX (2026-08-13): diagnóstico para el bug "el hint no aparece hasta buscar la
+        // posición/entrar-salir del rango varias veces". Si hay un candidato en rango pero
+        // el resultado es null, esto dice exactamente por qué (línea de visión bloqueada y
+        // por qué objeto) en vez de tener que adivinarlo la próxima vez que se reproduzca.
+        if (winner == null && nearestObstructed != null)
+            Debug.Log($"[InteractionDetector] 👁️ {nearestObstructed.name} en rango pero línea de visión bloqueada por '{_lastObstructionHitName}' (dist={nearestObstructedDist:F2})");
+#endif
         return winner;
     }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    private string _lastObstructionHitName;
+#endif
 
 #if UNITY_EDITOR
     private void OnDrawGizmosSelected()

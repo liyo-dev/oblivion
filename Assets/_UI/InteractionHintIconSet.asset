@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ddb980a5a7fc48b984e8632fc7bfdcd1, type: 3}
   m_Name: InteractionHintIconSet
   m_EditorClassIdentifier: 
-  xbox: {fileID: 21300000, guid: 7eeb8a1ec9332a30a983694d1b428f3e, type: 3}
-  playStation: {fileID: 21300000, guid: 3a37dfe702393e0fa6c8bbc2a299e490, type: 3}
-  switchConsole: {fileID: 21300000, guid: 1b7ce2710dc2e55756ac85e20b247f4a, type: 3}
-  keyboardMouse: {fileID: 21300000, guid: d40cca85f0f54f30445a3577e18a0a5a, type: 3}
+  xbox: {fileID: 21300000, guid: 2cbc9eb9e96b499bb24695fdc2c2f515, type: 3}
+  playStation: {fileID: 21300000, guid: 2050dda73e43429da4584e96aa92dfdc, type: 3}
+  switchConsole: {fileID: 21300000, guid: 65628b0cf0a94405ba0407fb1ac0014e, type: 3}
+  keyboardMouse: {fileID: 21300000, guid: c3777e54fb874f4b8e7753a41f286b80, type: 3}

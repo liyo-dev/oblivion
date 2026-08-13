@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9201a7fb4aa9c454bbc45285f1dc4852, type: 3}
+  m_Name: IT_W_AC05_Horn03
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemId: w_ac05_horn03
+  displayNameId: ITEM_AC05_HORN03_NAME
+  displayName: Cuerno Doble
+  icon: {fileID: 21300000, guid: c263fff5cc1a4e1f9e116f3feff9bc32, type: 3}
+  usableFromInventory: 0
+  useEffects: []
+  useDescriptionId: ITEM_AC05_HORN03_DESC
+  useDescription: "Dos peque\xF1os cuernos gemelos."
+  usageKind: 2
+  buyPrice: 0
+  sellValue: 0
+  wardrobeUnlock: {fileID: 11400000, guid: 890a624baf57494f8ac08c091a30fc1f, type: 2}

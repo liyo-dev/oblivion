@@ -91,6 +91,14 @@
         {
             "key": "MINIGAME_WIN",
             "value": "¡Escapaste!"
+        },
+        {
+            "key": "TUTORIAL_MOVE_INSPECT",
+            "value": "Usa {BOTON} para mover a Will. Inspecciona la habitación."
+        },
+        {
+            "key": "TUTORIAL_WAKE_UP",
+            "value": "Pulsa {BOTON} para despertar a Will"
         }
     ]
 }

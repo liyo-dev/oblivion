@@ -1,0 +1,358 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1029512300958999053
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1255068178301339580}
+  - component: {fileID: 2688257236441529212}
+  m_Layer: 0
+  m_Name: ShopMenu_TestWardrobe
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1255068178301339580
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1029512300958999053}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2688257236441529212
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1029512300958999053}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0385a8a75af9244c815c370f0ddc573, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShopController
+  currencyItem: {fileID: 11400000, guid: 25c804f6289cb4945a3a9761b8e94e96, type: 2}
+  stock:
+  - item: {fileID: 11400000, guid: 88c28a62472a4cb4af8a7ebcfdb269b9, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 0de1c82473e94050b05a1a28e47fa33c, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: a7b8770f1be64a55b360706322b75379, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 8bcbed566e2741e9971eb149d1f2fa87, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: a1d8cefdff7f4e46afff945bf310a5ac, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 1e1e81c34fbd4e69bbea1203a1a07594, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 55cc95ffc77922c48be10c576b6b9734, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 1b86681bca3e4f72b3067ec18c685f37, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: c50a907b8061e5c4b828094209d03d6b, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 6656b50fb06f459e91aa97515ebb38c7, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 0a7c8575e2e6494a8cb4a3f83edf2e05, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: a9ad41283a724c54ab3942374f7d43db, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: f8b96ad3b67145dba790166c71de3e76, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 5b6f40fd73ac41ff8f39d1796a1a1e2f, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 23691261c5b24a32a0aef0c0ef0eecd7, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 7b66f60ded0546d5a8714e7e5e05f851, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: b5bffba072ac448895cf0e0c24aa5bf7, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: c1121effed1b40b28c77fbafe9fcf4c8, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: c50c96784e924ca89d04ce7d97c8b103, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 42b5c1623b6b434891c39475f564997b, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 05f940545e1a450589ea531d5dbf3b8d, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: b2b70c2b5ebe440ca492bc5ddbdfb6c7, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: fc85a53efd724a8ea424fd474c134ece, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: e95d5d52b7964f6781d0b6a3f78b4b17, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 4a8ba7a84fcf481083455fbee3dfe7af, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 2c195f92f388422e967933971a26fd87, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 139db7bca30b4e8592277c3b7d01a0f1, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 02fe1c4f724a41b6ac98ea2534f00550, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 651a648a5e64447e9a354c3fe2c8efa9, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: d6c29a75cf8144a3bd78141f680bfada, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 453d6c0796a44bdb826c8dc717b9a769, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 0f19b76838c64782a5991543398d9358, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 981e416789924e39b3e07c7a3213d81e, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 3edb5762469c416581a7a3f6acb7c8c5, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: e41b937dfc3d4d3e8abdb8a35a30315a, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: c7977e287a9844f397fa1ab1a85f69bf, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: a2a95a8328f047ae9e764d85841368f2, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 7a2bce968847441d898680ef64821ef8, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 034395be156e46e5be6e6bd387aae2ee, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 6ffd1f37064d48269e978e44cec6db7d, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 28edd601cbde4876a7f8d761d4937a45, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: ab31f7ec08d84d179ead1e6f10109229, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: e9f0da477d9f46fb8eedad00b9e89350, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: fd88910546b34cc0b305e063360ebc06, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: fba0c78311454b06b071e230a9d5a792, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: c6358e5979054db89dd9276505b88c69, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: fe6805aa678840b6a82633b7bf61ba2b, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 3ef67a1cd04e4f7fb062ddc416ef5e9b, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: e8a8734895dd49db8c0267bd4392a7ed, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 28c2e76075c14e7cb3e4638aafe16b5e, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 1478972aa0b744a295301560f9067b67, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 04d778632c39497cb9702d36ce1474fb, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: cb031fd107704157bf372985c4780e3a, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 7326b5a5e1654f63b62b4f63f2736677, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 866455056f624585af54a052866fb1b6, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 2142adcdc003469eaf9ec8e98d1e33d7, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 5f51885095f44c62b638affa1b3df268, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 9d93f5e00d6447648455ec7155256535, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 72d5668f92fd44a6bd260ec549b18117, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 6e49c2acf94484241bdfa6fef0997fd6, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: 12870a6ccc694bc7929fd3ac9714fbd2, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0
+  - item: {fileID: 11400000, guid: de0561f1337049ccb318ac4dcf8b309f, type: 2}
+    buyPriceOverride: 0
+    sellPriceOverride: -1
+    limitedStock: 0
+    startingStock: 0

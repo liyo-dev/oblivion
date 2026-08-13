@@ -29,11 +29,17 @@ public class MainMenuController : MonoBehaviour
     [Tooltip("Button de la fila AJUSTES.")]
     [SerializeField] private Button settingsButton;
 
+    [Tooltip("Button de la fila CONTROLES.")]
+    [SerializeField] private Button controlsButton;
+
     [Tooltip("Panel que contiene los botones principales del menú.")]
     [SerializeField] private GameObject buttonPanel;
 
     [Header("Settings")]
     [SerializeField] private SettingsMenuController settingsMenu;
+
+    [Header("Controls")]
+    [SerializeField] private ControlsMenuController controlsMenu;
 
     [Header("Scene when continuing")]
     [SerializeField] private string nextSceneContinue = "MainWorld";
@@ -91,15 +97,25 @@ public class MainMenuController : MonoBehaviour
         if (!settingsButton)
             settingsButton = TryFindSettingsButton();
 
+        if (!controlsButton)
+            controlsButton = TryFindControlsButton();
+
         if (!settingsMenu)
             settingsMenu = GetComponentInChildren<SettingsMenuController>(true);
+
+        if (!controlsMenu)
+            controlsMenu = GetComponentInChildren<ControlsMenuController>(true);
 
         if (settingsMenu)
             settingsMenu.Close(silent: true);
 
+        if (controlsMenu)
+            controlsMenu.Close(silent: true);
+
         WireButton(continueButton, OnClickContinue, "CONTINUE");
         WireButton(newGameButton, OnClickNewGame, "NEW GAME");
         WireButton(settingsButton, OnClickSettings, "SETTINGS");
+        WireButton(controlsButton, OnClickControls, "CONTROLS");
 
         // Ensure UISelectVisual exists on main menu buttons
         var menuButtons = GetComponentsInChildren<Button>(true);
@@ -135,19 +151,16 @@ public class MainMenuController : MonoBehaviour
 
         // Forzar modo UI de forma síncrona: cancela cualquier actualización diferida pendiente
         // que pudiera venir del gameplay anterior y deja refCount=1 para el PopUIMode de OnDisable.
-        var pim = Core.PlayerInputManager.Instance;
+        // Usamos EnsureExists() en vez de leer Instance directamente porque, según nuestra
+        // arquitectura, el menú debe poder cargarse desde su propia escena (ej: Play in Editor
+        // sobre MainMenu.unity) sin haber pasado antes por Start.unity, que es donde normalmente
+        // vive el PlayerInputManager persistente.
+        var pim = Core.PlayerInputManager.EnsureExists();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"[MainMenu-Debug] OnEnable — pim={pim != null}, GameState.MainMenu={GameState.Is(GamePhase.MainMenu)}");
 #endif
-        if (pim != null)
-        {
-            pim.ForceSyncEnterUIMode();
-        }
+        pim.ForceSyncEnterUIMode();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        else
-        {
-            Debug.LogError("[MainMenu-Debug] ❌ PlayerInputManager.Instance es NULL — controles UI no se activarán");
-        }
         // Log estado del EventSystem
         var es = UnityEngine.EventSystems.EventSystem.current;
         var uiMod = es != null ? es.GetComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>() : null;
@@ -499,6 +512,8 @@ public class MainMenuController : MonoBehaviour
                 if (buttonPanel != null)
                     buttonPanel.SetActive(true);
 
+                LogMenuState("OnClickSettings-AfterReopen");
+
                 RestartArmAfterSettingsClose();
 
                 // Restaurar la selección en el siguiente frame
@@ -515,6 +530,54 @@ public class MainMenuController : MonoBehaviour
         else
         {
             Debug.LogWarning("[MainMenu] No se encontró SettingsMenuController en la jerarquía ni en la escena.");
+        }
+    }
+
+    public void OnClickControls()
+    {
+        // SFX de confirmación
+        AudioService.Instance?.PlaySFX("UI_Submit");
+
+        if (!controlsMenu)
+            controlsMenu = GetComponentInChildren<ControlsMenuController>(true);
+
+        // Fallback: obtener desde el ServiceLocator si no se encuentra como hijo (mismo patrón que OnClickSettings)
+        if (!controlsMenu)
+        {
+            controlsMenu = ServiceLocator.Get<ControlsMenuController>(false);
+            Debug.Log($"[MainMenu] OnClickControls fallback ServiceLocator -> {(controlsMenu != null ? controlsMenu.name : "<null>")}");
+        }
+
+        if (controlsMenu != null)
+        {
+            if (buttonPanel != null)
+                buttonPanel.SetActive(false);
+
+            SuspendMainMenuInteraction();
+            LogMenuState("OnClickControls-BeforeShow");
+            controlsMenu.Show(() =>
+            {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.Log("[MainMenu-Debug] Controls onClosed callback INVOCADO");
+#endif
+                RestoreMainMenuInteraction();
+
+                if (buttonPanel != null)
+                    buttonPanel.SetActive(true);
+                else
+                    Debug.LogWarning("[MainMenu-Debug] buttonPanel es NULL en el callback de cierre de Controles");
+
+                LogMenuState("OnClickControls-AfterReopen");
+
+                RestartArmAfterSettingsClose();
+
+                // Restaurar la selección en el siguiente frame
+                StartCoroutine(RestoreSelectionNextFrame(null));
+            });
+        }
+        else
+        {
+            Debug.LogWarning("[MainMenu] No se encontró ControlsMenuController en la jerarquía ni en la escena.");
         }
     }
 
@@ -607,6 +670,22 @@ public class MainMenuController : MonoBehaviour
         }
     }
 
+    // ===== Debug (temporal — investigando "el menú desaparece tras Controles") =====
+    void LogMenuState(string tag)
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        var es = UnityEngine.EventSystems.EventSystem.current;
+        Debug.Log($"[MainMenu-Debug] {tag} — buttonPanel.activeSelf={(buttonPanel ? buttonPanel.activeSelf.ToString() : "NULL")}, " +
+                  $"buttonPanel.activeInHierarchy={(buttonPanel ? buttonPanel.activeInHierarchy.ToString() : "NULL")}, " +
+                  $"rootGroup.alpha={(rootGroup ? rootGroup.alpha.ToString("F2") : "NULL")}, " +
+                  $"rootGroup.interactable={(rootGroup ? rootGroup.interactable.ToString() : "NULL")}, " +
+                  $"rootGroup.blocksRaycasts={(rootGroup ? rootGroup.blocksRaycasts.ToString() : "NULL")}, " +
+                  $"rootGroup.GO.activeInHierarchy={(rootGroup ? rootGroup.gameObject.activeInHierarchy.ToString() : "NULL")}, " +
+                  $"EventSystem.selected={(es != null && es.currentSelectedGameObject != null ? es.currentSelectedGameObject.name : "NULL")}, " +
+                  $"MainMenuController.GO.activeInHierarchy={gameObject.activeInHierarchy}");
+#endif
+    }
+
     // ===== Utilidades =======================================================
     void WireButton(Button btn, UnityEngine.Events.UnityAction action, string label)
     {
@@ -646,6 +725,18 @@ public class MainMenuController : MonoBehaviour
         {
             var n = b.gameObject.name.ToLowerInvariant();
             if (n.Contains("setting") || n.Contains("ajuste") || n.Contains("config"))
+                return b;
+        }
+        return null;
+    }
+
+    Button TryFindControlsButton()
+    {
+        var all = GetComponentsInChildren<Button>(true);
+        foreach (var b in all)
+        {
+            var n = b.gameObject.name.ToLowerInvariant();
+            if (n.Contains("control"))
                 return b;
         }
         return null;

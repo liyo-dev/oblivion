@@ -465,5 +465,34 @@ namespace Core
             ownsInstance = true;
             return new PlayerControls();
         }
+
+        /// <summary>
+        /// Garantiza que exista un <see cref="PlayerInputManager"/>, creándolo dinámicamente si hace
+        /// falta. Normalmente la instancia viene de Start.unity y sobrevive vía DontDestroyOnLoad,
+        /// pero nuestra arquitectura exige que cada escena de entrada (ej: MainMenu) sea cargable de
+        /// forma autónoma, sin depender de haber pasado antes por Start.unity. PlayerInputManager no
+        /// depende de ningún asset serializado, así que crearlo bajo demanda aquí es seguro (mismo
+        /// patrón que usa GameBootService para auto-crear SaveSystem cuando falta).
+        /// </summary>
+        public static PlayerInputManager EnsureExists()
+        {
+            if (Instance != null)
+                return Instance;
+
+            // Puede existir ya en la escena pero aún no haber ejecutado Awake() este frame.
+            var existing = FindAnyObjectByType<PlayerInputManager>();
+            if (existing != null)
+                return existing;
+
+            var go = new GameObject("[PlayerInputManager]");
+            var created = go.AddComponent<PlayerInputManager>();
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning("[PlayerInputManager] Instancia creada dinámicamente vía EnsureExists() " +
+                              "— la escena se cargó sin pasar por Start.unity.");
+#endif
+
+            return created;
+        }
     }
 }

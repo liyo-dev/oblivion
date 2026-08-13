@@ -116,6 +116,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI levelText;
     [SerializeField] private TextMeshProUGUI hpText;
     [SerializeField] private TextMeshProUGUI mpText;
+    [Tooltip("Image con Type=Filled (Horizontal). Opcional: si esta vacio no se hace nada.")]
+    [SerializeField] private Image hpBarFill;
+    [SerializeField] private Image mpBarFill;
 
     string _levelLabel = "";
     string _hpLabel = "";
@@ -1404,7 +1407,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void UpdatePlayerInfoPanel()
     {
-        bool hasStatsText = levelText != null || hpText != null || mpText != null;
+        bool hasStatsText = levelText != null || hpText != null || mpText != null
+                            || hpBarFill != null || mpBarFill != null;
         bool hasAbilityUI = abilitiesRoot != null || abilityEntries.HasAnyEntry;
         if (!hasStatsText && !hasAbilityUI) return;
 
@@ -1422,30 +1426,46 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 levelText.text = string.IsNullOrEmpty(_levelLabel) ? value : $"{_levelLabel} {value}";
             }
 
-            if (hpText != null)
+            // Vida: se resuelve una sola vez y alimenta tanto el texto como la barra.
             {
-                string hpValue;
+                float cur = -1f, max = -1f;
                 if (PlayerService.TryGetComponent<PlayerHealthSystem>(out var health, includeInactive: true, allowSceneLookup: true))
-                    hpValue = $"{Mathf.CeilToInt(health.CurrentHealth)} / {Mathf.CeilToInt(health.MaxHealth)}";
+                {
+                    cur = health.CurrentHealth; max = health.MaxHealth;
+                }
                 else if (preset != null)
-                    hpValue = $"{Mathf.CeilToInt(preset.currentHP)} / {Mathf.CeilToInt(preset.maxHP)}";
-                else
-                    hpValue = "?";
+                {
+                    cur = preset.currentHP; max = preset.maxHP;
+                }
 
-                hpText.text = string.IsNullOrEmpty(_hpLabel) ? hpValue : $"{_hpLabel} {hpValue}";
+                if (hpText != null)
+                {
+                    string hpValue = max > 0f ? $"{Mathf.CeilToInt(cur)} / {Mathf.CeilToInt(max)}" : "?";
+                    hpText.text = string.IsNullOrEmpty(_hpLabel) ? hpValue : $"{_hpLabel} {hpValue}";
+                }
+                if (hpBarFill != null)
+                    hpBarFill.fillAmount = max > 0f ? Mathf.Clamp01(cur / max) : 0f;
             }
 
-            if (mpText != null)
+            // Mana: mismo patron.
             {
-                string mpValue;
+                float cur = -1f, max = -1f;
                 if (PlayerService.TryGetComponent<ManaPool>(out var mana, includeInactive: true, allowSceneLookup: true))
-                    mpValue = $"{Mathf.CeilToInt(mana.Current)} / {Mathf.CeilToInt(mana.Max)}";
+                {
+                    cur = mana.Current; max = mana.Max;
+                }
                 else if (preset != null)
-                    mpValue = $"{Mathf.CeilToInt(preset.currentMP)} / {Mathf.CeilToInt(preset.maxMP)}";
-                else
-                    mpValue = "?";
+                {
+                    cur = preset.currentMP; max = preset.maxMP;
+                }
 
-                mpText.text = string.IsNullOrEmpty(_mpLabel) ? mpValue : $"{_mpLabel} {mpValue}";
+                if (mpText != null)
+                {
+                    string mpValue = max > 0f ? $"{Mathf.CeilToInt(cur)} / {Mathf.CeilToInt(max)}" : "?";
+                    mpText.text = string.IsNullOrEmpty(_mpLabel) ? mpValue : $"{_mpLabel} {mpValue}";
+                }
+                if (mpBarFill != null)
+                    mpBarFill.fillAmount = max > 0f ? Mathf.Clamp01(cur / max) : 0f;
             }
         }
 
@@ -3277,6 +3297,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             public bool enabled = true;
             public PartCategory category;
             public Text label;
+            public Image icon;
             public Button previousButton;
             public Button nextButton;
             public Button clearButton;
@@ -3742,11 +3763,30 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 if (row?.label == null) continue;
 
                 string value = "Sin asignar";
+                string partName = null;
                 if (selection != null && selection.TryGetValue(kvp.Key, out var part) && !string.IsNullOrEmpty(part))
+                {
+                    partName = part;
                     value = ResolveDisplayName(kvp.Key, part);
+                }
 
                 row.label.text = $"{FormatCategory(kvp.Key)}: {value}";
+                UpdateRowIcon(row, kvp.Key, partName);
             }
+        }
+
+        // Muestra el icono del item equipado en la fila (si el item tiene uno asignado en su WardrobeItemSO).
+        // Items desbloqueados vía AutoUnlockAll() no tienen icono propio, así que se oculta el Image en ese caso.
+        void UpdateRowIcon(EquipmentBindings.RowBinding row, PartCategory category, string partName)
+        {
+            if (row.icon == null) return;
+
+            Sprite iconSprite = null;
+            if (!string.IsNullOrEmpty(partName) && _wardrobe != null && _wardrobe.TryGetEntry(category, partName, out var entry))
+                iconSprite = entry.icon;
+
+            row.icon.sprite = iconSprite;
+            row.icon.enabled = iconSprite != null;
         }
 
         void SetInteractable(EquipmentBindings.RowBinding row, bool canCycle, bool allowClear)

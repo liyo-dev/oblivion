@@ -73,6 +73,14 @@ namespace Game.NPC.Common
         /// <summary>True mientras ShelterEdgePosition contenga un valor válido (ver arriba).</summary>
         public bool HasShelterEdgePosition { get; set; }
 
+        /// <summary>
+        /// Copia de NPCShelterPoint.OwnerCollider capturada junto con ShelterEdgePosition, para que
+        /// ReturnFromShelterState pueda seguir ignorando el collider del propio árbol/prop al
+        /// recorrer el mismo tramo manual en sentido inverso (CurrentShelter ya está a null para
+        /// entonces, ver SeekShelterState.OnExit). Ver NPCStateBase.ManualApproachStep.
+        /// </summary>
+        public Collider ShelterEdgeOwnerCollider { get; set; }
+
         public NPCStateContext(NPCBrain brain, Transform transform, NavMeshAgent agent,
             NPCSimpleAnimator animator, Animator unityAnimator, Rigidbody rigidbody)
         {

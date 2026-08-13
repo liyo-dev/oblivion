@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9201a7fb4aa9c454bbc45285f1dc4852, type: 3}
+  m_Name: IT_W_AC07_PiratePatch
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemId: w_ac07_piratepatch
+  displayNameId: ITEM_AC07_PIRATEPATCH_NAME
+  displayName: Parche de Pirata
+  icon: {fileID: 21300000, guid: e77afc2098b9417db088c6377e2eb405, type: 3}
+  usableFromInventory: 0
+  useEffects: []
+  useDescriptionId: ITEM_AC07_PIRATEPATCH_DESC
+  useDescription: Un parche que oculta un ojo... o un secreto.
+  usageKind: 2
+  buyPrice: 0
+  sellValue: 0
+  wardrobeUnlock: {fileID: 11400000, guid: fd5794b29cb64c1bbed24bcf3b48866a, type: 2}
