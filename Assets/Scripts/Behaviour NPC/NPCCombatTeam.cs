@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Game.NPC.Common;
 using Game.NPC.Modules;
 
 namespace Game.NPC
@@ -474,16 +475,35 @@ namespace Game.NPC
         }
         
         _isRegrouping = false;
-        
-        // NO iniciamos combate aquí - dejamos que el sistema narrativo del líder maneje el flujo
-        // El diálogo se ejecutará después de la alerta, y al terminar el diálogo,
-        // la cadena narrativa activará el combate con EnterCombatAfterDialogue
-        
+
+        // ✅ FIX (INC pendiente de numerar - Lety/Vicky "no detecta" / retraso al combate):
+        // este comentario decía "dejamos que el sistema narrativo del líder maneje el flujo" y
+        // mencionaba un EnterCombatAfterDialogue que nunca llegó a implementarse - no había
+        // ninguna llamada real desde aquí hacia NPCInteractiveNarrativeExecutor. El único disparo
+        // que quedaba era el detector independiente y puramente por distancia del propio líder
+        // (NPCInteractiveNarrativeExecutor.DetectPlayerRoutine, sin relación con este reagrupamiento),
+        // lo que producía un retraso variable entre la detección real (Vicky, FOV+raycast) y el
+        // inicio del diálogo/combate - o directamente ningún combate si esa narrativa singleUse ya
+        // se había consumido en otra sesión. Disparamos aquí explícitamente la narrativa del líder
+        // en cuanto el equipo termina de reagruparse.
+        bool leaderNarrativeStarted = false;
+        if (_leaderManager.Configuration != null &&
+            _leaderManager.Configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative))
+        {
+            var leaderExecutor = _leaderManager.GetComponent<NPCInteractiveNarrativeExecutor>();
+            if (leaderExecutor != null)
+            {
+                leaderNarrativeStarted = leaderExecutor.TryExecuteNarrative();
+            }
+        }
+
         if (showDebugLogs)
         {
-            Debug.Log($"[NPCCombatTeam] {name}: Equipo reagrupado y listo - El sistema narrativo del líder manejará el diálogo y combate");
+            Debug.Log(leaderNarrativeStarted
+                ? $"[NPCCombatTeam] {name}: Equipo reagrupado - narrativa del líder disparada."
+                : $"[NPCCombatTeam] {name}: Equipo reagrupado - sin narrativa que disparar (líder sin NPCInteractiveNarrativeExecutor aplicable, ya en ejecución, o narrativa singleUse ya consumida).");
         }
-        
+
         // Notificar que el equipo está listo (el sistema narrativo continuará el flujo)
         OnTeamCombatStarted?.Invoke();
     }

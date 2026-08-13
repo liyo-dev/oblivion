@@ -8874,7 +8874,7 @@ MonoBehaviour:
   useShadowsOnlyOcclusion: 1
   obstructionMask:
     serializedVersion: 2
-    m_Bits: 7159
+    m_Bits: 41985
   obstructionCheckRadius: 0.15
   overrideTargetHeightOffset: 1.5
   currentTarget: {fileID: 0}

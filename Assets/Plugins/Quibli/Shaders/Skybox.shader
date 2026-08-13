@@ -1,4 +1,4 @@
-﻿Shader "Quibli/Skybox"
+Shader "Quibli/Skybox"
 {
     Properties
     {
@@ -11,6 +11,12 @@
         [Space]
         _DirectionYaw ("Direction X angle", Range (0, 1)) = 0
         _DirectionPitch ("Direction Y angle", Range (0, 1)) = 0
+
+        [Space]
+        // Anadido para El Sendero de las Estrellas (13 ago 2026): tinte multiplicativo para poder
+        // pintar un unico gradiente (p.ej. City_Skybox) de distintos colores por franja horaria
+        // desde DayNightCycle, sin cambiar de Material ni de textura de gradiente. Blanco = sin cambio.
+        _Tint ("Tint", Color) = (1, 1, 1, 1)
     }
 
     CGINCLUDE
@@ -35,6 +41,7 @@
     float _DirectionYaw, _DirectionPitch;
     float _Intensity;
     float _Exponent;
+    fixed4 _Tint;
 
     v2f vert(appdata v) {
         v2f o;
@@ -57,7 +64,7 @@
         const float3 direction = float3(sin(pitch) * sin(yaw), cos(pitch), sin(pitch) * cos(yaw));
         const float d = dot(normalize(i.texcoord), direction) * 0.5f + 0.5f;
         const float alpha = pow(d, _Exponent);
-        return UNITY_SAMPLE_TEX2D(_Gradient, float2(alpha, 0.5f)) * _Intensity;
+        return UNITY_SAMPLE_TEX2D(_Gradient, float2(alpha, 0.5f)) * _Intensity * _Tint;
     }
     ENDCG
 

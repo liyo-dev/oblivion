@@ -63,7 +63,11 @@ public class TagMinigameController : MonoBehaviour
     [SerializeField] private Transform playerSpawnPoint;
     [Tooltip("Si está vacío, usa la posición actual del perseguidor al iniciar")]
     [SerializeField] private Transform chaserSpawnPoint;
-    
+
+    [Header("Reaparición al Fallar (Atrapado / Tiempo Agotado)")]
+    [Tooltip("SpawnAnchor de la escena donde debe reaparecer el jugador si falla el minijuego (le atrapan o se agota el tiempo). Ej: el anchor de la Taberna. Si está vacío, se mantiene el comportamiento anterior: el jugador reaparece en el último punto guardado.")]
+    [SerializeField] private SpawnAnchor failRespawnAnchor;
+
     [Header("Gestión del Party")]
     [Tooltip("ID narrativo del NPC perseguidor (ej: 'NPC_InteractiveNarrative_Config_Estela_b17a2d68'). Se usa si chaserNPC está vacío.")]
     [SerializeField] private string chaserNarrativeId = "";
@@ -1847,8 +1851,45 @@ public class TagMinigameController : MonoBehaviour
                 bootProfile.LoadProfile(saveSystem);
         }
 
+        // Si se asignó un anchor de reaparición (failRespawnAnchor), forzarlo AHORA — después de
+        // recargar el guardado/preset (que es quien normalmente decide el spawnAnchorId) y justo
+        // antes de recargar la escena, para que WorldBootstrap coloque al jugador ahí en vez de en
+        // el último punto guardado.
+        ApplyFailRespawnAnchorOverride();
+
         Time.timeScale = 1f;
         SceneTransitionLoader.Load(sceneName);
+    }
+
+    /// <summary>
+    /// Sobreescribe el spawnAnchorId del preset activo con failRespawnAnchor (si está asignado),
+    /// para que al fallar el minijuego (atrapado o tiempo agotado) el jugador reaparezca en ese
+    /// anchor (p.ej. la Taberna) en vez de en el último punto guardado.
+    /// NOTA: en modo test/preset override (GameBootService.IsPresetOverrideActive), WorldBootstrap
+    /// vuelve a llamar EnsureRuntimePresetFromTemplate() al inicializar la escena recargada, lo que
+    /// pisa este valor con el anchor del bootPreset — el override solo es 100% fiable en partida
+    /// normal (sin preset de testeo forzado).
+    /// </summary>
+    private void ApplyFailRespawnAnchorOverride()
+    {
+        if (failRespawnAnchor == null) return;
+
+        if (string.IsNullOrEmpty(failRespawnAnchor.anchorId))
+        {
+            Debug.LogWarning("[TagMinigame] failRespawnAnchor asignado pero sin anchorId — se ignora el override de reaparición.");
+            return;
+        }
+
+        var bootProfile = GameBootService.Profile;
+        var preset = bootProfile != null ? bootProfile.GetActivePresetResolved() : null;
+        if (preset == null)
+        {
+            Debug.LogWarning($"[TagMinigame] No se pudo forzar el anchor de reaparición '{failRespawnAnchor.anchorId}': preset activo no disponible.");
+            return;
+        }
+
+        preset.spawnAnchorId = failRespawnAnchor.anchorId;
+        Debug.Log($"[TagMinigame] 📍 Minijuego fallado — el jugador reaparecerá en '{failRespawnAnchor.anchorId}'.");
     }
 
     private IEnumerator StartWithCountdown(bool isRestart = false)

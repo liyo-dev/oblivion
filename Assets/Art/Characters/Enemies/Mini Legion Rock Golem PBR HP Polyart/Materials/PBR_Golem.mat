@@ -59,6 +59,8 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _DETAILMAPBLENDINGMODE_MULTIPLY
+  - _NORMALMAP
+  - _RECEIVE_SHADOWS_OFF
   - _TEXTUREBLENDINGMODE_MULTIPLY
   m_InvalidKeywords:
   - _EMISSIVE_SIMPLE
@@ -68,7 +70,7 @@ Material:
   - _METALLICGLOSSMAP
   - _OUTLINE_NML
   - _RECEIVESHADOWS_OFF
-  m_LightmapFlags: 2
+  m_LightmapFlags: 6
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: 2000

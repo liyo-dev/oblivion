@@ -16548,15 +16548,14 @@ GameObject:
   - component: {fileID: 2487325561647847331}
   - component: {fileID: 9096993529721017303}
   - component: {fileID: 3345036988384926563}
-  - component: {fileID: 5820310020371357658}
   - component: {fileID: 3803957872735856074}
-  - component: {fileID: 7369555659256803442}
+  - component: {fileID: 3453056022346236038}
   m_Layer: 7
   m_Name: Boy_Pirate
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 1
-  m_StaticEditorFlags: 8
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &5920348065596156751
 Transform:
@@ -16712,6 +16711,7 @@ MonoBehaviour:
   OnConsumed:
     m_PersistentCalls:
       m_Calls: []
+  defaultSightHeight: 1.4
 --- !u!114 &6453314053097790552
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16810,8 +16810,8 @@ MonoBehaviour:
     stuckThreshold: 0.02
     useKinematicRigidbody: 1
     rigidbodyConstraints: 112
-  debugMode: 1
-  disableWander: 0
+  debugMode: 0
+  disableWander: 1
   startInIdleState: 1
   forceKinematicRigidbody: 1
   persistLastPosition: 0
@@ -16849,24 +16849,6 @@ MonoBehaviour:
   eyePrefix: Eye
   mouthPrefix: Mouth
   debugMode: 0
---- !u!114 &5820310020371357658
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7766501778076261952}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 62b6f2293afaf924e9901281974f75ad, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Damageable
-  maxHealth: 100
-  destroyOnDeath: 1
-  deathVFX: {fileID: 0}
-  deathVFXLifetime: 3
-  invulnerabilitySeconds: 0
-  debugLogs: 0
 --- !u!114 &3803957872735856074
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16881,7 +16863,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::OrbDropper
   _profileId: 
   _spawnOrigin: {fileID: 0}
---- !u!114 &7369555659256803442
+--- !u!114 &3453056022346236038
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -16890,28 +16872,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 7766501778076261952}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 48c589b8b5d5453ca5d4f543e87e91cb, type: 3}
+  m_Script: {fileID: 11500000, guid: 62b6f2293afaf924e9901281974f75ad, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::LevitationTarget
-  canBeLevitated: 1
-  pullForceMultiplier: 1
-  pushForceMultiplier: 8
-  levitationAnimState: LevelUp_NoWeapon
-  holdPauseNormalizedTime: 0.5
-  liftSpeed: 3
-  hitAnimState: Hit
-  hitAnimDuration: 0.4
-  disableNavMeshDuringLevitation: 1
-  levitationDrag: 2
-  wallBounceForce: 8
-  wallBounceMinSpeed: 0.5
-  levitationVFXPrefab: {fileID: 6403252182692130976, guid: 4e12b3c53c0f8ee4da83655d8d2770d5, type: 3}
-  impactVFXPrefab: {fileID: 5024009746357069194, guid: ec3f674830402cc45bce805cf6493db7, type: 3}
-  impactVFXLifetime: 2
-  vfxOffset: {x: 0, y: 1, z: 0}
-  vfxScale: {x: 0.3, y: 0.3, z: 0.3}
-  vfxFollowsTarget: 1
-  showDebugLogs: 0
+  m_EditorClassIdentifier: Assembly-CSharp::Damageable
+  maxHealth: 100
+  destroyOnDeath: 1
+  deathVFX: {fileID: 0}
+  deathVFXLifetime: 3
+  invulnerabilitySeconds: 0
+  debugLogs: 0
 --- !u!1 &7777589608161427968
 GameObject:
   m_ObjectHideFlags: 0

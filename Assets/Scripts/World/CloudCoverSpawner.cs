@@ -4,10 +4,11 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 /// <summary>
-/// Genera un techo de nubes 3D reales (mallas del pack Low Poly Modular Terrain, u otras que se
-/// asignen) alrededor del jugador la PRIMERA vez que el cielo se está nublando, para que se vea
-/// un cielo literalmente cubierto de nubes (sin skybox visible entre huecos) en vez de solo un
-/// cambio de material de skybox.
+/// Genera un techo de nubes estilizadas (mallas con el shader Quibli/Cloud3D — recomendado, ver
+/// prefabs QuibliRainCloud3D_1..4 en Assets/Prefabs/VFX/ — quads con Quibli/Cloud2D, o cualquier
+/// otro prefab de nube que se asigne) alrededor del jugador la PRIMERA vez que el cielo se está
+/// nublando, para que se vea un cielo literalmente cubierto de nubes (sin skybox visible entre
+/// huecos) en vez de solo un cambio de material de skybox.
 ///
 /// El techo se construye UNA sola vez y luego queda FIJO en el mundo (no sigue al jugador frame
 /// a frame). En lluvias posteriores se reutiliza el mismo conjunto de mallas ya instanciadas
@@ -17,28 +18,38 @@ using UnityEngine.Rendering;
 /// Totalmente desacoplado de DayNightCycle: se limita a escuchar sus eventos
 /// (CloudsBuildingUp / RainStopped), tal como pide la arquitectura del proyecto (comunicación
 /// entre sistemas por eventos C#, no referencias directas entre managers).
+///
+/// 13 ago 2026: restaurado el modo QuibliCloud3D (había existido antes, en el commit
+/// cf6ca2002/bfb27c983, y se revirtió en 81d65a9cc por daño colateral en OTROS materiales del
+/// proyecto — no por un problema de este sistema en sí). El alcance sigue siendo el mismo que ya
+/// existía: nubes como aviso previo a la lluvia, no un sistema de nubosidad ambiental
+/// independiente (ver TDD.md §16 Parte B para esa idea, aparcada por ahora).
 /// </summary>
 public class CloudCoverSpawner : MonoBehaviour
 {
+    public enum CloudShaderMode { QuibliCloud3D, QuibliCloud2D, LegacyBaseColor }
+
     [Header("Referencias")]
     [Tooltip("DayNightCycle a escuchar. Si es null, se busca uno en la escena en Awake (una sola vez).")]
     [SerializeField] private DayNightCycle dayNightCycle;
 
     [Header("Nubes")]
-    [Tooltip("Prefabs de malla de nube a repartir por el techo (p.ej. Cloud_01..04 del Low Poly Modular Terrain Pack). Se elige uno al azar por instancia.")]
+    [Tooltip("Prefabs de nube a repartir por el techo. Recomendado: QuibliRainCloud3D_1..4 (Assets/Prefabs/VFX/), mallas Cloud3D de Quibli como las del [Demo] SampleSceneWithQuibli. Se elige uno al azar por instancia.")]
     [SerializeField] private GameObject[] cloudPrefabs;
-    [Tooltip("Altura sobre el jugador a la que se coloca el CENTRO del techo de nubes la PRIMERA vez que se construye (después el techo queda fijo en el mundo, no vuelve a recalcularse aunque el jugador se mueva). Las nubes NO tienen collider (los prefabs Cloud_XX son solo malla+material), así que si el jugador puede volar (PlayerFlyingController) las atraviesa sin más: por debajo se ve el cielo cubierto, por encima el cielo/skybox normal (el skybox nunca se toca, así que el sol sigue ahí arriba). Si minClearanceAboveFollowTarget detecta que esta altura no basta para las mallas ya escaladas, se sube automáticamente.")]
-    [SerializeField] private float cloudHeight = 45f;
+    [Tooltip("Altura sobre el jugador a la que se coloca el CENTRO del techo de nubes la PRIMERA vez que se construye (después el techo queda fijo en el mundo, no vuelve a recalcularse aunque el jugador se mueva). Las nubes NO tienen collider, así que si el jugador puede volar (PlayerFlyingController) las atraviesa sin más: por debajo se ve el cielo cubierto, por encima el cielo/skybox normal (el skybox nunca se toca, así que el sol sigue ahí arriba). Si minClearanceAboveFollowTarget detecta que esta altura no basta para las mallas ya escaladas, se sube automáticamente.")]
+    [SerializeField] private float cloudHeight = 60f;
     [Tooltip("Radio horizontal alrededor del jugador que cubre el techo de nubes. Cuanto más grande, menos se nota el borde del área cubierta, pero más instancias hacen falta.")]
     [SerializeField] private float coverRadius = 150f;
-    [Tooltip("Separación aproximada entre nubes de la rejilla. Más bajo = más denso = tapa mejor el cielo, pero más nubes instanciadas.")]
-    [SerializeField] private float cellSize = 18f;
+    [Tooltip("Separación aproximada entre nubes de la rejilla. Más bajo = más denso = tapa mejor el cielo, pero más nubes instanciadas (y más overdraw con quads transparentes).")]
+    [SerializeField] private float cellSize = 30f;
     [Tooltip("Variación aleatoria de posición dentro de cada celda de la rejilla, para que no se note el patrón regular.")]
     [SerializeField, Range(0f, 1f)] private float jitter = 0.5f;
-    [Tooltip("Escala mínima/máxima aplicada a cada nube instanciada. OJO: los prefabs Cloud_XX del Low Poly Modular Terrain Pack ya son grandes de por sí (en el pack se usan típicamente a escala 3-6); una escala muy alta aquí puede hacer que las nubes sean tan enormes que la cámara termine literalmente dentro de una (pantalla gris plana). minClearanceAboveFollowTarget protege contra eso, pero conviene no pasarse igualmente.")]
-    [SerializeField] private Vector2 scaleRange = new Vector2(5f, 9f);
+    [Tooltip("Escala mínima/máxima aplicada a cada nube, MULTIPLICANDO la escala base del prefab (los QuibliRainCloud3D_X ya vienen normalizados a ~25-33 unidades de ancho a escala 1). Con 0.8-1.5 y cellSize 30 las nubes se tocan/solapan lo justo para leerse como un techo de tormenta sin dejar huecos grandes. minClearanceAboveFollowTarget protege contra el caso de que la cámara acabe dentro de una nube.")]
+    [SerializeField] private Vector2 scaleRange = new Vector2(0.8f, 1.5f);
     [Tooltip("Límite de seguridad de instancias, por si coverRadius/cellSize generan una rejilla enorme.")]
     [SerializeField] private int maxCloudInstances = 300;
+    [Tooltip("Variación aleatoria de altura (±) de cada nube respecto al plano del techo. Rompe el plano perfecto (más natural) y evita que todos los quads transparentes queden coplanares, lo que provoca artefactos de ordenación al mirarlos desde abajo.")]
+    [SerializeField] private float heightJitter = 12f;
     [Tooltip("Margen mínimo, en unidades de mundo, entre el punto más bajo de la malla de nubes ya instanciada/escalada y el jugador. Tras construir el techo se mide su altura REAL (no solo cloudHeight) y si no deja este margen, se sube el techo entero lo que haga falta. Es la protección contra 'la cámara se queda dentro de la nube' si cloudHeight/scaleRange quedan mal calibrados para el prefab que uses.")]
     [SerializeField] private float minClearanceAboveFollowTarget = 25f;
 
@@ -49,8 +60,16 @@ public class CloudCoverSpawner : MonoBehaviour
     private float _recenterTimer;
 
     [Header("Aspecto de tormenta")]
-    [Tooltip("Color al que se tiñen las nubes al cubrir el cielo (el alfa se anima aparte, de 0 a 1). Gris de tormenta medio por defecto: lo bastante oscuro para leerse como nublado, sin llegar a negro.")]
+    [Tooltip("Color de sombreado de tormenta. Solo se usa en modo QuibliCloud2D (_ShadowColor) y LegacyBaseColor (_BaseColor). En QuibliCloud3D no hace falta: el tono tormentoso lo pone la propia luz de la escena al oscurecerse con la lluvia.")]
     [SerializeField] private Color stormCloudColor = new Color(0.42f, 0.43f, 0.47f);
+    [Tooltip("Cuánto sombreado de tormenta (_ShadowAmount de Quibli/Cloud2D) tienen las nubes una vez formadas del todo. 0 = nubes blancas de buen tiempo, 1 = panza de tormenta muy marcada. Se anima junto al alfa: mientras la nube aparece también se va oscureciendo.")]
+    [SerializeField, Range(0f, 1f)] private float stormShadowAmount = 0.55f;
+    [Tooltip("Shader de los prefabs de nube. QuibliCloud3D (por defecto y recomendado): mallas del Foliage Generator con Quibli/Cloud3D; el fundido 'erosiona' el recorte de alfa (_AlphaThreshold), con efecto de materializarse/disiparse — así las nubes 'vienen y se van' en vez de aparecer/desaparecer de golpe. QuibliCloud2D: quads con Quibli/Cloud2D (_Opacity + _ShadowColor/_ShadowAmount). LegacyBaseColor: comportamiento antiguo (_BaseColor con alfa) para mallas tipo Low Poly.")]
+    [SerializeField] private CloudShaderMode cloudShaderMode = CloudShaderMode.QuibliCloud3D;
+    [Tooltip("Solo con QuibliCloud3D: valor de _AlphaThreshold cuando la nube está formada del todo (0.5 en el material del demo de Quibli, SampleScene_Cloud3D.mat). El fundido anima desde 1 (invisible) hasta este valor.")]
+    [SerializeField, Range(0.05f, 1f)] private float visibleAlphaThreshold = 0.5f;
+    [Tooltip("Solo con QuibliCloud2D: activa el billboard del shader (_Billboard) para que cada quad mire siempre a cámara. Si se desactiva, los quads se tumban mirando al suelo con giro aleatorio (aspecto de 'techo' plano).")]
+    [SerializeField] private bool billboard = true;
 
     [Header("Transición")]
     [Tooltip("Si es true, usa DayNightCycle.RainDarkenTransitionDuration para sincronizar la aparición/disipación con el oscurecimiento del cielo. Si es false, usa fadeDuration.")]
@@ -59,6 +78,13 @@ public class CloudCoverSpawner : MonoBehaviour
     [SerializeField] private float fadeDuration = 6f;
 
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+    // Propiedades del shader Quibli/Cloud2D (ver Assets/Plugins/Quibli/Shaders/Cloud2D.shadergraph).
+    private static readonly int OpacityId = Shader.PropertyToID("_Opacity");
+    private static readonly int ShadowColorId = Shader.PropertyToID("_ShadowColor");
+    private static readonly int ShadowAmountId = Shader.PropertyToID("_ShadowAmount");
+    private static readonly int BillboardId = Shader.PropertyToID("_Billboard");
+    // Propiedad del shader Quibli/Cloud3D (recorte de alfa que anima la formación/disipación).
+    private static readonly int AlphaThresholdId = Shader.PropertyToID("_AlphaThreshold");
 
     private Transform _root;
     private Transform _followTransform;
@@ -207,11 +233,12 @@ public class CloudCoverSpawner : MonoBehaviour
 
                 float x = baseX + UnityEngine.Random.Range(-jitterRange, jitterRange);
                 float z = baseZ + UnityEngine.Random.Range(-jitterRange, jitterRange);
+                float y = UnityEngine.Random.Range(-heightJitter, heightJitter);
 
                 var instance = Instantiate(prefab, _root);
-                instance.transform.localPosition = new Vector3(x, 0f, z);
-                instance.transform.localRotation = Quaternion.Euler(0f, UnityEngine.Random.Range(0f, 360f), 0f);
-                instance.transform.localScale = Vector3.one * UnityEngine.Random.Range(scaleRange.x, scaleRange.y);
+                instance.transform.localPosition = new Vector3(x, y, z);
+                instance.transform.localRotation = CloudRotation();
+                instance.transform.localScale = prefab.transform.localScale * UnityEngine.Random.Range(scaleRange.x, scaleRange.y);
 
                 CollectRenderers(instance);
                 spawned++;
@@ -223,6 +250,23 @@ public class CloudCoverSpawner : MonoBehaviour
         _currentAlpha = 0f;
         ApplyAlpha(0f);
         _built = true;
+    }
+
+    /// <summary>
+    /// Rotación inicial de cada nube. Con el shader Quibli en modo billboard la orientación real
+    /// la decide el shader (siempre de cara a cámara), así que se deja identidad. Sin billboard,
+    /// los quads se tumban mirando al suelo (90º en X) con giro aleatorio para variar. En modo
+    /// Cloud3D/legacy (mallas 3D) se mantiene el giro aleatorio en Y de siempre.
+    /// </summary>
+    Quaternion CloudRotation()
+    {
+        if (cloudShaderMode == CloudShaderMode.QuibliCloud2D)
+            return billboard
+                ? Quaternion.identity
+                : Quaternion.Euler(90f, UnityEngine.Random.Range(0f, 360f), 0f);
+
+        // Mallas 3D (QuibliCloud3D o LegacyBaseColor): giro aleatorio en Y para variar siluetas.
+        return Quaternion.Euler(0f, UnityEngine.Random.Range(0f, 360f), 0f);
     }
 
     /// <summary>
@@ -306,8 +350,17 @@ public class CloudCoverSpawner : MonoBehaviour
 
     void ApplyAlpha(float alpha)
     {
-        Color c = stormCloudColor;
-        c.a = alpha;
+        Color legacyColor = stormCloudColor;
+        legacyColor.a = alpha;
+
+        // Con Cloud2D, el sombreado de tormenta se anima junto al alfa: la nube aparece clara y
+        // se va oscureciendo a medida que se hace opaca ("se carga de lluvia").
+        float shadowAmount = stormShadowAmount * alpha;
+        float billboardValue = billboard ? 1f : 0f;
+        // Con Cloud3D, bajar el umbral desde >1 hasta el valor visible hace que la nube se
+        // 'materialice' pixel a pixel (y se erosione al disiparse) — así "vienen y se van" en vez
+        // de aparecer/desaparecer de golpe.
+        float alphaThreshold = Mathf.Lerp(1.01f, visibleAlphaThreshold, alpha);
 
         for (int i = 0; i < _renderers.Count; i++)
         {
@@ -315,7 +368,21 @@ public class CloudCoverSpawner : MonoBehaviour
             if (r == null) continue;
 
             r.GetPropertyBlock(_mpb);
-            _mpb.SetColor(BaseColorId, c);
+            switch (cloudShaderMode)
+            {
+                case CloudShaderMode.QuibliCloud3D:
+                    _mpb.SetFloat(AlphaThresholdId, alphaThreshold);
+                    break;
+                case CloudShaderMode.QuibliCloud2D:
+                    _mpb.SetFloat(OpacityId, alpha);
+                    _mpb.SetColor(ShadowColorId, stormCloudColor);
+                    _mpb.SetFloat(ShadowAmountId, shadowAmount);
+                    _mpb.SetFloat(BillboardId, billboardValue);
+                    break;
+                default:
+                    _mpb.SetColor(BaseColorId, legacyColor);
+                    break;
+            }
             r.SetPropertyBlock(_mpb);
         }
     }

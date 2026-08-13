@@ -62,7 +62,7 @@ Material:
   - _TEXTUREBLENDINGMODE_MULTIPLY
   m_InvalidKeywords:
   - _RECEIVESHADOWS_OFF
-  m_LightmapFlags: 2
+  m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: 2000

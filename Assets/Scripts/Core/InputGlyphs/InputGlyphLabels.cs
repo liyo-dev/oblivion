@@ -115,6 +115,12 @@ namespace Core.InputGlyphs
                 case InputGlyphNames.DpadRight: // "." en teclado
                     return kb ? "." : "D-Pad derecha";
 
+                case InputGlyphNames.DpadUp: // "J" en teclado, ver PlayerControls.inputactions
+                    return kb ? "J" : "D-Pad arriba";
+
+                case InputGlyphNames.DpadDown: // "G" en teclado, ver PlayerControls.inputactions
+                    return kb ? "G" : "D-Pad abajo";
+
                 default:
                     return "?";
             }

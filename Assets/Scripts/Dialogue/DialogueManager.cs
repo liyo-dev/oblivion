@@ -1113,17 +1113,34 @@ public class DialogueManager : MonoBehaviour
             "<gpadonly>(.*?)</gpadonly>",
             System.Text.RegularExpressions.RegexOptions.Compiled | System.Text.RegularExpressions.RegexOptions.Singleline);
 
+    // 2026-08-12 — Complemento de <gpadonly> para el caso inverso: segmentos de contenido que solo
+    // tienen sentido en TECLADO&RATÓN, envueltos como "<kbonly>...</kbonly>". Caso que lo motiva:
+    // PROTECCIÓN (ver PlayerShieldController) pide mantener LT+RT a la vez en mando, pero en
+    // PlayerControls.inputactions ambas acciones comparten binding de teclado (<Keyboard>/leftCtrl,
+    // ver comentario en InputGlyphLabels.GetLabel) — con una sola frase para los dos dispositivos la
+    // línea salía "presionas CTRL y CTRL a la vez", que no tiene sentido para nadie con teclado (una
+    // sola tecla no se pulsa "a la vez" consigo misma). Con <kbonly>/<gpadonly> el JSON puede dar dos
+    // redacciones distintas para la misma línea: en teclado se resuelve dejando el texto de
+    // <kbonly> tal cual (sin las etiquetas) y se elimina el segmento <gpadonly> entero; en mando es
+    // al revés. Mismo límite conocido que <gpadonly> (ver comentario de arriba): no se refresca en
+    // caliente si cambias de dispositivo a mitad de una línea ya visible.
+    private static readonly System.Text.RegularExpressions.Regex _keyboardOnlyTagRegex =
+        new System.Text.RegularExpressions.Regex(
+            "<kbonly>(.*?)</kbonly>",
+            System.Text.RegularExpressions.RegexOptions.Compiled | System.Text.RegularExpressions.RegexOptions.Singleline);
+
     private static string ResolveDeviceConditionalText(string text)
     {
-        if (string.IsNullOrEmpty(text) || !text.Contains("<gpadonly>"))
+        if (string.IsNullOrEmpty(text) || (!text.Contains("<gpadonly>") && !text.Contains("<kbonly>")))
             return text;
 
         bool isKeyboard = InputGlyphService.CurrentFamily == InputGlyphDeviceFamily.KeyboardMouse;
         text = _gamepadOnlyTagRegex.Replace(text, m => isKeyboard ? string.Empty : m.Groups[1].Value);
+        text = _keyboardOnlyTagRegex.Replace(text, m => isKeyboard ? m.Groups[1].Value : string.Empty);
 
-        // Limpieza de espacios sueltos que deja la eliminación del segmento en teclado, p.ej.
-        // "usar <sprite name=\"interactable_dpad_up\"> <gpadonly>ARRIBA</gpadonly>." pasa a
-        // "usar <sprite name=\"interactable_dpad_up\">  ." (doble espacio + espacio antes del
+        // Limpieza de espacios sueltos que deja la eliminación del segmento no aplicable al
+        // dispositivo actual, p.ej. "usar <sprite name=\"interactable_dpad_up\"> <gpadonly>ARRIBA</gpadonly>."
+        // pasa a "usar <sprite name=\"interactable_dpad_up\">  ." (doble espacio + espacio antes del
         // punto) si no se normaliza.
         text = System.Text.RegularExpressions.Regex.Replace(text, " {2,}", " ");
         text = System.Text.RegularExpressions.Regex.Replace(text, " +([.,!?])", "$1");

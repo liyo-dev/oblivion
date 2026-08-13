@@ -130,7 +130,7 @@ MonoBehaviour:
   - eventKey: Boss_Roar
     sfx: {fileID: 8300000, guid: f0f99efc445f4a9498022edafe5c6057, type: 3}
   - eventKey: Player_Damage
-    sfx: {fileID: 8300000, guid: 5b24af6220de802aabac259142ba6356, type: 3}
+    sfx: {fileID: 8300000, guid: 78f91d28ee28c016a8a54ffe9a5cb431, type: 3}
   - eventKey: Player_Heal
     sfx: {fileID: 8300000, guid: b7a29b1ccf0d999bf9fba0b0719181c6, type: 3}
   - eventKey: Player_Death
@@ -198,7 +198,7 @@ MonoBehaviour:
   - eventKey: EstelaAppears_Bow
     sfx: {fileID: 8300000, guid: 7e41ebba04479919cbf4850960cd7b28, type: 3}
   - eventKey: CrystalBall_EvilPulse
-    sfx: {fileID: 8300000, guid: e8639f5eb93d71d9e9138a53bf10f875, type: 3}
+    sfx: {fileID: 8300000, guid: d4aeaa82960253d099537626a6ab15a3, type: 3}
   - eventKey: CrystalBall_Activate
     sfx: {fileID: 8300000, guid: 4d1251d3584f3534a9287fc24218f233, type: 3}
   - eventKey: CrystalBall_PulseLoop
@@ -206,7 +206,7 @@ MonoBehaviour:
   - eventKey: CrystalBall_Deactivate
     sfx: {fileID: 8300000, guid: 53b8ec30283a23c4daf60d1b88d06ed5, type: 3}
   - eventKey: GolemSummon_Invoke
-    sfx: {fileID: 8300000, guid: 1194f5e02329b68d899850158af88ed9, type: 3}
+    sfx: {fileID: 8300000, guid: 2876b236a191740e9992b2bd31a41c2d, type: 3}
   - eventKey: Taberna_StomachRumble
     sfx: {fileID: 8300000, guid: 9543059881e0a353f9d851984b73e3d9, type: 3}
   - eventKey: Taberna_FoodArrives
@@ -221,7 +221,7 @@ MonoBehaviour:
     sfx: {fileID: 8300000, guid: a812a3d9ad10a968dbf300f765adfd5b, type: 3}
   sequences:
   - sequenceId: PROLOGUE_DREAM
-    music: {fileID: 8300000, guid: 2b6499ae1b7898d41ad775bffb9b370b, type: 3}
+    music: {fileID: 8300000, guid: c82b5bd2fe09f524dac157f5342aff1f, type: 3}
     fadeIn: 0.5
     fadeOut: 0.5
   - sequenceId: AWAKEN

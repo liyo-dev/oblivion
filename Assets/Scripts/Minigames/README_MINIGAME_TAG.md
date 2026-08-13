@@ -126,6 +126,7 @@ minigameController.OnMinigameWon.AddListener(() => {
 | `Start Message` | Mensaje al empezar | "¡HUYE!" |
 | `Caught Message` | Mensaje al ser atrapado | "¡Te atraparon!" |
 | `Win Message` | Mensaje al ganar | "¡Escapaste!" |
+| `Fail Respawn Anchor` | `SpawnAnchor` de la escena donde reaparece el jugador si falla el minijuego (le atrapan o se agota el tiempo). Arrastra aquí, por ejemplo, el anchor de la Taberna. Si se deja vacío, el jugador reaparece en el último punto guardado (comportamiento anterior). | El `SpawnAnchor` del punto de reaparición deseado |
 
 ---
 

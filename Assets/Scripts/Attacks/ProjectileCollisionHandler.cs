@@ -56,7 +56,7 @@ public static class ProjectileCollisionHandler
         public float playerAerialKnockbackDuration = 0.6f;
 
         [Header("Mecánica en pruebas (Agosto 2026)")]
-        [Tooltip("false (por defecto) = cuando dos hechizos chocan, el jugador reproduce su animación de daño estándar y pierde vida (daño propio + daño del hechizo enemigo). " +
+        [Tooltip("false (por defecto) = cuando dos hechizos chocan, el jugador reproduce su animación de daño estándar y pierde vida = SOLO el daño del hechizo enemigo (el propio ya no se suma; ver FIX balance 2026-08-13). " +
                  "true = comportamiento antiguo, el jugador sale lanzado por el aire (ver ApplyAerialLaunch). Se mantiene el código del lanzamiento aéreo por si se revierte esta prueba.")]
         public bool usePlayerAerialLaunch = false;
     }
@@ -113,9 +113,12 @@ public static class ProjectileCollisionHandler
 
         Debug.Log($"[ProjectileCollision] 💥 Colisión detectada en {collisionPoint}");
 
-        // Sumar el daño de ambos hechizos (el propio del jugador + el del enemigo) ANTES de
-        // destruir los proyectiles en el paso 6, para no perder el acceso a sus componentes.
-        float totalDamage = GetProjectileDamage(playerProjectile) + GetProjectileDamage(enemyProjectile);
+        // FIX (balance, 2026-08-13): antes se sumaba el daño de AMBOS hechizos (el propio del
+        // jugador + el del enemigo), lo que penalizaba doblemente al jugador por su propio
+        // hechizo fallido y hacía que el choque quitara demasiada vida. Ahora solo se aplica el
+        // daño del hechizo ENEMIGO. Se lee antes de destruir los proyectiles en el paso 6, para no
+        // perder el acceso a sus componentes.
+        float enemyDamage = GetProjectileDamage(enemyProjectile);
 
         // 1. Reproducir VFX en el punto de colisión
         SpawnCollisionVFX(collisionPoint, config);
@@ -129,7 +132,7 @@ public static class ProjectileCollisionHandler
         // 4. Reacción del jugador: animación de daño + pérdida de vida
         if (config.enableCollisionAnimations)
         {
-            ApplyPlayerReaction(totalDamage, config);
+            ApplyPlayerReaction(enemyDamage, config);
         }
 
         // 5. Aplicar knockback a jugador y NPC
@@ -198,15 +201,16 @@ public static class ProjectileCollisionHandler
     
     /// <summary>
     /// Reacción del jugador ante un choque de hechizos. Mecánica en pruebas (Agosto 2026):
-    /// por defecto (usePlayerAerialLaunch = false) el jugador recibe daño = suma del daño de
-    /// ambos hechizos (el propio + el del enemigo) y reproduce su animación de daño estándar vía
+    /// por defecto (usePlayerAerialLaunch = false) el jugador recibe daño = SOLO el daño del
+    /// hechizo enemigo (FIX balance 2026-08-13: antes se sumaba también el daño propio del
+    /// jugador, lo que quitaba demasiada vida) y reproduce su animación de daño estándar vía
     /// PlayerHealthSystem.TakeDamage (que ya gestiona animación, VFX, sonido, invulnerabilidad y
     /// knockback simple). Si usePlayerAerialLaunch = true se conserva el comportamiento antiguo:
     /// el jugador sale lanzado por el aire (ver ApplyAerialLaunch).
     /// </summary>
-    private static void ApplyPlayerReaction(float totalDamage, CollisionConfig config)
+    private static void ApplyPlayerReaction(float enemyDamage, CollisionConfig config)
     {
-        Debug.Log($"[ProjectileCollision] 🎬 ApplyPlayerReaction INICIADO (usePlayerAerialLaunch={config.usePlayerAerialLaunch}, totalDamage={totalDamage})");
+        Debug.Log($"[ProjectileCollision] 🎬 ApplyPlayerReaction INICIADO (usePlayerAerialLaunch={config.usePlayerAerialLaunch}, enemyDamage={enemyDamage})");
 
         if (!PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) || playerGo == null)
         {
@@ -229,8 +233,8 @@ public static class ProjectileCollisionHandler
             return;
         }
 
-        bool applied = playerHealth.TakeDamage(totalDamage);
-        Debug.Log($"[ProjectileCollision] 💥 Choque de hechizos: {totalDamage} de daño {(applied ? "aplicado" : "IGNORADO (invulnerable/muerto/god mode)")} al jugador");
+        bool applied = playerHealth.TakeDamage(enemyDamage);
+        Debug.Log($"[ProjectileCollision] 💥 Choque de hechizos: {enemyDamage} de daño (solo hechizo enemigo) {(applied ? "aplicado" : "IGNORADO (invulnerable/muerto/god mode)")} al jugador");
     }
 
     /// <summary>

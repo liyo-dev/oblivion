@@ -14,15 +14,28 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LorePopupConfig
   delay: 5
   entries:
-  - portrait: {fileID: 21300000, guid: 8863788beef1f5b429bf9291c1ca1285, type: 3}
+  - speakerNameId: CHAR_LIAM
+    speakerName:
     textId: LORE_WILL_LIAM_01
-    text: 
+    text:
     duration: 4
-  - portrait: {fileID: 21300000, guid: 0be5b49dc8e6b94449177b4bdc51dac6, type: 3}
+  - speakerNameId: CHAR_WILL
+    speakerName:
     textId: LORE_WILL_LIAM_02
-    text: 
+    text:
     duration: 4
-  - portrait: {fileID: 21300000, guid: 0be5b49dc8e6b94449177b4bdc51dac6, type: 3}
-    textId: LORE_WILL_LIAM_02
-    text: 
+  - speakerNameId: CHAR_WILL
+    speakerName:
+    textId: LORE_WILL_LIAM_03
+    text:
+    duration: 5
+  - speakerNameId: CHAR_LIAM
+    speakerName:
+    textId: LORE_WILL_LIAM_04
+    text:
     duration: 4
+  - speakerNameId: CHAR_WILL
+    speakerName:
+    textId: LORE_WILL_LIAM_05
+    text:
+    duration: 5

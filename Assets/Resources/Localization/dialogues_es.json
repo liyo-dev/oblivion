@@ -510,7 +510,7 @@
         },
         {
             "key": "DLG_ESTELA_BOSQUE_04",
-            "value": "En ese punto de guardado ahora puedes usar teletransporte pulsando el boton <sprite name=\"interactable_y\">"
+            "value": "En ese punto de guardado ahora puedes usar teletransporte pulsando el boton <sprite name=\"interactable_teleport\">"
         },
         {
             "key": "DLG_ESTELA_BOSQUE_05",
@@ -658,7 +658,7 @@
         },
         {
             "key": "DLG_GUERRERACHINA_05",
-            "value": "Podrás usar PROTECCIÓN si presionas <sprite name=\"interactable_lt\"> y <sprite name=\"interactable_rt\"> a la vez."
+            "value": "Podrás usar PROTECCIÓN si <kbonly>mantienes pulsado <sprite name=\"interactable_lt\"></kbonly><gpadonly>presionas <sprite name=\"interactable_lt\"> y <sprite name=\"interactable_rt\"> a la vez</gpadonly>."
         },
         {
             "key": "DLG_GUERRERACHINA_06",
@@ -1114,11 +1114,19 @@
         },
         {
             "key": "LORE_WILL_LIAM_02",
-            "value": "Pues desde que quiero acordarme si..."
+            "value": "No... la verdad es que no recuerdo nada de antes."
         },
         {
             "key": "LORE_WILL_LIAM_03",
-            "value": ""
+            "value": "Solo sé que desperté una noche de lluvia... y Eldran ya estaba ahí."
+        },
+        {
+            "key": "LORE_WILL_LIAM_04",
+            "value": "¿Nada de nada? ¿Ni un nombre, ni una cara?"
+        },
+        {
+            "key": "LORE_WILL_LIAM_05",
+            "value": "Nada. A veces pienso que ese fue el día en que empecé a existir."
         },
         {
             "key": "QUEST_ELDRAN_MISSION12_DESC_02",

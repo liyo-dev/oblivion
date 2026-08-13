@@ -25,8 +25,8 @@ MonoBehaviour:
   alertIconPrefab: {fileID: 6303534759802428624, guid: 8754cf18218ab1b4c8c7c227f1e9ad68, type: 3}
   questionIconPrefab: {fileID: 6303534759802428624, guid: e3166847a7c81b443bdbe623a681ae52, type: 3}
   exclamationIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
-  alertIconDuration: 1
-  alertIconHeight: 2
+  alertIconDuration: 2
+  alertIconHeight: 1
   healthBarPrefab: {fileID: 662809776453450714, guid: c9ac1bd5123d1544b8b85daac217ad0b, type: 3}
   manaBarPrefab: {fileID: 662809776453450714, guid: 06a21cf2429ee2d4e879a503cb78faf6, type: 3}
   showManaBarToPlayer: 0
@@ -65,6 +65,9 @@ MonoBehaviour:
   spell1ManaCost: 20
   spell2ManaCost: 30
   spell3ManaCost: 45
+  spell1Damage: 10
+  spell2Damage: 20
+  spell3Damage: 35
   lowManaRetreatThreshold: 0.25
   useShield: 1
   shieldPrefab: {fileID: 6287953604210959080, guid: 5156d6689efbccb4991059f3a5755566, type: 3}

@@ -19,6 +19,12 @@ public class ChestInteractable : MonoBehaviour
     [Tooltip("If true, play the open animation before applying the pickup. If false, collect immediately and still play the animation.")]
     [SerializeField] private bool waitForAnimationBeforeCollect = true;
 
+    [Header("SFX (AudioGraphProfile)")]
+    [Tooltip("Clave de SFX en el AudioGraphProfile para el sonido de abrir el cofre (ej. 'Chest'). Se reproduce una vez, al iniciar la apertura.")]
+    [SerializeField] private string openSfxKey = "Chest";
+    [Tooltip("Clave de SFX en el AudioGraphProfile para el sonido de coger el tesoro (ej. 'Coin'). Se reproduce al aplicar el pickup. Si el WorldPickup asociado ya tiene su propio 'Pickup Sfx Key' configurado, deja este campo vacío para no duplicar el sonido.")]
+    [SerializeField] private string collectSfxKey = "Coin";
+
     Interactable _interactable;
     WorldPickup _pickup;
     bool _isAnimating;
@@ -103,6 +109,7 @@ public class ChestInteractable : MonoBehaviour
                     _pickup.Collect(collector);
                     _collectedAlready = true;
                     _interactable?.EnableInteraction(false);
+                    PlayCollectSfx();
                     AnimateCoinsDisappear();
                 }
             }, collectImmediately: !waitForAnimationBeforeCollect);
@@ -111,9 +118,11 @@ public class ChestInteractable : MonoBehaviour
         {
             if (collector != null)
             {
+                PlayOpenSfx();
                 _pickup.Collect(collector);
                 _collectedAlready = true;
                 _interactable?.EnableInteraction(false);
+                PlayCollectSfx();
             }
         }
     }
@@ -134,6 +143,7 @@ public class ChestInteractable : MonoBehaviour
                     _pickup.Collect(cached);
                     _collectedAlready = true;
                     _interactable?.EnableInteraction(false);
+                    PlayCollectSfx();
                     AnimateCoinsDisappear();
                 }
             }, collectImmediately: !waitForAnimationBeforeCollect);
@@ -142,9 +152,11 @@ public class ChestInteractable : MonoBehaviour
         {
             if (cached != null)
             {
+                PlayOpenSfx();
                 _pickup.Collect(cached);
                 _collectedAlready = true;
                 _interactable?.EnableInteraction(false);
+                PlayCollectSfx();
             }
         }
     }
@@ -185,6 +197,7 @@ public class ChestInteractable : MonoBehaviour
         }
 
         _isAnimating = true;
+        PlayOpenSfx();
 
         // If we should collect immediately, invoke before animation
         if (collectImmediately)
@@ -231,6 +244,18 @@ public class ChestInteractable : MonoBehaviour
                 onComplete?.Invoke();
             }
         });
+    }
+
+    void PlayOpenSfx()
+    {
+        if (string.IsNullOrEmpty(openSfxKey)) return;
+        AudioService.Instance?.PlaySFX(openSfxKey, 1f, transform.position);
+    }
+
+    void PlayCollectSfx()
+    {
+        if (string.IsNullOrEmpty(collectSfxKey)) return;
+        AudioService.Instance?.PlaySFX(collectSfxKey, 1f, transform.position);
     }
 
     PlayerPickupCollector ResolveCollectorFrom(GameObject other)

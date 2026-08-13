@@ -9866,8 +9866,8 @@ GameObject:
   - component: {fileID: 7490619964796838480}
   - component: {fileID: 6743273565896207114}
   - component: {fileID: 7524877161275503629}
-  - component: {fileID: 2775683701247765321}
   - component: {fileID: 1598830340271549642}
+  - component: {fileID: 2775683701247765321}
   m_Layer: 7
   m_Name: Erika
   m_TagString: Untagged
@@ -10167,24 +10167,6 @@ MonoBehaviour:
   eyePrefix: Eye
   mouthPrefix: Mouth
   debugMode: 0
---- !u!114 &2775683701247765321
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7770552252693826820}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 62b6f2293afaf924e9901281974f75ad, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Damageable
-  maxHealth: 100
-  destroyOnDeath: 1
-  deathVFX: {fileID: 0}
-  deathVFXLifetime: 3
-  invulnerabilitySeconds: 0
-  debugLogs: 0
 --- !u!114 &1598830340271549642
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12177,3 +12159,21 @@ Transform:
   - {fileID: 9084035424259371661}
   m_Father: {fileID: 5055092366619752480}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2775683701247765321
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7770552252693826820}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62b6f2293afaf924e9901281974f75ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Damageable
+  maxHealth: 100
+  destroyOnDeath: 1
+  deathVFX: {fileID: 0}
+  deathVFXLifetime: 3
+  invulnerabilitySeconds: 0
+  debugLogs: 0

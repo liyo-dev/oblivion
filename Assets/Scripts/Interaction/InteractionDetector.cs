@@ -139,7 +139,17 @@ public class InteractionDetector : MonoBehaviour
 
     private void OnInteract(InputAction.CallbackContext _context)
     {
-        Debug.Log($"[InteractionDetector] 🔘 OnInteract llamado - IsCarrying={_carrySystem?.IsCarrying}, current={current?.name}");
+        // FIX (2026-08-13): 'current' puede quedar como referencia "fake null" de Unity
+        // (el GameObject fue destruido -p.ej. transición de escena, cofre/objeto consumido,
+        // NPC despawneado- pero el wrapper C# de Interactable en sí no es null todavía). El
+        // operador ?. NO usa el operator== sobrecargado de UnityEngine.Object, así que trata
+        // esa referencia como "viva" e intenta acceder a .name, lanzando MissingReferenceException
+        // dentro de este mismo Debug.Log (ver stacktrace: InteractionDetector.cs:142). Se
+        // sustituye por comprobaciones explícitas con != null, que sí usan el operador
+        // sobrecargado y detectan correctamente el objeto destruido.
+        bool isCarrying = _carrySystem != null && _carrySystem.IsCarrying;
+        string currentName = current != null ? current.name : "null";
+        Debug.Log($"[InteractionDetector] 🔘 OnInteract llamado - IsCarrying={isCarrying}, current={currentName}");
         
         // Si está cargando algo, soltar
         if (_carrySystem != null && _carrySystem.IsCarrying)

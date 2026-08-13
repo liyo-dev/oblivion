@@ -510,7 +510,7 @@
         },
         {
             "key": "DLG_ESTELA_BOSQUE_04",
-            "value": "At that save point you can now use teleport by pressing the <sprite name=\"interactable_y\"> button"
+            "value": "At that save point you can now use teleport by pressing the <sprite name=\"interactable_teleport\"> button"
         },
         {
             "key": "DLG_ESTELA_BOSQUE_05",
@@ -658,7 +658,7 @@
         },
         {
             "key": "DLG_GUERRERACHINA_05",
-            "value": "You can use PROTECTION if you press <sprite name=\"interactable_lt\"> and <sprite name=\"interactable_rt\"> at the same time."
+            "value": "You can use PROTECTION if <kbonly>you hold down <sprite name=\"interactable_lt\"></kbonly><gpadonly>you press <sprite name=\"interactable_lt\"> and <sprite name=\"interactable_rt\"> at the same time</gpadonly>."
         },
         {
             "key": "DLG_GUERRERACHINA_06",
@@ -1114,11 +1114,19 @@
         },
         {
             "key": "LORE_WILL_LIAM_02",
-            "value": "Well, for as long as I can remember, yes..."
+            "value": "No... honestly, I don't remember anything before that."
         },
         {
             "key": "LORE_WILL_LIAM_03",
-            "value": ""
+            "value": "I just know I woke up one rainy night... and Eldran was already there."
+        },
+        {
+            "key": "LORE_WILL_LIAM_04",
+            "value": "Nothing at all? Not even a name, a face?"
+        },
+        {
+            "key": "LORE_WILL_LIAM_05",
+            "value": "Nothing. Sometimes I think that's the day I started to exist."
         },
         {
             "key": "QUEST_ELDRAN_MISSION12_DESC_02",

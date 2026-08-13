@@ -302,11 +302,11 @@
         },
         {
             "key": "UI_MISIONES_OCULTAR",
-            "value": "[D-Pad ▲] Quest Detail"
+            "value": "[{DPAD_UP}] Quest Detail"
         },
         {
             "key": "UI_MISIONES_SHOW",
-            "value": "[D-Pad ▲] Show"
+            "value": "[{DPAD_UP}] Show"
         },
         {
             "key": "UI_MISIONES_VER_ACTIVAS",

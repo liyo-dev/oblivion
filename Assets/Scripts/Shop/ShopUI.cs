@@ -130,6 +130,7 @@ public class ShopUI : MonoBehaviour
             RestoreGameplayInputsImmediate();
             GameState.Pop(GamePhase.Shop);
             Time.timeScale = 1f;
+            Core.PlayerInputManager.Instance?.PopUIMode();
             MenuManager.Close(MenuKind.Shop);
             _isOpen = false;
         }
@@ -313,7 +314,19 @@ public class ShopUI : MonoBehaviour
 
         GameState.Push(GamePhase.Shop);
         Time.timeScale = 0f;
-        
+
+        // FIX (INC): ShopUI nunca llamaba a PushUIMode(), a diferencia de DialogueManager,
+        // QuestMenuManager, TeleportUI, ConfirmationPopupUI, etc. PlayerInputManager arranca
+        // con el mapa "UI" del Input System deshabilitado (solo "GamePlay" activo por defecto),
+        // y es ese mapa "UI" el que alimenta al InputSystemUIInputModule (Point/Click/Submit/
+        // Cancel/Navigate) que el EventSystem usa para procesar ratón y teclado. Sin activarlo,
+        // los clics de ratón y las teclas no llegan a ningún botón de la tienda. El mando
+        // "funcionaba" solo porque GamepadInputReader.PollHardwareFallback lee el hardware del
+        // gamepad directamente, sin pasar por el InputActionAsset — ratón y teclado no tienen
+        // ese atajo. Mismo patrón que el resto de menús: PushUIMode() aquí, PopUIMode() en Close()
+        // y en el cleanup de OnDisable().
+        Core.PlayerInputManager.Instance?.PushUIMode();
+
         // IMPORTANTE: Suprimir inputs de gameplay mientras la tienda está abierta
         // Pero permitir navegación UI (D-Pad, joystick, submit, cancel)
         GamepadInputReader.PushGameplaySuppression(this);
@@ -329,7 +342,12 @@ public class ShopUI : MonoBehaviour
         GameState.Pop(GamePhase.Shop);
         Time.timeScale = 1f;
         ResetBuyButtonFeedback();
-        
+
+        // Pareja de PushUIMode() en Open(): sin esto el refCount de PlayerInputManager queda
+        // desbalanceado y el mapa "UI" del Input System (ratón/teclado) se queda activado para
+        // siempre tras cerrar la tienda.
+        Core.PlayerInputManager.Instance?.PopUIMode();
+
         // Unregister from central manager
         MenuManager.Close(MenuKind.Shop);
         

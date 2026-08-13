@@ -28,7 +28,7 @@ namespace Invector.vCharacterController
 
         [Header("- Airborne")]
 
-        [Tooltip("Use the currently Rigidbody Velocity to influence on the Jump Distance")]
+        [Tooltip("OBSOLETO: ya no se usa (ver AirControl/AirVelocity — el control aéreo ahora siempre es instantáneo, con o sin este flag). Se deja para no romper referencias/serialización existentes.")]
         public bool jumpWithRigidbodyForce = false;
         [Tooltip("Rotate or not while airborne")]
         public bool jumpAndRotate = true;
@@ -57,7 +57,7 @@ namespace Invector.vCharacterController
         public float airSpeed = 5f;
         [Tooltip("Smoothness of the direction while airborne")]
         public float airSmooth = 6f;
-        [Tooltip("Velocidad de rotación mientras está en el aire (debe ser mayor que rotationSpeed para giros rápidos)")]
+        [Tooltip("OBSOLETO: el giro en el aire ahora es instantáneo (ver RotateToDirectionInstant). Este valor ya no se usa, se deja para no romper referencias/serialización existentes.")]
         public float airRotationSpeed = 30f;
         [Tooltip("Apply extra gravity when the character is not grounded")]
         public float extraGravity = -10f;
@@ -308,7 +308,17 @@ namespace Invector.vCharacterController
 
         public virtual void RotateToDirection(Vector3 direction)
         {
-            float speed = !isGrounded ? airRotationSpeed : (isStrafing ? strafeSpeed.rotationSpeed : freeSpeed.rotationSpeed);
+            if (!isGrounded)
+            {
+                // En el aire: giro instantáneo. Si el jugador cambia de dirección mientras salta,
+                // el personaje debe encarar la nueva dirección en el mismo frame (sin interpolar),
+                // así la velocidad aérea (AirVelocity, que sigue a transform.forward) también
+                // cambia al instante en vez de "derrapar" hacia el nuevo rumbo.
+                RotateToDirectionInstant(direction);
+                return;
+            }
+
+            float speed = isStrafing ? strafeSpeed.rotationSpeed : freeSpeed.rotationSpeed;
             RotateToDirection(direction, speed);
         }
 
@@ -319,6 +329,18 @@ namespace Invector.vCharacterController
             Vector3 desiredForward = Vector3.RotateTowards(transform.forward, direction.normalized, rotationSpeed * Time.deltaTime, .1f);
             Quaternion _newRotation = Quaternion.LookRotation(desiredForward);
             transform.rotation = _newRotation;
+        }
+
+        /// <summary>
+        /// Gira el personaje para encarar 'direction' en el acto (sin interpolación de velocidad
+        /// angular), usado exclusivamente para el cambio de dirección en el aire.
+        /// </summary>
+        protected virtual void RotateToDirectionInstant(Vector3 direction)
+        {
+            if (!jumpAndRotate) return;
+            direction.y = 0f;
+            if (direction.sqrMagnitude < 0.0001f) return;
+            transform.rotation = Quaternion.LookRotation(direction.normalized);
         }
 
         #endregion
@@ -369,11 +391,14 @@ namespace Invector.vCharacterController
             if (transform.position.y > heightReached) heightReached = transform.position.y;
             inputSmooth = Vector3.Lerp(inputSmooth, input, airSmooth * Time.deltaTime);
 
-            if (jumpWithRigidbodyForce && !isGrounded)
-            {
-                _rigidbody.AddForce(moveDirection * airSpeed * Time.deltaTime, ForceMode.VelocityChange);
-                return;
-            }
+            // NOTA: antes, con jumpWithRigidbodyForce=true, aquí se aplicaba un AddForce pequeño
+            // por frame (moveDirection * airSpeed * Time.deltaTime) en vez de calcular moveDirection.
+            // Eso hacía que cambiar de dirección en el aire tardara en notarse (la velocidad tardaba
+            // ~1s en "acumularse" hasta llegar a airSpeed), dando la sensación de que el giro solo
+            // respondía cerca del punto más alto del salto. Ahora AirControl() SIEMPRE solo calcula
+            // moveDirection (para que ControlRotationType rote el cuerpo) y es AirVelocity() —
+            // incondicional, ver más abajo — quien fija la velocidad de golpe cada frame. Así el
+            // comportamiento en el aire es el mismo (instantáneo) tenga o no marcado ese flag.
 
             // Solo calcula moveDirection para que ControlRotationType rote el cuerpo.
             // La velocidad la aplica AirVelocity() DESPUÉS de la rotación, así siempre
@@ -410,7 +435,6 @@ namespace Invector.vCharacterController
         public virtual void AirVelocity()
         {
             if (suppressAirMovement || (isGrounded && !isJumping)) return;
-            if (jumpWithRigidbodyForce) return;
 
             Vector3 currentVel   = _rigidbody.linearVelocity;
             Vector3 currentHoriz = new Vector3(currentVel.x, 0f, currentVel.z);

@@ -5038,9 +5038,9 @@ GameObject:
   - component: {fileID: 1571068136761087}
   - component: {fileID: 4208165024470380241}
   - component: {fileID: 6105877552975183288}
-  - component: {fileID: -4756144414930936388}
   - component: {fileID: -5137382633302247270}
   - component: {fileID: 3565470341345223568}
+  - component: {fileID: -4756144414930936388}
   m_Layer: 7
   m_Name: Mago #1
   m_TagString: Untagged
@@ -5321,24 +5321,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Targetable
   targetingRadius: 15
   isInActiveCombat: 0
---- !u!114 &-4756144414930936388
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5548616624286035447}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 62b6f2293afaf924e9901281974f75ad, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Damageable
-  maxHealth: 100
-  destroyOnDeath: 1
-  deathVFX: {fileID: 0}
-  deathVFXLifetime: 3
-  invulnerabilitySeconds: 0
-  debugLogs: 0
 --- !u!114 &-5137382633302247270
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8438,3 +8420,21 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &-4756144414930936388
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5548616624286035447}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62b6f2293afaf924e9901281974f75ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Damageable
+  maxHealth: 100
+  destroyOnDeath: 1
+  deathVFX: {fileID: 0}
+  deathVFXLifetime: 3
+  invulnerabilitySeconds: 0
+  debugLogs: 0

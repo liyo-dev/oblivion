@@ -55,6 +55,19 @@ public class CameraOcclusionShadowsOnly : MonoBehaviour
     private bool _shaderMissing;
     private static bool _loggedShaderLoadAttempt;
 
+    // Buffer pre-alocado para el SphereCast — nunca Physics.SphereCastAll (aloca cada frame).
+    // 16 impactos cubre con margen cualquier oclusión real; si algún día se supera, los
+    // impactos extra se ignoran en vez de alocar de más.
+    private readonly RaycastHit[] _hitsBuffer = new RaycastHit[16];
+
+    // Los personajes (jugador y NPCs) no tienen capa propia — viven en Default, igual que la
+    // geometría (ver AGENTS.md/CLAUDE.md §2) — así que el filtrado por LayerMask no basta para
+    // excluirlos. NPCSimpleAnimator vive en Assets/Scripts (Assembly-CSharp), que compila
+    // DESPUÉS que Assets/Plugins (Assembly-CSharp-firstpass), así que no se puede referenciar el
+    // tipo directamente: se resuelve por nombre (igual que el puente EnvironmentQuery) y se
+    // cachea por Renderer para no repetir el lookup cada frame.
+    private readonly Dictionary<Renderer, bool> _characterCache = new();
+
     // ─── Carga de shader ──────────────────────────────────────────────────────
 
     private Shader LoadOcclusionShader()
@@ -119,18 +132,28 @@ public class CameraOcclusionShadowsOnly : MonoBehaviour
             return;
         }
 
-        var hits = Physics.SphereCastAll(from, checkRadius, dir, maxOcclusionDist, obstructionMask, QueryTriggerInteraction.Ignore);
+        int hitCount = Physics.SphereCastNonAlloc(from, checkRadius, dir, _hitsBuffer, maxOcclusionDist, obstructionMask, QueryTriggerInteraction.Ignore);
 
-        for (int i = 0; i < hits.Length; i++)
+        for (int i = 0; i < hitCount; i++)
         {
-            var renderer = hits[i].collider.GetComponentInParent<Renderer>();
+            var renderer = _hitsBuffer[i].collider.GetComponentInParent<Renderer>();
             if (!renderer) continue;
+            if (IsCharacter(renderer)) continue; // jugador/NPCs nunca se disuelven aunque compartan capa con la geometría
 
             var entry = GetOrCreateEntry(renderer);
             entry.LastSeen = now;
         }
 
         UpdateEntries(now);
+    }
+
+    private bool IsCharacter(Renderer renderer)
+    {
+        if (_characterCache.TryGetValue(renderer, out var cached)) return cached;
+
+        bool isCharacter = renderer.transform.root.GetComponent("NPCSimpleAnimator") != null;
+        _characterCache[renderer] = isCharacter;
+        return isCharacter;
     }
 
     public void RestoreAll()

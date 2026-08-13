@@ -530,8 +530,8 @@ GameObject:
   - component: {fileID: 3515839412566107829}
   - component: {fileID: 5069318411528252948}
   - component: {fileID: -7878082306358449269}
-  - component: {fileID: -5767674429649978831}
   - component: {fileID: -991897092605276619}
+  - component: {fileID: -5767674429649978831}
   m_Layer: 7
   m_Name: Lety
   m_TagString: Untagged
@@ -819,24 +819,6 @@ MonoBehaviour:
   resurrectAsTeam: 1
   resurrectDelay: 0.5
   showDebugLogs: 1
---- !u!114 &-5767674429649978831
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3140315364509225030}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 62b6f2293afaf924e9901281974f75ad, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Damageable
-  maxHealth: 100
-  destroyOnDeath: 1
-  deathVFX: {fileID: 0}
-  deathVFXLifetime: 3
-  invulnerabilitySeconds: 0
-  debugLogs: 0
 --- !u!114 &-991897092605276619
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2463,3 +2445,21 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &-5767674429649978831
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3140315364509225030}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62b6f2293afaf924e9901281974f75ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Damageable
+  maxHealth: 100
+  destroyOnDeath: 1
+  deathVFX: {fileID: 0}
+  deathVFXLifetime: 3
+  invulnerabilitySeconds: 0
+  debugLogs: 0

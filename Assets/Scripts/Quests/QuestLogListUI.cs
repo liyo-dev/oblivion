@@ -245,14 +245,36 @@ public class QuestLogListUI : MonoBehaviour
         if (!helpText) return;
         string key = _isPanelVisible ? "UI_MISIONES_OCULTAR" : "UI_MISIONES_SHOW";
         string fallback = _isPanelVisible ? "Ocultar misiones" : "Mostrar misiones";
+        string text;
         if (LocalizationManager.Instance != null)
         {
-            helpText.text = LocalizationManager.Instance.Get(key, fallback);
+            text = LocalizationManager.Instance.Get(key, fallback);
         }
         else
         {
-            helpText.text = fallback;
+            text = fallback;
         }
+
+        helpText.text = ResolveDeviceTokens(text);
+    }
+
+    /// <summary>
+    /// Sustituye el token literal "{DPAD_UP}" (si aparece en el texto) por la etiqueta de texto del
+    /// botón que abre/oculta el detalle de misiones en el dispositivo activo (D-Pad arriba en mando,
+    /// "J" en teclado — ver PlayerControls.inputactions). Antes este texto tenía el literal
+    /// "[D-Pad ▲]" fijo en las claves UI_MISIONES_OCULTAR/UI_MISIONES_SHOW de ui_es.json/ui_en.json,
+    /// que era incorrecto en teclado+ratón (mismo patrón que Loc() en TagMinigameController con
+    /// "{SPRINT}"; ver InputGlyphNames.DpadUp/InputGlyphLabels).
+    /// </summary>
+    string ResolveDeviceTokens(string text)
+    {
+        if (!string.IsNullOrEmpty(text) && text.Contains("{DPAD_UP}"))
+        {
+            string dpadUpLabel = Core.InputGlyphs.InputGlyphLabels.GetLabel(
+                Core.InputGlyphs.InputGlyphNames.DpadUp, Core.InputGlyphs.InputGlyphService.CurrentFamily);
+            text = text.Replace("{DPAD_UP}", dpadUpLabel);
+        }
+        return text;
     }
 
     void KillTween()

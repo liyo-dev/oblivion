@@ -20,7 +20,7 @@ public static class FindNonQuibliMaterials
     [MenuItem("Tools/Quibli/Buscar materiales sin Quibli (en la escena)")]
     private static void FindInScene()
     {
-        var renderers = Object.FindObjectsByType<Renderer>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var renderers = Object.FindObjectsByType<Renderer>(FindObjectsInactive.Include);
 
         var offenders = new List<(GameObject go, Material mat, string shaderPath)>();
         var seenMats = new HashSet<Material>();

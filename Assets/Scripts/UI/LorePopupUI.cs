@@ -2,13 +2,15 @@ using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 using DG.Tweening;
 
 /// <summary>
-/// Panel singleton que muestra entradas de lore automáticamente, una tras otra,
+/// Subtítulo singleton que muestra entradas de lore automáticamente, una tras otra,
 /// según la duración configurada en cada LoreEntry del LorePopupConfig.
-/// No requiere input del jugador: cada frase avanza sola.
+/// No requiere input del jugador: cada frase avanza sola. Pensado para leerse mientras
+/// el jugador sigue moviéndose/actuando (sin retrato ni caja de diálogo que exija dejar
+/// de mirar la acción): franja de texto fija en pantalla, con el nombre del personaje
+/// como etiqueta opcional encima de la línea.
 /// </summary>
 public class LorePopupUI : MonoBehaviour
 {
@@ -22,7 +24,8 @@ public class LorePopupUI : MonoBehaviour
     [Header("Referencias UI")]
     [SerializeField] private CanvasGroup canvasGroup;
     [SerializeField] private RectTransform popupRoot;
-    [SerializeField] private Image portraitImage;
+    [Tooltip("Etiqueta con el nombre del personaje. Opcional: si la entrada no trae nombre, se oculta (línea sin firmar / voz ambiental).")]
+    [SerializeField] private TextMeshProUGUI speakerNameText;
     [SerializeField] private TextMeshProUGUI bodyText;
 
     [Header("Animación")]
@@ -199,10 +202,14 @@ public class LorePopupUI : MonoBehaviour
 
     void DisplayEntry(LoreEntry e)
     {
-        if (portraitImage != null)
+        if (speakerNameText != null)
         {
-            portraitImage.sprite = e.portrait;
-            portraitImage.enabled = e.portrait != null;
+            string name = e.speakerName;
+            if (!string.IsNullOrEmpty(e.speakerNameId))
+                name = LocalizationManager.Instance?.Get(e.speakerNameId, e.speakerName) ?? e.speakerName;
+
+            speakerNameText.text = name;
+            speakerNameText.gameObject.SetActive(!string.IsNullOrEmpty(name));
         }
 
         if (bodyText != null)

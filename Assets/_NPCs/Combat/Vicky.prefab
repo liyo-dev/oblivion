@@ -242,8 +242,8 @@ GameObject:
   - component: {fileID: 5930524371843340134}
   - component: {fileID: 8406808117056097946}
   - component: {fileID: 250552776972620938}
-  - component: {fileID: 3810357309670044452}
   - component: {fileID: 7305699511644666098}
+  - component: {fileID: 3810357309670044452}
   m_Layer: 7
   m_Name: Vicky
   m_TagString: Untagged
@@ -522,24 +522,6 @@ MonoBehaviour:
   onLeftParty:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &3810357309670044452
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 961578480728707551}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 62b6f2293afaf924e9901281974f75ad, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Damageable
-  maxHealth: 100
-  destroyOnDeath: 1
-  deathVFX: {fileID: 0}
-  deathVFXLifetime: 3
-  invulnerabilitySeconds: 0
-  debugLogs: 0
 --- !u!114 &7305699511644666098
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2454,3 +2436,21 @@ Transform:
   - {fileID: 5230061686911060612}
   m_Father: {fileID: 342711692240524440}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3810357309670044452
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 961578480728707551}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62b6f2293afaf924e9901281974f75ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Damageable
+  maxHealth: 100
+  destroyOnDeath: 1
+  deathVFX: {fileID: 0}
+  deathVFXLifetime: 3
+  invulnerabilitySeconds: 0
+  debugLogs: 0

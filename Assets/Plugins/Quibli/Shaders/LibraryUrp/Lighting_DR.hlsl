@@ -22,7 +22,20 @@ half3 LightingPhysicallyBased_DSTRM(Light light, InputData inputData) {
 
     const half NdotLTPrimary = NdotLTransitionPrimary(inputData.normalWS, light.direction);
     const half2 gradient_uv = half2(NdotLTPrimary, 0.5);
-    half4 c = SAMPLE_TEXTURE2D(_GradientRamp, sampler_GradientRamp, gradient_uv);
+    // FIX: SAMPLE_TEXTURE2D calcula derivadas de screen-space (ddx/ddy) para elegir el mip.
+    // Esta funcion se llama tambien dentro del bucle de luces adicionales (LIGHT_LOOP_BEGIN /
+    // USE_FORWARD_PLUS), cuyo numero de iteraciones varia por pixel. Combinado con el
+    // AlphaDiscard/clip() de StylizedInput.hlsl en materiales con Alpha Clipping activo (que
+    // descarta pixeles de forma desigual dentro del quad 2x2 que la GPU usa para las derivadas),
+    // el compilador lo marca como "gradient instruction used in a loop with varying iteration;
+    // partial derivatives may have undefined value" (Logs/shadercompiler-*.log, linea 25 de
+    // este archivo, cientos de variantes, desde que se importo Quibli). Resultado: mip de
+    // _GradientRamp indefinido por GPU/frame -> parpadeo en la banda de sombreado toon,
+    // mucho mas visible en objetos con Alpha Clipping (confirmado por Raul: desactivar Alpha
+    // Clipping en el material hace desaparecer el parpadeo). _GradientRamp es una rampa
+    // pequenya sin detalle direccional, asi que forzar LOD 0 explicito es seguro y elimina el UB
+    // sin tener que tocar Alpha Clipping en ningun material.
+    half4 c = SAMPLE_TEXTURE2D_LOD(_GradientRamp, sampler_GradientRamp, gradient_uv, 0);
 
 #if defined(DR_GRADIENT_ON)
     const half angleRadians = _GradientAngle / 180.0 * PI;

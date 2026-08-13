@@ -3,8 +3,11 @@ using UnityEngine;
 [System.Serializable]
 public struct LoreEntry
 {
-    [Tooltip("Retrato del personaje. Opcional.")]
-    public Sprite portrait;
+    [Tooltip("ID de localización del nombre del personaje que 'dice' esta línea (ej: 'NAME_LIAM'). Si vacío, usa speakerName.")]
+    public string speakerNameId;
+
+    [Tooltip("Nombre del personaje que 'dice' esta línea. Déjalo vacío para una línea sin firmar (voz narrativa/ambiental).")]
+    public string speakerName;
 
     [Tooltip("ID de localización del texto (ej: 'LORE_TEMPLE_01'). Si vacío, usa text.")]
     public string textId;

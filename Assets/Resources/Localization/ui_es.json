@@ -302,11 +302,11 @@
         },
         {
             "key": "UI_MISIONES_OCULTAR",
-            "value": "[D-Pad ▲] Detalle Misiones"
+            "value": "[{DPAD_UP}] Detalle Misiones"
         },
         {
             "key": "UI_MISIONES_SHOW",
-            "value": "[D-Pad ▲] Mostrar"
+            "value": "[{DPAD_UP}] Mostrar"
         },
         {
             "key": "UI_MISIONES_VER_ACTIVAS",

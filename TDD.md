@@ -1016,7 +1016,9 @@ Hecho, verificado por referencias cruzadas en el código (no solo propuesto):
 **Fecha:** 8 agosto 2026
 **Estado:** Propuesta de diseño — pendiente de aprobación antes de implementar
 
-> **NOTA (11 ago 2026):** Esta sección analizaba una implementación basada en el asset Quibli (shaders Quibli/Cloud3D, Quibli/Cloud2D, Quibli/Skybox). Quibli se ha eliminado por completo del proyecto y CloudCoverSpawner.cs / DayNightCycle.cs se han revertido a su versión previa (nubes Low Poly Modular Terrain Pack, skyboxes por franja horaria). Todo lo que sigue sobre shaders/mallas Quibli es historico y no aplica al codigo actual.
+> **NOTA (11 ago 2026):** Esta sección analizaba una implementación basada en el asset Quibli (shaders Quibli/Cloud3D, Quibli/Cloud2D, Quibli/Skybox). Quibli se eliminó por completo del proyecto ese día y CloudCoverSpawner.cs / DayNightCycle.cs se revertieron a su versión previa (nubes Low Poly Modular Terrain Pack, skyboxes por franja horaria) — revert quirúrgico (commit `81d65a9cc`) motivado por daño colateral en 30 materiales ajenos migrados sin querer al shader Quibli/StylizedLit, NO por un problema de esta sección en sí.
+>
+> **ACTUALIZACIÓN (13 ago 2026):** Quibli volvió al proyecto por otra vía mientras tanto (postprocesado recuperado y afinado, commits `1c2a3e006`..`0f2ba83db`), así que ya no es un asset ajeno al proyecto. La Parte A y la Parte C de esta sección se han implementado (ver "Estado de implementación" al final de la sección 16), recuperando y adaptando el trabajo de Quibli/Cloud3D y Quibli/Skybox que existía en el commit `bfb27c983` (previo al revert). La Parte B (`AmbientCloudDirector`, nubosidad ligera independiente de la lluvia) se ha dejado aparcada a propósito — decisión explícita de alcance, ver nota al final.
 
 
 Punto de partida (tal cual lo has planteado): la mejora reciente de nubes quedó bien y dispara tres ideas más:
@@ -1213,6 +1215,21 @@ Escucha `DayNightCycle.RainStopped`. Solo si `CurrentTimeOfDay` es una franja de
 - **General:** ¿cuál de las tres partes quieres ver jugable primero?
 
 ---
+
+
+### Estado de implementación (13 ago 2026)
+
+Implementado en esta pasada (sesión Cowork, sin poder abrir el Editor — pendiente validar en Play Mode):
+
+- **Parte A — cielo unificado:** `DayNightCycle.cs` instancia un único `sharedSkyboxMaterial` en runtime (recomendado: `Assets/Plugins/Quibli/Demos/City/Materials/City_Skybox.mat`, degradado azul claro→azul, "cielo liso") y anima `_Tint/_Intensity/_Exponent/_DirectionYaw/_DirectionPitch` por franja en vez de cambiar de `Material`. Se añadió la propiedad `_Tint` (Color) al shader `Quibli/Skybox` (`Assets/Plugins/Quibli/Shaders/Skybox.shader`) — no existía antes, hacía falta para poder pintar el mismo degradado de colores distintos por franja. El enum `TimeOfDay` NO se ha tocado (mismo razonamiento que ya recogía esta sección); en su lugar se han añadido atributos `[InspectorName(...)]` en español a cada valor (cosméticos, no afectan a la serialización) y el array `timeSettings[]` se ha reducido de 7 a **4** entradas: Amanecer=`Morning`, Día=`AfterNoon`, Atardecer=`Sunset`, Noche=`Night` — exactamente el mapeo que esta sección recomendaba en su día. Los deltas de `lightIntensity`/`ambientIntensity` entre las 4 franjas se han suavizado a propósito (rango comprimido, `transitionDuration` subido de 10s a 16s) porque el pedido explícito era "que la iluminación no cambie tanto que afecta mucho a las sombras".
+- **Parte B — nubes:** solo se ha restaurado lo que ya existía antes del revert (`CloudCoverSpawner.cs` con `CloudShaderMode.QuibliCloud3D`, prefabs `QuibliRainCloud3D_1..4` recuperados de git desde el commit `cf6ca2002` a `Assets/Prefabs/VFX/`). El fix de la costura negra (B.2) y la cobertura parcial/`AmbientCloudDirector` (B.1) siguen **sin implementar** — decisión de alcance explícita: se pidió ceñirse a nubes como aviso previo a lluvia (lo ya probado), no un sistema ambiental nuevo.
+- **Parte C — cielo nocturno:** implementado `Assets/Scripts/World/NightSkyStarSpawner.cs` (nuevo), domo de GameObjects reales (Quads con textura de punto de luz generada en memoria, sin asset importado) en vez de partículas o un truco de skybox, tema dorado. Se activa en `TimeOfDayChanged → Night`, se apaga en `→ Morning`, y también se oculta durante tormenta (`CloudsBuildingUp`/`RainStopped`) y en interiores. Estrellas fugaces y arcoíris (C.2/C.3) **no** se han implementado — fuera del alcance pedido ("amanecer, dia, atardecer, noche y lluvia FIN").
+
+**Pendiente, solo se puede hacer desde el Editor de Unity (no se ha podido tocar desde esta sesión):**
+1. Arrastrar `City_Skybox.mat` al campo `sharedSkyboxMaterial` de cada `DayNightCycle` en escena (MainWorld, Sendero, CandyLand, PlayerTest...).
+2. Asignar `QuibliRainCloud3D_1..4` al array `cloudPrefabs` de cada `CloudCoverSpawner`.
+3. Añadir el componente `NightSkyStarSpawner` en la misma escena/GameObject que ya tiene `DayNightCycle`/`CloudCoverSpawner`.
+4. Playtest completo de un ciclo entero (Amanecer→Día→Atardecer→Noche→lluvia) para afinar a ojo los valores de `skyboxTint`/`skyboxIntensity`/`skyboxExponent` por franja (los valores actuales son un punto de partida razonado, no un resultado validado en juego) y el aspecto/densidad del domo de estrellas.
 
 ## 17. Diseño: Refugio de NPCs bajo la lluvia + Relaciones sociales dinámicas
 
