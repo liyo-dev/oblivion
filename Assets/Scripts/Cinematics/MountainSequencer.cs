@@ -6,10 +6,12 @@ using Sendero.Core.Feedback;
 
 /// Orquestador de la secuencia de la montaña:
 ///   0. Estela dice su frase (opcional). Estela queda congelada en su sitio.
-///   1. Will, Eldran y Liam corren a sus puntos de huida; al llegar los tres,
-///      corte al plano de huida y hacen la animación de miedo.
+///   1. Will, Eldran y Liam corren a sus puntos de huida (Eldran grita
+///      "¡CORREEEEDDDDD!" en bocadillo nada más arrancar la huida); al llegar
+///      los tres, corte al plano de huida y hacen la animación de miedo.
 ///   2. Primer plano de Estela (el plano inicial acercado) lanzando la ráfaga.
-///   3. Flash + shake de impacto → fade a negro.
+///   3. Flash + shake de impacto + SFX de explosión ("Mountain_Impact") → fade a negro
+///      (la explosión sigue sonando durante el black out, no se corta con el fundido).
 /// El grafo narrativo conecta MOUNTAIN_DONE con MOUNTAIN_EXPLOSION_EVENT.
 /// Señal de entrada: "MOUNTAIN_START".
 /// Señal de salida:  "MOUNTAIN_DONE".
@@ -66,6 +68,11 @@ public class MountainSequencer : CinematicSequencerBase
     [SerializeField] private string _animFear   = "Fear01";
     [Tooltip("Tiempo en el plano de huida viendo las poses de miedo antes del primer plano")]
     [SerializeField] private float _fleeSettleBeat = 1.0f;
+
+    [Tooltip("Clave de localización del grito de Eldran al arrancar la huida. Vacío = sin bocadillo.")]
+    [SerializeField] private string _keyLineEldranRun = "EVT_MOUNTAIN_ELDRAN_RUN";
+    [SerializeField] private string _animLineEldranRun = "Fear01";
+    [SerializeField] private float  _lineDurationEldranRun = 1.8f;
 
     // ── Fase 2 — Ráfaga en primer plano ───────────────────────────────────────
 
@@ -215,6 +222,11 @@ public class MountainSequencer : CinematicSequencerBase
 
     private IEnumerator Co_GroupFlees()
     {
+        // Eldran grita al arrancar la huida. No bloquea la corrutina (fire-and-forget):
+        // el grupo tiene que echar a correr en el mismo instante, no esperar a que
+        // termine el bocadillo.
+        ShowEldranRunLine();
+
         bool eldranDone = _eldranManager == null || _eldranFleeTarget == null;
         bool liamDone   = _liamManager   == null || _liamFleeTarget   == null;
 
@@ -295,6 +307,20 @@ public class MountainSequencer : CinematicSequencerBase
     {
         _willAnimator?.SetFloat(HashInputMagnitude, 0f);
         if (_willCharController != null) _willCharController.enabled = true;
+    }
+
+    /// Bocadillo de Eldran gritando al grupo que corra. emphasis:true usa el sprite
+    /// de bocadillo explosivo (mismo recurso que los gritos de rabia de Estela) para
+    /// que se lea como un grito, no como una línea de diálogo normal.
+    private void ShowEldranRunLine()
+    {
+        if (string.IsNullOrEmpty(_keyLineEldranRun) || _eldranTransform == null
+            || SpeechBubbleUI.Instance == null) return;
+
+        SpeechBubbleUI.Instance.Show(_eldranTransform, Loc(_keyLineEldranRun),
+            duration: _lineDurationEldranRun,
+            animTrigger: _animLineEldranRun,
+            emphasis: true);
     }
 
     // ══════════════════════════════════════════════════════════════════════════

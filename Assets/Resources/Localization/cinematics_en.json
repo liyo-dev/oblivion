@@ -225,6 +225,10 @@
             "text": "So take this!"
         },
         {
+            "id": "EVT_MOUNTAIN_ELDRAN_RUN",
+            "text": "RUUUUUN!!!"
+        },
+        {
             "id": "EVT_REINOEXIT_ESTELA_01",
             "text": "The first time I cast a spell, I nearly singed my own eyebrows off.\nAnd look at me now... an actual prodigy.\nFear isn't the problem, kiddo.\nThe problem would be if you stopped trying. And I'm not letting that happen."
         },

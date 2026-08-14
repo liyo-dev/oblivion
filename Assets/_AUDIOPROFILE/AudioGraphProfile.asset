@@ -134,7 +134,7 @@ MonoBehaviour:
   - eventKey: Player_Heal
     sfx: {fileID: 8300000, guid: b7a29b1ccf0d999bf9fba0b0719181c6, type: 3}
   - eventKey: Player_Death
-    sfx: {fileID: 8300000, guid: 553eb7fea8068a77eb3a2c97f41c4028, type: 3}
+    sfx: {fileID: 8300000, guid: d4aeaa82960253d099537626a6ab15a3, type: 3}
   - eventKey: Mesh_Swap_Break
     sfx: {fileID: 8300000, guid: 403265845d490ff05a69f5508c799b5b, type: 3}
   - eventKey: Torch_Ignite

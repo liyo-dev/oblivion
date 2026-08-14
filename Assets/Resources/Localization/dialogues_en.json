@@ -1129,6 +1129,38 @@
             "value": "Nothing. Sometimes I think that's the day I started to exist."
         },
         {
+            "key": "DLG_GUARDIABOSQUE_01",
+            "value": "This forest used to be peaceful... until the spiders took over the paths."
+        },
+        {
+            "key": "DLG_GUARDIABOSQUE_02",
+            "value": "Clear them out and you'll have my gratitude. And something more."
+        },
+        {
+            "key": "DLG_GUARDIABOSQUE_03",
+            "value": "You can still hear spiders among the trees. Don't let your guard down."
+        },
+        {
+            "key": "DLG_GUARDIABOSQUE_04",
+            "value": "The forest breathes easy again. Here, you've earned this."
+        },
+        {
+            "key": "DLG_TENDERA_ALGAS_01",
+            "value": "A traveler fell ill on the way to market. I need fresh algae for the remedy, and mine has gone bad."
+        },
+        {
+            "key": "DLG_TENDERA_ALGAS_02",
+            "value": "Bring me a couple of algae and I'll pay you well."
+        },
+        {
+            "key": "DLG_TENDERA_ALGAS_03",
+            "value": "Do you have the algae yet? I need them before the traveler gets worse."
+        },
+        {
+            "key": "DLG_TENDERA_ALGAS_04",
+            "value": "Just in time. Thank you, truly. Here, for your trouble."
+        },
+        {
             "key": "QUEST_ELDRAN_MISSION12_DESC_02",
             "value": "Talk to the King."
         }

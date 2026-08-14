@@ -2131,10 +2131,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
   configuration:
-    behaviourType: 0
+    behaviourType: 4
     ambientConfig: {fileID: 0}
     combatConfig: {fileID: 0}
-    questConfig: {fileID: 0}
+    questConfig: {fileID: 11400000, guid: a3ca7d9e6f8b1a4c5d7e9f1b3a6c8d0e, type: 2}
     interactiveNarrativeConfig: {fileID: 0}
     partyConfig: {fileID: 0}
     socialConfig: {fileID: 11400000, guid: f45c79b9db4a5864d841fc2f650eaab5, type: 2}

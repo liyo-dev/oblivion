@@ -51,6 +51,16 @@ namespace Game.NPC.Modules
         [Tooltip("Diálogo cuando el personaje activo no es el requerido. Si es null, el NPC no reacciona.")]
         public DialogueAsset dlgWrongCharacter;
 
+        [Header("Desbloqueo (opcional)")]
+        [Tooltip("Requisito de otra misión para que el NPC pueda ofrecer ESTA quest (ej: solo tras activarse " +
+                 "la misión principal que da acceso a la zona). Mode.None (por defecto) = sin restricción, " +
+                 "comportamiento idéntico al de siempre.")]
+        public QuestRequirement unlockRequirement = new QuestRequirement();
+
+        [Tooltip("Diálogo que muestra el NPC si el jugador interactúa ANTES de que se cumpla unlockRequirement " +
+                 "(ej: 'Solo los magos pueden pasar al bosque prohibido'). Si es null, el NPC no reacciona.")]
+        public DialogueAsset dlgLocked;
+
         [Header("Diálogos")]
         [Tooltip("Diálogo antes de aceptar la quest.")]
         public DialogueAsset dlgBefore;

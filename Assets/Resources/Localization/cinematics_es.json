@@ -225,6 +225,10 @@
             "text": "¡Así que cómete esta!"
         },
         {
+            "id": "EVT_MOUNTAIN_ELDRAN_RUN",
+            "text": "¡CORREEEEDDDDD!"
+        },
+        {
             "id": "EVT_REINOEXIT_ESTELA_01",
             "text": "La primera vez que lancé un hechizo, casi me quedo sin cejas.\nY aquí sigo... hecha una auténtica prodigio.\nEl miedo no es el problema, pequeñín.\nEl problema sería que dejaras de intentarlo. Y eso no te lo permito."
         },

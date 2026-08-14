@@ -1401,8 +1401,13 @@ public class GolemBossAI : MonoBehaviour
         // Reactivar NavMeshAgent
         if (agent)
         {
-            agent.enabled = true;
-            agent.Warp(transform.position);
+            // FIX: _jumpTargetPos se calcula a partir de la posición del jugador, sin validar
+            // contra el NavMesh — si el punto de aterrizaje cae fuera de malla, hacer
+            // "agent.enabled = true" aquí ANTES de recolocar loggea "Failed to create agent
+            // because there is no valid NavMesh" (Unity valida transform.position en el instante
+            // de habilitar, no después). SafeEnable recoloca el transform al punto de NavMesh
+            // válido más cercano antes de habilitar, evitando el falso error.
+            Game.NPC.Common.NavMeshAgentUtility.SafeEnable(agent, transform, transform.position);
             // ✅ Asegurar que updateRotation siga desactivado para control manual de rotación
             agent.updateRotation = false;
         }

@@ -166,8 +166,10 @@ namespace Game.NPC.Modules
             // Solo mostrar icono si el NPC puede ofrecerla él mismo (dlgBefore != null).
             // Si dlgBefore es null, la quest la inicia un agente externo (grafo narrativo)
             // y no debe aparecer el icono de "disponible" antes de que empiece.
+            // Tampoco debe aparecer si la quest todavía está bloqueada por unlockRequirement
+            // (ej: acceso a una zona que se abre con otra misión principal).
             var first = GetFirstInactiveQuest();
-            if (first != null && first.dlgBefore != null && showIconWhenQuestAvailable)
+            if (first != null && first.dlgBefore != null && showIconWhenQuestAvailable && IsUnlockRequirementSatisfied(first))
                 return QuestIconState.Available;
 
             return QuestIconState.None;
@@ -287,6 +289,16 @@ namespace Game.NPC.Modules
                 var firstState = qm.GetState(first.questData.questId);
                 if (firstState == QuestState.Inactive)
                 {
+                    // ✅ Bloqueo por progreso narrativo (ej: el guardia del bosque no ofrece la
+                    // quest de las arañas hasta que ELDRAN_MISSION6 esté activa/completada).
+                    // Sin unlockRequirement configurado, esto es un no-op y no cambia nada.
+                    if (!IsUnlockRequirementSatisfied(first))
+                    {
+                        Debug.Log($"[NPCQuestConfig] Quest '{first.questData.questId}' bloqueada por unlockRequirement — mostrando dlgLocked");
+                        PlayDialogue(first.dlgLocked, context);
+                        return true;
+                    }
+
                     if (!IsRequiredCharacterActive(first))
                     {
                         PlayDialogue(first.dlgWrongCharacter, context);
@@ -731,6 +743,18 @@ namespace Game.NPC.Modules
             var manager = PartyControlManager.Instance;
             if (manager == null) return true;
             return (int)manager.ActiveSlot == (int)entry.requiredCharacter;
+        }
+
+        /// <summary>
+        /// Comprueba el requisito opcional de desbloqueo de esta entrada (unlockRequirement).
+        /// Sin configurar (Mode.None, el valor por defecto) siempre devuelve true: no cambia
+        /// el comportamiento de ningún NPC existente que no use este campo.
+        /// </summary>
+        private bool IsUnlockRequirementSatisfied(QuestChainEntry entry)
+        {
+            if (entry?.unlockRequirement == null) return true;
+            if (!entry.unlockRequirement.IsConfigured) return true;
+            return entry.unlockRequirement.IsSatisfied();
         }
 
         private void PlayDialogue(DialogueAsset dialogue, Common.NPCStateContext context)

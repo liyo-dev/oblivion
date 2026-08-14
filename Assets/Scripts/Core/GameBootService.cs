@@ -528,5 +528,30 @@ public class GameBootService : MonoBehaviour
         // Forzar re-inicialización de sistemas
         OnProfileReady?.Invoke();
     }
+
+    /// <summary>
+    /// Dispara OnProfileReady sin recargar ni tocar el perfil — para flujos que ya hicieron
+    /// su propia carga (p.ej. MainMenuController.OnClickContinue() tras LoadProfile()) y solo
+    /// necesitan que los sistemas suscritos se re-inicialicen, igual que ReloadTestPreset()/
+    /// NewGameReset() ya hacen internamente.
+    ///
+    /// FIX (Agosto 2026): un "Continuar" normal (con save real, sin modo test) llamaba a
+    /// bootProfile.LoadProfile(saveSystem) directamente pero nunca disparaba OnProfileReady.
+    /// PartyControlManager.HandleProfileReady() —el único sitio que resetea _activeIndex a
+    /// Will y llama a ActiveCharacterSwapper.ResetState() al cargar partida— nunca se
+    /// ejecutaba en ese camino. Si el jugador moría controlando a Liam/Estela, _activeIndex
+    /// se quedaba fijado en ese slot al volver a MainWorld; PlayerPresetService.
+    /// ApplyAppearanceFromPreset() ve ese slot activo (≠ Will) y, por diseño, NO toca el
+    /// builder del jugador en ese caso — el controller se quedaba con el aspecto de
+    /// Liam/Estela de justo antes de morir. Mientras tanto WorldBootstrap reinstancia un NPC
+    /// de party nuevo y totalmente visible para ese mismo personaje: dos modelos idénticos
+    /// superpuestos en pantalla (variante de la INC "de pronto hay dos Will" ya corregida en
+    /// GameOverManager, pero para Liam/Estela y en el lado de la carga en vez del de la muerte).
+    /// </summary>
+    public static void NotifyProfileReady()
+    {
+        if (!IsAvailable) return;
+        OnProfileReady?.Invoke();
+    }
     #endregion
 }

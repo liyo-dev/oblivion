@@ -36,6 +36,40 @@ namespace Game.NPC.Common
             return false;
         }
 
+        /// <summary>
+        /// Habilita un NavMeshAgent evitando el error de consola "Failed to create agent because
+        /// there is no valid NavMesh": Unity comprueba transform.position EN EL INSTANTE en que se
+        /// pone agent.enabled = true (para colocar el agente sobre la malla), antes de que el código
+        /// llamante pueda hacer Warp/SetDestination. Si en ese instante el transform está fuera del
+        /// NavMesh (tras un salto, una animación de muerte, o mientras el agente estuvo desactivado),
+        /// el error se loggea aunque el código lo corrija justo después con Warp — por eso hay que
+        /// recolocar el transform en un punto válido ANTES de habilitar, no después.
+        /// Si el agente ya está habilitado, no hace nada (no-op seguro).
+        /// </summary>
+        /// <param name="agent">Agente a habilitar.</param>
+        /// <param name="t">Transform del mismo GameObject (se recoloca si hace falta).</param>
+        /// <param name="desiredPosition">Posición cerca de la cual buscar un punto válido de NavMesh (normalmente transform.position o el punto de destino/aterrizaje).</param>
+        /// <param name="searchRadius">Radio de búsqueda en NavMesh.SamplePosition.</param>
+        /// <returns>True si el agente quedó habilitado y sobre el NavMesh.</returns>
+        public static bool SafeEnable(NavMeshAgent agent, Transform t, Vector3 desiredPosition, float searchRadius = 5f)
+        {
+            if (agent == null) return false;
+            if (agent.enabled) return true;
+
+            if (NavMesh.SamplePosition(desiredPosition, out var hit, Mathf.Max(1f, searchRadius), NavMesh.AllAreas))
+            {
+                if (t != null) t.position = hit.position;
+                agent.enabled = true;
+                agent.Warp(hit.position);
+                return true;
+            }
+
+            // No se encontró NavMesh cerca: habilitar igual para no romper el flujo existente.
+            // El código llamante debe seguir comprobando agent.isOnNavMesh tras esta llamada.
+            agent.enabled = true;
+            return agent.isOnNavMesh;
+        }
+
         public static void SafeSetStopped(NavMeshAgent agent, bool stopped)
         {
             if (agent != null && agent.isOnNavMesh)

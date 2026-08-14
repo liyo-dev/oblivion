@@ -301,6 +301,50 @@
             "value": "Roberto's Dizziness."
         },
         {
+            "key": "Q_GUARDIABOSQUE_ARANAS",
+            "value": "The Spider Plague."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_DESC",
+            "value": "Defeat the spiders that have invaded the Forbidden Forest."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_DETAIL",
+            "value": "The forest guard needs help: several spiders have taken over the paths of the Forbidden Forest. Defeat them and talk to him again to collect your reward."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP01_DESC",
+            "value": "Defeat a spider in the Forbidden Forest."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP02_DESC",
+            "value": "Defeat another spider in the Forbidden Forest."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP03_DESC",
+            "value": "Defeat another spider in the Forbidden Forest."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP04_DESC",
+            "value": "Defeat the last spider in the Forbidden Forest."
+        },
+        {
+            "key": "Q_TENDERA_ALGAS",
+            "value": "Barbara's Remedy."
+        },
+        {
+            "key": "QUEST_TENDERA_ALGAS_DESC",
+            "value": "Get 2 fresh algae for Barbara."
+        },
+        {
+            "key": "QUEST_TENDERA_ALGAS_DETAIL",
+            "value": "Barbara needs fresh algae to prepare an urgent remedy. Get 2 algae and bring them to her."
+        },
+        {
+            "key": "QUEST_TENDERA_ALGAS_STEP01_DESC",
+            "value": "Get 2 fresh algae and give them to Barbara."
+        },
+        {
             "key": "READ_THE_LETTER_DESC",
             "value": "Read the letter on the side table."
         }

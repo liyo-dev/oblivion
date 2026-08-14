@@ -37,8 +37,12 @@ public class GameOverManager : MonoBehaviour
     [SerializeField, Range(0.01f, 0.5f)] private float slowMotionScale = 0.15f;
     [Tooltip("Duración para llegar al slow-mo máximo")]
     [SerializeField] private float slowMotionRampDuration = 0.4f;
-    [Tooltip("Duración total del slow-mo antes de la transición")]
+    [Tooltip("Fallback si no hay referencia al jugador (ej. NotifyGameOver llamado sin contexto): duración fija de espera antes de transicionar")]
     [SerializeField] private float slowMotionHoldDuration = 2.5f;
+    [Tooltip("Tope de seguridad esperando a que termine la animación de muerte, por si el Animator no resuelve el estado esperado")]
+    [SerializeField] private float maxDeathAnimationWait = 3f;
+    [Tooltip("Pequeña pausa tras aterrizar antes de cortar a la transición de pantalla")]
+    [SerializeField] private float landingSettleDelay = 0.3f;
 
     [Header("Camera Zoom")]
     [Tooltip("¿Hacer zoom hacia el jugador?")]
@@ -47,6 +51,14 @@ public class GameOverManager : MonoBehaviour
     [SerializeField, Range(0.5f, 1f)] private float zoomFactor = 0.85f;
     [Tooltip("Duración del zoom")]
     [SerializeField] private float zoomDuration = 2f;
+
+    [Header("Camera Focus")]
+    [Tooltip("¿Reencuadrar la cámara para que enfoque al jugador al morir? Sin esto la cámara se queda mirando a lo que estuviera enfocando justo antes (p. ej. un enemigo con lock-on activo)")]
+    [SerializeField] private bool enableCameraFocus = true;
+    [Tooltip("Ángulo horizontal (yaw) del plano de muerte, relativo a la orientación del jugador")]
+    [SerializeField] private float deathShotYawOffset = 150f;
+    [Tooltip("Inclinación hacia abajo de la cámara para acompañar la caída al suelo")]
+    [SerializeField] private float deathShotPitch = 20f;
 
     [Header("Screen Flash")]
     [Tooltip("¿Hacer flash rojo al morir?")]
@@ -63,6 +75,8 @@ public class GameOverManager : MonoBehaviour
     private Camera _mainCamera;
     private float _originalFOV;
     private Tween _zoomTween;
+    private vThirdPersonCamera _thirdPersonCamera;
+    private PlayerHealthSystem _deadPlayer;
 
     public bool IsShown => _isGameOverActive;
 
@@ -155,6 +169,9 @@ public class GameOverManager : MonoBehaviour
             _mainCamera.fieldOfView = _originalFOV;
         }
 
+        // Soltar cualquier referencia al jugador muerto (se vuelve a asignar en el próximo Game Over)
+        _deadPlayer = null;
+
         if (!string.IsNullOrEmpty(reason))
             Debug.Log(reason);
     }
@@ -162,16 +179,22 @@ public class GameOverManager : MonoBehaviour
     /// <summary>
     /// Inicia la secuencia de Game Over cinematográfica
     /// </summary>
-    public void ShowGameOver()
+    /// <param name="deadPlayer">
+    /// Referencia al PlayerHealthSystem que ha muerto. Se usa para enfocar la cámara en él y
+    /// para sincronizar la transición de pantalla con el final real de su animación de caída.
+    /// Puede ser null (compatibilidad hacia atrás); en ese caso se usa una espera fija.
+    /// </param>
+    public void ShowGameOver(PlayerHealthSystem deadPlayer = null)
     {
         Debug.Log($"[GameOverManager] ShowGameOver() - _isGameOverActive={_isGameOverActive}");
-        
-        if (_isGameOverActive || _gameOverCoroutine != null) 
+
+        if (_isGameOverActive || _gameOverCoroutine != null)
         {
             Debug.Log("[GameOverManager] ShowGameOver() IGNORADO - ya activo");
             return;
         }
 
+        _deadPlayer = deadPlayer;
         _gameOverCoroutine = StartCoroutine(GameOverSequence());
     }
 
@@ -220,6 +243,13 @@ public class GameOverManager : MonoBehaviour
         // 3. Configurar cámara para zoom
         SetupCamera();
 
+        // 3b. Reencuadrar la cámara en el jugador (evita que se quede mirando a lo que fuera que
+        // tuviera enfocado justo antes de morir, p. ej. un enemigo con lock-on activo)
+        if (enableCameraFocus)
+        {
+            FocusCameraOnDyingPlayer();
+        }
+
         // 4. Iniciar slow-motion progresivo
         StartSlowMotion();
 
@@ -229,9 +259,9 @@ public class GameOverManager : MonoBehaviour
             StartCameraZoom();
         }
 
-        // 6. Esperar la duración del efecto (usando tiempo real porque Time.timeScale está modificado)
-        float totalWaitTime = slowMotionRampDuration + slowMotionHoldDuration;
-        yield return new WaitForSecondsRealtime(totalWaitTime);
+        // 6. Esperar a que el jugador termine de caer al suelo (animación de muerte) antes de
+        // cortar a la transición, usando tiempo real porque Time.timeScale está modificado
+        yield return WaitForPlayerToLand();
 
         Debug.Log("[GameOverManager] ⏳ Secuencia cinematográfica completada, iniciando transición al menú");
 
@@ -264,16 +294,79 @@ public class GameOverManager : MonoBehaviour
     private void SetupCamera()
     {
         _mainCamera = Camera.main;
-        
+
         if (_mainCamera != null)
         {
             _originalFOV = _mainCamera.fieldOfView;
+            _thirdPersonCamera = _mainCamera.GetComponent<vThirdPersonCamera>();
             Debug.Log($"[GameOverManager] 📷 Cámara configurada - FOV original: {_originalFOV}");
         }
         else
         {
             Debug.LogWarning("[GameOverManager] ⚠️ No se encontró Camera.main");
         }
+    }
+
+    /// <summary>
+    /// Reencuadra la cámara en el jugador que acaba de morir. Sin esto, el zoom cinematográfico
+    /// (StartCameraZoom) solo estrecha el FOV mientras la cámara sigue apuntando a lo que fuera
+    /// que tuviera enfocado un instante antes (ej. un enemigo con lock-on de combate todavía
+    /// activo), en vez de al jugador cayendo al suelo.
+    /// </summary>
+    private void FocusCameraOnDyingPlayer()
+    {
+        if (_thirdPersonCamera == null || _deadPlayer == null) return;
+
+        // Soltar cualquier lock de combate que siguiera activo: si no, el ángulo calculado abajo
+        // se ignora y CameraMovement() sigue mirando al enemigo bloqueado.
+        _thirdPersonCamera.ClearLockTarget();
+
+        // Plano fijo y deliberado detrás/lateral del jugador, inclinado hacia abajo para
+        // acompañar la caída. Se calcula a partir de su orientación actual en vez de depender
+        // del ángulo libre que tuviera la cámara justo antes de morir.
+        float playerYaw = _deadPlayer.transform.eulerAngles.y;
+        _thirdPersonCamera.SetAngles(playerYaw + deathShotYawOffset, deathShotPitch);
+
+        Debug.Log($"[GameOverManager] 🎥 Cámara enfocada en el jugador (yaw={playerYaw + deathShotYawOffset:F0}°, pitch={deathShotPitch:F0}°)");
+    }
+
+    /// <summary>
+    /// Espera a que el jugador termine de caer al suelo (animación de muerte completada) antes
+    /// de dar paso a la transición de pantalla. Si no hay referencia al jugador, usa la espera
+    /// fija anterior como fallback.
+    /// </summary>
+    private System.Collections.IEnumerator WaitForPlayerToLand()
+    {
+        // Dejar que se aprecie el ramp de slow-mo antes de comprobar nada más.
+        float elapsed = 0f;
+        while (elapsed < slowMotionRampDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        if (_deadPlayer == null)
+        {
+            float holdElapsed = 0f;
+            while (holdElapsed < slowMotionHoldDuration)
+            {
+                holdElapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
+            yield break;
+        }
+
+        float safety = 0f;
+        while (!_deadPlayer.HasDeathAnimationFinished() && safety < maxDeathAnimationWait)
+        {
+            safety += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        Debug.Log($"[GameOverManager] 🧍 Jugador en el suelo (esperado {safety:F2}s tras el ramp) -> transición de pantalla");
+
+        // Pequeño respiro tras aterrizar antes de cortar a la transición.
+        yield return new WaitForSecondsRealtime(landingSettleDelay);
     }
 
     private void StartSlowMotion()
@@ -353,7 +446,11 @@ public class GameOverManager : MonoBehaviour
     /// Modo helper para notificar Game Over desde otros scripts de forma segura.
     /// Crea una instancia de emergencia si no existe ninguna.
     /// </summary>
-    public static void NotifyGameOver()
+    /// <param name="deadPlayer">
+    /// PlayerHealthSystem que ha muerto (opcional). Permite enfocar la cámara en él y
+    /// sincronizar la transición con el final real de su animación de caída.
+    /// </param>
+    public static void NotifyGameOver(PlayerHealthSystem deadPlayer = null)
     {
         Debug.Log("[GameOverManager] 💀 NotifyGameOver() llamado");
         
@@ -406,7 +503,7 @@ public class GameOverManager : MonoBehaviour
         if (!Instance.enabled)
             Instance.enabled = true;
 
-        Instance.ShowGameOver();
+        Instance.ShowGameOver(deadPlayer);
     }
 
     // ================== LEGACY COMPATIBILITY ==================

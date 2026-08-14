@@ -394,6 +394,16 @@ public class MainMenuController : MonoBehaviour
             {
                 bootProfile.LoadProfile(saveSystem);
                 Debug.Log("[MainMenu] CONTINUE → Perfil recargado desde disco");
+
+                // FIX: sin esto, PartyControlManager.HandleProfileReady() (que resetea
+                // _activeIndex a Will y llama a ActiveCharacterSwapper.ResetState()) nunca se
+                // ejecutaba en un "Continuar" normal. Si el jugador moría controlando a
+                // Liam/Estela, el slot activo se quedaba pillado en ese personaje: el
+                // controller conservaba su apariencia de antes de morir (PlayerPresetService
+                // no reasigna Will si el slot activo no es Will) mientras MainWorld
+                // reinstanciaba un NPC de party nuevo y visible para ese mismo personaje —
+                // dos modelos superpuestos en pantalla al cargar tras un Game Over.
+                GameBootService.NotifyProfileReady();
             }
         }
         else

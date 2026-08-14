@@ -19,7 +19,7 @@ MonoBehaviour:
   usableFromInventory: 0
   useEffects: []
   useDescriptionId: WARDROBE_BODY05_DESC
-  useDescription: "Descripci\xF3n ropa de aldeano."
+  useDescription: "Prendas sencillas que cualquier vecino del pueblo lleva en su día a día."
   usageKind: 2
   buyPrice: 0
   sellValue: 0

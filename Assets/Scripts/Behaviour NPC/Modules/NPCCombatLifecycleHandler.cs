@@ -711,7 +711,15 @@ namespace Game.NPC.Modules
                         // Activar movimiento
                         if (_agent != null)
                         {
-                            _agent.enabled = true;
+                            // FIX: si el NPC quedó fuera de malla mientras el agent estaba
+                            // desactivado, hacer "_agent.enabled = true" a secas AQUÍ ya loggea
+                            // "Failed to create agent because there is no valid NavMesh" (Unity
+                            // valida transform.position en el instante de habilitar, antes de que
+                            // el bloque de abajo pueda recolocarlo). SafeEnable recoloca el
+                            // transform al punto de NavMesh válido más cercano antes de habilitar,
+                            // evitando el falso error; la validación de abajo queda como red de
+                            // seguridad para cuando no hay NavMesh cerca.
+                            Game.NPC.Common.NavMeshAgentUtility.SafeEnable(_agent, transform, transform.position);
 
                             // ✅ VALIDACIÓN 1: Verificar que está en NavMesh
                             if (!_agent.isOnNavMesh)

@@ -179,23 +179,36 @@ public class NavMeshObstacleFixer : MonoBehaviour
     private void AutoSizeObstacle(NavMeshObstacle obstacle)
     {
         var collider = obstacle.GetComponent<Collider>();
-        
+
         if (collider != null)
         {
-            Bounds bounds = collider.bounds;
-            
-            // Usar el tamaño del collider
-            obstacle.center = collider.bounds.center - obstacle.transform.position;
-            obstacle.size = bounds.size;
-            
-            Debug.Log($"[ObstacleFixer]   └─ Auto-sized: {bounds.size}");
+            // BUG (fijado): collider.bounds está en espacio del MUNDO, pero
+            // NavMeshObstacle.center/size esperan valores en espacio LOCAL
+            // (Unity los vuelve a multiplicar por el lossyScale del transform
+            // al convertirlos a mundo). Asignar bounds del mundo directamente
+            // aquí duplicaba la escala: en un árbol con escala ≈7.9 el centro
+            // acababa ~7.9× más alto de lo real (el "carve" quedaba flotando
+            // muy por encima del tronco, sin bloquear nada a nivel de suelo) y
+            // el tamaño quedaba igual de mal escalado. Convertir explícitamente
+            // a espacio local antes de asignar.
+            Bounds bounds = collider.bounds; // mundo
+            Transform t = obstacle.transform;
+            Vector3 lossyScale = t.lossyScale;
+
+            obstacle.center = t.InverseTransformPoint(bounds.center);
+            obstacle.size = new Vector3(
+                Mathf.Approximately(lossyScale.x, 0f) ? bounds.size.x : bounds.size.x / Mathf.Abs(lossyScale.x),
+                Mathf.Approximately(lossyScale.y, 0f) ? bounds.size.y : bounds.size.y / Mathf.Abs(lossyScale.y),
+                Mathf.Approximately(lossyScale.z, 0f) ? bounds.size.z : bounds.size.z / Mathf.Abs(lossyScale.z));
+
+            Debug.Log($"[ObstacleFixer]   └─ Auto-sized (local space): center={obstacle.center} size={obstacle.size}");
         }
         else
         {
             // Valores por defecto razonables para un árbol
             obstacle.center = Vector3.up * 2f;
             obstacle.size = new Vector3(1f, 4f, 1f);
-            
+
             Debug.Log($"[ObstacleFixer]   └─ Default size: (1, 4, 1)");
         }
     }

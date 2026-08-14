@@ -436,12 +436,40 @@ public class PlayerHealthSystem : MonoBehaviour
 
         try
         {
-            GameOverManager.NotifyGameOver();
+            // Pasamos la referencia a este PlayerHealthSystem para que GameOverManager pueda
+            // enfocar la cámara en el jugador correcto y sincronizar la transición de pantalla
+            // con el final real de la animación de caída (ver HasDeathAnimationFinished()).
+            GameOverManager.NotifyGameOver(this);
         }
         catch (Exception e)
         {
             Debug.LogWarning($"[PlayerHealth] Error notificando GameOver: {e}");
         }
+    }
+
+    /// <summary>
+    /// Indica si la animación de muerte (<see cref="deathAnimationName"/>) ha terminado de
+    /// reproducirse, es decir, si el jugador ya ha llegado al suelo. La usa GameOverManager
+    /// para disparar la transición de pantalla justo cuando termina la caída, en vez de tras
+    /// una espera fija que podía cortar antes de tiempo o dejar un hueco muerto después.
+    /// </summary>
+    public bool HasDeathAnimationFinished()
+    {
+        if (_animator == null || string.IsNullOrEmpty(deathAnimationName)) return true;
+
+        // Si nunca llegamos a resolver el estado (p. ej. TriggerAnimation falló al arrancar la
+        // animación), no tenemos forma de saberlo: no bloqueamos la transición indefinidamente.
+        if (!_stateHash.TryGetValue(deathAnimationName, out int hash) ||
+            !_stateLayer.TryGetValue(deathAnimationName, out int layer))
+            return true;
+
+        var stateInfo = _animator.GetCurrentAnimatorStateInfo(layer);
+
+        // Si el Animator ya no está en el estado de muerte (transicionó a otro, p. ej. un Idle de
+        // "muerto en el suelo"), damos la caída por completada.
+        if (stateInfo.shortNameHash != hash) return !_animator.IsInTransition(layer);
+
+        return stateInfo.normalizedTime >= 1f && !_animator.IsInTransition(layer);
     }
 
     private void ReviveInternal()

@@ -25,6 +25,10 @@ MonoBehaviour:
   - rid: 5623891572275806460
   - rid: 2337184645389222053
   - rid: 648455780169416944
+  - rid: 7719302845561928001
+  - rid: 7719302845561928002
+  - rid: 7719302845561928003
+  - rid: 7719302845561928004
   applicableSceneNames:
   - MainWorld
   references:
@@ -110,6 +114,8 @@ MonoBehaviour:
         - 00079bce-e03b-4fa9-bf56-051f0f3b427c
         - 29625f69-6406-4f2c-a5b7-4f2351d2a8d1
         - fa24c4e1-e60f-4788-b4c0-a6d276e5cddb
+        - 1f4a2b3c-5d6e-4f70-8a91-b2c3d4e5f601
+        - 3b6c4d5e-7f80-4192-ab13-d4e5f6071823
     - rid: 5623891481250759595
       type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
@@ -214,5 +220,71 @@ MonoBehaviour:
         outputs: []
         item: {fileID: 11400000, guid: e420f009517398f4aa2f67aed445c278, type: 2}
         amount: 5
+        logWarnings: 0
+        onlyOnce: 1
+    - rid: 7719302845561928001
+      type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: "La plaga de ara\xF1as (Guardia del Bosque)"
+        chapter:
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 1f4a2b3c-5d6e-4f70-8a91-b2c3d4e5f601
+        position: {x: 399, y: 1100}
+        outputs:
+        - 2a5b3c4d-6e7f-4081-9a02-c3d4e5f60712
+        questId: Q_GUARDIABOSQUE_ARANAS
+        debugLogs: 0
+    - rid: 7719302845561928002
+      type: {class: GiveInventoryItemNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Nos da 30 monedas
+        chapter:
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 2a5b3c4d-6e7f-4081-9a02-c3d4e5f60712
+        position: {x: 871, y: 1100}
+        outputs: []
+        item: {fileID: 11400000, guid: 25c804f6289cb4945a3a9761b8e94e96, type: 2}
+        amount: 30
+        logWarnings: 0
+        onlyOnce: 1
+    - rid: 7719302845561928003
+      type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: "El remedio de B\xE1rbara (Tendera)"
+        chapter:
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 3b6c4d5e-7f80-4192-ab13-d4e5f6071823
+        position: {x: 399, y: 1400}
+        outputs:
+        - 4c7d5e6f-8091-42a3-bc24-e5f607182934
+        questId: Q_TENDERA_ALGAS
+        debugLogs: 0
+    - rid: 7719302845561928004
+      type: {class: GiveInventoryItemNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Nos da 15 monedas
+        chapter:
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 4c7d5e6f-8091-42a3-bc24-e5f607182934
+        position: {x: 871, y: 1400}
+        outputs: []
+        item: {fileID: 11400000, guid: 25c804f6289cb4945a3a9761b8e94e96, type: 2}
+        amount: 15
         logWarnings: 0
         onlyOnce: 1

@@ -1129,6 +1129,38 @@
             "value": "Nada. A veces pienso que ese fue el día en que empecé a existir."
         },
         {
+            "key": "DLG_GUARDIABOSQUE_01",
+            "value": "Este bosque era tranquilo... hasta que las arañas tomaron los senderos."
+        },
+        {
+            "key": "DLG_GUARDIABOSQUE_02",
+            "value": "Si acabas con ellas, tendrás mi agradecimiento. Y algo más."
+        },
+        {
+            "key": "DLG_GUARDIABOSQUE_03",
+            "value": "Todavía se oyen arañas entre los árboles. No bajes la guardia."
+        },
+        {
+            "key": "DLG_GUARDIABOSQUE_04",
+            "value": "El bosque respira de nuevo. Toma esto, te lo has ganado."
+        },
+        {
+            "key": "DLG_TENDERA_ALGAS_01",
+            "value": "Un viajero enfermó camino al mercado. Necesito algas frescas para el remedio, y las mías se han echado a perder."
+        },
+        {
+            "key": "DLG_TENDERA_ALGAS_02",
+            "value": "Si me traes un par de algas, te lo pagaré bien."
+        },
+        {
+            "key": "DLG_TENDERA_ALGAS_03",
+            "value": "¿Ya tienes las algas? Las necesito antes de que el viajero empeore."
+        },
+        {
+            "key": "DLG_TENDERA_ALGAS_04",
+            "value": "Justo a tiempo. Gracias, de verdad. Toma, por las molestias."
+        },
+        {
             "key": "QUEST_ELDRAN_MISSION12_DESC_02",
             "value": "Habla con el Rey."
         }

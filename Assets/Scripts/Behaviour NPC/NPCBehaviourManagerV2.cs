@@ -693,7 +693,17 @@ namespace Game.NPC
                 if (_agent != null)
                 {
                     bool wasEnabled = _agent.enabled;
-                    if (!wasEnabled) _agent.enabled = true;
+                    if (!wasEnabled)
+                    {
+                        // FIX: Unity valida transform.position en el instante de poner
+                        // enabled = true (antes de que el Warp de abajo pueda corregirlo). Si el
+                        // transform seguía en su posición vieja (fuera del NavMesh rebakeado),
+                        // ese "enabled = true" a secas loggeaba "Failed to create agent because
+                        // there is no valid NavMesh" aunque el Warp siguiente ya llevara al NPC al
+                        // punto correcto. SafeEnable recoloca el transform en hit.position ANTES
+                        // de habilitar, evitando el falso error.
+                        NavMeshAgentUtility.SafeEnable(_agent, transform, hit.position);
+                    }
                     _agent.Warp(hit.position);
                     if (!wasEnabled) _agent.enabled = false;
                 }

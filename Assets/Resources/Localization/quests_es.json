@@ -301,6 +301,50 @@
             "value": "El mareo de Roberto."
         },
         {
+            "key": "Q_GUARDIABOSQUE_ARANAS",
+            "value": "La plaga de arañas."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_DESC",
+            "value": "Derrota a las arañas que han invadido el Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_DETAIL",
+            "value": "El guardia del bosque necesita ayuda: varias arañas han tomado los senderos del Bosque Prohibido. Elimínalas y vuelve a hablar con él para cobrar tu recompensa."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP01_DESC",
+            "value": "Derrota una araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP02_DESC",
+            "value": "Derrota otra araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP03_DESC",
+            "value": "Derrota otra araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP04_DESC",
+            "value": "Derrota la última araña del Bosque Prohibido."
+        },
+        {
+            "key": "Q_TENDERA_ALGAS",
+            "value": "El remedio de Bárbara."
+        },
+        {
+            "key": "QUEST_TENDERA_ALGAS_DESC",
+            "value": "Consigue 2 algas frescas para Bárbara."
+        },
+        {
+            "key": "QUEST_TENDERA_ALGAS_DETAIL",
+            "value": "Bárbara necesita algas frescas para preparar un remedio urgente. Consigue 2 algas y llévaselas."
+        },
+        {
+            "key": "QUEST_TENDERA_ALGAS_STEP01_DESC",
+            "value": "Consigue 2 algas frescas y entrégaselas a Bárbara."
+        },
+        {
             "key": "READ_THE_LETTER_DESC",
             "value": "leer la carta que hay sobre la mesita."
         }
