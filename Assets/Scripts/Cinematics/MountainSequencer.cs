@@ -67,7 +67,7 @@ public class MountainSequencer : CinematicSequencerBase
     [Tooltip("Animación de miedo que hacen los tres tras el corte al plano de huida")]
     [SerializeField] private string _animFear   = "Fear01";
     [Tooltip("Tiempo en el plano de huida viendo las poses de miedo antes del primer plano")]
-    [SerializeField] private float _fleeSettleBeat = 1.0f;
+    [SerializeField] private float _fleeSettleBeat = 3.0f;
 
     [Tooltip("Clave de localización del grito de Eldran al arrancar la huida. Vacío = sin bocadillo.")]
     [SerializeField] private string _keyLineEldranRun = "EVT_MOUNTAIN_ELDRAN_RUN";
@@ -380,8 +380,13 @@ public class MountainSequencer : CinematicSequencerBase
         yield return new WaitForSeconds(_mountainImpactDelay);
         FeedbackService.ScreenFlash(new Color(1f, 0.35f, 0.05f, 0.75f), 0.9f);
         FeedbackService.CameraShake(0.6f, 1.0f);
-        AudioService.Instance?.PlaySFX("Mountain_Impact", 1f,
-            _mountainTarget != null ? _mountainTarget.position : transform.position);
+        // FIX: sin posición mundial (2D, no espacial). El pool 3D de AudioService (Rent3D,
+        // ver AudioService.cs) aplica rolloff lineal con maxDistance = 30: al pasar
+        // _mountainTarget.position (la montaña, muy por detrás de la cámara del primer plano
+        // de Estela y normalmente a mucha más distancia que eso) el SFX quedaba fuera de rango
+        // y no sonaba nunca. Es un golpe de impacto cinemático como el flash/shake de arriba:
+        // debe oírse siempre igual de fuerte, no atenuarse por posición.
+        AudioService.Instance?.PlaySFX("Mountain_Impact", 1f);
     }
 
     // ── Helpers — Estela congelada ────────────────────────────────────────────

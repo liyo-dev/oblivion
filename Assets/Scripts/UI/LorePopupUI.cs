@@ -47,6 +47,12 @@ public class LorePopupUI : MonoBehaviour
     // y se hace invisible, para reaparecer tal cual al cerrar el menú.
     private bool _hiddenByMenu;
 
+    // Mientras el popup está en pantalla, el HUD y el minimapa quedan ocultos para que no se
+    // amontonen con la franja de texto (se solapaban con la barra de vida/maná, los slots de
+    // magia y el minimapa, quedando muy sucio visualmente). _hudAndMinimapHidden evita pedir
+    // Hide/Show de más si Show()/ForceClose() se llaman varias veces seguidas.
+    private bool _hudAndMinimapHidden;
+
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     void Awake()
@@ -76,6 +82,7 @@ public class LorePopupUI : MonoBehaviour
     void OnDestroy()
     {
         if (Instance == this) Instance = null;
+        ShowHUDAndMinimap(); // red de seguridad: no dejar el HUD/minimapa ocultos si esto se destruye a medias
         canvasGroup?.DOKill();
         popupRoot?.DOKill();
     }
@@ -97,6 +104,7 @@ public class LorePopupUI : MonoBehaviour
         if (_isOpen) StopSequence();
 
         _isOpen = true;
+        HideHUDAndMinimap();
         _sequenceCoroutine = StartCoroutine(RunSequence(config, onClosed));
     }
 
@@ -105,7 +113,32 @@ public class LorePopupUI : MonoBehaviour
     {
         if (!_isOpen) return;
         StopSequence();
+        ShowHUDAndMinimap();
         AnimateOut(null);
+    }
+
+    // ── HUD / Minimapa ────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Oculta el HUD del jugador (PlayerHUDV2, contador de referencias: seguro llamarlo aunque
+    /// otro sistema ya lo tenga oculto) y el minimapa (MinimapController.SetHiddenByCinematic,
+    /// pensado para esto: ocultarlo fuera de los casos ya cubiertos de interior/batalla/menú).
+    /// </summary>
+    private void HideHUDAndMinimap()
+    {
+        if (_hudAndMinimapHidden) return;
+        _hudAndMinimapHidden = true;
+        Sendero.UI.PlayerHUDV2.Instance?.HideHUD();
+        MinimapController.Instance?.SetHiddenByCinematic(true);
+    }
+
+    /// <summary>Contrapartida de HideHUDAndMinimap(). Idempotente si ya se mostraron.</summary>
+    private void ShowHUDAndMinimap()
+    {
+        if (!_hudAndMinimapHidden) return;
+        _hudAndMinimapHidden = false;
+        Sendero.UI.PlayerHUDV2.Instance?.ShowHUD();
+        MinimapController.Instance?.SetHiddenByCinematic(false);
     }
 
     // ── MenuManager (pausa / cualquier menú) ────────────────────────────────────
@@ -164,6 +197,10 @@ public class LorePopupUI : MonoBehaviour
 
         _isOpen = false;
         _sequenceCoroutine = null;
+
+        // El HUD/minimapa reaparecen a la vez que el popup empieza a desvanecerse (mismo timing
+        // que ya usa DialogueManager al terminar diálogos), en vez de esperar a que termine el fade.
+        ShowHUDAndMinimap();
 
         yield return StartCoroutine(AnimateOutRoutine());
         onClosed?.Invoke();

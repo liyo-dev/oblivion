@@ -274,11 +274,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
   configuration:
-    behaviourType: 4
+    behaviourType: 132
     ambientConfig: {fileID: 0}
     combatConfig: {fileID: 0}
     questConfig: {fileID: 11400000, guid: b8d52e4f1a3c6b9d0e2f4a6c8b1d3e5f, type: 2}
-    interactiveNarrativeConfig: {fileID: 0}
+    interactiveNarrativeConfig: {fileID: 11400000, guid: c5c3d573d6134eb3b54d072291e35f33, type: 2}
     partyConfig: {fileID: 0}
     socialConfig: {fileID: 11400000, guid: 0e47097cde006f041b20904ed8ca8048, type: 2}
     walkSpeed: 1.5

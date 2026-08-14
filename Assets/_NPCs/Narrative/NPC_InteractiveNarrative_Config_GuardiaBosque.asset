@@ -1,0 +1,217 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 146d79b75d3ee84469ee73ac1fc77974, type: 3}
+  m_Name: NPC_InteractiveNarrative_Config_GuardiaBosque
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.Modules.NPCInteractiveNarrativeConfig
+  moduleName:
+  description:
+  conditionalNarratives:
+  - description: Ofrece la mision de las aranas (bosque ya desbloqueado)
+    priority: 10
+    condition:
+      conditionType: 2
+      targetQuest: {fileID: 11400000, guid: 740669d31322f9d438fc7c222d12e4e7, type: 2}
+      targetStepConditionId:
+      customEventKey:
+      debugMode: 0
+    narrativeChain:
+    - actionType: 0
+      dialogue: {fileID: 11400000, guid: c9e63f5a2b4d7c0e1f3a5b7d9c2e4f6a, type: 2}
+      targetAnchorName:
+      targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 5
+      randomMoveMaxRadius: 15
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 1
+      maxMovementDuration: 15
+      turnAroundOnArrival: 0
+      nearPlayerRadius: 1.8
+      lookAtPlayerOnArrival: 1
+      teleportNearPlayerRadius: 1.8
+      waitForPlayer: 0
+      maxPlayerDistance: 10
+      resumePlayerDistance: 5
+      animationTrigger:
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 0}
+      combatConfig: {fileID: 0}
+      combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey:
+      sendDefeatEventBeforeDeath: 0
+      waitDuration: 1
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 2
+      alertIconOffset: {x: 0, y: 2.5, z: 0}
+      escortMaxDuration: 120
+      escortMaxPlayerDistance: 8
+      escortResumeDistance: 3
+      outOfRangeDialogue: {fileID: 0}
+      escortNpcSpeed: 0
+      escortPlayerSpeedMultiplier: 0.6
+      teleportTransition: {fileID: 0}
+      screenFadeTransition: {fileID: 0}
+      fadeIn: 1
+      fadeColor: {r: 0, g: 0, b: 0, a: 1}
+      fadeDuration: 0.5
+      sendNarrativeEvent: 0
+      narrativeEventKey:
+      sendEventOnStart: 0
+    - actionType: 3
+      dialogue: {fileID: 0}
+      targetAnchorName:
+      targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 5
+      randomMoveMaxRadius: 15
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 1
+      maxMovementDuration: 15
+      turnAroundOnArrival: 0
+      nearPlayerRadius: 1.8
+      lookAtPlayerOnArrival: 1
+      teleportNearPlayerRadius: 1.8
+      waitForPlayer: 0
+      maxPlayerDistance: 10
+      resumePlayerDistance: 5
+      animationTrigger:
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 11400000, guid: a7c41d3e9f2b4c6a8d1e3f5a7b9c2d4e, type: 2}
+      combatConfig: {fileID: 0}
+      combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey:
+      sendDefeatEventBeforeDeath: 0
+      waitDuration: 1
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 2
+      alertIconOffset: {x: 0, y: 2.5, z: 0}
+      escortMaxDuration: 120
+      escortMaxPlayerDistance: 8
+      escortResumeDistance: 3
+      outOfRangeDialogue: {fileID: 0}
+      escortNpcSpeed: 0
+      escortPlayerSpeedMultiplier: 0.6
+      teleportTransition: {fileID: 0}
+      screenFadeTransition: {fileID: 0}
+      fadeIn: 1
+      fadeColor: {r: 0, g: 0, b: 0, a: 1}
+      fadeDuration: 0.5
+      sendNarrativeEvent: 0
+      narrativeEventKey:
+      sendEventOnStart: 0
+    singleUse: 1
+    autoStartOnDetection: 0
+    autoExecuteOnQuestConditionMet: 0
+    freezePlayerOnDetection: 0
+    lockPlayerAfterChain: 0
+    lockPlayerMaxDuration: 8
+    postNarrativeState: 0
+    postNarrativeAmbientConfig: {fileID: 0}
+    showPersistentIcon: 0
+    persistentIconPrefab: {fileID: 0}
+    sendNarrativeEvent: 0
+    narrativeEventKey:
+    debugMode: 0
+    loopWhileConditionMet: 0
+    loopPauseDuration: 1
+  - description: Bloqueado - bosque prohibido (solo magos)
+    priority: 0
+    condition:
+      conditionType: 1
+      targetQuest: {fileID: 11400000, guid: 740669d31322f9d438fc7c222d12e4e7, type: 2}
+      targetStepConditionId:
+      customEventKey:
+      debugMode: 0
+    narrativeChain:
+    - actionType: 0
+      dialogue: {fileID: 11400000, guid: 3db30440f08d6d344af905875f2a7615, type: 2}
+      targetAnchorName:
+      targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 5
+      randomMoveMaxRadius: 15
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 1
+      maxMovementDuration: 15
+      turnAroundOnArrival: 0
+      nearPlayerRadius: 1.8
+      lookAtPlayerOnArrival: 1
+      teleportNearPlayerRadius: 1.8
+      waitForPlayer: 0
+      maxPlayerDistance: 10
+      resumePlayerDistance: 5
+      animationTrigger:
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 0}
+      combatConfig: {fileID: 0}
+      combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey:
+      sendDefeatEventBeforeDeath: 0
+      waitDuration: 1
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 2
+      alertIconOffset: {x: 0, y: 2.5, z: 0}
+      escortMaxDuration: 120
+      escortMaxPlayerDistance: 8
+      escortResumeDistance: 3
+      outOfRangeDialogue: {fileID: 0}
+      escortNpcSpeed: 0
+      escortPlayerSpeedMultiplier: 0.6
+      teleportTransition: {fileID: 0}
+      screenFadeTransition: {fileID: 0}
+      fadeIn: 1
+      fadeColor: {r: 0, g: 0, b: 0, a: 1}
+      fadeDuration: 0.5
+      sendNarrativeEvent: 0
+      narrativeEventKey:
+      sendEventOnStart: 0
+    singleUse: 0
+    autoStartOnDetection: 0
+    autoExecuteOnQuestConditionMet: 0
+    freezePlayerOnDetection: 0
+    lockPlayerAfterChain: 0
+    lockPlayerMaxDuration: 8
+    postNarrativeState: 0
+    postNarrativeAmbientConfig: {fileID: 0}
+    showPersistentIcon: 0
+    persistentIconPrefab: {fileID: 0}
+    sendNarrativeEvent: 0
+    narrativeEventKey:
+    debugMode: 0
+    loopWhileConditionMet: 0
+    loopPauseDuration: 1
+  persistState: 1
+  persistenceId:
+  dialogueCharacterId: CHAR_GUARD
+  rotateToPlayerOnInteract: 1
+  rotationDuration: 0.3
+  initialLayer: 0
+  switchToEnemyLayerOnCombat: 1
+  detectionRange: 10
+  alertIconPrefab: {fileID: 0}
+  alertIconDuration: 1
+  alertIconHeight: 2.5
+  walkTowardsPlayerOnAlert: 1
+  stopDistanceFromPlayer: 2
+  enableDetailedLogs: 0

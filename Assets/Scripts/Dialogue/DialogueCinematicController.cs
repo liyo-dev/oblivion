@@ -1679,6 +1679,44 @@ public class DialogueCinematicController : MonoBehaviour
 
                 Vector3 groupCamPos = groupCenter + baseDir * usableHorizontalDist;
                 groupCamPos.y = groupCenter.y + height;
+
+                // ── Verificación final de solape (igual que en modo 1:1, ver CameraPositionIsEmbedded) ──
+                // El SphereCast de arriba (GroupCameraFreeDistance) solo viaja en línea recta a la altura
+                // de groupLookAtHeight; no detecta esquinas/marcos de puerta que quedan pegados a los
+                // lados de la cámara fuera de esa línea, y la compensación de "pared demasiado cerca"
+                // (subir height, clamp a 1.5m) se aplica sin volver a comprobar si esa posición final
+                // sigue dentro de geometría. Bug real reportado: en pasillos estrechos de mazmorra, la
+                // cámara de grupo terminaba embebida en la esquina de un pilar junto a una puerta,
+                // mostrando un primerísimo plano de piedra en vez de encuadrar al grupo. Mismo remedio
+                // que en el modo 1:1: retroceder en pasos cortos hasta liberarse y, si no basta, subir
+                // la elevación como último recurso.
+                {
+                    const int maxGroupBackoffSteps = 6;
+                    const float groupBackoffStep = 0.2f;
+                    Vector3 escapeDir = groupCamPos - groupCenter;
+                    escapeDir.y = 0f;
+                    if (escapeDir.sqrMagnitude > 0.0001f)
+                    {
+                        escapeDir.Normalize();
+                        float embedCheckRadius = groupCameraProbeRadius * 0.6f;
+                        int backoffSteps = 0;
+                        while (backoffSteps < maxGroupBackoffSteps && CameraPositionIsEmbedded(groupCamPos, embedCheckRadius, target))
+                        {
+                            groupCamPos += escapeDir * groupBackoffStep;
+                            backoffSteps++;
+                        }
+                        if (backoffSteps >= maxGroupBackoffSteps && CameraPositionIsEmbedded(groupCamPos, embedCheckRadius, target))
+                        {
+                            // Última salida: elevar por encima de la obstrucción en vez de seguir huyendo
+                            // lateralmente (una esquina/pilar rara vez sigue estorbando muy por encima de
+                            // las cabezas del grupo).
+                            groupCamPos.y = groupCenter.y + groupCameraDistance;
+                        }
+                        if (showDebugInfo && backoffSteps > 0)
+                            Debug.Log($"[DialogueCinematicController] 📷 Cámara de grupo encajada en vano - {backoffSteps} paso(s) de retroceso lateral");
+                    }
+                }
+
                 return groupCamPos;
             }
 

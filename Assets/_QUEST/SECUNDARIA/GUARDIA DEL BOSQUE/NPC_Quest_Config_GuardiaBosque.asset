@@ -28,11 +28,11 @@ MonoBehaviour:
     requiredCharacter: -1
     dlgWrongCharacter: {fileID: 0}
     unlockRequirement:
-      mode: 2
+      mode: 0
       quest: {fileID: 0}
-      questId: ELDRAN_MISSION6
-    dlgLocked: {fileID: 11400000, guid: 3db30440f08d6d344af905875f2a7615, type: 2}
-    dlgBefore: {fileID: 11400000, guid: c9e63f5a2b4d7c0e1f3a5b7d9c2e4f6a, type: 2}
+      questId:
+    dlgLocked: {fileID: 0}
+    dlgBefore: {fileID: 0}
     dlgInProgress: {fileID: 11400000, guid: d0f74a6b3c5e8d1f2a4b6c8e0d3f5a7b, type: 2}
     dlgTurnIn: {fileID: 11400000, guid: e1a85b7c4d6f9e2a3b5c7d9f1e4a6b8c, type: 2}
     dlgCompleted: {fileID: 11400000, guid: e1a85b7c4d6f9e2a3b5c7d9f1e4a6b8c, type: 2}
