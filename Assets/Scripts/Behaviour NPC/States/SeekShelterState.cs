@@ -6,8 +6,9 @@ namespace Game.NPC.States
     /// <summary>
     /// Se activa cuando empieza a llover (NPCWeatherAwareness.RainStarted, propagado a
     /// context.ShouldSeekShelter por NPCBehaviourManagerV2). El NPC camina hasta el
-    /// NPCShelterPoint más cercano (TreeCanopy o HouseDoor, sin distinción de comportamiento entre
-    /// ambos) y, al llegar, decide entre dos roles para dar variedad visual:
+    /// NPCShelterPoint más cercano (TreeCanopy en el bosque o RoofedSpot bajo un GO con techo del
+    /// pueblo, sin distinción de comportamiento entre ambos — el NPC nunca desaparece ni "entra"
+    /// a ningún sitio, siempre queda visible) y, al llegar, decide entre dos roles para dar variedad visual:
     ///   - Sitter: se sienta en el suelo (PlayAmbientActivity(SitGround), ya usado en otras
     ///     actividades ambientales) y se queda así hasta que deje de llover.
     ///   - Stander: se queda de pie alternando entre el idle normal (con sus propias variaciones

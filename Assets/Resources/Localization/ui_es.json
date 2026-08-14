@@ -726,11 +726,11 @@
         },
         {
             "key": "ITEM_CLOAK01_NAME",
-            "value": "Capa de Mago Principiante"
+            "value": "Capa de Mago Experto"
         },
         {
             "key": "ITEM_CLOAK01_DESC",
-            "value": "Capa de Mago utilizada por los principiantes."
+            "value": "Capa de Mago utilizada por los magos más poderosos."
         },
         {
             "key": "ITEM_COIN_NAME",

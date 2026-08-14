@@ -264,23 +264,35 @@ namespace Core.InputGlyphs
             return result;
         }
 
-        // Calibración de tamaño para los sprites inyectados en TMP (ver BuildTmpSpriteAssets). Antes de
-        // este servicio, DialogueIcons.asset ya tenía a mano una entrada "interactable_A" con métricas
-        // afinadas por prueba y error para que el icono (arte Xbox real, 832×1248 px) se viera bien
-        // insertado en medio de una línea de diálogo: ancho 832, alto 1248, bearingX -60, bearingY 700,
-        // advance 750, con un multiplicador "scale" de 3 a nivel de carácter TMP. Esos números son la
-        // única referencia real que tenemos de "esto se veía bien", así que en vez de inventar una
-        // fórmula genérica los usamos como base y escalamos proporcionalmente para el resto de sprites
-        // (que pueden venir en cualquier resolución: el arte Xbox real son 832×1248 px pero los
-        // placeholders de PlayStation/Switch/Teclado son 96×96 px). Sin esto, un icono de 96 px con
-        // "scale 1" sale con un tamaño y una posición vertical completamente distintos a los que tenía
-        // el original calibrado, y termina recortado por la máscara del cuadro de diálogo.
-        const float RefWidth = 832f;
-        const float RefHeight = 1248f;
-        const float RefCharacterScale = 3f;
-        const float RefBearingXRatio = -60f / RefWidth;
-        const float RefBearingYRatio = 700f / RefHeight;
-        const float RefAdvanceRatio = 750f / RefWidth;
+        // Calibración de tamaño para los sprites inyectados en TMP (ver BuildTmpSpriteAssets).
+        //
+        // 2026-08-14 — REESCRITA. La versión anterior partía de las métricas "afinadas a ojo" de la
+        // entrada interactable_A de DialogueIcons.asset (832×1248 px, bearingX -60, bearingY 700,
+        // advance 750, scale 3) y las reescalaba con (RefHeight * 3) / alto_del_PNG, con la intención
+        // de que todos los botones salieran del mismo tamaño viniera el PNG en la resolución que
+        // viniera. El problema es que TMP YA normaliza la altura del sprite él solo:
+        //
+        //     currentElementScale = fontFace.ascentLine / glyph.metrics.height * character.scale
+        //     (TextMeshProUGUI.cs, rama spriteFace.pointSize == 0)
+        //
+        // …así que el alto renderizado sale = ascentLine * character.scale, INDEPENDIENTE ya del alto
+        // del PNG. Al multiplicar además por RefHeight/alto se dividía dos veces por el mismo alto y
+        // el resultado era alto_renderizado = ascentLine * 3 * 1248 / alto_PNG: con los PNG de teclado
+        // (300 px) salía a ~12 veces el ascender de la fuente — el "botón gigante" que tapaba media
+        // línea de diálogo.
+        //
+        // Ahora se usa directamente el número de ascenders que debe medir el icono, el MISMO valor que
+        // llevan los iconos propios de DialogueIcons.asset (m_Scale en su m_SpriteCharacterTable), y
+        // las métricas se derivan del alto del glifo con las mismas proporciones que allí, para que un
+        // <sprite name="start"> (botón, generado aquí) y un <sprite name="algas"> (objeto, tabla del
+        // asset) se vean exactamente igual de grandes y apoyados en la misma línea base.
+        //
+        // Si hay que retocar el tamaño de los iconos en diálogo, se tocan LOS DOS a la vez:
+        // este GlyphScale y el m_Scale de Assets/Art/UI/DialogueIcons/DialogueIcons.asset.
+        const float GlyphScale = 1.25f;        // altura del icono, en ascenders de la fuente
+        const float GlyphBearingXRatio = 0.06f; // margen izquierdo, en fracción del alto del glifo
+        const float GlyphBearingYRatio = 0.95f; // 0.95 → el icono se apoya en la línea base
+        const float GlyphAdvanceRatio = 0.14f;  // hueco tras el icono, en fracción de su alto
 
         /// <summary>
         /// Empaqueta un diccionario nombre→sprite ya cargado (ver <see cref="LoadFamilySprites"/>) en
@@ -355,17 +367,16 @@ namespace Core.InputGlyphs
                 Rect texRect = sprite.textureRect;
                 float w = texRect.width;
                 float h = texRect.height;
-                // Escala inversamente proporcional a la altura real del PNG para que TODOS los botones
-                // se vean del mismo tamaño en pantalla dentro del texto, sea cual sea la resolución de
-                // origen (ver constantes Ref* arriba) — sin esto, un placeholder de 96 px queda
-                // minúsculo (o el arte Xbox de 1248 px queda gigante y recortado) frente al calibrado
-                // original.
-                float characterScale = h > 0f ? (RefHeight * RefCharacterScale) / h : RefCharacterScale;
+                // TMP normaliza él solo la altura del sprite al ascender de la fuente (ver el bloque de
+                // constantes Glyph* arriba), así que el alto en pantalla ya es independiente de la
+                // resolución del PNG y basta con decir cuántos ascenders debe medir. NO hay que volver
+                // a dividir por h aquí: eso era el bug del icono gigante.
+                float characterScale = GlyphScale;
 
                 var glyph = new TMP_SpriteGlyph
                 {
                     index = 0,
-                    metrics = new GlyphMetrics(w, h, RefBearingXRatio * w, RefBearingYRatio * h, RefAdvanceRatio * w),
+                    metrics = new GlyphMetrics(w, h, GlyphBearingXRatio * h, GlyphBearingYRatio * h, w + GlyphAdvanceRatio * h),
                     glyphRect = new GlyphRect((int)texRect.x, (int)texRect.y, (int)w, (int)h),
                     scale = 1f,
                     atlasIndex = 0,

@@ -119,7 +119,7 @@ public static class ControlsMenuSceneBuilder
 
         // Reutilizar la fuente TMP que ya usa el menú, para que la fila encaje visualmente sin
         // tener que adivinar qué font asset custom usa el proyecto.
-        var referenceText = UnityEngine.Object.FindFirstObjectByType<TMP_Text>(FindObjectsInactive.Include);
+        var referenceText = UnityEngine.Object.FindAnyObjectByType<TMP_Text>(FindObjectsInactive.Include);
         TMP_FontAsset font = referenceText != null ? referenceText.font : null;
 
         var row = new GameObject("ControlRow", typeof(RectTransform));
@@ -199,7 +199,7 @@ public static class ControlsMenuSceneBuilder
         keyText.fontSize = 24f;
         keyText.alignment = TextAlignmentOptions.MidlineLeft;
         keyText.color = new Color(1f, 0.92f, 0.16f); // dorado — mismo tono que activeStateColor en SettingsMenuController
-        keyText.enableWordWrapping = false;
+        keyText.textWrappingMode = TextWrappingModes.NoWrap;
         keyText.overflowMode = TextOverflowModes.Ellipsis;
         // Auto-tamaño: etiquetas cortas ("Q", "E", "T"...) se ven grandes a 24pt, pero combos como
         // "clic izquierdo"/"rueda arriba" no caben ahí ni de lejos — sin esto se cortaban con "…" y
@@ -220,7 +220,7 @@ public static class ControlsMenuSceneBuilder
         descText.fontSize = 21f;
         descText.alignment = TextAlignmentOptions.MidlineLeft;
         descText.color = Color.white;
-        descText.enableWordWrapping = false;
+        descText.textWrappingMode = TextWrappingModes.NoWrap;
         descText.overflowMode = TextOverflowModes.Ellipsis; // corta con "…" en vez de desbordar fuera de la celda
         var descLayoutElement = descGo.AddComponent<LayoutElement>();
         descLayoutElement.flexibleWidth = 1f;
@@ -244,7 +244,7 @@ public static class ControlsMenuSceneBuilder
 
     static GameObject BuildOrLoadControlsPanel(ControlRowWidget rowPrefab, ControlsSchemeConfig scheme)
     {
-        var settingsMenu = UnityEngine.Object.FindFirstObjectByType<SettingsMenuController>(FindObjectsInactive.Include);
+        var settingsMenu = UnityEngine.Object.FindAnyObjectByType<SettingsMenuController>(FindObjectsInactive.Include);
         if (settingsMenu == null)
             throw new Exception("No se encontró SettingsMenuController en MainMenu.unity — no se puede clonar su estilo de panel.");
 
@@ -390,7 +390,7 @@ public static class ControlsMenuSceneBuilder
 
     static void WireMainMenuController(GameObject controlsPanelGo)
     {
-        var mainMenu = UnityEngine.Object.FindFirstObjectByType<MainMenuController>(FindObjectsInactive.Include);
+        var mainMenu = UnityEngine.Object.FindAnyObjectByType<MainMenuController>(FindObjectsInactive.Include);
         if (mainMenu == null)
             throw new Exception("No se encontró MainMenuController en MainMenu.unity.");
 
@@ -411,7 +411,7 @@ public static class ControlsMenuSceneBuilder
 
         if (settingsButton == null)
         {
-            var allButtons = UnityEngine.Object.FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var allButtons = UnityEngine.Object.FindObjectsByType<Button>(FindObjectsInactive.Include);
             var names = string.Join(", ", Array.ConvertAll(allButtons, b => b.gameObject.name));
             throw new Exception("No se encontró el botón de Ajustes (ni por el campo 'settingsButton' del Inspector, ni por " +
                                  $"nombre/texto). Botones en la escena: [{names}]. Asigna 'Settings Button' a mano en el " +
@@ -486,7 +486,7 @@ public static class ControlsMenuSceneBuilder
     /// </summary>
     static Button FindButtonByNameOrLabel(params string[] needles)
     {
-        var all = UnityEngine.Object.FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var all = UnityEngine.Object.FindObjectsByType<Button>(FindObjectsInactive.Include);
 
         foreach (var b in all)
         {

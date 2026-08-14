@@ -726,11 +726,11 @@
         },
         {
             "key": "ITEM_CLOAK01_NAME",
-            "value": "Beginner Mage Cloak"
+            "value": "Expert Mage Cloak"
         },
         {
             "key": "ITEM_CLOAK01_DESC",
-            "value": "A mage cloak worn by beginners."
+            "value": "A mage cloak worn by the most powerful mages."
         },
         {
             "key": "ITEM_COIN_NAME",

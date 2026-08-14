@@ -8,6 +8,8 @@ public class InventoryRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHa
     [SerializeField] private Button button;
     [SerializeField] private Text label;
     [SerializeField] private Image iconImage;
+    [SerializeField] private GameObject quantityBadge;
+    [SerializeField] private Text quantityText;
 
     ItemData _item;
     string _fallbackName = "Item";
@@ -32,7 +34,17 @@ public class InventoryRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHa
             if (iconTransform != null)
                 iconImage = iconTransform.GetComponent<Image>();
         }
-        
+        if (quantityBadge == null)
+        {
+            var badgeTransform = transform.Find("QuantityBadge");
+            if (badgeTransform != null)
+            {
+                quantityBadge = badgeTransform.gameObject;
+                if (quantityText == null)
+                    quantityText = badgeTransform.GetComponentInChildren<Text>();
+            }
+        }
+
         if (button != null && !_colorsInitialized)
         {
             _defaultColors = button.colors;
@@ -50,8 +62,6 @@ public class InventoryRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHa
 
     public void RefreshLabel(Inventory inventory)
     {
-        if (label == null) return;
-
         int count = (inventory != null && _item != null)
             ? inventory.Count(_item.itemId)
             : 0;
@@ -60,7 +70,15 @@ public class InventoryRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHa
             ? _item.GetLocalizedName()
             : _fallbackName;
 
-        label.text = $"{name} x{count}";
+        if (label != null)
+            label.text = name;
+
+        // La cantidad se muestra en su propio badge ("×N") en vez de ir pegada al nombre.
+        if (quantityText != null)
+            quantityText.text = $"×{count}";
+
+        if (quantityBadge != null)
+            quantityBadge.SetActive(_item != null);
     }
 
     public void RegisterClickHandler(Action onClick)

@@ -63,7 +63,16 @@ public class ManaPool : MonoBehaviour
         {
             float before = current;
             current = Mathf.Min(max, current + Mathf.Max(0f, manaRegenPerSecond) * Time.deltaTime);
-            if (current > before && Mathf.Abs(current - _lastNotifiedMana) >= manaRegenNotifyEpsilon)
+
+            // FIX: el frame en que se alcanza el máximo tiene que notificar SIEMPRE, aunque el
+            // incremento sea menor que manaRegenNotifyEpsilon. Si no, la última notificación que
+            // llega a la UI se queda justo por debajo de 1.0 y nunca se avisa del "lleno real":
+            // PlayerHUDV2 interpola con Lerp hacia ese fillAmount < 1 (que jamás llega a 1
+            // exactamente porque el propio Update() de aquí ya no vuelve a llamar tras
+            // "current >= max") y el sprite de la barra se queda recortado justo en la puntita
+            // redondeada del extremo derecho, que solo se ve completa con fillAmount == 1.
+            bool reachedFull = current >= max && before < max;
+            if (current > before && (reachedFull || Mathf.Abs(current - _lastNotifiedMana) >= manaRegenNotifyEpsilon))
             {
                 NotifyManaChanged();
             }

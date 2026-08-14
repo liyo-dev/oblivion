@@ -145,7 +145,7 @@ namespace Game.NPC.Common
 
         // Refugio de lluvia (ver SeekShelterState). NPCBehaviourManagerV2 desactiva esto
         // automáticamente para cualquier NPC con persistenceId (relevante para el grafo narrativo),
-        // para que no desaparezca a mitad de una interacción de quest.
+        // para que no abandone su puesto a mitad de una interacción de quest.
         private bool _shelterSeekingDisabledOverride;
         public void DisableShelterSeeking() => _shelterSeekingDisabledOverride = true;
         public bool canSeekShelter => !_shelterSeekingDisabledOverride && (ambientConfig != null ? ambientConfig.canSeekShelter : true);

@@ -1237,11 +1237,32 @@ Implementado en esta pasada (sesión Cowork, sin poder abrir el Editor — pendi
 **Fecha:** 4 agosto 2026
 **Estado:** Propuesta de diseño — pendiente de aprobación antes de implementar
 
+> **ACTUALIZACIÓN (14 ago 2026) — Parte A, decisión de "casas" revertida:** la Parte A (refugio de
+> lluvia) está implementada (`NPCShelterPoint.cs`, `SeekShelterState.cs`, `ReturnFromShelterState.cs`,
+> `NPCWeatherAwareness.cs`), pero **la idea original de abajo de que el NPC "desaparece" al llegar a
+> la puerta de una casa (`SetActive(false)`) nunca llegó a implementarse** — se simplificó durante la
+> construcción a que `TreeCanopy` y `HouseDoor` se comportan exactamente igual (el NPC se queda de
+> pie o sentado, siempre visible). Ahora se decide explícitamente **no** implementar nunca ese
+> "entrar en la casa": se descarta del diseño. En su lugar, el refugio en el pueblo se coloca bajo
+> GO con techo (puestos de mercado, porches, tejadillos), igual de "exterior" que un árbol del
+> bosque — nunca en la puerta de una vivienda. Renombrado en código: `NPCShelterType.HouseDoor` →
+> `NPCShelterType.RoofedSpot` (el valor entero no cambia, solo la etiqueta, así que no hace falta
+> tocar los `NPCShelterPoint` ya colocados en escena para que sigan siendo válidos).
+>
+> **Trabajo de nivel pendiente:** los 8 `NPCShelterPoint` ya colocados a día de hoy (4 en
+> `Assets/Scenes/Worlds/MainWorld.unity`, 4 en `Assets/Scenes/Systems/MainMenu.unity`, todos con
+> `shelterType: 1`) están físicamente puestos en puertas de edificio (uno detectado sobre
+> `Building06_c07`). Hay que reubicarlos a mano sobre GO con techo reales del pueblo — esto es
+> trabajo de editor, no de código, igual que ya advertía este documento más abajo sobre la
+> colocación de puntos de refugio.
+
 Decisiones ya tomadas contigo:
-- Refugio en casas = el NPC desaparece al llegar a la puerta (no hay interior real que visitar).
+- ~~Refugio en casas = el NPC desaparece al llegar a la puerta (no hay interior real que visitar).~~
+  **Descartado, ver actualización de arriba** — el refugio en el pueblo va en GO con techo, el NPC
+  nunca desaparece.
 - Relaciones dinámicas = persistentes desde la v1 (se guardan en el save).
 
-Todo lo citado abajo (rutas, clases, métodos, líneas) está verificado leyendo el código real del proyecto, no asumido.
+Todo lo citado abajo (rutas, clases, métodos, líneas) está verificado leyendo el código real del proyecto, no asumido. El contenido original de la propuesta (incluida la idea de "casas" ya descartada) se deja tal cual por debajo como registro histórico de cómo se llegó a la decisión actual — no como estado vigente.
 
 ---
 
@@ -1623,7 +1644,7 @@ Con los tres puntos, la combinación (más alcance, más ventanas de detección,
 ### Orden de implementación recomendado
 
 1. **Parte B primero** (relaciones) — es la que te da más rabia y el riesgo es menor (no toca movimiento/NavMesh, solo datos + un `OnExit`). Empezar por B.3-B.4 sin persistencia, jugar y validar que las relaciones evolucionan bien en una sesión. Añadir B.5 (persistencia) una vez el comportamiento en runtime se sienta bien — así no hay que retocar el guardado dos veces si cambian los umbrales.
-2. **Parte A después** (refugio de lluvia) — más trabajo de nivel (colocar puntos manualmente) y más superficie de casos límite (NPCs narrativos, agentes de NavMesh). Construir `NPCShelterPoint` + `SeekShelterState` con solo `TreeCanopy` primero, verificar que el ciclo completo (lluvia → refugio → vuelta) funciona bien, y añadir `HouseDoor` (con el `SetActive`) después.
+2. **Parte A después** (refugio de lluvia) — más trabajo de nivel (colocar puntos manualmente) y más superficie de casos límite (NPCs narrativos, agentes de NavMesh). Construir `NPCShelterPoint` + `SeekShelterState` con solo `TreeCanopy` primero, verificar que el ciclo completo (lluvia → refugio → vuelta) funciona bien, y añadir `RoofedSpot` después. *(Histórico: aquí se planteaba añadir `HouseDoor` con `SetActive` — descartado, ver actualización al principio de la sección.)*
 3. **B.6** (radar de amistad / idle social) al final, como pulido, una vez lo esencial de ambas partes esté verificado en el juego real.
 
 ### Preguntas abiertas para validar antes de programar
@@ -1632,6 +1653,53 @@ Con los tres puntos, la combinación (más alcance, más ventanas de detección,
 - ¿Quién llama a `NPCWeatherAwareness.Resubscribe()` tras cada carga aditiva de escena? Propuesto `WorldBootstrap`, a confirmar mirando su `Start()` real.
 - Lista de NPCs que deben quedar excluidos del refugio de lluvia (guardias apostados, vendedores con puesto fijo, cualquiera con `narrativeID` activo) — se puede generar automáticamente o requerir marcado manual en el inspector; recomendado automático con override manual.
 
+### PARTE D — Ideas futuras: "vida artificial" de NPCs y del grupo (capturadas, sin diseñar aún)
+
+**Fecha:** 14 agosto 2026. Lluvia de ideas de Raúl, anotada aquí tal cual para no perderla — **nada
+de esto está diseñado en detalle todavía** (piezas de código, estados nuevos, assets necesarios),
+es solo la intención de diseño de alto nivel. Antes de implementar cualquier punto de estos hace
+falta pasar por el mismo proceso que la Parte A/B de arriba: diagnóstico del código real, piezas
+nuevas, casos límite. Objetivo general: que los NPCs (y el propio grupo jugable) se sientan vivos
+sin que el jugador lo perciba como "un sistema" — reacciones oportunistas a contexto, no eventos
+anunciados.
+
+**D.1 — NPCs sueltos del pueblo, socialización ambiental por aburrimiento**
+Cuando no tienen nada mejor que hacer, los NPCs del pueblo se buscan entre ellos y se ponen a
+hablar, de dos en dos o en grupo si hace falta. Conversaciones random añadidas a los literales de
+diálogo existentes. Bocadillo de "hablando" sobre la cabeza mientras dura. Probablemente construido
+sobre el sistema social ya existente pero verificado como invisible en la práctica (ver diagnóstico
+al principio de esta sección, punto sobre `WanderState.CheckSocialEncounter`) — puede que sea la
+misma pieza que arregla la Parte B de arriba, con una capa de UI (bocadillo) y contenido de diálogo
+nuevo encima.
+
+**D.2 — Idle del grupo jugable (Will/Liam/Estela) cuando el jugador no toca el mando**
+Tras un tiempo sin input, el personaje activo (o los compañeros) rompen el idle genérico con
+pequeñas escenas con personalidad:
+- Estela puede sentarse en el suelo y decir que tiene hambre.
+- Will se pone a buscar algo (rebuscar en algo, gesto de "dónde estará").
+- Liam le dice a Estela que se levante del suelo y empiezan a discutir (una pareja de gestos/líneas
+  encadenadas entre dos compañeros, no solo un personaje solo).
+Necesita: detección de "sin input del jugador durante X tiempo", banco de micro-escenas por
+personaje/pareja de personajes, y decidir si esto vive en el propio `PlayerActionManager` / stack
+de modos o en un sistema aparte que se dispare cuando el modo activo es el de exploración normal.
+
+**D.3 — Reacciones ambientales puntuales al pasar cerca de un NPC**
+Caminando por el pueblo, un NPC suelta un comentario al azar y Estela (u otro compañero) le
+contesta "por la cara" — interacción no solicitada por el jugador, con bocadillos de frase sobre
+ambas cabezas.
+
+**D.4 — Comentarios de viaje / caminata larga**
+De forma random, tras caminar un rato seguido, los compañeros pueden soltar comentarios, sonidos, o
+adelantarse y proponer una carrera ("te echo una carrera de aquí a allí") — Raúl apunta que esto
+encaja con Liam (Estela más bien no, según lo comentado).
+
+**Nota de alcance:** D.1 y D.3/D.4 comparten infraestructura de bocadillos de diálogo sobre la
+cabeza (UI nueva o reutilizable — comprobar si ya existe algo parecido, p.ej. en diálogo de quest o
+en el sistema de iconos de NPC como `NPCAlertIconController`/`NPCPersistentIconController`) y de
+contenido de líneas sueltas independientes del grafo narrativo principal. D.2 es más un sistema de
+idle-behaviours del grupo jugable, más cercano a `PlayerActionManager`/`NPCPartyMember` que al FSM
+de NPCs ambientales. Cuando se aborde esto en serio, tratar D.1-D.4 como iniciativas separadas con
+su propio diagnóstico, no como una sola feature.
 
 ---
 

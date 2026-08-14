@@ -3,20 +3,24 @@ using UnityEngine;
 using UnityEngine.AI;
 
 /// <summary>
-/// Tipo de refugio: bajo un árbol/porche exterior o en la puerta de una casa. Ambos se comportan
-/// igual (el NPC se queda ahí, de pie o sentado, hasta que deje de llover) — es solo una etiqueta
-/// para poder distinguirlos en el editor o filtrar por tipo si hiciera falta más adelante. Ver
+/// Tipo de refugio: bajo la copa de un árbol (bosque) o bajo una estructura con techo del pueblo
+/// (puesto de mercado, porche, tejadillo — cualquier GO con techo, nunca la puerta de una casa:
+/// el NPC no "entra" a ningún sitio). Ambos se comportan igual (el NPC se queda ahí, de pie o
+/// sentado, siempre visible, hasta que deje de llover) — es solo una etiqueta para poder
+/// distinguirlos en el editor o filtrar por tipo si hiciera falta más adelante. Ver
 /// SeekShelterState.
 /// </summary>
 public enum NPCShelterType
 {
     TreeCanopy,
-    HouseDoor
+    RoofedSpot
 }
 
 /// <summary>
 /// Punto de refugio de lluvia donde un NPC ambiental puede resguardarse. Se añade manualmente a
-/// objetos de escena (bajo árboles, en porches, en puertas de casas del pueblo).
+/// objetos de escena: bajo árboles en el bosque, o bajo cualquier GO con techo del pueblo (puesto
+/// de mercado, porche, tejadillo). Nunca en puertas de casa — el NPC no entra a ningún sitio, se
+/// queda de pie o sentado a la vista, igual que bajo un árbol.
 ///
 /// Calcado deliberadamente de NPCWorldPoint.cs (mismo patrón: registro estático con
 /// OnEnable/OnDisable, TryFindNearest) para que sea inmediatamente reconocible por cualquiera que
@@ -39,12 +43,12 @@ public class NPCShelterPoint : MonoBehaviour
 
     [Header("Capacidad")]
     [Min(1)]
-    [Tooltip("Cuántos NPCs caben a la vez en este punto. Los árboles/porches grandes pueden admitir " +
-             "varios; las puertas de casa normalmente solo 1-2 para no saturar la entrada.")]
+    [Tooltip("Cuántos NPCs caben a la vez en este punto. Los árboles grandes o techados amplios " +
+             "pueden admitir varios; un tejadillo pequeño normalmente solo 1-2 para no amontonar.")]
     public int capacity = 3;
 
     [Header("Colisión propia a ignorar (aproximación manual)")]
-    [Tooltip("Collider físico del propio árbol/porche/puerta bajo el que está este punto (p.ej. el " +
+    [Tooltip("Collider físico del propio árbol/estructura bajo el que está este punto (p.ej. el " +
              "tronco). NPCStateBase.ManualApproachStep lo ignora al comprobar obstrucciones — es " +
              "precisamente el obstáculo que este punto existe para rodear, no un bloqueo real. Si se " +
              "deja vacío, se autodetecta en Awake buscando un Collider en este GameObject o en algún " +

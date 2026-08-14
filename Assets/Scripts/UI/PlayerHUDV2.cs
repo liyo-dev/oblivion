@@ -460,45 +460,62 @@ namespace Sendero.UI
         private float _lastManaFillAmount = 1f;
         private float _manaRegenStartTime = -1f;
         private bool _isRegenerating = false;
-        
+        // Objetivo de fillAmount para la regeneración. Se actualiza cada vez que ManaPool
+        // notifica un cambio, pero quien realmente hace avanzar la interpolación es
+        // TickManaRegen() desde Update() (ver comentario ahí abajo).
+        private float _manaTargetFillAmount = 1f;
+
         private void OnManaChanged(float manaPercent)
         {
             RefreshManaBar();
         }
-        
+
         private void RefreshManaBar()
         {
             if (manaFillImage == null) return;
-            
+
             float currentMana = 0f;
             float maxMana = 1f;
-            
+
             if (_manaPool != null)
             {
                 currentMana = _manaPool.Current;
                 maxMana = _manaPool.Max;
             }
-            
+
             float targetFillAmount = maxMana > 0 ? currentMana / maxMana : 0f;
             float currentFillAmount = manaFillImage.fillAmount;
-            
+
             // Detectar si es gasto o regeneración
             bool isSpending = targetFillAmount < currentFillAmount;
             bool isRegenerating = targetFillAmount > currentFillAmount;
-            
+
+            _manaTargetFillAmount = targetFillAmount;
+
             if (isSpending)
             {
                 // GASTO: Animación rápida y cancelar cualquier regeneración
                 manaFillImage.DOKill();
                 _isRegenerating = false;
-                
+
                 manaFillImage.DOFillAmount(targetFillAmount, 0.2f)
                     .SetEase(Ease.OutQuad);
             }
             else if (isRegenerating)
             {
-                // REGENERACIÓN: Actualización suave continua sin tweens
-                // Usar interpolación directa para movimiento fluido
+                // REGENERACIÓN: solo activamos la bandera aquí. La interpolación cuadro a cuadro
+                // ocurre en TickManaRegen() (llamado desde Update()), NO en este método.
+                //
+                // FIX: antes el propio Lerp vivía aquí dentro, así que solo avanzaba un paso cada
+                // vez que ManaPool disparaba OnManaChanged. En cuanto el maná llegaba al máximo,
+                // ManaPool.Update() dejaba de notificar (early-return con "current >= max") y ese
+                // último paso de Lerp casi nunca aterrizaba exactamente en 1 (un Lerp es asintótico:
+                // se acerca pero no llega). Con fillAmount < 1 el Image tipo "Filled" recorta el
+                // sprite de la barra por su borde derecho, así que la puntita redondeada del arte
+                // (que solo existe completa en el sprite sin recortar, ver mp_bar_fill.png) se
+                // quedaba mostrando un corte recto para siempre, aunque el maná ya estuviera lleno.
+                // Al mover el Lerp a Update(), sigue avanzando cuadro a cuadro aunque no lleguen más
+                // eventos de ManaPool, así que sí converge y encaja en el valor objetivo.
                 if (!_isRegenerating)
                 {
                     // Primera vez regenerando - cancelar tweens previos
@@ -506,30 +523,47 @@ namespace Sendero.UI
                     _isRegenerating = true;
                     _manaRegenStartTime = Time.time;
                 }
-                
-                // Actualización directa con Lerp suave para regeneración continua
-                float lerpSpeed = 5f; // Velocidad de interpolación
-                manaFillImage.fillAmount = Mathf.Lerp(currentFillAmount, targetFillAmount, lerpSpeed * Time.deltaTime);
             }
             else
             {
                 // Sin cambio o ya completo
-                if (_isRegenerating && Mathf.Approximately(currentFillAmount, targetFillAmount))
-                {
-                    _isRegenerating = false;
-                }
+                _isRegenerating = false;
                 manaFillImage.fillAmount = targetFillAmount;
             }
-            
+
             _lastManaFillAmount = targetFillAmount;
-            
+
             // Actualizar texto si existe
             if (manaText != null)
             {
                 manaText.text = $"{Mathf.CeilToInt(currentMana)}/{Mathf.CeilToInt(maxMana)}";
             }
         }
-        
+
+        /// <summary>
+        /// Avanza la interpolación de regeneración de maná un cuadro. Vive en Update() (no dentro
+        /// de RefreshManaBar) precisamente para no depender de que ManaPool siga disparando
+        /// OnManaChanged: así la barra siempre termina de converger a su valor final, incluyendo
+        /// el "encaje" a fillAmount exacto que hace falta para que el sprite muestre su puntita
+        /// redondeada completa. Ver el FIX comentado en RefreshManaBar().
+        /// </summary>
+        private void TickManaRegen()
+        {
+            if (!_isRegenerating || manaFillImage == null) return;
+
+            float currentFillAmount = manaFillImage.fillAmount;
+            float lerpSpeed = 5f; // Velocidad de interpolación
+            float newFillAmount = Mathf.Lerp(currentFillAmount, _manaTargetFillAmount, lerpSpeed * Time.deltaTime);
+
+            if (Mathf.Abs(_manaTargetFillAmount - newFillAmount) < 0.001f)
+            {
+                newFillAmount = _manaTargetFillAmount;
+                _isRegenerating = false;
+            }
+
+            manaFillImage.fillAmount = newFillAmount;
+        }
+
         #endregion
         
         #region Actualización de Slots de Magia
@@ -538,6 +572,10 @@ namespace Sendero.UI
         {
             // Actualizar cooldowns cada frame
             UpdateMagicSlotCooldowns();
+
+            // Sigue interpolando la barra de maná hacia su objetivo aunque ManaPool ya no esté
+            // notificando cambios (ver comentario en RefreshManaBar() / TickManaRegen()).
+            TickManaRegen();
         }
         
         private void RefreshAllMagicSlots()

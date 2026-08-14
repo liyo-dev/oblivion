@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 5310000000000000122}
   - component: {fileID: 5310000000000000123}
   - component: {fileID: 5310000000000000124}
-  m_Layer: 0
+  m_Layer: 18
   m_Name: QuibliRainCloud3D_3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
