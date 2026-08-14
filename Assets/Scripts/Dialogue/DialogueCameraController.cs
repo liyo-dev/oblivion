@@ -90,7 +90,8 @@ public class DialogueCameraController : MonoBehaviour
 
         // FIX: este método reposiciona la cámara en LateUpdate() más abajo, pero eso no servía
         // de nada si vThirdPersonCamera seguía siguiendo al jugador en modo gameplay normal: el
-        // único candado que de verdad detiene su CameraMovement() en FixedUpdate es el estático
+        // único candado que de verdad detiene su CameraMovement() (ahora en LateUpdate, antes en
+        // FixedUpdate) es el estático
         // lockCameraForCinematic, no el campo lockCamera (que es solo un debug/alineación que
         // nadie lee) que este controlador ponía antes. Sin reclamar el candado real, cuando el
         // diálogo (llevado por DialogueCinematicController) soltaba la cámara, el seguimiento

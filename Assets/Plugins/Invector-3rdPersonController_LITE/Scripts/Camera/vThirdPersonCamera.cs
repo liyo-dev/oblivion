@@ -105,7 +105,7 @@ public class vThirdPersonCamera : MonoBehaviour
         _doSmoothSnap = false;
     }
 
-    void FixedUpdate()
+    void LateUpdate()
     {
         if (target == null) return;
 
@@ -225,8 +225,8 @@ public class vThirdPersonCamera : MonoBehaviour
             // --- MODO LIBRE ---
             if (zoneRotationLocked)
             {
-                mouseX = Mathf.LerpAngle(mouseX, _zoneLockedMouseX, smoothCameraRotation * Time.fixedDeltaTime);
-                mouseY = Mathf.Lerp(mouseY, _zoneLockedMouseY, smoothCameraRotation * Time.fixedDeltaTime);
+                mouseX = Mathf.LerpAngle(mouseX, _zoneLockedMouseX, smoothCameraRotation * Time.deltaTime);
+                mouseY = Mathf.Lerp(mouseY, _zoneLockedMouseY, smoothCameraRotation * Time.deltaTime);
             }
             var camDir = (forward * targetLookAt.forward) + (rightOffset * targetLookAt.right);
             camDir = camDir.normalized;
@@ -235,7 +235,7 @@ public class vThirdPersonCamera : MonoBehaviour
 
         // Aplicar rotación al pivote
         targetLookAt.position = current_cPos;
-        targetLookAt.rotation = Quaternion.Slerp(targetLookAt.rotation, newRot, smoothCameraRotation * Time.fixedDeltaTime);
+        targetLookAt.rotation = Quaternion.Slerp(targetLookAt.rotation, newRot, smoothCameraRotation * Time.deltaTime);
         
         // Calcular posición final de la cámara
         var finalCamDir = (forward * targetLookAt.forward) + (rightOffset * targetLookAt.right);
@@ -245,7 +245,7 @@ public class vThirdPersonCamera : MonoBehaviour
 
         if (_doSmoothSnap)
         {
-            var p = Vector3.SmoothDamp(transform.position, camPos, ref _snapVelocity, SnapSmoothTime, float.MaxValue, Time.fixedDeltaTime);
+            var p = Vector3.SmoothDamp(transform.position, camPos, ref _snapVelocity, SnapSmoothTime, float.MaxValue, Time.deltaTime);
             if ((p - camPos).sqrMagnitude < 0.0001f) { _doSmoothSnap = false; p = camPos; }
             transform.position = p;
         }

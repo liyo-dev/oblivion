@@ -209,17 +209,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b687a38d9c603ef4ea2c981103c66173, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  mode: 0
+  mode: 2
   hint: {fileID: 5251744869671845419}
   hideHintAtStart: 1
   hintAnimDuration: 0.25
   iconSet: {fileID: 11400000, guid: 9120cc0f8d6f411aa56d4ef968de44c5, type: 2}
   singleUse: 0
   initiallyEnabled: 1
-  persistentIdOverride: 
+  persistentIdOverride:
   includeSceneInPersistentId: 1
-  dialogueCharacterId: 
-  dialogue: {fileID: 11400000, guid: 3db30440f08d6d344af905875f2a7615, type: 2}
+  dialogueCharacterId:
+  dialogue: {fileID: 0}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}
   confirmFollowUp: {fileID: 0}

@@ -91,7 +91,17 @@ namespace Game.NPC.Common
             // NO llamar SetDestination aquí: en Unity 6 puede resetear isStopped internamente
             // antes de que LateUpdate lo lea, produciendo falsos warnings del safety check.
             agent.velocity = Vector3.zero;
-            agent.nextPosition = agent.transform.position;
+
+            // FIX INC-NPCS-EN-ARBOLES (14 ago 2026): este reseteo de nextPosition solo tiene
+            // sentido con el agente sobre el NavMesh (limpiar residuo de un path real). Si se
+            // llama con el agente fuera de malla (p.ej. mientras SeekShelterState lo mueve a mano
+            // bajo la copa de un árbol, ver NPCStateBase.BeginManualApproach), asignar aquí una
+            // posición fuera de malla hace que el NavMeshAgent la reproyecte sobre el NavMesh en
+            // cuanto pueda — y si algo reactiva agent.updatePosition después, arrastra el
+            // transform de vuelta a ese punto proyectado (el NPC se "escupe" del árbol). No hay
+            // nada que limpiar aquí si ya está fuera de malla: se deja tal cual.
+            if (agent.isOnNavMesh)
+                agent.nextPosition = agent.transform.position;
         }
 
         public static void SetDestination(NavMeshAgent agent, Vector3 destination, float stoppingDistance = -1f)
