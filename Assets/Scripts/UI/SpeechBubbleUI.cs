@@ -52,6 +52,10 @@ public class SpeechBubbleUI : MonoBehaviour
     Transform _target;
     bool _isShowing;
     Coroutine _autoHideRoutine;
+    // Callback pendiente del Show() en curso — solo relevante mientras _autoHideRoutine != null.
+    // Guardado aparte (además del parámetro local que ya recibe la propia corrutina AutoHide) para
+    // que SkipCurrent() pueda invocarlo desde fuera sin depender de la corrutina.
+    Action _pendingOnComplete;
 
     // Oculto temporalmente porque hay un menú (pausa, equipo, tienda...) abierto encima.
     bool _hiddenByMenu;
@@ -221,8 +225,26 @@ public class SpeechBubbleUI : MonoBehaviour
                    .SetEase(Ease.OutBack)
                    .SetUpdate(true);
 
+        _pendingOnComplete = onComplete;
         if (duration > 0f)
             _autoHideRoutine = StartCoroutine(AutoHide(duration, onComplete));
+    }
+
+    /// Fuerza el cierre inmediato del bocadillo con auto-hide en curso, como si su duración ya
+    /// hubiera terminado: para el temporizador, lo oculta y dispara el mismo onComplete que se le
+    /// pasó a Show() — así quien esperaba ese callback (típicamente ShowSpeechBubbleNode, para
+    /// avanzar el grafo narrativo) lo recibe igual, solo que antes. No-op seguro si no hay ningún
+    /// bocadillo con auto-hide en curso (duration <= 0, o ya se ocultó solo). Pensado para el botón
+    /// global de "saltar" — ver ShowSpeechBubbleNode.RegisterSkipHandler.
+    public void SkipCurrent()
+    {
+        if (_autoHideRoutine == null) return;
+        StopCoroutine(_autoHideRoutine);
+        _autoHideRoutine = null;
+        var callback = _pendingOnComplete;
+        _pendingOnComplete = null;
+        Hide();
+        callback?.Invoke();
     }
 
     public void Hide()
@@ -271,6 +293,7 @@ public class SpeechBubbleUI : MonoBehaviour
         yield return new WaitForSecondsRealtime(duration);
         Hide();
         _autoHideRoutine = null;
+        _pendingOnComplete = null;
         onComplete?.Invoke();
     }
 
