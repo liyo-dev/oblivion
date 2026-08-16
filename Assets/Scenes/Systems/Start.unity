@@ -20981,8 +20981,8 @@ MonoBehaviour:
   m_Padding:
     m_Left: 22
     m_Right: 22
-    m_Top: 18
-    m_Bottom: 58
+    m_Top: 30
+    m_Bottom: 46
   m_ChildAlignment: 4
   m_Spacing: 0
   m_ChildForceExpandWidth: 1
@@ -22797,7 +22797,7 @@ MonoBehaviour:
   _bubbleMinWidth: 560
   _bubbleMaxWidth: 900
   _bubbleMinHeight: 160
-  _labelHorizontalMargin: 32
+  _labelHorizontalMargin: 44
   _labelVerticalMargin: 28
   _worldOffset: {x: 0, y: 1.2, z: 0}
 --- !u!114 &3313406703180634780

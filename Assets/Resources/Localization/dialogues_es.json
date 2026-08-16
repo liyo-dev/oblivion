@@ -41,6 +41,14 @@
             "value": "Lety y Vicky"
         },
         {
+            "key": "CHAR_LETY",
+            "value": "Lety"
+        },
+        {
+            "key": "CHAR_VICKY",
+            "value": "Vicky"
+        },
+        {
             "key": "CHAR_LIAM",
             "value": "Liam"
         },
@@ -803,6 +811,34 @@
         {
             "key": "DLG_LETY_VICKY_DEFEATED",
             "value": "Corre Vicky, Corre..."
+        },
+        {
+            "key": "DLG_LETY_ALERT_01",
+            "value": "Mira Vicky, una presa fácil."
+        },
+        {
+            "key": "DLG_LETY_ALERT_02",
+            "value": "Vamos a divertirnos un rato contigo."
+        },
+        {
+            "key": "DLG_VICKY_ALERT_01",
+            "value": "Ya veo Lety... atento muchacho a nuestro ataque dual."
+        },
+        {
+            "key": "DLG_VICKY_ALERT_02",
+            "value": "Por cierto chico, cuando quieras cambiar el foco de tu ataque..."
+        },
+        {
+            "key": "DLG_VICKY_ALERT_03",
+            "value": "Puedes pulsar <sprite name=\"interactable_rb\"> o <sprite name=\"interactable_lb\">"
+        },
+        {
+            "key": "DLG_LETY_DIZZY",
+            "value": "Corre Vicky, corre..."
+        },
+        {
+            "key": "DLG_VICKY_DIZZY",
+            "value": "No... Lety, ten cuidado, ahora estás sola."
         },
         {
             "key": "DLG_MAGO#1_ALERT",

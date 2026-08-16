@@ -83,6 +83,11 @@ public class DialogueManager : MonoBehaviour
     private int _index = -1;
     private Action _onEnd;
 
+    // FIX (16/08/2026): guard de reentrada para HandleSkipRequested (ver NarrativeSkipHub más
+    // abajo) — evita que una segunda invocación de RequestSkip() mientras ya estamos vaciando
+    // _current con el bucle de Next() intente arrancar un segundo bucle sobre el mismo diálogo.
+    private bool _skipping;
+
     // FIX: al leer objetos sin cámara cinemática (cartas, save points, etc.) el HUD no se
     // ocultaba porque ese hide/show solo estaba conectado a los controladores cinemáticos
     // (DialogueCinematicController / SimpleCinematicDirector / CinematicSequencerBase), y este
@@ -233,6 +238,54 @@ public class DialogueManager : MonoBehaviour
     void OnDisable()
     {
         GamepadInputReader.OnInput -= HandleGamepadInput;
+        // Defensivo: si el objeto se desactiva/destruye a mitad de un diálogo (cierre de sesión,
+        // teardown de escena) evita dejar el handler colgado suscrito a un componente inerte.
+        NarrativeSkipHub.UnregisterSkipHandler(HandleSkipRequested);
+    }
+
+    /// Handler registrado en NarrativeSkipHub mientras hay un diálogo abierto (ver StartDialogue/
+    /// Close más arriba). Contrato de NarrativeSkipHub: saltar debe dejar el mundo "como si la
+    /// secuencia se hubiera visto completa", no solo abortarla a mitad.
+    ///
+    /// Cómo lo consigue: en vez de reconstruir a mano el estado final (animaciones, cámara, NPCs
+    /// ocultos/visibles, flags...) reutiliza el propio Next() en un bucle síncrono hasta que el
+    /// diálogo se cierra solo. Cada línea restante dispara EXACTAMENTE los mismos efectos que si
+    /// el jugador la hubiera visto avanzando a mano uno por uno (ActivateSpeakerTalkAnimation,
+    /// OnDialogueLineChanged, DialogueCinematicController.OnDialogueLineAdvanced con sus cambios
+    /// de plano/visibilidad de NPCs...), solo que sin esperar su input entre una y otra. Cuando
+    /// _index supera _current.lines.Length, Next() llama a Close() de verdad — el mismo Close()
+    /// del cierre normal: invoca _onEnd (crítico para que el nodo del grafo narrativo que esté
+    /// esperando no se quede colgado, ver FIX C1 más arriba), dispara OnDialogueClosed, restaura
+    /// cámara/HUD/party/bystanders vía DialogueCinematicController.EndCinematic(), y limpia las
+    /// animaciones del último speaker con ClearActiveSpeakerAnimations(). Nada de esto hay que
+    /// reimplementarlo aquí porque el bucle simplemente llega a ese mismo camino por sí solo.
+    ///
+    /// Next()/Close() son 100% síncronos (el typewriter que arranca cada Next() es fire-and-forget
+    /// vía StartCoroutine y se para solo al entrar en la siguiente iteración o en Close(), nunca
+    /// bloquea este bucle), así que todas las líneas restantes se resuelven dentro del mismo frame
+    /// en el que se completó el hold — no hay parpadeo visible porque Unity no renderiza estados
+    /// intermedios entre llamadas a script dentro del mismo frame.
+    private void HandleSkipRequested()
+    {
+        if (!IsOpen || _skipping) return;
+
+        // Si hay un choice Sí/No mostrándose (no debería solaparse con un diálogo abierto en el
+        // flujo normal, pero es una decisión del jugador — el skip no puede elegir por él), no
+        // tocamos nada.
+        if (choicesRoot != null && choicesRoot.interactable) return;
+
+        _skipping = true;
+        try
+        {
+            while (_current != null)
+            {
+                Next();
+            }
+        }
+        finally
+        {
+            _skipping = false;
+        }
     }
 
     private void HandleGamepadInput(GamepadInputReader.InputEvent input)
@@ -335,6 +388,14 @@ public class DialogueManager : MonoBehaviour
             _onEnd = null;
             previousOnEnd.Invoke();
         }
+
+        // Suscripción al botón global de "mantener para saltar" (ver NarrativeSkipHub y
+        // HandleSkipRequested más abajo). Desregistrar antes de registrar es defensivo: si
+        // StartDialogue se llama de nuevo mientras ya había un diálogo abierto (rama FIX C1 justo
+        // arriba, que NO pasa por Close()), ya estaríamos suscritos desde la apertura anterior —
+        // sin este desregistro previo quedaríamos suscritos dos veces al mismo handler.
+        NarrativeSkipHub.UnregisterSkipHandler(HandleSkipRequested);
+        NarrativeSkipHub.RegisterSkipHandler(HandleSkipRequested);
 
         ClearActiveSpeakerAnimations();
         _current = asset;
@@ -574,12 +635,23 @@ public class DialogueManager : MonoBehaviour
                 _hudHiddenForNonCinematicDialogue = false;
                 Sendero.UI.PlayerHUDV2.Instance?.ShowHUD();
             }
+            // Defensivo: este camino es el de "solo había un choice, nunca StartDialogue" (ver
+            // comentario de más arriba), así que normalmente no había nada registrado — pero
+            // desregistrar un handler no presente es un no-op seguro en C#.
+            NarrativeSkipHub.UnregisterSkipHandler(HandleSkipRequested);
             return;
         }
 
         _current = null;
         _onEnd?.Invoke();
         _onEnd = null;
+
+        // El diálogo ya está cerrado de verdad (el guard de arriba solo deja llegar aquí con
+        // IsOpen == true antes de este punto) — desuscribirse del botón global de skip. Es seguro
+        // llamarlo también desde dentro del propio bucle de HandleSkipRequested (Next() → Close()
+        // → aquí): -= sobre un delegado de evento no muta la lista que ya está en curso de
+        // invocación en NarrativeSkipHub.RequestSkip(), así que no rompe el bucle que nos trajo.
+        NarrativeSkipHub.UnregisterSkipHandler(HandleSkipRequested);
 
         // Ocultar UI
         if (pauseGameWhileOpen) Time.timeScale = 1f;

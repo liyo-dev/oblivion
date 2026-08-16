@@ -42,7 +42,7 @@ public class SpeechBubbleUI : MonoBehaviour
     [Tooltip("Ancho máximo del bocadillo en píxeles de canvas antes de partir el texto en varias líneas. BUGFIX (Agosto 2026): antes el bocadillo solo tenía un ancho MÍNIMO y nunca crecía con el texto real, así que cualquier línea más larga que ese mínimo se salía por los lados en todas las secuencias (ver captura del bug). Ahora el ancho se calcula a partir del texto real en Show(), entre este máximo y _bubbleMinWidth. El ALTO no se toca aquí — lo calcula solo el ContentSizeFitter/VerticalLayoutGroup del hijo \"Bubble\" en el prefab (ver Show()).")]
     [SerializeField] float _bubbleMaxWidth = 900f;
     [Tooltip("Margen interno horizontal del texto (izquierda y derecha).")]
-    [SerializeField] float _labelHorizontalMargin = 32f;
+    [SerializeField] float _labelHorizontalMargin = 44f;
 
     [Header("Posición")]
     [SerializeField] Vector3 _worldOffset = new Vector3(0f, 2.2f, 0f);

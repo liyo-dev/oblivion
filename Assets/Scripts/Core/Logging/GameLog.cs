@@ -11,6 +11,10 @@ using UnityEditor;
 /// el formato "[Tag] mensaje" y permite activarlos/desactivarlos individualmente
 /// desde la ventana El Sendero > GameLog > Ventana de Logs.
 ///
+/// También reconoce ciertos mensajes internos de Unity/paquetes que no siguen
+/// ese formato (no empiezan por "[Tag]") y les asigna un tag sintético para
+/// poder silenciarlos igual que al resto — ver <see cref="GameLogHandler.KnownEnginePatterns"/>.
+///
 /// Uso para código nuevo:
 ///   GameLog.Log("Audio", $"Reproduciendo {clip.name}");
 ///   GameLog.Warn("NPC", "Ruta no encontrada");
@@ -262,10 +266,38 @@ public sealed class GameLogHandler : ILogHandler
     static string ExtractMessage(string format, object[] args)
         => format == "{0}" && args?.Length > 0 ? args[0]?.ToString() ?? "" : format;
 
+    /// <summary>
+    /// Mensajes que dispara el propio Unity o paquetes internos (TextMeshPro, motor de
+    /// audio, etc.) y que NO usan el formato "[Tag] mensaje", pero que igualmente
+    /// queremos poder ver/silenciar desde la ventana de GameLog. Se matchean por
+    /// substring sobre el mensaje ya formateado.
+    /// </summary>
+    static readonly (string tag, string contains)[] KnownEnginePatterns =
+    {
+        // TextMeshPro auto-migra sus Sprite Assets al abrir el proyecto/entrar en Play.
+        // Ej: "Upgrading sprite asset [InputGlyphs_Xbox_interactable_A] to version 1.1.0."
+        ("TMP",   "Upgrading sprite asset"),
+
+        // Unity avisa si no hay ningún AudioListener activo en la escena (habitual al
+        // testear una escena suelta que no carga el listener de Start.unity).
+        ("Audio", "no audio listeners in the scene"),
+    };
+
     static string ExtractTag(string msg)
     {
-        if (string.IsNullOrEmpty(msg) || msg[0] != '[') return null;
-        int end = msg.IndexOf(']', 1);
-        return end > 1 ? msg.Substring(1, end - 1) : null;
+        if (string.IsNullOrEmpty(msg)) return null;
+
+        if (msg[0] == '[')
+        {
+            int end = msg.IndexOf(']', 1);
+            if (end > 1) return msg.Substring(1, end - 1);
+        }
+
+        foreach (var (tag, contains) in KnownEnginePatterns)
+        {
+            if (msg.IndexOf(contains, StringComparison.Ordinal) >= 0) return tag;
+        }
+
+        return null;
     }
 }

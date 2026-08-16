@@ -246,9 +246,16 @@ public class HoldToSkipUI : MonoBehaviour
         }
         else if (skipAction == SkipAction.SkipNarrativeSequence)
         {
-            // Salta TODAS las CinematicSequencerBase activas ahora mismo (normalmente una sola).
-            // No-op seguro si no hay ninguna cinemática en curso.
+            // Salta TODAS las CinematicSequencerBase activas ahora mismo (sistema viejo,
+            // Assets/Scripts/Cinematics/ — normalmente no habrá ninguna, no-op seguro).
             CinematicSequencerBase.RequestSkipAll();
+
+            // FIX (16/08/2026): las secuencias reales de hoy las llevan DialogueCinematicController
+            // y DialogueManager, que no son CinematicSequencerBase. NarrativeSkipHub es el punto de
+            // enganche genérico que cualquiera de los dos puede implementar (ver su documentación
+            // sobre el contrato de "reproducir el estado final" al saltar). No-op seguro si nadie
+            // se ha suscrito todavía.
+            NarrativeSkipHub.RequestSkip();
         }
 
         // Siempre disparar el UnityEvent
