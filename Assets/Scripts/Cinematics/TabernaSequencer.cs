@@ -54,6 +54,10 @@ public class TabernaSequencer : CinematicSequencerBase
     [SerializeField] private GameObject[] _foodObjects;
     [SerializeField] private float _foodFadeDuration = 0.35f;
 
+    [Header("Skip — reveal manual")]
+    [Tooltip("Duración del fundido que retira el negro tras saltar la secuencia con el botón global de skip (ver OnSkipCleanup).")]
+    [SerializeField] private float _skipRevealDuration = 0.3f;
+
     [Header("Cámara — planos")]
     [Tooltip("Los tres sentados en la mesa")]
     [SerializeField] private Transform _shotGroup;
@@ -257,6 +261,36 @@ public class TabernaSequencer : CinematicSequencerBase
         if (_liamFacingLock   != null) { StopCoroutine(_liamFacingLock);  _liamFacingLock  = null; }
         if (_liamCloseupShot  != null) { Destroy(_liamCloseupShot.gameObject); _liamCloseupShot = null; }
 
+        // FIX (16 ago 2026 — "Coroutine couldn't be started because '_LIAM' is inactive"): el
+        // callback de entrada (Co_BeginCinematicWithTransition, más abajo) desactiva el
+        // GameObject de Liam incondicionalmente para que no se vea hasta su turno en la Fase 5
+        // (Co_LiamApproaches), que es quien lo reactiva y lo teletransporta a _liamApproachTarget.
+        // Si el jugador salta la secuencia ANTES de llegar a la Fase 5, ese SetActive(true) nunca
+        // llega a ejecutarse y Liam se queda desactivado para siempre — cualquier cinemática
+        // posterior que intente moverlo (ej. MountainSequencer.Co_GroupFlees vía
+        // NPCBehaviourManagerV2.MoveToPosition) revienta con "Coroutine couldn't be started
+        // because the game object is inactive", porque StartCoroutine no puede arrancar sobre un
+        // objeto inactivo. Reproduce aquí la misma reaparición + teletransporte que hace
+        // Co_LiamApproaches, para que el estado final sea el mismo que si se hubiese visto la
+        // secuencia entera (si el skip llega después de la Fase 5, Liam ya está activo y esto no
+        // hace nada).
+        if (_liamTransform != null && !_liamTransform.gameObject.activeSelf)
+        {
+            _liamTransform.gameObject.SetActive(true);
+            if (_liamApproachTarget != null)
+            {
+                if (_liamAgent != null && _liamAgent.isOnNavMesh)
+                {
+                    _liamAgent.Warp(_liamApproachTarget.position);
+                    _liamAgent.ResetPath();
+                }
+                else
+                {
+                    _liamTransform.position = _liamApproachTarget.position;
+                }
+            }
+        }
+
         if (_rageAuraVFXInstance  != null) { Destroy(_rageAuraVFXInstance);  _rageAuraVFXInstance  = null; }
         if (_lightningVFXInstance != null) { Destroy(_lightningVFXInstance); _lightningVFXInstance = null; }
 
@@ -272,6 +306,23 @@ public class TabernaSequencer : CinematicSequencerBase
         }
         _liamSimpleAnim?.EnableAutoRotation();
         RestorePlayerPosition();
+
+        // FIX (16 ago 2026 — "pantalla en negro tras saltar la secuencia"): el cierre NORMAL
+        // (línea ~339, Co_EndCinematicWithTransition) revela la pantalla él solo cuando termina su
+        // transición, después de emitir la señal durante el blackout. Pero RequestSkip() (botón
+        // global de "mantener para saltar") usa el cierre genérico de la clase base
+        // (Co_SkipToEnd -> Co_EndCinematicStayBlack), que deliberadamente NO revela — pensado para
+        // secuencias cuyo sistema siguiente gestiona su propio reveal (p.ej. intro de un boss).
+        // Aquí el sistema siguiente es el minijuego "Estela Furiosa" (StartTagMinigameNode ->
+        // TagMinigameController), que no hace ningún fundido de entrada al arrancar. Sin este fade
+        // manual, saltar esta secuencia deja al jugador con la pantalla en negro para siempre (solo
+        // se oye la música), aunque el grafo narrativo y el minijuego sigan avanzando por debajo.
+        StartCoroutine(Co_RevealAfterSkip());
+    }
+
+    private IEnumerator Co_RevealAfterSkip()
+    {
+        yield return FeedbackService.ScreenFadeAsync(Color.black, _skipRevealDuration, fadeIn: false);
     }
 
     // FIX: mismo motivo documentado en el cierre normal de Co_Sequence (ver "Sin RestoreMusic" más

@@ -111,6 +111,8 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
     [Header("Timings generales")]
     [Tooltip("Duración del dolly back al plano wide (0 = sin dolly)")]
     [SerializeField] private float wideShotBlendTime = 1.2f;
+    [Tooltip("Duración del fundido que retira el negro tras saltar la secuencia con el botón global de skip (ver OnSkipCleanup).")]
+    [SerializeField] private float _skipRevealDuration = 0.3f;
 
     // ── Cache ─────────────────────────────────────────────────────────────────
 
@@ -118,12 +120,17 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
     private Game.NPC.NPCBehaviourManagerV2 _liamNpc;
     private NavMeshAgent _liamAgent;
     private ObstacleAvoidanceType _liamOriginalAvoidance;
+    private bool _liamFrozen; // true tras FreezeLiamNavigation() — guard idempotente de UnfreezeLiamNavigation()
     private Vector3 _liamDesignPosition;
     private Quaternion _liamDesignRotation;
     private Image _evilOverlayImg;
     private MaterialPropertyBlock _mpb;
     private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
     private bool _visionPulsing;
+    // Corrutina fire-and-forget de Co_ShowCrystalVision() (Fase 1): StartCoroutine suelto, no
+    // "yield return" dentro de Co_Sequence(), así que StopCoroutine(_activeSequenceCoroutine) del
+    // skip global NO la detiene. Ver el guard en EmergencyCleanup().
+    private Coroutine _showVisionCoroutine;
 
     protected override void Awake()
     {
@@ -187,6 +194,7 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
     // estuviera desactivada y el agente "detenido".
     private void FreezeLiamNavigation()
     {
+        _liamFrozen = true; // ver guard idempotente en UnfreezeLiamNavigation()
         _liamNpc?.ForceIdle();
         if (_liamAgent != null)
         {
@@ -215,6 +223,19 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
 
     private void UnfreezeLiamNavigation()
     {
+        // FIX (16 ago 2026 — auditoría de skip): FreezeLiamNavigation() se invoca como
+        // additionalOnCut de Co_BeginCinematicWithTransition, es decir, solo cuando la transición
+        // de ENTRADA alcanza su cut point — no de inmediato al arrancar Co_Sequence(). Pero
+        // LockCinematic() (dentro de esa misma transición) ya deja la secuencia registrada como
+        // "saltable" desde el primer instante. Si el botón global de skip se dispara durante esa
+        // ventana (p. ej. el jugador ya mantenía pulsado skip al encadenar esta cinemática con
+        // otra), Co_Sequence() se corta ANTES de que FreezeLiamNavigation() llegue a ejecutarse:
+        // sin este guard, _liamOriginalAvoidance seguiría con su valor por defecto sin inicializar
+        // (0 = NoObstacleAvoidance) y lo pisaría sobre el obstacleAvoidanceType real de Liam para
+        // el resto de la partida, además de interrumpirlo con un ForceIdle() gratuito.
+        if (!_liamFrozen) return;
+        _liamFrozen = false;
+
         if (_liamNpc != null)
         {
             _liamNpc.enabled = true;
@@ -237,6 +258,16 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
     /// sin necesidad de StopCoroutine explícito — mismo mecanismo que ya usa Co_HideCrystalVision.
     private void EmergencyCleanup()
     {
+        // FIX (16 ago 2026 — auditoría de skip): a diferencia de Co_PulseCrystalVision (que sí sale
+        // solo de su bucle en cuanto _visionPulsing es false), Co_ShowCrystalVision() es la propia
+        // corrutina fire-and-forget que hace el fade-in inicial y NO comprueba ningún flag de
+        // cancelación en su bucle — si el skip corta mientras sigue viva (ventana real: sus ~0.8s
+        // de fade-in más el fundido a negro del propio skip), sigue ejecutándose después de esta
+        // limpieza, vuelve a escribir el PropertyBlock ya limpiado y relanza
+        // Co_PulseCrystalVision() con _visionPulsing = true otra vez — pulso + SFX en loop
+        // sonando indefinidamente. Detenerla explícitamente aquí.
+        if (_showVisionCoroutine != null) { StopCoroutine(_showVisionCoroutine); _showVisionCoroutine = null; }
+
         _visionPulsing = false;
         AudioService.Instance?.StopLoopingSFX(CrystalPulseLoopId);
         DestroyEvilOverlay();
@@ -253,6 +284,18 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
     {
         EmergencyCleanup();
         UnfreezeLiamNavigation();
+
+        // FIX (16 ago 2026 — misma auditoría que TabernaSequencer): el cierre normal
+        // (Co_EndCinematicWithTransition) revela la pantalla solo; el cierre genérico de skip
+        // (Co_SkipToEnd -> Co_EndCinematicStayBlack) NO revela — esta secuencia no da paso a
+        // ningún sistema (boss intro, etc.) que se encargue de revelar por su cuenta, así que sin
+        // este fade manual saltarla deja la pantalla en negro para siempre.
+        StartCoroutine(Co_RevealAfterSkip());
+    }
+
+    private IEnumerator Co_RevealAfterSkip()
+    {
+        yield return FeedbackService.ScreenFadeAsync(Color.black, _skipRevealDuration, fadeIn: false);
     }
 
     // ── Secuencia principal ───────────────────────────────────────────────────
@@ -266,7 +309,7 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
 
         // ── Fase 1: Bola de cristal — imagen de Will brillando dentro ─────────
         StartCoroutine(Co_FadeInEvilOverlay());
-        StartCoroutine(Co_ShowCrystalVision());
+        _showVisionCoroutine = StartCoroutine(Co_ShowCrystalVision());
         yield return new WaitForSeconds(holdOnCrystalBall);
 
         // ── Fase 2: Plano medio Liam — primera revelación ─────────────────────
@@ -406,6 +449,7 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
         crystalBallParticles?.Play();
         AudioService.Instance?.PlaySFX("CrystalBall_Activate", 1f, crystalBallRenderer.transform.position);
         StartCoroutine(Co_PulseCrystalVision());
+        _showVisionCoroutine = null; // completada con normalidad, ya no hay nada que StopCoroutine() en el skip
     }
 
     private IEnumerator Co_PulseCrystalVision()

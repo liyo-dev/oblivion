@@ -52,6 +52,12 @@ namespace Sendero.UI
         [SerializeField] private string estelaDisplayName = "Estela";
 
         private Image[] _portraits; // 0=Liam, 1=Will, 2=Estela
+        // Escala base de cada retrato tal cual quedó configurada en el Canvas (ej: 0.31055).
+        // TweenAlpha() necesita reiniciar la escala antes de cada punch (ver comentario ahí abajo),
+        // pero si reinicia a Vector3.one en vez de a esta escala original, pisa el ajuste manual
+        // hecho en el editor y el retrato se ve gigante en cuanto arranca el HUD (Awake/OnEnable
+        // llaman a Refresh() -> RefreshPortraits() -> TweenAlpha() para los 3 retratos siempre).
+        private Vector3[] _portraitBaseScales;
         private Sequence _panelSequence;
         private RectTransform _followStatusRect;
         private Vector2 _panelStartPos;
@@ -59,6 +65,13 @@ namespace Sendero.UI
         private void Awake()
         {
             _portraits = new[] { liamPortrait, willPortrait, estelaPortrait };
+            _portraitBaseScales = new Vector3[_portraits.Length];
+            for (int i = 0; i < _portraits.Length; i++)
+            {
+                _portraitBaseScales[i] = _portraits[i] != null
+                    ? _portraits[i].transform.localScale
+                    : Vector3.one;
+            }
             InitPortraits();
         }
 
@@ -202,10 +215,15 @@ namespace Sendero.UI
             // Reiniciar la escala antes de lanzar un nuevo punch: si el cambio de personaje activo
             // llega mientras el punch anterior todavía está en marcha (p.ej. mashing de DPad-Izq/Der
             // en PartyControlManager, que no tiene cooldown), DOKill() deja la escala a mitad de la
-            // vibración en vez de en Vector3.one, y el siguiente DOPunchScale se acumula sobre ese
+            // vibración en vez de en la escala base, y el siguiente DOPunchScale se acumula sobre ese
             // valor ya deformado en vez de partir de la escala normal — el retrato se ve estirado/
             // encogido de forma no uniforme. Mismo patrón ya usado en DialogueManager.cs (submitHint).
-            t.localScale = Vector3.one;
+            // FIX: se reiniciaba a Vector3.one (escala 1:1) en vez de a la escala real del retrato
+            // configurada en el Canvas (_portraitBaseScales, ej: 0.31055). Como esto corre en cada
+            // Refresh() -- incluido el primero, en Awake/OnEnable/Start -- el retrato se veía
+            // "gigante" desde el instante en que arrancaba el HUD, aunque en el Canvas del editor
+            // la escala estuviera bien ajustada.
+            t.localScale = _portraitBaseScales[index];
             if (target >= activeAlpha)
                 t.DOPunchScale(Vector3.one * portraitPunchStrength, portraitPunchDuration, 1, 0.5f).SetUpdate(true);
         }

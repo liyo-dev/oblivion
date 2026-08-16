@@ -113,6 +113,7 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
     private Game.NPC.NPCBehaviourManagerV2 _liamNpc;
     private NavMeshAgent _liamAgent;
     private ObstacleAvoidanceType _liamOriginalAvoidance;
+    private bool _liamFrozen; // true tras FreezeLiamNavigation() — guard idempotente de UnfreezeLiamNavigation()
     private Vector3 _liamDesignPosition;
     private Quaternion _liamDesignRotation;
     private ParticleSystem _magicCircleVFX;
@@ -121,6 +122,10 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
     private bool _visionPulsing;
     private Image _roomDarkenImg;
     private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
+    // Corrutina fire-and-forget de Co_ShowCrystalVision() (Fase 1): StartCoroutine suelto, no
+    // "yield return" dentro de Co_Sequence(), así que StopCoroutine(_activeSequenceCoroutine) del
+    // skip global NO la detiene. Ver el guard en EmergencyCleanup().
+    private Coroutine _showVisionCoroutine;
 
     protected override void Awake()
     {
@@ -182,6 +187,7 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
     // estuviera desactivada y el agente "detenido".
     private void FreezeLiamNavigation()
     {
+        _liamFrozen = true; // ver guard idempotente en UnfreezeLiamNavigation()
         _liamNpc?.ForceIdle();
         if (_liamAgent != null)
         {
@@ -210,6 +216,17 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
 
     private void UnfreezeLiamNavigation()
     {
+        // FIX (16 ago 2026 — auditoría de skip): FreezeLiamNavigation() se invoca como
+        // additionalOnCut de Co_BeginCinematicWithTransition, solo cuando la transición de ENTRADA
+        // alcanza su cut point — no de inmediato al arrancar Co_Sequence(). Pero LockCinematic()
+        // (dentro de esa misma transición) ya deja la secuencia registrada como "saltable" desde el
+        // primer instante. Si el skip global corta durante esa ventana, Co_Sequence() se para ANTES
+        // de que FreezeLiamNavigation() llegue a ejecutarse: sin este guard, _liamOriginalAvoidance
+        // seguiría con su valor por defecto sin inicializar (0 = NoObstacleAvoidance) y lo pisaría
+        // sobre el obstacleAvoidanceType real de Liam para el resto de la partida.
+        if (!_liamFrozen) return;
+        _liamFrozen = false;
+
         if (_liamNpc != null)
         {
             _liamNpc.enabled = true;
@@ -231,6 +248,16 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
     /// ya usa Co_HideCrystalVision, no hace falta StopCoroutine explícito.
     private void EmergencyCleanup()
     {
+        // FIX (16 ago 2026 — auditoría de skip): a diferencia de Co_PulseCrystalVision (que sí sale
+        // sola de su bucle en cuanto _visionPulsing es false), Co_ShowCrystalVision() es la propia
+        // corrutina fire-and-forget que hace el fade-in inicial y no comprueba ningún flag de
+        // cancelación en su bucle — si el skip corta mientras sigue viva (ventana real: sus ~0.8s
+        // de fade-in), sigue ejecutándose después de esta limpieza, vuelve a escribir el
+        // PropertyBlock ya limpiado y relanza Co_PulseCrystalVision() con _visionPulsing = true
+        // otra vez — pulso + SFX en loop sonando indefinidamente por debajo de la batalla del
+        // gólem. Detenerla explícitamente aquí.
+        if (_showVisionCoroutine != null) { StopCoroutine(_showVisionCoroutine); _showVisionCoroutine = null; }
+
         _visionPulsing = false;
         AudioService.Instance?.StopLoopingSFX(CrystalPulseLoopId);
         _crystalVisionCamera?.Deactivate();
@@ -270,7 +297,7 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
         StartCoroutine(Co_FadeInRoomDarken());
 
         // ── Fase 1: Plano bola de cristal — Liam ve a Estela unirse a Will ────
-        StartCoroutine(Co_ShowCrystalVision());
+        _showVisionCoroutine = StartCoroutine(Co_ShowCrystalVision());
         _liamEmotion?.SetEmotion(_emotionLine1);
 
         bool line1Done = false;
@@ -366,6 +393,7 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
         _crystalBallParticles?.Play();
         AudioService.Instance?.PlaySFX("CrystalBall_Activate", 1f, _crystalBallRenderer.transform.position);
         StartCoroutine(Co_PulseCrystalVision());
+        _showVisionCoroutine = null; // completada con normalidad, ya no hay nada que StopCoroutine() en el skip
     }
 
     private IEnumerator Co_PulseCrystalVision()

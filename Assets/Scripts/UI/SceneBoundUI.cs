@@ -11,6 +11,11 @@ using DG.Tweening;
 /// Mientras BlocksSceneHide() devuelva true, SceneBoundUI.ApplySceneState() NO llamará a
 /// gameObject.SetActive(false) aunque la escena activa ya no esté en allowedScenes — el corte de
 /// cámara/carga de escena que dispara ese evento no debe poder tragarse un popup a medio leer.
+/// Por el mismo motivo, SceneBoundUI.BeginBossIntro() tampoco opacará este objeto a alpha 0
+/// mientras BlocksSceneHide() devuelva true (ver comentario en BeginBossIntro): el desbloqueo de
+/// un hechizo puede encadenar síncronamente con el arranque de la intro de un boss en el mismo
+/// frame (ej: "Despertar de la Estrella" → StarAwakeningSequencer → UnlockAbilitiesNode →
+/// StartBattleNode → BossIntroPresentation), y el popup no debe perderse por esa carrera.
 /// </summary>
 public interface ISceneBoundUIHideGuard
 {
@@ -36,6 +41,11 @@ public class SceneBoundUI : MonoBehaviour
     // El guard debe llamar a ReapplySceneState() en cuanto deje de bloquear para que el ocultado
     // pendiente (si sigue aplicando) se ejecute entonces, en vez de quedarse nunca aplicado.
     private bool _pendingHide;
+    // Igual que _pendingHide pero para BeginBossIntro(): true cuando la intro de un boss quiso
+    // opacar este objeto a alpha 0 pero _hideGuard lo bloqueó (popup a medio leer). Ver comentario
+    // en BeginBossIntro() sobre por qué esto puede pasar en el MISMO frame que el propio popup
+    // empieza a mostrarse.
+    private bool _pendingBossIntroHide;
 
     /// <summary>True mientras una intro de boss tiene la UI persistente oculta (entre BeginBossIntro y EndBossIntro).</summary>
     public static bool IsBossIntroActive => _bossIntroActive;
@@ -70,6 +80,23 @@ public class SceneBoundUI : MonoBehaviour
         {
             if (inst == null || !inst.gameObject.activeSelf) continue;
             if (inst.excludeFromBossIntroHide) continue;
+
+            // BUG (ago 2026): un popup importante en pantalla (ej: AbilityUnlockPopupUI mostrando
+            // "Bola Prisma" recién desbloqueada) podía arrancar su animación de entrada y, en el
+            // MISMO frame — porque UnlockAbilitiesNode → StartQuestNode → StartBattleNode →
+            // BossIntroPresentation se ejecutan síncronamente detrás del mismo evento narrativo —
+            // esta llamada lo apagaba a alpha 0 igualmente. El guard de ApplySceneState() (más
+            // abajo) no protegía este camino porque BeginBossIntro nunca lo consultaba: el jugador
+            // nunca llegaba a ver el popup pese a que HidePopup/AnimateIn se ejecutaban bien.
+            // Mismo criterio que ApplySceneState ya aplica para cambios de escena: si el guard
+            // sigue bloqueando, no tocar el CanvasGroup — se deja pendiente y el propio guard debe
+            // llamar a ReapplySceneState() cuando termine de mostrar su contenido.
+            if (inst._hideGuard != null && inst._hideGuard.BlocksSceneHide())
+            {
+                inst._pendingBossIntroHide = true;
+                continue;
+            }
+
             var cg = inst.GetOrAddCanvasGroup();
             inst._preBossAlpha = cg.alpha;
             cg.DOKill();
@@ -87,6 +114,11 @@ public class SceneBoundUI : MonoBehaviour
         foreach (var inst in Instances.Values)
         {
             if (inst == null) continue;
+            // Si seguía pendiente de opacar (el guard bloqueó durante toda la intro, ver
+            // BeginBossIntro), su CanvasGroup nunca se tocó — queda en su alpha normal, que es
+            // justo el estado en el que debe quedar ahora que la intro termina. Solo hace falta
+            // limpiar el flag.
+            inst._pendingBossIntroHide = false;
             bool allowed = inst.IsAllowedInCurrentScene();
             if (!allowed) { inst.gameObject.SetActive(false); continue; }
             inst.gameObject.SetActive(true);
@@ -181,13 +213,28 @@ public class SceneBoundUI : MonoBehaviour
     }
 
     /// <summary>
-    /// Reintenta aplicar el estado de escena si había un ocultado pendiente (ver ApplySceneState).
-    /// Debe llamarla el propio ISceneBoundUIHideGuard en cuanto BlocksSceneHide() deje de devolver
-    /// true, para que un ocultado por cambio de escena que quedó pospuesto no se quede sin aplicar
+    /// Reintenta aplicar el estado de escena si había un ocultado pendiente (ver ApplySceneState),
+    /// y aplica el fundido a 0 de una intro de boss si BeginBossIntro() lo dejó pendiente (ver
+    /// BeginBossIntro). Debe llamarla el propio ISceneBoundUIHideGuard en cuanto BlocksSceneHide()
+    /// deje de devolver true, para que ninguno de los dos ocultados pospuestos se quede sin aplicar
     /// nunca (ej: AbilityUnlockPopupUI.HidePopup() al terminar de mostrar el popup).
     /// </summary>
     public void ReapplySceneState()
     {
         if (_pendingHide) ApplySceneState();
+
+        if (_pendingBossIntroHide)
+        {
+            _pendingBossIntroHide = false;
+            // Solo aplicar el fundido a 0 si la intro del boss sigue en marcha — si ya terminó,
+            // EndBossIntro() ya limpió el flag y dejó el CanvasGroup en su estado normal.
+            if (_bossIntroActive)
+            {
+                var cg = GetOrAddCanvasGroup();
+                _preBossAlpha = cg.alpha;
+                cg.DOKill();
+                cg.DOFade(0f, 0.25f).SetUpdate(true);
+            }
+        }
     }
 }

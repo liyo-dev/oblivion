@@ -146,6 +146,13 @@ public class StarAwakeningSequencer : CinematicSequencerBase
     private CharacterController      _willCC;
     private NPCEmotionController     _companionEmotion;
     private NPCEmotionController     _willEmotion;
+    // Co_WillFiresBack()/Co_FailedSequence() se lanzan con StartCoroutine suelto desde
+    // OnPanicSuccess()/OnPanicFailure() (callbacks del detector de panic input), no con
+    // "yield return" dentro de Co_Sequence() — StopCoroutine(_activeSequenceCoroutine) del skip
+    // global no las toca. Ver el guard en Cleanup().
+    private Coroutine  _willFiresBackCoroutine;
+    private Coroutine  _failedSequenceCoroutine;
+    private GameObject _pendingFireball;
 
     protected override void Awake()
     {
@@ -434,6 +441,7 @@ public class StarAwakeningSequencer : CinematicSequencerBase
 
         GameObject fireball = playerSpawner?.SpawnForCinematic(
             castSlot, cinematicSpellFallback, willCastOrigin, castDir);
+        _pendingFireball = fireball; // ver guard de Cleanup() por si el skip corta antes del Destroy() de más abajo
 
         if (fireball != null && fireball.TryGetComponent<Rigidbody>(out var fireballRb) && !fireballRb.isKinematic)
         {
@@ -465,6 +473,8 @@ public class StarAwakeningSequencer : CinematicSequencerBase
             TriggerExplosion();
 
         if (fireball != null) Destroy(fireball);
+        _pendingFireball = null;
+        _willFiresBackCoroutine = null; // completada con normalidad, ya no hay nada que StopCoroutine() en el skip
     }
 
     private IEnumerator Co_FailedSequence()
@@ -495,6 +505,7 @@ public class StarAwakeningSequencer : CinematicSequencerBase
         yield return FeedbackService.ScreenFadeAsync(Color.black, fadeFromBlackDuration, fadeIn: false);
 
         RaiseSignal(signalOutFail);
+        _failedSequenceCoroutine = null; // completada con normalidad, ya no hay nada que StopCoroutine() en el skip
     }
 
     private IEnumerator Co_ReturnTime()
@@ -552,13 +563,13 @@ public class StarAwakeningSequencer : CinematicSequencerBase
     private void OnPanicSuccess()
     {
         CleanupPanicCallbacks();
-        StartCoroutine(Co_WillFiresBack());
+        _willFiresBackCoroutine = StartCoroutine(Co_WillFiresBack());
     }
 
     private void OnPanicFailure()
     {
         CleanupPanicCallbacks();
-        StartCoroutine(Co_FailedSequence());
+        _failedSequenceCoroutine = StartCoroutine(Co_FailedSequence());
     }
 
     private void OnPhysicsCollision()
@@ -608,6 +619,28 @@ public class StarAwakeningSequencer : CinematicSequencerBase
         _companionEmotion?.ForceReset();
         _willEmotion?.ForceReset();
 
+        // FIX (16 ago 2026 — auditoría de skip, continuación): Co_WillFiresBack()/Co_FailedSequence()
+        // se lanzan con StartCoroutine suelto desde OnPanicSuccess()/OnPanicFailure() (callbacks del
+        // detector de panic input), no con "yield return" dentro de Co_Sequence() — el
+        // StopCoroutine(_activeSequenceCoroutine) que hace RequestSkip() no las toca. Si el skip
+        // llega mientras alguna sigue viva, sigue corriendo como corrutina zombi después de este
+        // cleanup: Co_WillFiresBack volvería a subir el layer de animación de Will (pisando el
+        // SetLayerWeight(...,0f) de más abajo), dispararía bocadillo/SFX y spawnearía un fireball
+        // real ya en pleno gameplay; Co_FailedSequence terminaría levantando
+        // RaiseSignal(signalOutFail) DESPUÉS de que el skip ya haya levantado signalOutDone (ver
+        // SkipCompletionSignal), mandando el grafo narrativo por las dos ramas de salida a la vez.
+        if (_willFiresBackCoroutine  != null) { StopCoroutine(_willFiresBackCoroutine);  _willFiresBackCoroutine  = null; }
+        if (_failedSequenceCoroutine != null) { StopCoroutine(_failedSequenceCoroutine); _failedSequenceCoroutine = null; }
+        if (_pendingFireball != null) { Destroy(_pendingFireball); _pendingFireball = null; }
+
+        // FIX (16 ago 2026 — auditoría de skip en todas las cinemáticas): shockEffects.HoldAt(1f)
+        // (Fase 3, tras el panic input exitoso) fija el Volume de postproceso a máximo peso sin
+        // auto-fundido; en el flujo normal solo se libera con shockEffects.ForceEnd() al final de
+        // la Fase 4, varios segundos después. Si el skip corta la corrutina en esa ventana,
+        // Cleanup() nunca llegaba a llamarlo y la pantalla se quedaba borrosa/distorsionada para
+        // siempre. ForceEnd() es seguro llamarlo aunque HoldAt() nunca se haya disparado.
+        shockEffects?.ForceEnd();
+
         if (_activeProjectile != null)
         {
             _activeProjectile.OnHitByPlayerFireball -= OnPhysicsCollision;
@@ -634,6 +667,17 @@ public class StarAwakeningSequencer : CinematicSequencerBase
         Cleanup();
         if (willAnimator != null)
             willAnimator.SetLayerWeight(willUpperBodyLayer, 0f);
+
+        // FIX (16 ago 2026 — auditoría de skip): la música propia de esta cinemática
+        // (Co_PreDialogue -> PlaySequenceMusic) solo se para explícitamente en el cierre normal
+        // (Fase 4, justo antes de ceder el control a StartBattleNode/BossIntroPresentation).
+        // SkipRestoresMusic=false evita a propósito RestoreMusic() (restaurar la música de ESCENA
+        // encima de la de combate reintroduciría el bug ya solucionado de "dos músicas a la vez"),
+        // pero eso no sustituye al StopMusic() explícito del cierre normal: sin él, la música del
+        // despertar se quedaba sonando para siempre en paralelo con la de combate tras cualquier
+        // skip. Seguro llamarlo aunque no haya música de esta secuencia sonando.
+        if (AudioService.Instance != null)
+            AudioService.Instance.StopMusic(MusicRule?.fadeOut ?? 0.5f);
     }
 
     // El skip se trata siempre como si el jugador hubiera resuelto el panic input con éxito (te

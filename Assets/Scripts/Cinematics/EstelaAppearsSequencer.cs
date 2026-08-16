@@ -155,6 +155,8 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
     [Tooltip("Pausa entre las arañas y la entrada de los guerreros")]
     [SerializeField] private float _pauseBeforeWarriors  = 0.8f;
     [SerializeField] private float _holdAfterVictory     = 1.2f;
+    [Tooltip("Duración del fundido que retira el negro tras saltar la secuencia con el botón global de skip (ver OnSkipCleanup).")]
+    [SerializeField] private float _skipRevealDuration   = 0.25f;
 
     // ── Cache privado ─────────────────────────────────────────────────────────
 
@@ -388,6 +390,18 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
         if (_warrior2Transform != null) _warrior2Transform.gameObject.SetActive(false);
 
         MarkSequencePlayed();
+
+        // FIX (16 ago 2026 — misma auditoría que TabernaSequencer): el cierre normal
+        // (Co_EndCinematicWithTransition) revela la pantalla solo; el cierre genérico de skip
+        // (Co_SkipToEnd -> Co_EndCinematicStayBlack) NO revela — aquí no hay ningún sistema
+        // siguiente que lo haga por nosotros, así que sin este fade manual saltar esta secuencia
+        // deja la pantalla en negro para siempre.
+        StartCoroutine(Co_RevealAfterSkip());
+    }
+
+    private IEnumerator Co_RevealAfterSkip()
+    {
+        yield return FeedbackService.ScreenFadeAsync(Color.black, _skipRevealDuration, fadeIn: false);
     }
 
     // ══════════════════════════════════════════════════════════════════════════

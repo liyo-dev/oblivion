@@ -151,12 +151,21 @@ namespace Game.NPC.States
 
             if (context.Agent != null)
             {
-                context.Agent.isStopped = true;
+                // FIX (16 ago 2026): isStopped/ResetPath sólo son válidos con el agente sobre el
+                // NavMesh. PlayerParty.TeleportMemberToPlayer() puede mover el transform "a mano"
+                // (member.transform.position = targetPos) cuando el agente no estaba sobre malla,
+                // y llama a OnTeleportedToPlayer() -> StartFollowing() en el mismo frame: este
+                // OnEnter se ejecuta con el agente todavía fuera de malla, y agent.isStopped = true
+                // lanzaba "Stop can only be called on an active agent that has been placed on a
+                // NavMesh." Igual que ya hace NavMeshAgentUtility.SafeSetStopped/HardStop.
+                if (context.Agent.isOnNavMesh)
+                {
+                    context.Agent.isStopped = true;
+                    context.Agent.ResetPath();
+                }
                 context.Agent.updatePosition = false;
                 context.Agent.updateRotation = false;
                 context.Agent.speed = GetWalkSpeed();
-                if (context.Agent.isOnNavMesh)
-                    context.Agent.ResetPath();
             }
 
             context.Animator?.SetMovementSpeed(0f);
@@ -771,8 +780,18 @@ namespace Game.NPC.States
         private void UpdateDestination(NPCStateContext context, float followDist)
         {
             bool preferBehind = _config?.quedarseDetras ?? true;
-            Vector3 targetPos = preferBehind
-                ? context.Player.position + (-context.Player.forward * (followDist * 0.7f))
+
+            // FIX: este cálculo daba el MISMO punto exacto detrás del jugador a todos los
+            // compañeros (sin spread por índice), a diferencia de PlayerParty.GetFormationPosition
+            // (ya usado para teletransportar al equipo en formación — TeleportMemberToPlayer), que sí
+            // reparte a cada miembro en abanico (±60° detrás del jugador, vía CalculateFormationAngle).
+            // NPCPartyConfig.offsetLateral existía para esto mismo ("para que no esté exactamente
+            // detrás") pero nunca se leía en ningún sitio. Con 2+ compañeros siguiendo a pie
+            // convergían en el mismo punto y se empujaban/superponían entre sí — visualmente uno
+            // parecía ir "a cuestas" del otro. Se reutiliza la formación ya validada en vez de
+            // reimplementar el cálculo aquí.
+            Vector3 targetPos = preferBehind && _partyMember != null
+                ? _partyMember.GetFormationPosition()
                 : context.Player.position + (context.Transform.position - context.Player.position).normalized * followDist;
 
             if (NavMesh.SamplePosition(targetPos, out NavMeshHit hit, 3f, NavMesh.AllAreas))

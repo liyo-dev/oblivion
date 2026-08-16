@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Game.NPC;
+using Sendero.Core.Feedback;
 
 /// Orquestador del banter previo a la salida del Reino:
 ///   0. Bajo un corte a negro, el grupo se recoloca de golpe en su posición DE PARTIDA (marcha
@@ -152,6 +153,15 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
     private NPCBehaviourManagerV2 _estelaManager;
     private NPCBehaviourManagerV2 _liamManager;
 
+    // Handles de Co_AdvanceAndTurn (ver Co_GroupAdvancesAndTurns) — se lanzan con StartCoroutine
+    // suelto, no con yield directo, así que RequestSkip()/StopCoroutine(_activeSequenceCoroutine)
+    // NO las toca. Se guardan aquí para poder pararlas explícitamente desde OnSkipCleanup().
+    private Coroutine _estelaAdvanceCoroutine;
+    private Coroutine _liamAdvanceCoroutine;
+
+    [Tooltip("Duración del fundido que retira el negro tras saltar la secuencia con el botón global de skip (ver OnSkipCleanup).")]
+    [SerializeField] private float _skipRevealDuration = 0.25f;
+
     // Mismos parámetros de Animator que usa MountainSequencer para mover manualmente al
     // controller del jugador durante una cinemática (ver Co_AdvanceAndTurn): "Free Locomotion"
     // es el estado del blend tree de caminar/correr, "InputMagnitude" es lo que lo alimenta.
@@ -229,6 +239,61 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
             // — eso es lo que sonaba como "las dos músicas a la vez".
             RaiseSignalOut();
         });
+    }
+
+    // FIX (16 ago 2026 — auditoría de skip en todas las cinemáticas, misma causa que
+    // TabernaSequencer): el cierre normal usa Co_EndCinematicWithTransition (revela solo); el
+    // cierre genérico de skip (Co_SkipToEnd -> Co_EndCinematicStayBlack) NO revela — sin este
+    // override la pantalla se queda en negro para siempre tras saltar esta secuencia.
+    //
+    // Además, ver el comentario "Sin RestoreMusic()" en Co_Sequence(): el cierre normal
+    // deliberadamente NO restaura la música de escena porque KingdomExitTransitionNode la corta
+    // un instante después — restaurarla aquí en el skip reintroduciría exactamente el bug de
+    // "las dos músicas a la vez" que ese comentario documenta.
+    protected override bool SkipRestoresMusic => false;
+
+    protected override void OnSkipCleanup()
+    {
+        // Co_AdvanceAndTurn se lanza con StartCoroutine suelto (no yield), así que el
+        // StopCoroutine(_activeSequenceCoroutine) del cierre genérico no las para: si el skip
+        // llega a mitad de la Fase 0, seguirían moviendo a Estela/Liam (o desactivando el
+        // CharacterController del propio jugador, si es el personaje activo) varios frames
+        // después de que EndCinematic() ya haya devuelto el control — el jugador podía quedarse
+        // sin poder moverse (CharacterController.enabled == false para siempre).
+        if (_estelaAdvanceCoroutine != null) { StopCoroutine(_estelaAdvanceCoroutine); _estelaAdvanceCoroutine = null; }
+        if (_liamAdvanceCoroutine   != null) { StopCoroutine(_liamAdvanceCoroutine);   _liamAdvanceCoroutine   = null; }
+
+        RestoreCharacterControllerIfDisabled(_estelaTransform);
+        RestoreCharacterControllerIfDisabled(_liamTransform);
+        RestoreCharacterControllerIfDisabled(_willTransform);
+
+        StartCoroutine(Co_RevealAfterSkip());
+    }
+
+    private static void RestoreCharacterControllerIfDisabled(Transform actor)
+    {
+        if (actor == null) return;
+        var cc = actor.GetComponent<CharacterController>();
+        if (cc != null && !cc.enabled) cc.enabled = true;
+
+        // FIX (16 ago 2026 — auditoría de skip): Co_AdvanceAndTurn(), cuando `actor` es el
+        // controller real del jugador (sin NPCBehaviourManagerV2, ver el comentario de esa
+        // función), alimenta el Animator con InputMagnitude=1 sobre "Free Locomotion" cada frame
+        // mientras dura el avance manual, y solo lo resetea a 0 al llegar a destino. Si el skip
+        // corta ese bucle a mitad (StopCoroutine de _estelaAdvanceCoroutine/_liamAdvanceCoroutine,
+        // arriba), el CharacterController se reactiva pero el Animator se queda alimentando el
+        // ciclo de caminar indefinidamente — el personaje sigue "andando en el sitio" tras
+        // recuperar el control. Mismo patrón que MountainSequencer.FinishWillFlee(), que ya
+        // resetea los dos a la vez. SetFloat con un hash que no existe en el Animator del actor
+        // (p. ej. un NPC que sí llegó a moverse por el camino NPCBehaviourManagerV2) es un no-op
+        // seguro.
+        var animator = actor.GetComponent<Animator>();
+        animator?.SetFloat(HashInputMagnitude, 0f);
+    }
+
+    private IEnumerator Co_RevealAfterSkip()
+    {
+        yield return FeedbackService.ScreenFadeAsync(Color.black, _skipRevealDuration, fadeIn: false);
     }
 
     /// <summary>
@@ -437,9 +502,9 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
         bool liamDone   = _liamTransform   == null || _liamContinueTarget   == null;
 
         if (!estelaDone)
-            StartCoroutine(Co_AdvanceAndTurn(_estelaTransform, _estelaContinueTarget, () => estelaDone = true));
+            _estelaAdvanceCoroutine = StartCoroutine(Co_AdvanceAndTurn(_estelaTransform, _estelaContinueTarget, () => estelaDone = true));
         if (!liamDone)
-            StartCoroutine(Co_AdvanceAndTurn(_liamTransform, _liamContinueTarget, () => liamDone = true));
+            _liamAdvanceCoroutine = StartCoroutine(Co_AdvanceAndTurn(_liamTransform, _liamContinueTarget, () => liamDone = true));
 
         yield return new WaitUntil(() => estelaDone && liamDone);
     }

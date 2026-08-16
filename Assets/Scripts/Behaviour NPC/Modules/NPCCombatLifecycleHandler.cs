@@ -54,8 +54,32 @@ namespace Game.NPC.Modules
         private NPCShieldController _shieldController;
         // ✅ FIX #25 (auditoría combate, 15 ago 2026): antes se llamaba GetComponent<NPCTeamMember>()
         // en OnDied/DeathRoutine/HandleGetUpDizzy/HandleMoveToAnchor/MoveTeamMembersToRandomPoints
-        // (5 sitios distintos). Se cachea una sola vez en Awake().
+        // (5 sitios distintos). Se cachea una sola vez... pero NO en Awake(): NPCTeamMember lo añade
+        // dinámicamente NPCCombatTeam.Start() (ver NPCCombatTeam.cs, "AddComponent<NPCTeamMember>()"),
+        // y Unity ejecuta TODOS los Awake() de la escena antes que CUALQUIER Start() — así que en el
+        // momento de este Awake() el componente todavía no existe en el GameObject y GetComponent
+        // devolvía null para siempre (el campo nunca se refrescaba después).
+        // ✅ FIX #26 (16 ago 2026, bug reportado por Raúl - "combate dual"): ese null permanente
+        // hacía que isInTeam fuera SIEMPRE false para cualquier NPC en equipo (dúo o grupo) — la
+        // música/animación de victoria sonaba al derrotar al PRIMER enemigo (no al último) y la
+        // música de combate se restauraba (se quitaba) justo después de esa primera derrota, en vez
+        // de esperar a que cayera todo el equipo. Ahora se resuelve de forma perezosa (lazy) la
+        // primera vez que se necesita, ya con el componente añadido por NPCCombatTeam.
         private NPCTeamMember _teamMember;
+
+        /// <summary>
+        /// Acceso perezoso a NPCTeamMember: NPCCombatTeam lo añade dinámicamente en su propio
+        /// Start(), que se ejecuta DESPUÉS de este Awake() — cachearlo aquí en Awake devolvía null
+        /// para siempre. Se resuelve (y cachea) en el primer uso real, ya en combate.
+        /// </summary>
+        private NPCTeamMember ResolvedTeamMember
+        {
+            get
+            {
+                if (_teamMember == null) _teamMember = GetComponent<NPCTeamMember>();
+                return _teamMember;
+            }
+        }
 
         // ✅ CAMBIO: Obtener _config dinámicamente para asegurar que siempre tenga los valores actualizados
         // Esto es necesario porque NPCInteractiveNarrativeExecutor puede actualizar combatConfig después de Start()
@@ -97,7 +121,8 @@ namespace Game.NPC.Modules
             _agent = GetComponent<NavMeshAgent>();
             _brain = GetComponent<NPCCombatBrain>();
             _shieldController = GetComponent<NPCShieldController>();
-            _teamMember = GetComponent<NPCTeamMember>();
+            // ✅ FIX #26: NO cachear NPCTeamMember aquí — todavía no existe (ver comentario en la
+            // declaración del campo más arriba). Se resuelve perezosamente vía ResolvedTeamMember.
 
             // ✅ CRÍTICO: Configurar destroyOnDeath=false INMEDIATAMENTE en Awake
             // Esto se aplica tanto si el componente ya existía como si se acaba de añadir
@@ -325,7 +350,7 @@ namespace Game.NPC.Modules
             IsDefeatedAndInactive = true;
             
             // ✅ Notificar al equipo si pertenece a uno
-            var teamMember = _teamMember;
+            var teamMember = ResolvedTeamMember;
             if (teamMember != null)
             {
                 teamMember.NotifyDefeated();
@@ -414,7 +439,7 @@ namespace Game.NPC.Modules
             }
 
             // ✅ VERIFICAR SI PERTENECE A UN EQUIPO
-            var teamMember = _teamMember;
+            var teamMember = ResolvedTeamMember;
             bool isInTeam = teamMember != null && teamMember.HasTeam;
             bool isLastTeamMember = isInTeam && teamMember.Team.IsTeamDefeated;
             
@@ -532,7 +557,7 @@ namespace Game.NPC.Modules
             #endif
             
             // ✅ Calcular si estamos en equipo y si somos el último miembro
-            var teamMember = _teamMember;
+            var teamMember = ResolvedTeamMember;
             bool isInTeam = teamMember != null && teamMember.Team != null;
             bool isLastTeamMember = isInTeam && teamMember.Team.IsTeamDefeated;
             
@@ -1267,7 +1292,7 @@ namespace Game.NPC.Modules
             }
 
             // Si es líder de equipo y debe mover a los compañeros, hacerlo ANTES de desaparecer.
-            var teamMember = _teamMember;
+            var teamMember = ResolvedTeamMember;
             if (teamMember != null && teamMember.IsLeader && _config.moveTeamMembersOnDefeat)
             {
                 yield return MoveTeamMembersToRandomPoints();
@@ -1299,7 +1324,7 @@ namespace Game.NPC.Modules
         /// </summary>
         private IEnumerator MoveTeamMembersToRandomPoints()
         {
-            var teamMember = _teamMember;
+            var teamMember = ResolvedTeamMember;
             if (teamMember == null || teamMember.Team == null) yield break;
             
             var team = teamMember.Team;

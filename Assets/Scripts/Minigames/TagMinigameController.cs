@@ -192,6 +192,10 @@ public class TagMinigameController : MonoBehaviour
     [Header("UI — Pantalla de Instrucciones (Botón Salir)")]
     [Tooltip("Botón para abandonar el minijuego desde la pantalla de instrucciones.")]
     [SerializeField] private UnityEngine.UI.Button exitButton;
+    [Tooltip("Escena overlay de pantalla de carga a mostrar mientras se recarga la escena tras abortar " +
+             "el minijuego (recarga que puede tardar un poco). Si se deja vacío, se recarga sin overlay " +
+             "(pantalla congelada durante la carga).")]
+    [SerializeField] private string abortLoadingOverlayScene = "LoadingScreen";
 
     [Header("Eventos")]
     public UnityEvent OnMinigameStarted;
@@ -1829,7 +1833,15 @@ public class TagMinigameController : MonoBehaviour
                 bootProfile.LoadProfile(saveSystem);
         }
         Time.timeScale = 1f;
-        SceneTransitionLoader.Load(_minigameSceneName);
+
+        // FIX (16 ago 2026): la recarga de escena al abortar puede tardar un poco — antes se hacía
+        // con Load() a secas y la pantalla se quedaba congelada mientras tanto. Usamos el overlay de
+        // carga (mismo que usan LoadScene/PortalTrigger) para que se vea la pantalla de carga en vez
+        // de un parón.
+        if (!string.IsNullOrEmpty(abortLoadingOverlayScene))
+            SceneTransitionLoader.LoadWithOverlay(_minigameSceneName, abortLoadingOverlayScene);
+        else
+            SceneTransitionLoader.Load(_minigameSceneName);
     }
 
     private IEnumerator StartWithCountdown(bool isRestart = false)

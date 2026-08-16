@@ -43,7 +43,6 @@ public class CreditsFlyoutPanel : MonoBehaviour
     [TextArea(10, 60)]
     [SerializeField] string creditsText =
         "Un juego de\n\nRaúl Báez\n\n\n\n" +
-        "Programación y diseño\n\nRaúl Báez\n\n\n\n" +
         "Créditos de assets\n\n\n\n" +
         "VFX\n\n" +
         "Matthew Guz - Spell Area of Effect, Orbs Effects\n\n" +

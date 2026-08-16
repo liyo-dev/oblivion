@@ -1416,6 +1416,16 @@ public class PrologueDreamSequencer : CinematicSequencerBase
         _dreamBackground?.StopDream();
         _dreamSparkles?.StopSparkles();
 
+        // FIX (16 ago 2026 — auditoría de skip en todas las cinemáticas): si el skip llega a mitad
+        // de la Fase E (preparación mutua / guerra), estas dos corrutinas fire-and-forget solo se
+        // paraban al llegar a Co_MutualCastAndBlackout() en el flujo normal — sin esto, quedaban
+        // en bucle indefinido tras saltar. Y warFlashVisuals[] solo se apagan por su propio timer
+        // dentro de Co_WarFlashes(): si el skip corta mientras uno está activo, se queda visible
+        // en la escena para siempre.
+        if (_magoPrepLoopRoutine != null) { StopCoroutine(_magoPrepLoopRoutine); _magoPrepLoopRoutine = null; }
+        if (_willPrepLoopRoutine != null) { StopCoroutine(_willPrepLoopRoutine); _willPrepLoopRoutine = null; }
+        SetWarFlashVisualsActive(-1);
+
         if (_magoLoadGraph.IsValid()) _magoLoadGraph.Destroy();
         if (_willCastGraph.IsValid()) _willCastGraph.Destroy();
         if (_magoChargingVfxInstance != null) Destroy(_magoChargingVfxInstance);
