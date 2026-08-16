@@ -69,6 +69,28 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
             ForceRelease();
     }
 
+    // FIX (16 ago 2026): "Will se queda dormido/sentado para siempre, sin poder levantarse ni
+    // salir de la casa" — cancelAction (suscrito en OnEnable) apunta a PlayerControls.UI.Cancel,
+    // pero SnapToSeat() deja el mapa GamePlay activo A PROPÓSITO durante toda la actividad (para
+    // que la cámara siga respondiendo mientras el jugador está sentado/dormido — ver comentario
+    // de SnapToSeat) y NUNCA llama a PlayerInputManager.PushUIMode(). Con el mapa UI siempre
+    // deshabilitado mientras se usa un NPCWorldPoint, "cancelAction.action.performed" no se
+    // dispara jamás y OnCancel() no se ejecuta — no hay ninguna otra vía de salida (el
+    // CharacterController está desactivado y el motor con lockMovement=true), así que el
+    // jugador queda atrapado sin remedio. Sondear aquí GamepadInputReader.CancelPressed (lee
+    // Escape/mando directo del hardware, sin depender de qué mapa de Input System esté activo)
+    // evita depender de esa acción deshabilitada. Se mantiene también la suscripción a
+    // cancelAction por si el modo UI llegase a estar activo por algún motivo externo; StopActivity()
+    // ya es idempotente (early-return si _currentWorldPoint es null) así que no hay riesgo de doble
+    // ejecución si ambas vías coincidieran en el mismo frame.
+    void Update()
+    {
+        if (_currentWorldPoint == null) return;
+        if (_actionManager != null && _actionManager.IsInMode(ActionMode.Cinematic)) return;
+        if (Core.GamepadInputReader.CancelPressed)
+            StopActivity();
+    }
+
     // Invector sobreescribe IsGrounded/GroundDistance en Update() cada frame.
     // LateUpdate se ejecuta después y restaura los valores correctos mientras hay actividad.
     void LateUpdate()
@@ -346,6 +368,20 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
         }
         transform.position = _preSnapPosition;
         RestoreCC();
+        // FIX (16 ago 2026): "Will se levanta de la cama pero se queda con la animación de
+        // dormir puesta" — este es el camino normal de StopActivity() para actividades SIN
+        // exit state propio (Sleep/Drink/Eat, ver GetActivityExitState: "sin animación de
+        // salida, vuelven directo a idle"), pero "directo a idle" nunca se implementó aquí: a
+        // diferencia de ForceStopActivityImmediate() (usado solo desde cinemáticas), este método
+        // restauraba el CharacterController y el modo de acción pero jamás le decía al Animator
+        // que saliera de "Sleeping_NoWeapon"/"Eat_Loop"/etc. — el CrossFade que entró en ese loop
+        // (ActivityRoutine) es el último que se ejecuta, así que el Animator se queda ahí para
+        // siempre aunque el jugador ya pueda moverse con normalidad. Mismo fix que ya tenía
+        // ForceStopActivityImmediate(): forzar la vuelta a locomoción explícitamente. Para
+        // actividades CON exit state (Sit*), esto se ejecuta después de que PlayExitAndUnlock ya
+        // reprodujo el clip de salida completo, así que es un refuerzo inofensivo, no un cambio
+        // de comportamiento.
+        ReturnAnimatorToLocomotion();
         _actionManager?.PopMode(ActionMode.UsingWorldPoint);
     }
 

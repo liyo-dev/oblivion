@@ -29,7 +29,20 @@ namespace Game.NPC
         
         [Header("Physics")]
         [SerializeField] private bool forceKinematicRigidbody = true;
-        
+
+        [Header("🌍 IA por Distancia (LOD)")]
+        [Tooltip("Distancia (m) más allá de la cual este NPC deja de ejecutar su FSM (Brain.Update) y desactiva su NavMeshAgent, mientras no haya ninguna razón para mantenerlo activo (combate, cinemática, interacción, refugio de lluvia o ser parte del party). Pensado para mundos grandes con muchos NPCs esparcidos lejos del jugador, que hasta ahora seguían corriendo su FSM completa aunque estuvieran a cientos de metros. 0 = desactivado (el NPC siempre está activo, comportamiento anterior a esta optimización).")]
+        [Min(0f)]
+        [SerializeField] private float aiUpdateDistance = 45f;
+
+        [Tooltip("Margen (m) que se SUMA a aiUpdateDistance antes de que el NPC se 'duerma'; para volver a despertar tiene que acercarse por debajo de aiUpdateDistance. Esta histéresis evita que un NPC justo en el límite se active/desactive en bucle en cada comprobación.")]
+        [Min(0f)]
+        [SerializeField] private float aiWakeUpMargin = 8f;
+
+        [Tooltip("Cada cuántos segundos se comprueba la distancia al jugador (no hace falta comprobarlo cada frame). El primer chequeo de cada NPC se retrasa con un offset aleatorio para no acumular todas las comprobaciones de todos los NPCs en el mismo frame.")]
+        [Min(0.05f)]
+        [SerializeField] private float aiDistanceCheckInterval = 0.5f;
+
         [Header("Save System")]
         [Tooltip("Si está activado, el sistema de guardado recordará la última posición del NPC")]
         [SerializeField] public bool persistLastPosition = false;
@@ -84,7 +97,11 @@ namespace Game.NPC
         private NPCBrain _brain;
         private NPCStateContext _context;
         private int _externalMovementOverrideRequests;
-        
+
+        // LOD de IA por distancia
+        private float _distanceCheckTimer;
+        private bool _isFarFromPlayer;
+
         // Player References
         private Transform _player;
         private Transform _playerCamera;
@@ -203,6 +220,10 @@ namespace Game.NPC
             NPCWeatherAwareness.RainStarted += HandleRainStarted;
             NPCWeatherAwareness.RainStopped += HandleRainStopped;
             _context.ShouldSeekShelter = NPCWeatherAwareness.IsRaining;
+
+            // 🌍 LOD de IA: offset aleatorio para no acumular las comprobaciones de distancia de
+            // todos los NPCs de la escena en el mismo frame (ver aiDistanceCheckInterval).
+            _distanceCheckTimer = UnityEngine.Random.Range(0f, Mathf.Max(0.05f, aiDistanceCheckInterval));
         }
 
         private void HandleRainStarted()
@@ -252,15 +273,140 @@ namespace Game.NPC
         
         void Update()
         {
+            if (aiUpdateDistance > 0f)
+            {
+                _distanceCheckTimer -= Time.deltaTime;
+                if (_distanceCheckTimer <= 0f)
+                {
+                    _distanceCheckTimer = aiDistanceCheckInterval;
+                    UpdateDistanceLOD();
+                }
+
+                // El NPC está "dormido" (lejos y sin ninguna razón para seguir activo): nos
+                // saltamos por completo el Brain.Update() de este frame. Esto es lo que causaba
+                // el frame time alto en exteriores grandes: cada NPC esparcido por el mundo
+                // seguía corriendo su FSM entera (detección, wander, NavMeshAgent...) aunque
+                // estuviera a cientos de metros del jugador y fuera de cámara.
+                if (_isFarFromPlayer)
+                {
+                    // Si justo AHORA aparece una razón para estar activo (p.ej. algo externo nos
+                    // metió en combate/cinemática mientras dormíamos), despertamos de inmediato en
+                    // vez de esperar al próximo chequeo de distancia — sin esto, el Brain podría
+                    // intentar usar un NavMeshAgent que dejamos deshabilitado en EnterFarState().
+                    if (HasActiveAiExemption())
+                    {
+                        _isFarFromPlayer = false;
+                        ExitFarState();
+                    }
+                    else
+                    {
+                        UpdatePersistedPositionIfNeeded();
+                        return;
+                    }
+                }
+            }
+
             _brain?.Update();
-            
+
+            UpdatePersistedPositionIfNeeded();
+        }
+
+        private void UpdatePersistedPositionIfNeeded()
+        {
             // Actualizar posición para guardado (solo si es necesario para evitar overhead)
             if (persistLastPosition && Time.frameCount % 60 == 0) // Optimización: cada 60 frames
             {
                 lastPosition = transform.position;
             }
         }
-        
+
+        /// <summary>
+        /// Comprueba la distancia al jugador y decide si este NPC debe "dormirse" (dejar de
+        /// ejecutar su FSM y desactivar su NavMeshAgent) o "despertar". Usa histéresis
+        /// (aiWakeUpMargin) para no oscilar justo en el límite. Se llama cada
+        /// aiDistanceCheckInterval segundos, no cada frame.
+        /// </summary>
+        private void UpdateDistanceLOD()
+        {
+            if (_player == null)
+            {
+                // Sin referencia al jugador todavía (o desregistrado): mejor no dormir al NPC,
+                // pagar el coste de más que dejarlo colgado en un estado inconsistente.
+                _isFarFromPlayer = false;
+                return;
+            }
+
+            float distSqr = (transform.position - _player.position).sqrMagnitude;
+            float sleepThreshold = aiUpdateDistance + aiWakeUpMargin;
+
+            if (!_isFarFromPlayer && distSqr > sleepThreshold * sleepThreshold)
+            {
+                _isFarFromPlayer = true;
+                EnterFarState();
+            }
+            else if (_isFarFromPlayer && distSqr < aiUpdateDistance * aiUpdateDistance)
+            {
+                _isFarFromPlayer = false;
+                ExitFarState();
+            }
+        }
+
+        /// <summary>
+        /// Casos en los que NUNCA debemos dormir a un NPC aunque esté lejos: combate, cinemática,
+        /// interacción en curso, refugiándose de la lluvia, o siendo un aliado del party (que en
+        /// la práctica siempre está pegado al jugador, pero por seguridad se excluye igualmente).
+        /// </summary>
+        private bool HasActiveAiExemption()
+        {
+            if (_context == null) return true; // Sin contexto FSM, no tocar nada por seguridad
+
+            return _context.IsInCombat
+                || _context.IsInCinematic
+                || _context.IsInteracting
+                || _context.ShouldSeekShelter
+                || IsAlly;
+        }
+
+        private void EnterFarState()
+        {
+            // Además de detener el movimiento, desactivamos el propio componente NavMeshAgent:
+            // dejarlo solo "isStopped = true" no lo saca del sistema interno de NavMesh de Unity
+            // (PreUpdate.AIUpdate / AIUpdatePostScript en el Profiler), que sigue procesando el
+            // agente igualmente mientras esté enabled. Con enabled = false sí desaparece de ahí.
+            if (_agent != null && _agent.enabled)
+            {
+                if (_agent.isOnNavMesh)
+                {
+                    _agent.isStopped = true;
+                    if (_agent.hasPath)
+                        _agent.ResetPath();
+                }
+                _agent.enabled = false;
+            }
+        }
+
+        private void ExitFarState()
+        {
+            if (_agent != null && !_agent.enabled)
+            {
+                _agent.enabled = true;
+
+                // El NPC no se mueve mientras está dormido, así que esto no debería hacer falta
+                // en el caso normal — pero por seguridad ante teleports externos, cambios de
+                // escena u otras manipulaciones mientras estaba desactivado, si el transform
+                // quedó fuera del NavMesh lo recolocamos en el punto transitable más cercano en
+                // vez de dejar el agente habilitado pero inválido.
+                if (!_agent.isOnNavMesh && NavMesh.SamplePosition(transform.position, out var hit, 5f, NavMesh.AllAreas))
+                {
+                    _agent.Warp(hit.position);
+                }
+            }
+
+            // No hace falta nada más aquí: el próximo Update() ya llama a _brain.Update() con
+            // normalidad, y el estado activo (Wander/Idle/Alert...) recalcula su CheckTransitions
+            // como si nunca se hubiera dormido.
+        }
+
         void LateUpdate()
         {
             if (IsExternalMovementOverrideActive)
@@ -838,6 +984,12 @@ namespace Game.NPC
                 Gizmos.DrawWireSphere(transform.position, configuration.combatConfig.minAttackDistance);
                 Gizmos.color = new Color(1, 0, 0, 0.5f);
                 Gizmos.DrawWireSphere(transform.position, configuration.combatConfig.maxAttackDistance);
+            }
+
+            // Visualizar radio de LOD de IA (azul = dormido ahora mismo, verde = activo)
+            if (aiUpdateDistance > 0f) {
+                Gizmos.color = _isFarFromPlayer ? new Color(0.3f, 0.5f, 1f, 0.5f) : new Color(0.3f, 1f, 0.4f, 0.25f);
+                Gizmos.DrawWireSphere(transform.position, aiUpdateDistance);
             }
         }
 #endif

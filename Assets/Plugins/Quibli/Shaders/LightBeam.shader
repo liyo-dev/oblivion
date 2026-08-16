@@ -1,4 +1,4 @@
-﻿Shader "Quibli/Light Beam"
+Shader "Quibli/Light Beam"
 {
     Properties
     {
@@ -35,6 +35,7 @@
 
         Pass
         {
+            Tags { "LightMode" = "SRPDefaultUnlit" }
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag

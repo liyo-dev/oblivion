@@ -4,6 +4,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.SceneManagement;
+using Invector.vCharacterController;
 
 namespace Core
 {
@@ -127,6 +128,24 @@ namespace Core
                 // se invoca desde un callback de Interact (que pertenece al mapa GamePlay).
                 _controls?.UI.Enable();
                 ScheduleEnableControls(); // aplicará también GamePlay.Disable() de forma diferida
+
+                // FIX (16 ago 2026): "se queda el player andando" al entrar en modo UI (visto
+                // primero en el menú de misiones, pero es genérico a CUALQUIER Push aquí: puntos
+                // de guardado, diálogo, tienda, equipo, mapa, etc. — todos pasan por este mismo
+                // método). Los lectores de input (GamepadInputReader.Move, etc.) ya devuelven
+                // cero en cuanto se suprime el gameplay, así que cc.input llega a cero de
+                // inmediato, pero el valor SUAVIZADO interno de Invector (vThirdPersonMotor.
+                // inputSmooth) no se resetea con eso — solo decae poco a poco vía Vector3.Lerp
+                // cada frame. Si el jugador estaba corriendo/sprintando justo al entrar en modo
+                // UI, ese valor queda "congelado" con magnitud de sprint y el Animator sigue
+                // reproduciendo la animación de correr varios frames mientras el modo UI ya
+                // bloquea cualquier input nuevo para pararlo. Centralizado aquí (en vez de en
+                // cada llamador individual) para que el jugador se quede en idle al instante
+                // pase lo que pase entre en modo UI — mismo mecanismo que ya usan
+                // PlayerMovementBlocker.BlockMovement()/BlockMovementKeepCamera() y el propio
+                // comentario de ResetInputSmoothing() en vThirdPersonMotor.cs.
+                if (PlayerService.TryGetComponent(out vThirdPersonController cc, includeInactive: true, allowSceneLookup: true))
+                    cc.ResetInputSmoothing();
 
 #if UNITY_EDITOR
                 if (debugLogs)

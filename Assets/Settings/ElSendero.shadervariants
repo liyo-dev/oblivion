@@ -131,14 +131,6 @@ ShaderVariantCollection:
         passType: 13
       - keywords: _METALLICSPECGLOSSMAP _NORMALMAP _OCCLUSIONMAP
         passType: 13
-      - keywords: _NORMALMAP
-        passType: 13
-      - keywords: _NORMALMAP _OCCLUSIONMAP
-        passType: 13
-      - keywords: _SPECULAR_SETUP _SURFACE_TYPE_TRANSPARENT
-        passType: 13
-      - keywords: _SURFACE_TYPE_TRANSPARENT
-        passType: 13
   - first: {fileID: 4800000, guid: 0406db5a14f94604a8c57ccfbc9f3b46, type: 3}
     second:
       variants:
@@ -484,6 +476,8 @@ ShaderVariantCollection:
   - first: {fileID: 4800000, guid: 2a230514c860643f69b6a4d1871d3825, type: 3}
     second:
       variants:
+      - keywords: 
+        passType: 13
       - keywords: DR_ENABLE_LIGHTMAP_DIR DR_LIGHT_ATTENUATION DR_OUTLINE_ON DR_RIM_ON
           DR_SPECULAR_ON _DETAILMAPBLENDINGMODE_ADD _TEXTUREBLENDINGMODE_MULTIPLY
         passType: 13
@@ -600,6 +594,8 @@ ShaderVariantCollection:
         passType: 13
       - keywords: DR_SPECULAR_ON _DETAILMAPBLENDINGMODE_ADD _TEXTUREBLENDINGMODE_MULTIPLY
         passType: 13
+      - keywords: _ALPHAPREMULTIPLY_ON _EMISSION
+        passType: 13
       - keywords: _ALPHATEST_ON _DETAILMAPBLENDINGMODE_MULTIPLY _EMISSION _RECEIVE_SHADOWS_OFF
           _TEXTUREBLENDINGMODE_MULTIPLY
         passType: 13
@@ -623,6 +619,10 @@ ShaderVariantCollection:
       - keywords: _DETAILMAPBLENDINGMODE_MULTIPLY _RECEIVE_SHADOWS_OFF _TEXTUREBLENDINGMODE_MULTIPLY
         passType: 13
       - keywords: _DETAILMAPBLENDINGMODE_MULTIPLY _TEXTUREBLENDINGMODE_MULTIPLY
+        passType: 13
+      - keywords: _EMISSION
+        passType: 13
+      - keywords: _NORMALMAP
         passType: 13
   - first: {fileID: -6465566751694194690, guid: 28375c8afd8fa4900b90e1d5a4b6d88c, type: 3}
     second:
@@ -1015,6 +1015,11 @@ ShaderVariantCollection:
       - keywords: 
         passType: 13
   - first: {fileID: 4800002, guid: d379eac073f73024780a8968d2259cef, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 13
+  - first: {fileID: 4800000, guid: 61db7f3dcc8f412aa10eadac7594230e, type: 3}
     second:
       variants:
       - keywords: 

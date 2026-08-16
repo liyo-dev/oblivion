@@ -480,7 +480,14 @@ public class CreditsFlyoutPanel : MonoBehaviour
         var closeLabel = closeLabelGo.AddComponent<TextMeshProUGUI>();
         ConfigureLabel(closeLabel, "X", fontSize);
         closeLabel.fontStyle = FontStyles.Bold;
-        closeLabel.alignment = TextAlignmentOptions.Center;
+        // FIX: TextAlignmentOptions.Center centra verticalmente usando la línea completa
+        // (ascender-descender) de la fuente, no la altura real del glifo — para un carácter sin
+        // descendentes como "X" eso deja el trazo visualmente pegado hacia arriba dentro del botón
+        // 48x48. Capline centra respecto a la altura de mayúscula (cap height), que sí coincide con
+        // los píxeles que realmente se ven, así que la "X" queda centrada de verdad en el botón.
+        closeLabel.horizontalAlignment = HorizontalAlignmentOptions.Center;
+        closeLabel.verticalAlignment = VerticalAlignmentOptions.Capline;
+        closeLabel.margin = Vector4.zero;
         closeLabel.raycastTarget = false;
         _closeLabel = closeLabel;
 

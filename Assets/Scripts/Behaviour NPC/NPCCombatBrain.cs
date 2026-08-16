@@ -2021,20 +2021,24 @@ namespace Game.NPC
 
                     if (hit.collider.CompareTag("Player"))
                     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.DrawRay(origin, direction, Color.green);
+#endif
                         return true;
                     }
 
-                    Debug.DrawRay(origin, direction.normalized * hit.distance, Color.red);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    Debug.DrawRay(origin, direction.normalized * hit.distance, Color.red);
                     Debug.Log($"[CombatBrain:{gameObject.name}] 🚫 Visión bloqueada por: {hit.collider.gameObject.name} (Tag: {hit.collider.tag}, Layer: {LayerMask.LayerToName(hit.collider.gameObject.layer)})");
 #endif
                     return false;
                 }
             }
-            
+
             // No golpeó nada - línea de visión clara (caso raro)
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.DrawRay(origin, direction, Color.yellow);
+#endif
             return true;
         }
         
@@ -2069,8 +2073,8 @@ namespace Game.NPC
                     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] 🚫 Línea de fuego bloqueada por {hit.collider.gameObject.name} a {distToObstacle:F1}m - MUY CERCA");
-#endif
                         Debug.DrawLine(spawnPos, hit.point, Color.red, 0.5f);
+#endif
                         return false;
                     }
 
@@ -2078,8 +2082,8 @@ namespace Game.NPC
                     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Línea de fuego parcialmente bloqueada por {hit.collider.gameObject.name} a {distToObstacle:F1}m");
-#endif
                         Debug.DrawLine(spawnPos, hit.point, Color.yellow, 0.5f);
+#endif
                         return false;
                     }
                     break;
@@ -2092,28 +2096,34 @@ namespace Game.NPC
             {
                 if (sphereHit.collider != null && ShouldIgnoreVisionHit(sphereHit.collider))
                 {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.DrawLine(spawnPos, targetPos, Color.green, 0.5f);
+#endif
                     return true;
                 }
-                
+
                 // Verificar si no es el jugador
                 if (!sphereHit.collider.CompareTag("Player"))
                 {
                     #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Proyectil podría rozar con {sphereHit.collider.gameObject.name}");
                     #endif
-                    
+
                     // Si está muy cerca, no disparar
                     if (sphereHit.distance < 1.5f)
                     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.DrawLine(spawnPos, sphereHit.point, Color.magenta, 0.5f);
+#endif
                         return false;
                     }
                 }
             }
-            
+
             // Línea de fuego clara
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.DrawLine(spawnPos, targetPos, Color.green, 0.5f);
+#endif
             return true;
         }
         

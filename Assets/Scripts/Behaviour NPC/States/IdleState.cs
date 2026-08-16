@@ -25,6 +25,12 @@ namespace Game.NPC.States
         private const float SOCIAL_SCAN_INTERVAL = 3f;
         private readonly Collider[] _socialBuffer = new Collider[8];
 
+        // ✅ FIX rendimiento: cacheado en OnEnter, no GetComponent en cada CheckPlayerDetection
+        // (cada 0.2s por NPC parado). Mismo patrón que AlertState (FIX #10). La mayoría de NPCs
+        // ambiente no tiene NPCTeamMember, así que el GetComponent fallaba constantemente y
+        // aparecía como GC.Alloc en el profiler (NPCBehaviourManagerV2.Update -> CheckPlayerDetection).
+        private NPCTeamMember _teamMember;
+
         public override void OnEnter(NPCStateContext context)
         {
             base.OnEnter(context);
@@ -56,6 +62,7 @@ namespace Game.NPC.States
             _idleTimer = 0f;
             _playerDetectionTimer = 0f;
             _socialScanTimer = 0f;
+            _teamMember = context.Transform.GetComponent<NPCTeamMember>(); // ✅ FIX rendimiento: una vez por entrada al estado
         }
 
         public override void OnExit(NPCStateContext context)
@@ -155,7 +162,7 @@ namespace Game.NPC.States
             if (context.WasDefeatedInCombat) return;
             if (context.Player == null) return;
 
-            var teamMember = context.Transform.GetComponent<NPCTeamMember>();
+            var teamMember = _teamMember; // ✅ FIX rendimiento: cacheado en OnEnter, ver campo _teamMember arriba
 
             // Bloqueo global: si ya hay otro combate activo, este NPC no debe iniciar uno nuevo.
             // EXCEPCIÓN: si un compañero de MI equipo ya está en combate, no bloquear. Este es

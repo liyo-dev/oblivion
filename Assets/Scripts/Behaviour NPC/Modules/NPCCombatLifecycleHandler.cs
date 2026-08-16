@@ -110,7 +110,9 @@ namespace Game.NPC.Modules
             }
             else
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.LogWarning($"[Lifecycle] ⚠️ Damageable no encontrado en Awake para {name} - esperando que se añada después");
+                #endif
             }
         }
 
@@ -125,7 +127,9 @@ namespace Game.NPC.Modules
                 _damageable = GetComponent<Damageable>();
                 if (_damageable != null)
                 {
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.LogWarning($"[Lifecycle] ⚠️ Damageable se añadió después de Awake - configurando destroyOnDeath=false ahora");
+                    #endif
                     _damageable.SetDestroyOnDeath(false);
                 }
                 else
@@ -311,7 +315,9 @@ namespace Game.NPC.Modules
             
             if (_isProcessingDefeat)
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.LogWarning($"[Lifecycle] ⚠️ OnDied() ya en proceso, ignorando duplicado");
+                #endif
                 return;
             }
             
@@ -555,7 +561,9 @@ namespace Game.NPC.Modules
             
             if (elapsed >= timeout)
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.LogWarning($"[Lifecycle] ⚠️ Timeout esperando animación dizzy - continuando de todas formas");
+                #endif
             }
             
             // ✅ REDISEÑO (15 ago 2026, a petición de Raúl): cada NPC del equipo ahora dice su
@@ -794,7 +802,9 @@ namespace Game.NPC.Modules
                             // ✅ VALIDACIÓN 1: Verificar que está en NavMesh
                             if (!_agent.isOnNavMesh)
                             {
+                                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                                 Debug.LogWarning($"[Lifecycle] ⚠️ {name} NO está en NavMesh! No puede huir. Posición: {transform.position}");
+                                #endif
                                 if (NavMesh.SamplePosition(transform.position, out NavMeshHit repoHit, 2f, NavMesh.AllAreas))
                                 {
                                     transform.position = repoHit.position;
@@ -805,7 +815,9 @@ namespace Game.NPC.Modules
                                 }
                                 else
                                 {
+                                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                                     Debug.LogWarning($"[Lifecycle] ⚠️ No se pudo recolocar {name} en NavMesh - se aplicará fallback de desaparición");
+                                    #endif
                                 }
                             }
 
@@ -821,11 +833,15 @@ namespace Game.NPC.Modules
 
                                 if (!_agent.Warp(transform.position))
                                 {
+                                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                                     Debug.LogWarning($"[Lifecycle] ⚠️ {name} no pudo hacer Warp a {transform.position} - se aplicará fallback de desaparición");
+                                    #endif
                                 }
                                 else if (!TryResolveReachableDestination(_agent, fleePos, out Vector3 resolvedFleePos))
                                 {
+                                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                                     Debug.LogWarning($"[Lifecycle] ⚠️ {name} no encontró destino alcanzable para huida cerca de {fleePos}");
+                                    #endif
                                 }
                                 else
                                 {
@@ -897,7 +913,9 @@ namespace Game.NPC.Modules
                                     }
                                     else
                                     {
+                                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                                         Debug.LogWarning($"[Lifecycle] ⚠️ {name} no puede calcular path hacia {fleePos}! Status: {(_agent.hasPath ? _agent.path.status.ToString() : "NO PATH")}");
+                                        #endif
                                     }
                                 }
 
@@ -914,7 +932,9 @@ namespace Game.NPC.Modules
 
                     if (!fleeMovementStarted)
                     {
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.LogWarning($"[Lifecycle] ⚠️ {name} no pudo ejecutar huida - aplicando desaparición directa");
+                        #endif
                     }
                     
                     // ✅ Desaparecer con TransitionManager si está configurado
@@ -965,13 +985,17 @@ namespace Game.NPC.Modules
                             
                             if (!transitionCompleted)
                             {
+                                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                                 Debug.LogWarning($"[Lifecycle] ⚠️ Timeout esperando transición, desactivando {name} directamente");
+                                #endif
                                 gameObject.SetActive(false);
                             }
                         }
                         else
                         {
+                            #if UNITY_EDITOR || DEVELOPMENT_BUILD
                             Debug.LogWarning($"[Lifecycle] ⚠️ No se encontró TransitionManager, desapareciendo sin transición");
+                            #endif
                             // Fallback: desaparecer sin transición
                             if (_config?.disappearVFXPrefab)
                                 VfxPoolService.Instance.Play(_config.disappearVFXPrefab, transform.position + Vector3.up, Quaternion.identity, 3f);
@@ -1019,7 +1043,9 @@ namespace Game.NPC.Modules
         {
             if (string.IsNullOrEmpty(_config?.postDefeatMoveAnchor))
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.LogWarning($"[Lifecycle] ⚠️ {name} tiene MoveToAnchor pero no hay anchor configurado");
+                #endif
                 SetupPostCombatInteraction();
                 yield break;
             }
@@ -1028,7 +1054,9 @@ namespace Game.NPC.Modules
             var anchorTransform = ResolveAnchorTransform(_config.postDefeatMoveAnchor);
             if (anchorTransform == null)
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.LogWarning($"[Lifecycle] ⚠️ No se encontró el anchor '{_config.postDefeatMoveAnchor}' para {name}");
+                #endif
                 SetupPostCombatInteraction();
                 yield break;
             }
@@ -1134,7 +1162,9 @@ namespace Game.NPC.Modules
                             float movedDistance = Vector3.Distance(transform.position, lastCheckPos);
                             if (movedDistance < 0.1f && !_agent.pathPending)
                             {
+                                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                                 Debug.LogWarning($"[Lifecycle] ⚠️ {name} parece estar atascado (movido {movedDistance:F3}m en {stuckCheckInterval}s)");
+                                #endif
                                 
                                 // Intentar reconfigurar el agent
                                 _agent.isStopped = true;
@@ -1161,12 +1191,14 @@ namespace Game.NPC.Modules
                             {
                                 if (Time.frameCount % 60 == 0) // Cada 60 frames (~1 segundo)
                                 {
+                                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                                     Debug.LogWarning($"[Lifecycle] ⚠️ {name} velocity = 0 pero debería moverse!\n" +
                                                    $"  remainingDistance: {_agent.remainingDistance:F2}\n" +
                                                    $"  stoppingDistance: {_agent.stoppingDistance:F2}\n" +
                                                    $"  isStopped: {_agent.isStopped}\n" +
                                                    $"  pathPending: {_agent.pathPending}\n" +
                                                    $"  path.status: {_agent.path.status}");
+                                    #endif
                                 }
                             }
                             
@@ -1209,7 +1241,9 @@ namespace Game.NPC.Modules
                     
                     if (elapsed >= timeout)
                     {
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.LogWarning($"[Lifecycle] ⏱️ {name} timeout alcanzado ({timeout}s) - Forzando parada");
+                        #endif
                     }
                     
                     // Detener movimiento y restaurar configuración
@@ -1319,7 +1353,9 @@ namespace Game.NPC.Modules
                             Vector3 randomOffset = Random.insideUnitSphere * 5f;
                             randomOffset.y = 0;
                             targetPos = transform.position + randomOffset;
+                            #if UNITY_EDITOR || DEVELOPMENT_BUILD
                             Debug.LogWarning($"[Lifecycle] ⚠️ No se encontró anchor '{memberConfig.postDefeatMoveAnchor}' para {member.name}, usando punto aleatorio");
+                            #endif
                         }
                     }
                 }
@@ -1438,7 +1474,9 @@ namespace Game.NPC.Modules
                     float movedDistance = Vector3.Distance(member.transform.position, lastCheckPos);
                     if (movedDistance < 0.1f && !agent.pathPending)
                     {
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.LogWarning($"[Lifecycle] ⚠️ Miembro {member.name} parece estar atascado (movido {movedDistance:F3}m en {stuckCheckInterval}s)");
+                        #endif
                         
                         // Intentar reconfigurar el agent
                         Vector3 currentDest = agent.destination;
@@ -1467,12 +1505,14 @@ namespace Game.NPC.Modules
                     {
                         if (Time.frameCount % 60 == 0) // Cada 60 frames
                         {
+                            #if UNITY_EDITOR || DEVELOPMENT_BUILD
                             Debug.LogWarning($"[Lifecycle] ⚠️ Miembro {member.name} velocity = 0 pero debería moverse!\n" +
                                            $"  remainingDistance: {agent.remainingDistance:F2}\n" +
                                            $"  stoppingDistance: {agent.stoppingDistance:F2}\n" +
                                            $"  isStopped: {agent.isStopped}\n" +
                                            $"  pathPending: {agent.pathPending}\n" +
                                            $"  path.status: {agent.path.status}");
+                            #endif
                         }
                     }
                     
@@ -1515,7 +1555,9 @@ namespace Game.NPC.Modules
             
             if (elapsed >= timeout)
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.LogWarning($"[Lifecycle] ⏱️ Miembro {member.name} timeout alcanzado ({timeout}s)");
+                #endif
             }
             
             // Detener movimiento y restaurar configuración
@@ -1684,7 +1726,9 @@ namespace Game.NPC.Modules
         {
             if (!IsDefeatedAndInactive)
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.LogWarning($"[Lifecycle] ⚠️ {name} no está derrotado, no se puede resucitar");
+                #endif
                 return;
             }
             

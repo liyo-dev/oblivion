@@ -242,8 +242,14 @@ public class Interactable : MonoBehaviour
         if (narrativeExecutor != null && narrativeExecutor.IsExecuting)
             return false;
 
-        // No mostrar el hint si el NPCWorldPoint ya está ocupado (por otro NPC o por el propio player)
-        if (_worldPoint != null && _worldPoint.IsOccupied)
+        // No mostrar el hint si el NPCWorldPoint ya está ocupado por OTRO ocupante. Si el ocupante
+        // es el propio interactor (p.ej. el jugador ya está tumbado/sentado aquí), SÍ dejamos pasar:
+        // así el mismo botón A que se usó para tumbarse sirve para despertarse/levantarse (ver
+        // StartWorldPointActivity). FIX (15 ago 2026): antes esto bloqueaba siempre que estaba
+        // ocupado, así que "A" no hacía nada mientras el jugador dormía — la única forma de
+        // levantarse era el botón de cancelar (B/Circle), que no coincide con el icono "A" que
+        // se sigue mostrando en pantalla.
+        if (_worldPoint != null && _worldPoint.IsOccupied && !_worldPoint.IsOccupiedBy(interactor != null ? interactor.transform : null))
             return false;
 
         // Comprobar proximidad al punto de interacción exacto (evita activar desde lejos)
@@ -645,6 +651,16 @@ public class Interactable : MonoBehaviour
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.LogWarning($"[Interactable:{name}] No se encontró PlayerAmbientActivityHandler en el interactor.");
 #endif
+            return;
+        }
+
+        // FIX (15 ago 2026): si el propio interactor ya está ocupando este punto (durmiendo/sentado
+        // aquí), pulsar Interactuar otra vez debe despertarlo/levantarlo, no intentar TryOccupy() de
+        // nuevo — eso siempre devuelve false porque ya está ocupado, y antes de este fix el botón A
+        // simplemente no hacía nada mientras el jugador dormía (ver CanInteract más arriba).
+        if (_worldPoint.IsOccupiedBy(interactor.transform))
+        {
+            handler.StopActivity();
             return;
         }
 

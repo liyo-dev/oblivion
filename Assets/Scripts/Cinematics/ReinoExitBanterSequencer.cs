@@ -98,8 +98,11 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
 
     [Header("Fase 0b — Estela y Liam adelantan a Will y se giran (caminata visible en pantalla)")]
     [Tooltip("Punto al que camina Estela, ya con la pantalla visible, antes de girarse hacia Will " +
-             "(más adelantada que él). Colocar ya girada mirando hacia _willMark: esa rotación es " +
-             "la que adopta al llegar.")]
+             "(más adelantada que él). Solo importa la POSICIÓN: la rotación de esta marca no se " +
+             "usa — al llegar, Estela gira 180° respecto a la dirección en la que caminaba (igual " +
+             "que el turn:true de un NPC normal, ver MoveToPositionSequence.ApplyFallbackOrientation), " +
+             "así que colócala pensando en el tramo recto que va a recorrer, no en hacia dónde " +
+             "apunta la flecha del Transform.")]
     [SerializeField] private Transform _estelaContinueTarget;
     [Tooltip("Igual que _estelaContinueTarget pero para Liam.")]
     [SerializeField] private Transform _liamContinueTarget;
@@ -148,6 +151,12 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
     private Transform _liamTransform;
     private NPCBehaviourManagerV2 _estelaManager;
     private NPCBehaviourManagerV2 _liamManager;
+
+    // Mismos parámetros de Animator que usa MountainSequencer para mover manualmente al
+    // controller del jugador durante una cinemática (ver Co_AdvanceAndTurn): "Free Locomotion"
+    // es el estado del blend tree de caminar/correr, "InputMagnitude" es lo que lo alimenta.
+    private static readonly int HashInputMagnitude = Animator.StringToHash("InputMagnitude");
+    private static readonly int HashLocomotion     = Animator.StringToHash("Free Locomotion");
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     [ContextMenu("Test — iniciar sin señal")]
@@ -425,17 +434,27 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
     }
 
     /// <summary>
-    /// Hace avanzar a `actor` hasta `target` y girarlo a mirar hacia donde `target` mira —
-    /// adelantar a Will y girarse a comprobarlo. Dos caminos según qué sea `actor` ahora mismo
-    /// (ver ResolveCharacters()):
+    /// Hace avanzar a `actor` hasta la posición de `target` y girarlo 180° al llegar (respecto a
+    /// hacia dónde caminaba, no hacia una rotación concreta) — adelantar a Will y girarse a
+    /// comprobarlo. Dos caminos según qué sea `actor` ahora mismo (ver ResolveCharacters()):
     ///   - NPC normal (tiene NPCBehaviourManagerV2 — el caso habitual, tanto si es Estela/Liam
     ///     siguiendo como IA como si es el clon de Will): usa su propio sistema de movimiento
-    ///     cinemático (FSM + NavMeshAgent), que ya anima el paso y resuelve colisiones con el
-    ///     terreno — es el mismo MoveToPosition que usaba el viejo Co_GroupContinuesAndTurns.
+    ///     cinemático (FSM + NavMeshAgent, turn:true), que ya anima el paso, resuelve colisiones
+    ///     con el terreno y hace el giro de 180° al llegar — es el mismo MoveToPosition que usaba
+    ///     el viejo Co_GroupContinuesAndTurns.
     ///   - Controller del jugador (CharacterController, SIN NPCBehaviourManagerV2 — pasa cuando
-    ///     este personaje concreto es el activo, ver ActiveCharacterSwapper): no hay FSM de NPC
-    ///     que lo mueva, así que se interpola el transform directamente, moviendo el
-    ///     CharacterController con cc.Move() delta a delta para no atravesar el escenario.
+    ///     este personaje concreto es el activo, ver ActiveCharacterSwapper): no hay FSM de NPC ni
+    ///     NavMeshAgent que lo mueva ni le anime el paso. BUGFIX (reportado tras el primer pase:
+    ///     "se ve en pose T"): mover solo el transform no basta, porque nada le dice al Animator
+    ///     que está caminando y se queda en su pose por defecto. Mismo patrón que
+    ///     MountainSequencer.Co_GroupFlees()/FinishWillFlee() para este mismo caso (Will corriendo
+    ///     durante la huida): desactivar el CharacterController, CrossFade al estado "Free
+    ///     Locomotion" del Animator y alimentar "InputMagnitude" cada frame mientras se mueve el
+    ///     transform con MoveTowards (rotando hacia la dirección de avance, para no caminar de
+    ///     espaldas) — así el blend tree de locomoción anima el paso de verdad. Al llegar, mismo
+    ///     giro de 180° instantáneo que hace el NPC (ver
+    ///     MoveToPositionSequence.ApplyFallbackOrientation), para que el gesto se lea igual sin
+    ///     importar por qué camino se resolvió `actor`.
     /// </summary>
     private IEnumerator Co_AdvanceAndTurn(Transform actor, Transform target, System.Action onComplete)
     {
@@ -451,29 +470,35 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
         }
 
         var cc = actor.GetComponent<CharacterController>();
-        Vector3 startPos = actor.position;
-        Quaternion startRot = actor.rotation;
-        Vector3 endPos = target.position;
-        Quaternion endRot = target.rotation;
+        var animator = actor.GetComponent<Animator>();
 
-        float t = 0f;
-        while (t < _continueWalkDuration)
+        if (cc != null) cc.enabled = false;
+        if (animator != null && animator.HasState(0, HashLocomotion))
+            animator.CrossFade(HashLocomotion, 0.15f);
+
+        Vector3 destination = target.position;
+        float speed = Vector3.Distance(actor.position, destination) / Mathf.Max(_continueWalkDuration, 0.01f);
+
+        while ((destination - actor.position).sqrMagnitude > 0.0025f)
         {
-            t += Time.deltaTime;
-            float k = Mathf.Clamp01(t / _continueWalkDuration);
-            Vector3 nextPos = Vector3.Lerp(startPos, endPos, k);
-            actor.rotation = Quaternion.Slerp(startRot, endRot, k);
+            Vector3 toTarget = destination - actor.position;
+            Vector3 flat = toTarget; flat.y = 0f;
+            if (flat.sqrMagnitude > 0.01f)
+                actor.rotation = Quaternion.LookRotation(flat);
 
-            if (cc != null) cc.Move(nextPos - actor.position);
-            else actor.position = nextPos;
-
+            actor.position = Vector3.MoveTowards(actor.position, destination, speed * Time.deltaTime);
+            animator?.SetFloat(HashInputMagnitude, 1f);
             yield return null;
         }
+        actor.position = destination;
+        animator?.SetFloat(HashInputMagnitude, 0f);
 
-        if (cc != null) cc.Move(endPos - actor.position);
-        else actor.position = endPos;
-        actor.rotation = endRot;
+        // Giro instantáneo de 180° respecto a la dirección de llegada — mismo lenguaje visual que
+        // el turn:true del camino NPC (ver comentario de arriba), no una rotación exacta hacia
+        // `target` (su rotación como Transform no se usa, solo su posición).
+        actor.rotation *= Quaternion.Euler(0f, 180f, 0f);
 
+        if (cc != null) cc.enabled = true;
         onComplete?.Invoke();
     }
 

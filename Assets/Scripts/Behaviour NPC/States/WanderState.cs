@@ -31,6 +31,10 @@ namespace Game.NPC.States
         // Punto de actividad elegido al entrar en el estado
         private NPCWorldPoint _pendingWorldPoint;
 
+        // ✅ FIX rendimiento: cacheado en OnEnter, no GetComponent en cada CheckPlayerDetection
+        // (cada 0.2s por NPC vagando). Mismo patrón que AlertState (FIX #10) e IdleState.
+        private NPCTeamMember _teamMember;
+
         public override void OnEnter(NPCStateContext context)
         {
             base.OnEnter(context);
@@ -46,6 +50,7 @@ namespace Game.NPC.States
             _lastPosition       = context.Transform.position;
             _socialScanTimer    = 0f;
             _pendingWorldPoint  = null;
+            _teamMember         = context.Transform.GetComponent<NPCTeamMember>(); // ✅ FIX rendimiento: una vez por entrada al estado
 
             float wanderSpeed = 2.0f;
             if (context.Config?.ambientConfig != null)
@@ -230,7 +235,7 @@ namespace Game.NPC.States
             
             // ✅ FIX: Si soy miembro de un equipo y ya notifiqué, no sigo detectando
             // Esto evita el bucle infinito de detección
-            var teamMember = context.Transform.GetComponent<NPCTeamMember>();
+            var teamMember = _teamMember; // ✅ FIX rendimiento: cacheado en OnEnter, ver campo _teamMember arriba
             if (teamMember != null && teamMember.HasNotifiedTeam)
             {
                 return; // Ya se notificó al equipo, el NPCCombatTeam se encarga

@@ -604,6 +604,20 @@ namespace Core
             var gp = Gamepad.current;
             if (gp != null && gp.buttonEast.wasPressedThisFrame)
                 return true;
+
+            // FIX (16 ago 2026): faltaba el fallback de teclado — mismo motivo que
+            // YButtonPressedUI/YButtonPressed más abajo en este archivo. "Cancel" (Escape en
+            // teclado) solo vive en el mapa UI de PlayerControls.inputactions; sistemas que
+            // necesitan leer este botón mientras el mapa GamePlay sigue activo a propósito
+            // (p.ej. PlayerAmbientActivityHandler mientras el jugador está sentado/dormido en
+            // un NPCWorldPoint, que deliberadamente NO cambia de mapa para que la cámara siga
+            // respondiendo) solo veían el fallback de mando (buttonEast, leído directo del
+            // hardware) — en teclado, Escape no hacía nada porque Controls.UI.Cancel.triggered
+            // siempre es false con el mapa UI deshabilitado. Sin este fallback, un jugador de
+            // teclado que se tumbaba en una cama no tenía forma de levantarse.
+            var kb = Keyboard.current;
+            if (kb != null && kb.escapeKey.wasPressedThisFrame)
+                return true;
 #endif
 
             return false;

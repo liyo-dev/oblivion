@@ -89,6 +89,9 @@ public class NPCWorldPoint : MonoBehaviour
         _occupant   = null;
     }
 
+    /// <summary>True si este punto está ocupado y el ocupante es justo el transform indicado.</summary>
+    public bool IsOccupiedBy(Transform occupant) => _isOccupied && occupant != null && _occupant == occupant;
+
     // ── Prop ────────────────────────────────────────────────────────────────────
 
     /// <summary>
