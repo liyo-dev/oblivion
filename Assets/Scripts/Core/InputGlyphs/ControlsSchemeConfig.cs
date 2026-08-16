@@ -74,6 +74,7 @@ namespace Core.InputGlyphs
                 Entry(InputGlyphNames.DpadRight, "CONTROLS_CHARACTER_NEXT", "Cambiar de personaje (siguiente)"),
                 Entry(InputGlyphNames.Teleport, "CONTROLS_TELEPORT", "Teletransportarse al punto de guardado"),
                 Entry(InputGlyphNames.Start, "CONTROLS_PAUSE", "Pausa / Menú"),
+                Entry(InputGlyphNames.Select, "CONTROLS_BIG_MAP", "Ver mapa grande"),
             };
         }
 

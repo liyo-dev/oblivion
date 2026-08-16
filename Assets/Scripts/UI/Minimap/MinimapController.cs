@@ -31,11 +31,17 @@ public class MinimapController : MonoBehaviour
     [Header("Bounds (opcional)")]
     [SerializeField] MinimapBounds worldBounds;
 
+    [Header("Mapa grande")]
+    [Tooltip("Tamaño ortográfico de la cámara cuando el mapa grande está abierto (ver BigMapController), " +
+             "para mostrar más área del mundo que el zoom normal (defaultZoom/worldBounds).")]
+    [SerializeField] float bigMapZoom = 60f;
+
     Transform _playerTransform;
     bool _hiddenByInterior;
     bool _hiddenByBattle;
     bool _hiddenByMenu;
     bool _hiddenByCinematic;
+    float _normalOrthoSize;
 
     // ── API para MinimapUIController ─────────────────────────────────────────
     public Vector3 PlayerPosition => _playerTransform != null ? _playerTransform.position : Vector3.zero;
@@ -98,6 +104,19 @@ public class MinimapController : MonoBehaviour
         {
             minimapCamera.orthographicSize = defaultZoom;
         }
+
+        _normalOrthoSize = minimapCamera.orthographicSize;
+    }
+
+    /// <summary>
+    /// Activa/desactiva el zoom ampliado de la cámara para el mapa grande (ver BigMapController).
+    /// Al desactivarlo restaura el zoom normal (el mismo que calculó SetupCamera a partir de
+    /// worldBounds o defaultZoom).
+    /// </summary>
+    public void SetBigMapMode(bool active)
+    {
+        if (minimapCamera == null) return;
+        minimapCamera.orthographicSize = active ? bigMapZoom : _normalOrthoSize;
     }
 
 
@@ -162,13 +181,20 @@ public class MinimapController : MonoBehaviour
 
     void OnMenuOpened(MenuKind kind)
     {
+        // El mapa grande ES el minimapa (minimapRoot ampliado por BigMapController), no un menú
+        // aparte por encima: ocultarlo aquí lo apagaría justo al abrirlo. Los demás menús sí deben
+        // ocultar el minimapa como hasta ahora.
+        if (kind == MenuKind.BigMap) return;
+
         _hiddenByMenu = true;
         RefreshMinimapVisibility();
     }
 
     void OnMenuClosed(MenuKind kind)
     {
-        _hiddenByMenu = MenuManager.AnyOpen();
+        if (kind == MenuKind.BigMap) return;
+
+        _hiddenByMenu = MenuManager.AnyOpenExcept(MenuKind.BigMap);
         RefreshMinimapVisibility();
     }
 

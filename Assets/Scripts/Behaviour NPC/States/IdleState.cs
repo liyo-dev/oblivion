@@ -154,16 +154,26 @@ namespace Game.NPC.States
             // 0. Filtros básicos
             if (context.WasDefeatedInCombat) return;
             if (context.Player == null) return;
-            
+
+            var teamMember = context.Transform.GetComponent<NPCTeamMember>();
+
             // Bloqueo global: si ya hay otro combate activo, este NPC no debe iniciar uno nuevo.
-            if (ActiveCombatRegistry.HasActiveCombatExcluding(context.Transform.gameObject))
+            // EXCEPCIÓN: si un compañero de MI equipo ya está en combate, no bloquear. Este es
+            // justo el caso que NPCCombatTeam.OnPlayerDetected()/IsAnyMemberInCombat() ya sabe
+            // gestionar (deja que el equipo se una al mismo combate). Sin esta excepción, en
+            // cuanto un miembro entraba en CombatState (y se registraba en ActiveCombatRegistry),
+            // el resto del equipo quedaba bloqueado aquí para siempre y nunca llegaba a
+            // TryNotifyTeamOfPlayer — bug observado: "Lety luchaba, Vicky se quedaba quieta".
+            bool teammateAlreadyFighting = teamMember != null && teamMember.HasTeam
+                && teamMember.Team.IsAnyMemberInCombat();
+            if (!teammateAlreadyFighting
+                && ActiveCombatRegistry.HasActiveCombatExcluding(context.Transform.gameObject))
             {
                 return;
             }
-            
+
             // ✅ FIX: Si soy miembro de un equipo y ya notifiqué, no sigo detectando
             // Esto evita el bucle infinito de detección
-            var teamMember = context.Transform.GetComponent<NPCTeamMember>();
             if (teamMember != null && teamMember.HasNotifiedTeam)
             {
                 return; // Ya se notificó al equipo, el NPCCombatTeam se encarga
@@ -213,21 +223,18 @@ namespace Game.NPC.States
             
             // --- JUGADOR DETECTADO ---
             context.Log($"[IdleState] 👁️ Jugador visto. ¡Alerta!");
-            
-            // ✅ TEAM SUPPORT: Notificar al equipo (reutilizamos teamMember del inicio)
-            if (teamMember != null && teamMember.TryNotifyTeamOfPlayer(context.Player))
+
+            // ✅ TEAM SUPPORT: da igual cuál de los miembros detecte — solo notificar al equipo y
+            // dejar que NPCCombatTeam.Co_DetectAndEngage gestione TODA la secuencia (parar+mirar,
+            // diálogo una sola vez para el equipo, combate para todos a la vez). NO crear un
+            // AlertState individual aquí: competía con NPCCombatTeam y dejaba a los miembros en
+            // estados inconsistentes según quién detectaba primero (bug histórico de Lety/Vicky).
+            if (teamMember != null && teamMember.HasTeam)
             {
-                // Crear AlertState para este miembro
-                var alertState = new AlertState(
-                    duration: combatConfig.alertIconDuration,
-                    walk: true,
-                    stopDist: combatConfig.minAttackDistance + 1f,
-                    skipDialogue: !teamMember.IsLeader // ✅ FIX: Los no-líderes NO inician diálogo
-                );
-                context.Brain?.ChangeState(alertState);
+                teamMember.TryNotifyTeamOfPlayer(context.Player);
                 return;
             }
-            
+
             var alertStateDefault = new AlertState(
                 duration: combatConfig.alertIconDuration,
                 walk: true,

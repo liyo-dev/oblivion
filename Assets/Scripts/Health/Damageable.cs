@@ -35,20 +35,26 @@ public class Damageable : MonoBehaviour, IDamageable
     {
         if (!IsAlive)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[Damageable:{name}] ⚠️ Ignorando daño - ya está muerto (Current: {Current})");
+#endif
             return;
         }
         if (amount <= 0f) return;
 
         if (Time.time < _invulnerableUntil)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[Damageable:{name}] 🛡️ Ignorando daño - invulnerable hasta {_invulnerableUntil - Time.time:F2}s");
+#endif
             return;
         }
 
         float oldHealth = Current;
         Current = Mathf.Max(0f, Current - amount);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (debugLogs) Debug.Log($"[Damageable:{name}] -{amount:0.##} -> {Current:0.##}/{Max}");
+#endif
 
         OnDamaged?.Invoke(amount);
         OnDamagedBy?.Invoke(amount, instigator);
@@ -59,7 +65,9 @@ public class Damageable : MonoBehaviour, IDamageable
         if (Current <= 0f)
         {
             Current = 0f;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[Damageable:{name}] 💀 VIDA AGOTADA - Llamando a Die() (vida anterior: {oldHealth:F1})");
+#endif
             Die();
         }
     }
@@ -70,7 +78,9 @@ public class Damageable : MonoBehaviour, IDamageable
         if (amount <= 0f) return;
 
         Current = Mathf.Min(Max, Current + amount);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (debugLogs) Debug.Log($"[Damageable:{name}] +{amount:0.##} -> {Current:0.##}/{Max}");
+#endif
     }
 
     /// <summary>Método para que PlayerState pueda establecer máximo y actual simultáneamente</summary>
@@ -78,8 +88,10 @@ public class Damageable : MonoBehaviour, IDamageable
     {
         maxHealth = Mathf.Max(1f, newMax);
         Current = Mathf.Clamp(newCurrent, 0f, maxHealth);
-        
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (debugLogs) Debug.Log($"[Damageable:{name}] SetMaxAndCurrent -> {Current:0.##}/{maxHealth}");
+#endif
     }
 
     /// <summary>Establece solo la vida máxima, manteniendo el current clampeado</summary>
@@ -110,15 +122,24 @@ public class Damageable : MonoBehaviour, IDamageable
 
     void Die()
     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"[Damageable:{name}] 💀💀💀 Die() llamado - Invocando OnDied (suscriptores: {OnDied?.GetInvocationList().Length ?? 0})");
+#endif
         OnDied?.Invoke();
-        
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"[Damageable:{name}] OnDied invocado - destroyOnDeath: {destroyOnDeath}");
+#endif
 
         if (deathVFX)
         {
-            var vfx = Instantiate(deathVFX, transform.position, transform.rotation);
-            Destroy(vfx, Mathf.Max(0.25f, deathVFXLifetime));
+            // ✅ FIX #3 (auditoría combate, 15 ago 2026): antes Instantiate+Destroy directo, el
+            // mismo patrón que ya causó un bug real y arreglado en NPCCombatLifecycleHandler.cs
+            // ("el prefab no se autodestruía y quedaba flotando en el suelo indefinidamente").
+            // Damageable es más genérico que ese handler (lo usa más que solo NPCs de combate),
+            // así que nunca había recibido el mismo fix. Regla del proyecto: VFX de un solo uso
+            // siempre vía VfxPoolService.
+            VfxPoolService.Instance.Play(deathVFX, transform.position, transform.rotation, Mathf.Max(0.25f, deathVFXLifetime));
         }
 
         if (destroyOnDeath) Destroy(gameObject);

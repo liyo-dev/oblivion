@@ -280,6 +280,46 @@ public class ModularAutoBuilder : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// FIX AABB de culling atascado tras un cambio de apariencia (ver el comentario extenso en
+    /// ActiveCharacterSwapper.SpawnWillNpc, sección "FIX Will invisible parte 2"). Encender/apagar
+    /// categorías aquí (SetActive en los SkinnedMeshRenderer de cada parte) dejaba el bounds de
+    /// culling de cada renderer calculado con la pose/posición ANTERIOR — o sin calcular nunca, si
+    /// la parte estaba desactivada — hasta que ALGO forzara su recálculo. En el editor eso "se
+    /// curaba" solo con seleccionar el objeto en la Hierarchy (fuerza una lectura de
+    /// Renderer.bounds); en runtime nunca pasa solo. Síntoma reportado: el personaje se ve
+    /// "flotando"/desencajado justo tras aplicar una apariencia nueva (bug del prólogo — "Estela/
+    /// Will vuela sobre la cama" nada más arrancar Nueva Partida, coincidiendo con el instante en
+    /// que WorldBootstrap aplica la apariencia de Will y, un frame después, SleepTrigger
+    /// teletransporta y fuerza la animación de dormir sobre ese mismo rig).
+    ///
+    /// Se llama SIEMPRE desde CharacterAppearanceRegistry.ApplyAppearance() justo después de
+    /// ApplySelection()/RestoreInitialSelection() — así CUALQUIER cambio de apariencia queda
+    /// cubierto de una vez, sin depender de que cada llamador nuevo recuerde replicar el fix (como
+    /// pasó con SleepTrigger y ActiveCharacterSwapper.WarpNpcToPosition, que no lo tenían y donde
+    /// también se ha añadido como red de seguridad adicional).
+    ///
+    /// IMPORTANTE: a diferencia de SpawnWillNpc() (que SÍ hace un `Animator.Update(0f)` extra),
+    /// aquí NO se fuerza — este builder vive en el rig del jugador YA activo y animándose cada
+    /// frame (a diferencia de un NPC recién instanciado que aún no ha posado ni un frame), así que
+    /// sus huesos ya están en una pose válida y no hace falta forzar nada. Confirmado por build real
+    /// (Player.log): forzar `Animator.Update(0f)` aquí, durante el primer ApplyAppearance() del
+    /// arranque, dispara `OnAnimatorMove()` del controller de Invector (`vThirdPersonInput`) antes de
+    /// que termine de inicializarse — `NullReferenceException` en `cc.ControlAnimatorRootMotion()`
+    /// porque `cc` aún es null en ese punto del boot. Solo se necesita releer `.bounds` para forzar
+    /// el recálculo del AABB con la pose actual (ya correcta); no se necesita adelantar la pose.
+    /// </summary>
+    public void RefreshRendererBoundsAfterAppearanceChange()
+    {
+        foreach (var smr in GetComponentsInChildren<SkinnedMeshRenderer>(true))
+        {
+            if (!smr.updateWhenOffscreen)
+                smr.updateWhenOffscreen = true;
+            if (smr.gameObject.activeInHierarchy)
+                _ = smr.bounds;
+        }
+    }
+
     public void RestoreInitialSelection()
     {
         if (_initialSelection == null || _initialSelection.Count == 0)

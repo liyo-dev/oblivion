@@ -3,6 +3,20 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using DG.Tweening;
 
+/// <summary>
+/// Implementado por componentes que viven en el mismo GameObject que un SceneBoundUI y que
+/// necesitan poder posponer su ocultado automático por cambio de escena mientras muestran
+/// contenido importante que el jugador todavía no ha tenido tiempo de ver/leer (ej:
+/// AbilityUnlockPopupUI mientras el popup de "Bola Prisma" / "Llama Astral" está en pantalla).
+/// Mientras BlocksSceneHide() devuelva true, SceneBoundUI.ApplySceneState() NO llamará a
+/// gameObject.SetActive(false) aunque la escena activa ya no esté en allowedScenes — el corte de
+/// cámara/carga de escena que dispara ese evento no debe poder tragarse un popup a medio leer.
+/// </summary>
+public interface ISceneBoundUIHideGuard
+{
+    bool BlocksSceneHide();
+}
+
 public class SceneBoundUI : MonoBehaviour
 {
     [SerializeField] private string uniqueId = string.Empty;
@@ -17,6 +31,11 @@ public class SceneBoundUI : MonoBehaviour
     private static bool _bossIntroActive = false;
     private string instanceKey;
     private float _preBossAlpha = -1f;
+    private ISceneBoundUIHideGuard _hideGuard;
+    // True cuando un cambio de escena habría ocultado este objeto pero _hideGuard lo bloqueó.
+    // El guard debe llamar a ReapplySceneState() en cuanto deje de bloquear para que el ocultado
+    // pendiente (si sigue aplicando) se ejecute entonces, en vez de quedarse nunca aplicado.
+    private bool _pendingHide;
 
     /// <summary>True mientras una intro de boss tiene la UI persistente oculta (entre BeginBossIntro y EndBossIntro).</summary>
     public static bool IsBossIntroActive => _bossIntroActive;
@@ -110,6 +129,7 @@ public class SceneBoundUI : MonoBehaviour
         }
 
         Instances[instanceKey] = this;
+        _hideGuard = GetComponent<ISceneBoundUIHideGuard>();
 
         if (detachFromParent && transform.parent != null)
             transform.SetParent(null, worldPositionStays: false);
@@ -143,7 +163,31 @@ public class SceneBoundUI : MonoBehaviour
         if (_bossIntroActive) return;
 
         bool allowed = IsAllowedInCurrentScene();
+
+        // No cortar en seco contenido importante que el jugador todavía está viendo (ej: el
+        // popup de desbloqueo de habilidad). El corte de cámara / carga de escena que dispara
+        // este evento no es motivo para tragarse un popup a medio leer: se deja el GameObject
+        // activo y se marca el ocultado como pendiente — el propio guard debe llamar a
+        // ReapplySceneState() en cuanto termine de mostrar su contenido.
+        if (!allowed && gameObject.activeSelf && _hideGuard != null && _hideGuard.BlocksSceneHide())
+        {
+            _pendingHide = true;
+            return;
+        }
+
+        _pendingHide = false;
         if (gameObject.activeSelf != allowed)
             gameObject.SetActive(allowed);
+    }
+
+    /// <summary>
+    /// Reintenta aplicar el estado de escena si había un ocultado pendiente (ver ApplySceneState).
+    /// Debe llamarla el propio ISceneBoundUIHideGuard en cuanto BlocksSceneHide() deje de devolver
+    /// true, para que un ocultado por cambio de escena que quedó pospuesto no se quede sin aplicar
+    /// nunca (ej: AbilityUnlockPopupUI.HidePopup() al terminar de mostrar el popup).
+    /// </summary>
+    public void ReapplySceneState()
+    {
+        if (_pendingHide) ApplySceneState();
     }
 }

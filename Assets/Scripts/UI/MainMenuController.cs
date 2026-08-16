@@ -32,6 +32,9 @@ public class MainMenuController : MonoBehaviour
     [Tooltip("Button de la fila CONTROLES.")]
     [SerializeField] private Button controlsButton;
 
+    [Tooltip("Button de la fila SALIR.")]
+    [SerializeField] private Button exitButton;
+
     [Tooltip("Panel que contiene los botones principales del menú.")]
     [SerializeField] private GameObject buttonPanel;
 
@@ -100,6 +103,9 @@ public class MainMenuController : MonoBehaviour
         if (!controlsButton)
             controlsButton = TryFindControlsButton();
 
+        if (!exitButton)
+            exitButton = TryFindExitButton();
+
         if (!settingsMenu)
             settingsMenu = GetComponentInChildren<SettingsMenuController>(true);
 
@@ -116,6 +122,7 @@ public class MainMenuController : MonoBehaviour
         WireButton(newGameButton, OnClickNewGame, "NEW GAME");
         WireButton(settingsButton, OnClickSettings, "SETTINGS");
         WireButton(controlsButton, OnClickControls, "CONTROLS");
+        WireButton(exitButton, OnClickExit, "EXIT");
 
         // Ensure UISelectVisual exists on main menu buttons
         var menuButtons = GetComponentsInChildren<Button>(true);
@@ -487,6 +494,16 @@ public class MainMenuController : MonoBehaviour
                     if (!ok) Debug.LogWarning("[MainMenu] SaveSystem.Delete() devolvio false (algun fichero no se pudo borrar).");
                 }
             }
+
+            // FIX: una Nueva Partida real arranca MainWorld directamente en la cinemática del sueño
+            // inicial (PrologueDreamSequencer), que pone su propia música vía PlaySequenceMusic()
+            // cuando el grafo narrativo lanza su señal de entrada. Ese lanzamiento ocurre en Start()/
+            // más adelante, pero AudioService.OnSceneLoaded (suscrito a SceneManager.sceneLoaded) se
+            // dispara ANTES, así que sin esto la música de mundo de MainWorld arranca sola un instante
+            // y enseguida se corta a la de la secuencia — el "doble arranque" que se oía mal. No se
+            // aplica en modo preset/test (forcePreset) porque ese bootPreset puede no arrancar con
+            // esta cinemática, y silenciar ahí dejaría MainWorld sin música alguna.
+            AudioService.MuteNextBaseSceneMusic = true;
         }
 
         Debug.Log("[MainMenu] Cargando escena de Nueva Partida...");
@@ -607,6 +624,16 @@ public class MainMenuController : MonoBehaviour
 
     public void OnClickExit()
     {
+        if (_isLoading || !_inputArmed)
+        {
+            if (!_inputArmed)
+                Debug.Log("[MainMenu] Ignorando Exit mientras el menú arma la entrada.");
+            return;
+        }
+
+        // SFX de confirmación
+        AudioService.Instance?.PlaySFX("UI_Submit");
+
         Application.Quit();
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
@@ -747,6 +774,19 @@ public class MainMenuController : MonoBehaviour
         {
             var n = b.gameObject.name.ToLowerInvariant();
             if (n.Contains("control"))
+                return b;
+        }
+        return null;
+    }
+
+    Button TryFindExitButton()
+    {
+        // Busca en hijos un botón cuyo nombre sugiera "Salir/Exit/Quit"
+        var all = GetComponentsInChildren<Button>(true);
+        foreach (var b in all)
+        {
+            var n = b.gameObject.name.ToLowerInvariant();
+            if (n.Contains("salir") || n.Contains("exit") || n.Contains("quit"))
                 return b;
         }
         return null;

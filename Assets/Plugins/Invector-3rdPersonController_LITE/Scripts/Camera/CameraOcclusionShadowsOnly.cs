@@ -55,10 +55,11 @@ public class CameraOcclusionShadowsOnly : MonoBehaviour
     private bool _shaderMissing;
     private static bool _loggedShaderLoadAttempt;
 
-    // Buffer pre-alocado para el SphereCast — nunca Physics.SphereCastAll (aloca cada frame).
-    // 16 impactos cubre con margen cualquier oclusión real; si algún día se supera, los
-    // impactos extra se ignoran en vez de alocar de más.
-    private readonly RaycastHit[] _hitsBuffer = new RaycastHit[16];
+    // Buffer pre-alocado para el SphereCast — evita Physics.SphereCastAll (aloca cada frame) en
+    // el caso normal. 32 impactos cubre con margen cualquier oclusión real; si algún día se
+    // supera, Process() cae a un SphereCastAll de respaldo solo ese frame (ver más abajo) en vez
+    // de perder oclusiones silenciosamente.
+    private readonly RaycastHit[] _hitsBuffer = new RaycastHit[32];
 
     // Los personajes (jugador y NPCs) no tienen capa propia — viven en Default, igual que la
     // geometría (ver AGENTS.md/CLAUDE.md §2) — así que el filtrado por LayerMask no basta para
@@ -134,17 +135,40 @@ public class CameraOcclusionShadowsOnly : MonoBehaviour
 
         int hitCount = Physics.SphereCastNonAlloc(from, checkRadius, dir, _hitsBuffer, maxOcclusionDist, obstructionMask, QueryTriggerInteraction.Ignore);
 
-        for (int i = 0; i < hitCount; i++)
+        if (hitCount < _hitsBuffer.Length)
         {
-            var renderer = _hitsBuffer[i].collider.GetComponentInParent<Renderer>();
-            if (!renderer) continue;
-            if (IsCharacter(renderer)) continue; // jugador/NPCs nunca se disuelven aunque compartan capa con la geometría
-
-            var entry = GetOrCreateEntry(renderer);
-            entry.LastSeen = now;
+            for (int i = 0; i < hitCount; i++)
+                RegisterHit(_hitsBuffer[i].collider, now);
+        }
+        else
+        {
+            // El buffer se llenó (>= _hitsBuffer.Length impactos): SphereCastNonAlloc NO garantiza
+            // que los impactos devueltos sean los más cercanos a la cámara ni que estén ordenados,
+            // así que el obstáculo real que tapa al jugador puede quedar fuera del buffer y nunca
+            // disolverse (visto en zonas con mucho attrezzo: columnas, rocas, vegetación con
+            // collider). Repetimos con SphereCastAll — sí aloca, pero solo en este caso
+            // excepcional — para no perder oclusiones reales.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning($"[CameraOcclusionShadowsOnly] SphereCastNonAlloc llenó el buffer " +
+                              $"({_hitsBuffer.Length} impactos) — puede haber objetos entre cámara y " +
+                              "jugador sin disolver. Usando SphereCastAll de respaldo este frame.");
+#endif
+            var allHits = Physics.SphereCastAll(from, checkRadius, dir, maxOcclusionDist, obstructionMask, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < allHits.Length; i++)
+                RegisterHit(allHits[i].collider, now);
         }
 
         UpdateEntries(now);
+    }
+
+    private void RegisterHit(Collider collider, float now)
+    {
+        var renderer = collider.GetComponentInParent<Renderer>();
+        if (!renderer) return;
+        if (IsCharacter(renderer)) return; // jugador/NPCs nunca se disuelven aunque compartan capa con la geometría
+
+        var entry = GetOrCreateEntry(renderer);
+        entry.LastSeen = now;
     }
 
     private bool IsCharacter(Renderer renderer)

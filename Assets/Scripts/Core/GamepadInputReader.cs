@@ -24,7 +24,8 @@ namespace Core
         DpadRight,
         Interact,
         LeftShoulder,
-        RightShoulder
+        RightShoulder,
+        ToggleBigMap
     }
 
     public readonly struct InputEvent
@@ -224,6 +225,7 @@ namespace Core
         controls.GamePlay.Start.performed += HandleStart;
         controls.GamePlay.ShoulderLeft.performed += HandleLeftShoulder;
         controls.GamePlay.ShoulderRight.performed += HandleRightShoulder;
+        controls.GamePlay.ToggleBigMap.performed += HandleToggleBigMap;
     }
 
     private static void UnsubscribeInputEvents()
@@ -243,6 +245,7 @@ namespace Core
         _boundControls.GamePlay.Start.performed -= HandleStart;
         _boundControls.GamePlay.ShoulderLeft.performed -= HandleLeftShoulder;
         _boundControls.GamePlay.ShoulderRight.performed -= HandleRightShoulder;
+        _boundControls.GamePlay.ToggleBigMap.performed -= HandleToggleBigMap;
 
         _boundControls = null;
     }
@@ -374,6 +377,11 @@ namespace Core
         Raise(InputEventType.RightShoulder, ctx, Vector2.zero);
     }
 
+    private static void HandleToggleBigMap(InputAction.CallbackContext ctx)
+    {
+        Raise(InputEventType.ToggleBigMap, ctx, Vector2.zero);
+    }
+
     private static void Raise(InputEventType type, InputAction.CallbackContext ctx, Vector2 value)
     {
         Emit(type, value, ctx.phase, applySuppression: true, dedupePerFrame: true);
@@ -466,6 +474,8 @@ namespace Core
             Emit(InputEventType.LeftShoulder, Vector2.zero, InputActionPhase.Performed, applySuppression: true, dedupePerFrame: true);
         if (gp.rightShoulder != null && gp.rightShoulder.wasPressedThisFrame)
             Emit(InputEventType.RightShoulder, Vector2.zero, InputActionPhase.Performed, applySuppression: true, dedupePerFrame: true);
+        if (gp.selectButton != null && gp.selectButton.wasPressedThisFrame)
+            Emit(InputEventType.ToggleBigMap, Vector2.zero, InputActionPhase.Performed, applySuppression: true, dedupePerFrame: true);
     }
 #endif
 

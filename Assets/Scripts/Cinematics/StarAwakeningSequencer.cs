@@ -617,5 +617,31 @@ public class StarAwakeningSequencer : CinematicSequencerBase
 
         panicInputDetector?.StopListening();
         CleanupPanicCallbacks();
+        // FIX: Cleanup() no ocultaba el panel de panic input (icono parpadeante + barra) si la
+        // secuencia se interrumpía durante la Fase 2 — se quedaba visible en pantalla sin que nada
+        // más lo hiciera desaparecer (Deactivate() solo se disparaba antes vía los propios eventos
+        // OnSuccess/OnFailure del detector, ambos ya desuscritos aquí mismo). Deactivate() es segura
+        // de llamar aunque el panel nunca se haya activado.
+        panicInputUI?.Deactivate();
     }
+
+    /// Ver CinematicSequencerBase.OnSkipCleanup(). Reutiliza Cleanup() (ya diseñado como red de
+    /// seguridad genérica para esta secuencia: timeScale, cámara, spawner, proyectil activo, panic
+    /// input) y además resetea el layer de animación superior de Will si Co_WillFiresBack ya lo
+    /// había activado (SetLayerWeight(..., 1f)) antes de que el skip cortara la corrutina.
+    protected override void OnSkipCleanup()
+    {
+        Cleanup();
+        if (willAnimator != null)
+            willAnimator.SetLayerWeight(willUpperBodyLayer, 0f);
+    }
+
+    // El skip se trata siempre como si el jugador hubiera resuelto el panic input con éxito (te
+    // deja avanzar a la pelea, nunca te manda de vuelta al diálogo de fallo con Eldran) — la señal
+    // de éxito no depende de que el proyectil/fireball hayan llegado a colisionar visualmente, solo
+    // desbloquea el combate río abajo (ver el comentario junto a RaiseSignal(signalOutDone) en el
+    // flujo normal). Igual que ese flujo normal, tampoco restaura música: el grafo encadena sin
+    // bifurcación a StartBattleNode, que arranca su propia música de combate.
+    protected override string SkipCompletionSignal => signalOutDone;
+    protected override bool SkipRestoresMusic => false;
 }

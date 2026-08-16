@@ -21,9 +21,14 @@ using UnityEngine.Rendering;
 ///
 /// 13 ago 2026: restaurado el modo QuibliCloud3D (había existido antes, en el commit
 /// cf6ca2002/bfb27c983, y se revirtió en 81d65a9cc por daño colateral en OTROS materiales del
-/// proyecto — no por un problema de este sistema en sí). El alcance sigue siendo el mismo que ya
-/// existía: nubes como aviso previo a la lluvia, no un sistema de nubosidad ambiental
-/// independiente (ver TDD.md §16 Parte B para esa idea, aparcada por ahora).
+/// proyecto — no por un problema de este sistema en sí). El alcance de ESTE componente sigue
+/// siendo el mismo que ya existía: el techo completo como aviso previo a la lluvia/tormenta real.
+///
+/// 15 ago 2026: la nubosidad ambiental independiente (TDD.md §16 Parte B, antes aparcada) ya está
+/// implementada, pero en un componente aparte: <see cref="AmbientCloudDirector"/> +
+/// <see cref="AmbientCloudDrifter"/>. Ese sistema se ocupa de las nubes sueltas que van y vienen
+/// sin relación con la lluvia (y de dejar el cielo nublado un rato tras una tormenta, aclarando
+/// poco a poco); este sigue encargándose solo del techo denso de tormenta real.
 /// </summary>
 public class CloudCoverSpawner : MonoBehaviour
 {

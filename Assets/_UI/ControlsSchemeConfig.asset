@@ -111,3 +111,10 @@ MonoBehaviour:
     keyboardLabelOverride:
     gamepadLabelKey:
     gamepadLabelOverride:
+  - descriptionKey: CONTROLS_BIG_MAP
+    description: Ver mapa grande
+    glyphName: interactable_select
+    keyboardLabelKey:
+    keyboardLabelOverride:
+    gamepadLabelKey:
+    gamepadLabelOverride:

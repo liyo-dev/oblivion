@@ -461,19 +461,26 @@ public class DialogueManager : MonoBehaviour
     /// <summary>
     /// Inicia un diálogo de batalla pre-combate (el jugador mira al NPC y entra en stance de batalla)
     /// </summary>
-    public void StartBattleDialogue(DialogueAsset asset, Transform npc, Action onFinished = null)
+    /// <param name="applyBattlePrep">
+    /// ✅ NUEVO (15 ago 2026): si es false, se salta PreparePlayerForBattleDialogue (giro del
+    /// jugador, camera shake, slowmo, flash rojo). Pensado para encadenar VARIAS líneas de
+    /// batalla seguidas (p.ej. equipos de NPCs donde cada uno dice su propia frase de entrada en
+    /// orden): la primera llamada de la secuencia usa true (efectos de impacto normales), y las
+    /// siguientes usan false para no repetir shake/slowmo/flash en cada línea.
+    /// </param>
+    public void StartBattleDialogue(DialogueAsset asset, Transform npc, Action onFinished = null, bool applyBattlePrep = true)
     {
         _currentNpc = npc;
-        
+
         // Preparar al jugador para el diálogo de batalla
-        if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null && npc != null)
+        if (applyBattlePrep && PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null && npc != null)
         {
             PreparePlayerForBattleDialogue(playerGo, npc);
         }
-        
+
         StartDialogue(asset, onFinished);
     }
-    
+
     /// <summary>
     /// Prepara al jugador para un diálogo previo a batalla: lo gira hacia el NPC y activa stance de batalla
     /// </summary>

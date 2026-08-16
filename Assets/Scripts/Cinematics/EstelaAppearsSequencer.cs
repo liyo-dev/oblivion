@@ -174,6 +174,13 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
     private int _enemyHitLayers;
     private int _enemyCollisionLayers;
 
+    // Handles de Co_FleeWarrior — son corrutinas fire-and-forget (StartCoroutine sin yield return,
+    // ver Co_InsultAndRage) que viven fuera de la cadena de Co_Sequence(): un skip que solo detiene
+    // la corrutina principal NO las para. Sin esto, si se salta durante la huida, los guerreros
+    // siguen corriendo en pantalla varios segundos más tras volver a gameplay. Ver OnSkipCleanup().
+    private Coroutine _fleeWarrior1Coroutine;
+    private Coroutine _fleeWarrior2Coroutine;
+
     // ── Posiciones/rotaciones "de diseño" (las colocadas a mano en el editor) ──
     // Igual que en LiamCrystalBallSequencer._liamDesignPosition: si Estela o los guerreros
     // tienen NavMeshAgent y el punto exacto donde están colocados no cae sobre el NavMesh
@@ -354,6 +361,34 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
     }
 
     private void HandleProfileReadyReapply() => ApplyAlreadyPlayedState("OnProfileReady");
+
+    /// Limpieza al saltar la secuencia (ver CinematicSequencerBase.OnSkipCleanup): deja a arañas y
+    /// guerreros en su estado final (como si la secuencia hubiera terminado con normalidad),
+    /// detiene las corrutinas fire-and-forget de huida si seguían en marcha y marca la secuencia
+    /// como vista — igual que hace el final normal de Co_Sequence().
+    protected override void OnSkipCleanup()
+    {
+        if (_spiderObjects != null)
+            foreach (var spider in _spiderObjects)
+                if (spider != null) spider.SetActive(false);
+
+        if (_fleeWarrior1Coroutine != null) { StopCoroutine(_fleeWarrior1Coroutine); _fleeWarrior1Coroutine = null; }
+        if (_fleeWarrior2Coroutine != null) { StopCoroutine(_fleeWarrior2Coroutine); _fleeWarrior2Coroutine = null; }
+
+        // Si Co_InsultAndRage ya había desactivado el brain para la huida, restaurar la obstacle
+        // avoidance original antes de ocultarlos (mismo criterio que el final normal de
+        // Co_FleeWarrior) — no reactivamos el brain porque, igual que en el flujo normal, el
+        // guerrero queda oculto con SetActive(false), no reincorporado al mundo.
+        if (_warrior1Npc != null && !_warrior1Npc.enabled && _warrior1Agent != null)
+            _warrior1Agent.obstacleAvoidanceType = _warrior1OriginalAvoidance;
+        if (_warrior2Npc != null && !_warrior2Npc.enabled && _warrior2Agent != null)
+            _warrior2Agent.obstacleAvoidanceType = _warrior2OriginalAvoidance;
+
+        if (_warrior1Transform != null) _warrior1Transform.gameObject.SetActive(false);
+        if (_warrior2Transform != null) _warrior2Transform.gameObject.SetActive(false);
+
+        MarkSequencePlayed();
+    }
 
     // ══════════════════════════════════════════════════════════════════════════
     // Secuencia principal
@@ -575,8 +610,8 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
         }
 #endif
 
-        StartCoroutine(Co_FleeWarrior(_warrior1Transform, _warrior1Agent, _warrior1FleeTarget, _warrior1SimpleAnim, _warrior1OriginalAvoidance, "W1"));
-        StartCoroutine(Co_FleeWarrior(_warrior2Transform, _warrior2Agent, _warrior2FleeTarget, _warrior2SimpleAnim, _warrior2OriginalAvoidance, "W2"));
+        _fleeWarrior1Coroutine = StartCoroutine(Co_FleeWarrior(_warrior1Transform, _warrior1Agent, _warrior1FleeTarget, _warrior1SimpleAnim, _warrior1OriginalAvoidance, "W1"));
+        _fleeWarrior2Coroutine = StartCoroutine(Co_FleeWarrior(_warrior2Transform, _warrior2Agent, _warrior2FleeTarget, _warrior2SimpleAnim, _warrior2OriginalAvoidance, "W2"));
 
         yield return new WaitForSeconds(_fleeTimeout);
     }

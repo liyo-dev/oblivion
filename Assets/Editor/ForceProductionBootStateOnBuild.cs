@@ -11,15 +11,15 @@ using UnityEngine.SceneManagement;
 /// Antes de CUALQUIER build (Build, Build And Run, o pipeline por script), fuerza el
 /// estado de arranque de producción para no publicar builds en modo test por descuido:
 ///
-///   - Escena 'Start': GameObject 'START_BootLoader' → desactivado.
-///   - Escena 'Start': GameObject 'START_Dedication' → activado.
+///   - Escena 'Start': GameObject 'START_BootLoader' → activado (carga SplashScreen).
+///   - Escena 'Start': GameObject 'START_Dedication' → desactivado (de momento, sin usar).
 ///   - GameBootProfile.asset: 'usePresetInsteadOfSave' → false.
 ///
-/// Motivo: en modo testeo se activa BootLoader (carga rápida a una escena de test) y/o
-/// usePresetInsteadOfSave (arranca desde un bootPreset en vez del save real). Si eso se
-/// cuela en una build, el juego no arranca desde Dedication/MainMenu con el flujo real
-/// de guardado. Este hook corrige el estado automáticamente para que nunca haya que
-/// acordarse a mano (ver CLAUDE.md § 1 y TDD.md § 10 sobre invariantes de arranque).
+/// Motivo: en modo testeo puede quedar BootLoader desactivado (saltándose el splash) y/o
+/// usePresetInsteadOfSave activo (arranca desde un bootPreset en vez del save real). Si eso
+/// se cuela en una build, el juego no arranca con el flujo real de splash → save. Este hook
+/// corrige el estado automáticamente para que nunca haya que acordarse a mano (ver
+/// CLAUDE.md § 1 y TDD.md § 10 sobre invariantes de arranque).
 ///
 /// También expone un ítem de menú para aplicar la misma corrección manualmente sin
 /// lanzar una build, por si se quiere dejar el proyecto "listo para build" de antemano.
@@ -40,7 +40,7 @@ public class ForceProductionBootStateOnBuild : IPreprocessBuildWithReport
         ApplyProductionBootState();
     }
 
-    [MenuItem("El Sendero/Build/Aplicar estado de Build (BootLoader OFF / Dedication ON)")]
+    [MenuItem("El Sendero/Build/Aplicar estado de Build (BootLoader ON / Dedication OFF)")]
     public static void ApplyProductionBootStateMenuItem()
     {
         ApplyProductionBootState();
@@ -83,14 +83,14 @@ public class ForceProductionBootStateOnBuild : IPreprocessBuildWithReport
         }
 
         bool changed = false;
-        changed |= SetObjectActiveIfNeeded(scene, BootLoaderObjectName, false);
-        changed |= SetObjectActiveIfNeeded(scene, DedicationObjectName, true);
+        changed |= SetObjectActiveIfNeeded(scene, BootLoaderObjectName, true);
+        changed |= SetObjectActiveIfNeeded(scene, DedicationObjectName, false);
 
         if (changed)
         {
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
-            Debug.Log("[ForceProductionBootStateOnBuild] ✅ Estado de build forzado en 'Start': START_BootLoader OFF / START_Dedication ON.");
+            Debug.Log("[ForceProductionBootStateOnBuild] ✅ Estado de build forzado en 'Start': START_BootLoader ON / START_Dedication OFF.");
         }
 
         if (openedByUs)

@@ -48,18 +48,42 @@ public class QuestKillContributor : MonoBehaviour
 
     private void HandleDied()
     {
+        // FIX INC-ARANAS-0-DE-4 (14 ago 2026): bug reportado por Raúl — mataba arañas sin límite y
+        // el contador de la quest se quedaba siempre en "0/4". Todas las ramas de salida temprana de
+        // este método eran completamente silenciosas (sin log ni siquiera con debugLogs activado, que
+        // solo cubría el camino de ÉXITO) — así que un fallo aquí era indistinguible de "esta muerte
+        // no debía contar por diseño". Ahora cada salida deja rastro en consola (bajo debugLogs, igual
+        // que el resto del componente) para poder ver de un vistazo cuál de las cuatro condiciones
+        // (questId vacío, QuestManager.Instance null, quest no Activa, o ya sin steps pendientes) es
+        // la que está bloqueando el progreso la próxima vez que se reproduzca.
         if (string.IsNullOrEmpty(questId))
+        {
+            if (debugLogs)
+                Debug.LogWarning($"[QuestKillContributor:{name}] ❌ questId vacío en el prefab — esta muerte no cuenta para ninguna quest.");
             return;
+        }
 
         var qm = QuestManager.Instance;
         if (qm == null)
+        {
+            if (debugLogs)
+                Debug.LogWarning($"[QuestKillContributor:{name}] ❌ QuestManager.Instance es null.");
             return;
+        }
 
         if (onlyIfQuestActive && qm.GetState(questId) != QuestState.Active)
+        {
+            if (debugLogs)
+                Debug.Log($"[QuestKillContributor:{name}] ℹ️ Quest '{questId}' no está Activa (estado actual: {qm.GetState(questId)}) — esta muerte no cuenta.");
             return;
+        }
 
         if (qm.AreAllStepsCompleted(questId))
+        {
+            if (debugLogs)
+                Debug.Log($"[QuestKillContributor:{name}] ℹ️ Quest '{questId}' ya no tiene steps pendientes — esta muerte no cuenta.");
             return; // nada pendiente para esta quest (p.ej. ya se mataron todos los enemigos requeridos)
+        }
 
         foreach (var runtimeQuest in qm.GetAll())
         {
@@ -80,5 +104,8 @@ public class QuestKillContributor : MonoBehaviour
 
             break;
         }
+
+        if (debugLogs)
+            Debug.LogWarning($"[QuestKillContributor:{name}] ⚠️ Quest '{questId}' no se encontró en qm.GetAll() (¿questId con typo o quest nunca añadida vía AddQuest/StartQuest?).");
     }
 }

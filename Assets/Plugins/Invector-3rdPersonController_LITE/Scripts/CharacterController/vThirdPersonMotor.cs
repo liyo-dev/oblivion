@@ -138,7 +138,15 @@ namespace Invector.vCharacterController
         public void Init()
         {
             animator = GetComponent<Animator>();
-            animator.updateMode = AnimatorUpdateMode.Fixed;
+            // FIX (15 ago): "Fixed" ataba la pose visual del Animator a la cadencia física (~50Hz)
+            // incluso después de que el FIX del 14 ago (ver vThirdPersonInput.Update) moviera
+            // UpdateMotor/ControlLocomotionType/ControlRotationType/AirVelocity a Update() para
+            // igualar la cadencia de vThirdPersonCamera (LateUpdate, cada frame renderizado). A
+            // framerates > 50fps la cámara se recalculaba cada frame pero el cuerpo animado del
+            // personaje solo se reevaluaba 50 veces por segundo — mismo síntoma de "lentitud/mareo"
+            // reportado en la demo, esta vez en la capa de animación en vez de en la de movimiento
+            // lógico. "Normal" reevalúa el Animator cada frame renderizado, igual que la cámara.
+            animator.updateMode = AnimatorUpdateMode.Normal;
 
             // slides the character through walls and edges
             frictionPhysics = new PhysicsMaterial();

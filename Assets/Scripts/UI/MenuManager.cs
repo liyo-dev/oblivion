@@ -11,7 +11,8 @@ public enum MenuKind
     Pause,
     Dialog,
     Mission, // Menú de misiones principal
-    GameOver // Menú de Game Over
+    GameOver, // Menú de Game Over
+    BigMap // Mapa grande (minimapa ampliado, ver BigMapController)
     // Agregar aquí otros menús principales si es necesario
 }
 
@@ -123,6 +124,9 @@ public static class MenuManager
                     break;
                 case MenuKind.Mission:
                     stillOpen = QuestMenuManager.IsAnyQuestMenuOpen || GameState.Is(GamePhase.QuestMenu);
+                    break;
+                case MenuKind.BigMap:
+                    stillOpen = BigMapController.IsOpen;
                     break;
                 default:
                     stillOpen = val;

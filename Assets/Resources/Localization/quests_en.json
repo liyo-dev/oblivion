@@ -334,19 +334,83 @@
         },
         {
             "key": "QUEST_TENDERA_ALGAS_DESC",
-            "value": "Get 2 fresh algae for Barbara."
+            "value": "Get 2 magic potions for Barbara."
         },
         {
             "key": "QUEST_TENDERA_ALGAS_DETAIL",
-            "value": "Barbara needs fresh algae to prepare an urgent remedy. Get 2 algae and bring them to her."
+            "value": "Barbara needs magic potions for her remedies. Bring her 2 and she’ll give you fresh algae in return."
         },
         {
             "key": "QUEST_TENDERA_ALGAS_STEP01_DESC",
-            "value": "Get 2 fresh algae and give them to Barbara."
+            "value": "Get 2 magic potions and give them to Barbara."
         },
         {
             "key": "READ_THE_LETTER_DESC",
             "value": "Read the letter on the side table."
+        },
+        {
+            "key": "Q_TABERNERA_ALGAS",
+            "value": "The Hangover Remedy"
+        },
+        {
+            "key": "QUEST_TABERNERA_ALGAS_DESC",
+            "value": "Help Rosa, the tavernkeeper, prepare her hangover remedy."
+        },
+        {
+            "key": "QUEST_TABERNERA_ALGAS_DETAIL",
+            "value": "Rosa needs seaweed to prepare her famous hangover remedy. Bring her 2 seaweed and she'll reward you with some coin."
+        },
+        {
+            "key": "QUEST_TABERNERA_ALGAS_STEP01_DESC",
+            "value": "Get 2 seaweed for Rosa."
+        },
+        {
+            "key": "Q_MANUEL_POCIONES",
+            "value": "Potions for Grandma"
+        },
+        {
+            "key": "QUEST_MANUEL_POCIONES_DESC",
+            "value": "Help Manuel get health potions for his grandmother."
+        },
+        {
+            "key": "QUEST_MANUEL_POCIONES_DETAIL",
+            "value": "Manuel's grandmother has been feeling weak for days. Get 2 health potions and bring them to him."
+        },
+        {
+            "key": "QUEST_MANUEL_POCIONES_STEP01_DESC",
+            "value": "Get 2 health potions for Manuel."
+        },
+        {
+            "key": "Q_NORA_POCIONES",
+            "value": "Supplies for the Spell"
+        },
+        {
+            "key": "QUEST_NORA_POCIONES_DESC",
+            "value": "Help Nora get magic potions for a spell she wants to try."
+        },
+        {
+            "key": "QUEST_NORA_POCIONES_DETAIL",
+            "value": "Nora wants to try a new spell, but needs 3 magic potions for enough energy. She'll pay you back well in return."
+        },
+        {
+            "key": "QUEST_NORA_POCIONES_STEP01_DESC",
+            "value": "Get 3 magic potions for Nora."
+        },
+        {
+            "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_NAME",
+            "value": "A Safe Place"
+        },
+        {
+            "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_DESC",
+            "value": "Eldran shows you a Save Point."
+        },
+        {
+            "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_DETAIL",
+            "value": "Before going his own way, Eldran wants to show you a Save Point: here you can save your game and rest to recover your health and mana."
+        },
+        {
+            "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_STEP01_DESC",
+            "value": "Listen to what Eldran has to say about the Save Point."
         }
     ]
 }

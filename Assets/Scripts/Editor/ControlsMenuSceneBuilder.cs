@@ -314,8 +314,15 @@ public static class ControlsMenuSceneBuilder
         var scrollGo = new GameObject("Scroll", typeof(RectTransform));
         scrollGo.transform.SetParent(panelGo.transform, false);
         var scrollRt = (RectTransform)scrollGo.transform;
-        scrollRt.anchorMin = new Vector2(0.08f, 0.08f);
-        scrollRt.anchorMax = new Vector2(0.92f, 0.9f);
+        // y=0.05/0.94 (en vez de 0.08/0.9): con 15 entradas en ControlsSchemeConfig y grid a 2
+        // columnas, la última fila queda sola (15 es impar) y necesita 8 filas de alto en total. Con
+        // el margen original (0.08/0.9 → 885px de viewport en 1080p) esa 8ª fila —justo la más
+        // nueva, "Ver mapa grande"/mapa— quedaba mayormente tapada por el RectMask2D del Viewport y
+        // solo se veía un borde asomando por abajo: sin scrollbar visible ni ningún indicio de que
+        // hubiera más contenido, se percibía como un elemento que "se escondía" en vez de una lista
+        // con scroll. Ver también grid.cellSize/grid.spacing más abajo (mismo ajuste, por el otro lado).
+        scrollRt.anchorMin = new Vector2(0.08f, 0.05f);
+        scrollRt.anchorMax = new Vector2(0.92f, 0.94f);
         scrollRt.offsetMin = Vector2.zero;
         scrollRt.offsetMax = Vector2.zero;
 
@@ -353,7 +360,7 @@ public static class ControlsMenuSceneBuilder
         grid.childAlignment = TextAnchor.UpperCenter;
         grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         grid.constraintCount = columns;
-        grid.spacing = new Vector2(18f, 20f);
+        grid.spacing = new Vector2(18f, 15f);
         grid.padding = new RectOffset(4, 4, 8, 8);
 
         // El ancho de celda se calcula a partir del ancho REAL del Viewport ya resuelto por Unity
@@ -363,7 +370,7 @@ public static class ControlsMenuSceneBuilder
         float viewportWidth = viewportRt.rect.width;
         if (viewportWidth <= 1f) viewportWidth = 900f; // red de seguridad si el layout aún no se resolvió
         float cellWidth = (viewportWidth - grid.padding.left - grid.padding.right - grid.spacing.x * (columns - 1)) / columns;
-        grid.cellSize = new Vector2(Mathf.Max(120f, cellWidth), 104f);
+        grid.cellSize = new Vector2(Mathf.Max(120f, cellWidth), 94f);
 
         var csf = contentGo.AddComponent<ContentSizeFitter>();
         csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;

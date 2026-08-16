@@ -95,6 +95,9 @@ namespace Game.NPC
         Transform _player;
         Transform _combatTarget; // Objetivo actual de ataque (jugador o miembro del equipo)
         NPCShieldController _shieldController;
+        // ✅ FIX #15 (auditoría combate, 15 ago 2026): antes se llamaba GetComponent<LevitationTarget>()
+        // cada vez que corría la corrutina State_Attack. Se cachea en Initialize() como el resto de deps.
+        LevitationTarget _levitationTarget;
         // FSM State
         public enum CombatState { EVALUATE, REPOSITION, ATTACK, DEFENSE, SEARCHING, HIDING_TO_RECHARGE }
         [SerializeField, ReadOnly] private CombatState _currentState; // Visible debug
@@ -139,9 +142,24 @@ namespace Game.NPC
         private Collider[] _coverBuffer = new Collider[32];
         private Collider[] _obstacleBuffer = new Collider[32];
         private RaycastHit[] _raycastBuffer = new RaycastHit[32];
+        // ✅ FIX #11 (auditoría combate, 15 ago 2026): buffer para HasClearSpace (antes Physics.OverlapCapsule
+        // alocaba un array nuevo en cada llamada; se usa OverlapCapsuleNonAlloc con este buffer reutilizable).
+        private Collider[] _clearSpaceBuffer = new Collider[16];
         
         // ✅ OPTIMIZACIÓN: NavMeshPath reutilizable (evita allocations en MoveTo)
         private NavMeshPath _reusablePath;
+
+        // ✅ FIX #20 (auditoría combate, 15 ago 2026): LayerMask.GetMask cacheado (antes se
+        // recalculaba en cada llamada a HasIncomingProjectileThreat, incluida desde Update
+        // indirectamente vía IsPlayerAttacking).
+        // ⚠️ CORRECCIÓN 16 ago 2026: NO puede ser "static readonly" en un MonoBehaviour — el
+        // inicializador de un campo static se ejecuta en el constructor estático del tipo (.cctor),
+        // y Unity prohíbe llamar a LayerMask.NameToLayer ahí ("not allowed to be called from a
+        // MonoBehaviour constructor or instance field initializer"). Si el .cctor lanza una
+        // excepción una sola vez, el CLR marca el TIPO ENTERO como roto para siempre — cada NPC que
+        // use NPCCombatBrain (Lety, Vicky, Erika...) empieza a lanzar TypeInitializationException
+        // en cada frame. Se cachea como campo de instancia normal, asignado en Initialize().
+        private int _projectileThreatMask;
         
         Coroutine _fsmRoutine;
         bool _isActive;
@@ -159,6 +177,8 @@ namespace Game.NPC
             _animator = _ctx.Animator;
             _rawAnimator = _ctx.UnityAnimator;
             _shieldController = GetComponent<NPCShieldController>();
+            _levitationTarget = GetComponent<LevitationTarget>();
+            _projectileThreatMask = LayerMask.GetMask("PlayerProjectile", "Projectile", "ProjectilePlayer", "MagicProjectile");
 
             // Configurar NavMesh para movimiento fluido
             _agent.updateRotation = false; // Controlamos la rotación manualmente para encarar al player
@@ -173,9 +193,21 @@ namespace Game.NPC
         {
             settings = newSettings;
             _config = config; // Guardar referencia al config
-            
+
             if (_fsmRoutine != null) StopCoroutine(_fsmRoutine);
-            
+
+            // ✅ FIX #4 (auditoría combate, 15 ago 2026): esta instancia persiste entre
+            // StopCombat()/BeginCombat() (el NPC no se destruye), así que sin este reset,
+            // reenganchar combate retomaba _currentState donde se había quedado (p.ej.
+            // HIDING_TO_RECHARGE) en vez de EVALUATE, saltándose toda la evaluación inicial
+            // (línea de visión, distancia de peligro, amenazas entrantes, línea de fuego), y una
+            // estrategia de engaño a medio completar podía arrastrarse a un combate nuevo.
+            _currentState = CombatState.EVALUATE;
+            _previousState = CombatState.EVALUATE;
+            _isUsingDeceptionStrategy = false;
+            _attacksReservedForAmbush = 0;
+            _lastStateChangeTime = Time.time;
+
             // Buscar player si no existe
             if (_ctx.Player == null)
                  _ctx.Player = PlayerService.PlayerTransform;
@@ -205,6 +237,32 @@ namespace Game.NPC
             if (_fsmRoutine != null) StopCoroutine(_fsmRoutine);
             if (_agent.enabled && _agent.isOnNavMesh) _agent.isStopped = true;
             _animator.SetBattleMode(false);
+
+            // ✅ FIX #12 (auditoría combate, 15 ago 2026): si el combate termina (por distancia o
+            // por derrota) mientras el NPC está defendiendo, el escudo no se destruía ni
+            // reseteaba hasta que expirase su propio timer interno — podía quedar flotando y
+            // bloqueando proyectiles varios segundos después de que el NPC ya no estuviera en
+            // combate (o incluso sobre su cadáver).
+            _shieldController?.StopDefending();
+        }
+
+        /// <summary>
+        /// ✅ FIX #19 (auditoría combate, 15 ago 2026): detiene y reinicia limpiamente la FSM de
+        /// combate. Reemplaza el uso externo de StopAllCoroutines() desde
+        /// NPCCombatLifecycleHandler.OnDamaged al interrumpir un hechizo en curso. Ese método
+        /// paraba _fsmRoutine pero NUNCA lo volvía a arrancar (los únicos 3 sitios que reinician
+        /// FSM_Loop son BeginCombat y las dos ramas de OnTakeDamage para
+        /// SEARCHING/HIDING_TO_RECHARGE/REPOSITION — ATTACK, que es el único estado real en que
+        /// _isCasting es true, no está en esa lista) — un NPC golpeado mientras casteaba se
+        /// quedaba con la IA de combate parada para siempre. Este método para Y reinicia en
+        /// EVALUATE, igual que ya hace OnTakeDamage para los otros estados vulnerables.
+        /// </summary>
+        public void InterruptCasting()
+        {
+            if (!_isActive) return;
+            if (_fsmRoutine != null) StopCoroutine(_fsmRoutine);
+            _currentState = CombatState.EVALUATE;
+            _fsmRoutine = StartCoroutine(FSM_Loop());
         }
         
         public float GetCurrentMana() => _currentMana;
@@ -236,7 +294,9 @@ namespace Game.NPC
                 _currentState == CombatState.HIDING_TO_RECHARGE ||
                 _currentState == CombatState.REPOSITION)
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ ¡ATACADO{(attackedFromBehind ? " POR LA ESPALDA" : "")}! Estado: {_currentState}");
+                #endif
                 
                 // GIRAR hacia la fuente del daño
                 if (directionToDamage.sqrMagnitude > 0.01f)
@@ -248,7 +308,9 @@ namespace Game.NPC
                 if (_animator != null)
                 {
                     _animator.PlaySenseSomething();
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] 🎬 Reproduciendo animación SenseSomethingStart_NoWeapon");
+                    #endif
                 }
                 
                 // Decidir reacción según situación
@@ -257,7 +319,9 @@ namespace Game.NPC
                 if (attacksAvailable > 0)
                 {
                     // Tiene ataques → Contraatacar
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] ⚡ Contratatacando inmediatamente");
+                    #endif
                     StopAllCoroutines();
                     _currentState = CombatState.EVALUATE;
                     _fsmRoutine = StartCoroutine(FSM_Loop());
@@ -265,7 +329,9 @@ namespace Game.NPC
                 else if (settings.useShield && _shieldController != null && _shieldCd <= 0)
                 {
                     // No tiene ataques pero tiene escudo → Defender
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Activando escudo defensivo");
+                    #endif
                     StopAllCoroutines();
                     _currentState = CombatState.DEFENSE;
                     _fsmRoutine = StartCoroutine(FSM_Loop());
@@ -273,7 +339,9 @@ namespace Game.NPC
                 else
                 {
                     // No tiene ataques ni escudo → Seguir huyendo/buscando
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] 🏃 Continúa huyendo - sin recursos para contraatacar");
+                    #endif
                 }
             }
         }
@@ -352,7 +420,9 @@ namespace Game.NPC
             _currentState = newState;
             _lastStateChangeTime = Time.time;
             
+            #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[CombatBrain:{gameObject.name}] 🔄 Cambio de estado: {_previousState} → {newState}");
+            #endif
             return true;
         }
         
@@ -407,7 +477,9 @@ namespace Game.NPC
             // ✅ A. PRIORIDAD MÁXIMA: Si no veo al jugador → BUSCAR
             if (!_hasLineOfSight)
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Sin línea de visión - Iniciando búsqueda");
+                #endif
                 _currentState = CombatState.SEARCHING;
                 yield break;
             }
@@ -420,7 +492,9 @@ namespace Game.NPC
             // ✅ B. Si está demasiado cerca (zona de peligro) → HUIR
             if (dist < settings.minSafeDistance)
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Player demasiado cerca ({dist:F1}m < {settings.minSafeDistance}m) - Reposicionando");
+                #endif
                 _currentState = CombatState.REPOSITION;
                 yield break;
             }
@@ -430,7 +504,9 @@ namespace Game.NPC
             {
                 bool canShieldNow = settings.useShield && _shieldController != null && _shieldCd <= 0f;
                 _currentState = canShieldNow ? CombatState.DEFENSE : CombatState.REPOSITION;
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] ⚡ Amenaza entrante detectada - {(canShieldNow ? "defensa con escudo" : "esquiva/reposición")}");
+                #endif
                 yield break;
             }
             
@@ -438,8 +514,23 @@ namespace Game.NPC
             // Si no hay línea de fuego clara, moverse a mejor posición
             if (!HasClearLineOfFire())
             {
-                Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Sin línea de fuego clara - Buscando mejor posición");
-                _currentState = CombatState.REPOSITION;
+                // ✅ FIX #18 (auditoría combate, 15 ago 2026): esta es la transición con más riesgo
+                // real de "nerviosismo" (un NPC justo al filo de tener línea de fuego puede
+                // entrar/salir de REPOSITION en frames consecutivos por pequeños movimientos del
+                // player o de un obstáculo). Se conecta aquí TryChangeState (antes código muerto,
+                // nadie lo llamaba) para aplicar el mínimo de 1.5s entre cambios documentado en su
+                // comentario original. El resto de transiciones de State_Evaluate (huir por
+                // distancia de peligro, buscar, atacar, recargar) se dejan inmediatas a propósito
+                // — son decisiones urgentes/decisivas, no casos de parpadeo cosmético.
+                if (TryChangeState(CombatState.REPOSITION))
+                {
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Sin línea de fuego clara - Buscando mejor posición");
+                    #endif
+                    yield break;
+                }
+                // Aún no toca cambiar (anti-nerviosismo) — esperamos un momento y reevaluamos
+                yield return new WaitForSeconds(0.2f);
                 yield break;
             }
 
@@ -451,7 +542,9 @@ namespace Game.NPC
             {
                 bool canShieldNow = settings.useShield && _shieldController != null && _shieldCd <= 0f;
                 _currentState = canShieldNow ? CombatState.DEFENSE : CombatState.HIDING_TO_RECHARGE;
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] 🔋 Maná bajo ({_currentMana:F1}/{_maxMana:F1}) - priorizando {(canShieldNow ? "defensa" : "cobertura/recarga")}");
+                #endif
                 yield break;
             }
             
@@ -471,7 +564,9 @@ namespace Game.NPC
                     _isUsingDeceptionStrategy = true;
                     _attacksReservedForAmbush = Mathf.Min(attacksReady, settings.minAttacksToKeepForAmbush);
                     
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] 🎭 ESTRATEGIA DE ENGAÑO ACTIVADA - Fingiendo quedarse sin magia (reservando {_attacksReservedForAmbush} ataques para emboscada)");
+                    #endif
                     
                     // Ir a esconderse fingiendo necesitar recarga
                     _currentState = CombatState.HIDING_TO_RECHARGE;
@@ -488,14 +583,18 @@ namespace Game.NPC
                 if (dist <= settings.maxDistance && _globalCd <= 0)
                 {
                     // En rango y sin cooldown global → ATACAR
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] ⚔️ Atacando - {attacksReady} ataques disponibles{(_isUsingDeceptionStrategy ? " (EMBOSCADA EN CURSO)" : "")}");
+                    #endif
                     _currentState = CombatState.ATTACK;
                     yield break;
                 }
                 else if (dist > settings.maxDistance)
                 {
                     // Muy lejos → Acercarse primero
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] 🚶 Acercándose al player ({dist:F1}m > {settings.maxDistance}m)");
+                    #endif
                     MoveTo(_player.position, settings.walkSpeed);
                     yield return new WaitForSeconds(0.5f);
                 }
@@ -511,12 +610,16 @@ namespace Game.NPC
                 bool canShieldNow = settings.useShield && _shieldController != null && _shieldCd <= 0f;
                 if (canShieldNow)
                 {
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Sin ataques disponibles - priorizando escudo antes de recargar");
+                    #endif
                     _currentState = CombatState.DEFENSE;
                 }
                 else
                 {
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] 🔋 Sin ataques disponibles - Necesito esconderme para recargar (REAL)");
+                    #endif
                     _currentState = CombatState.HIDING_TO_RECHARGE;
                 }
                 
@@ -598,18 +701,25 @@ namespace Game.NPC
             };
         }
         
+        // ✅ FIX #22 (auditoría combate, 15 ago 2026): epsilon único compartido — antes
+        // HasManaForSlot toleraba 0.001f de déficit pero TrySpendManaForSlot exigía el coste
+        // exacto, así que con maná entre manaCost-0.001f y manaCost (sin llegar) la FSM decidía
+        // atacar (HasManaForSlot aprobaba) pero el gasto real fallaba (TrySpendManaForSlot
+        // rechazaba), cancelando un ataque ya comprometido/animado.
+        private const float MANA_EPSILON = 0.001f;
+
         private bool HasManaForSlot(int slotIndex)
         {
             float manaCost = GetManaCostForSlot(slotIndex);
-            return _currentMana + 0.001f >= manaCost;
+            return _currentMana + MANA_EPSILON >= manaCost;
         }
-        
+
         private bool TrySpendManaForSlot(int slotIndex)
         {
             float manaCost = GetManaCostForSlot(slotIndex);
             if (manaCost <= 0f) return true;
-            if (_currentMana < manaCost) return false;
-            
+            if (_currentMana + MANA_EPSILON < manaCost) return false;
+
             _currentMana = Mathf.Max(0f, _currentMana - manaCost);
             _lastManaSpendTime = Time.time;
             NotifyManaChanged();
@@ -698,7 +808,9 @@ namespace Game.NPC
                 
                 if (targetPos != transform.position)
                 {
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] 🏃 Huyendo a posición segura: {targetPos}");
+                    #endif
                     MoveTo(targetPos, settings.runSpeed);
                     
                     // Esperar hasta llegar o 3 segundos máx
@@ -711,7 +823,9 @@ namespace Game.NPC
                         if (_hasLineOfSight && HasClearLineOfFire() && 
                             Vector3.Distance(transform.position, _player.position) >= settings.minSafeDistance)
                         {
+                            #if UNITY_EDITOR || DEVELOPMENT_BUILD
                             Debug.Log($"[CombatBrain:{gameObject.name}] ✅ Posición segura alcanzada durante huida");
+                            #endif
                             break;
                         }
                         
@@ -728,7 +842,9 @@ namespace Game.NPC
                 
                 if (betterPos != transform.position)
                 {
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] 🎯 Moviéndose a mejor posición de tiro: {betterPos}");
+                    #endif
                     MoveTo(betterPos, settings.walkSpeed);
                     
                     float timer = 0;
@@ -739,7 +855,9 @@ namespace Game.NPC
                         // Si durante el movimiento obtenemos línea de fuego, parar
                         if (HasClearLineOfFire())
                         {
+                            #if UNITY_EDITOR || DEVELOPMENT_BUILD
                             Debug.Log($"[CombatBrain:{gameObject.name}] ✅ Línea de fuego obtenida durante movimiento");
+                            #endif
                             break;
                         }
                         
@@ -751,7 +869,9 @@ namespace Game.NPC
                 else
                 {
                     // No encontró mejor posición - esperar un momento
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ No se encontró mejor posición de tiro - esperando");
+                    #endif
                     yield return new WaitForSeconds(0.5f);
                 }
             }
@@ -759,7 +879,9 @@ namespace Game.NPC
             // ✅ Al terminar, verificar estado
             if (!_hasLineOfSight)
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Perdió visión del jugador tras reposicionarse - BUSCANDO");
+                #endif
 
                 if (_animator != null)
                 {
@@ -799,13 +921,13 @@ namespace Game.NPC
             if (NavMesh.SamplePosition(targetPos, out NavMeshHit navHit, 3f, NavMesh.AllAreas))
             {
                 // Verificar que hay un camino válido
-                NavMeshPath path = new NavMeshPath();
-                if (_agent.enabled && _agent.isOnNavMesh && _agent.CalculatePath(navHit.position, path) && path.status == NavMeshPathStatus.PathComplete)
+                // ✅ FIX #14 (auditoría combate, 15 ago 2026): reutiliza _reusablePath en vez de allocar
+                if (_agent.enabled && _agent.isOnNavMesh && _agent.CalculatePath(navHit.position, _reusablePath) && _reusablePath.status == NavMeshPathStatus.PathComplete)
                 {
                     return navHit.position;
                 }
             }
-            
+
             // Fallback: intentar posiciones laterales
             Vector3 right = Vector3.Cross(Vector3.up, dirAway).normalized;
             Vector3[] alternatives = {
@@ -819,14 +941,14 @@ namespace Game.NPC
             {
                 if (NavMesh.SamplePosition(altPos, out navHit, 2f, NavMesh.AllAreas))
                 {
-                    NavMeshPath path = new NavMeshPath();
-                    if (_agent.enabled && _agent.isOnNavMesh && _agent.CalculatePath(navHit.position, path) && path.status == NavMeshPathStatus.PathComplete)
+                    // ✅ FIX #14 (auditoría combate, 15 ago 2026): reutiliza _reusablePath en vez de allocar
+                    if (_agent.enabled && _agent.isOnNavMesh && _agent.CalculatePath(navHit.position, _reusablePath) && _reusablePath.status == NavMeshPathStatus.PathComplete)
                     {
                         return navHit.position;
                     }
                 }
             }
-            
+
             // No encontró ninguna posición válida
             return transform.position;
         }
@@ -866,8 +988,8 @@ namespace Game.NPC
                     Vector3 candidatePos = navHit.position;
                     
                     // Verificar camino válido
-                    NavMeshPath path = new NavMeshPath();
-                    if (!_agent.enabled || !_agent.isOnNavMesh || !_agent.CalculatePath(candidatePos, path) || path.status != NavMeshPathStatus.PathComplete)
+                    // ✅ FIX #14 (auditoría combate, 15 ago 2026): reutiliza _reusablePath en vez de allocar
+                    if (!_agent.enabled || !_agent.isOnNavMesh || !_agent.CalculatePath(candidatePos, _reusablePath) || _reusablePath.status != NavMeshPathStatus.PathComplete)
                         continue;
                     
                     // Simular línea de fuego desde esa posición
@@ -914,10 +1036,11 @@ namespace Game.NPC
         IEnumerator State_Attack()
         {
             // ✅ Verificar si está siendo levitado - no puede atacar
-            var levitationTarget = GetComponent<LevitationTarget>();
-            if (levitationTarget != null && levitationTarget.IsBeingLevitated)
+            if (_levitationTarget != null && _levitationTarget.IsBeingLevitated)
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Ataque cancelado - NPC está siendo levitado");
+                #endif
                 yield return new WaitForSeconds(0.5f);
                 yield break;
             }
@@ -925,7 +1048,9 @@ namespace Game.NPC
             // ✅ Verificar que tengamos línea de visión antes de atacar
             if (!_hasLineOfSight)
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Ataque cancelado - Sin línea de visión");
+                #endif
                 _currentState = CombatState.SEARCHING;
                 yield break;
             }
@@ -933,7 +1058,9 @@ namespace Game.NPC
             // ✅ NUEVO: Verificar que tenemos línea de fuego clara (sin obstáculos en el camino)
             if (!HasClearLineOfFire())
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Ataque cancelado - Obstáculo bloqueando línea de fuego, reposicionando...");
+                #endif
                 _currentState = CombatState.REPOSITION;
                 yield break;
             }
@@ -953,7 +1080,9 @@ namespace Game.NPC
                 // ✅ Verificar visión de nuevo antes de ejecutar el ataque
                 if (!_hasLineOfSight)
                 {
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Ataque cancelado durante windup - Perdida línea de visión");
+                    #endif
                     _currentState = CombatState.SEARCHING;
                     yield break;
                 }
@@ -961,7 +1090,9 @@ namespace Game.NPC
                 // ✅ NUEVO: Verificar línea de fuego de nuevo antes de disparar
                 if (!HasClearLineOfFire())
                 {
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Ataque cancelado durante windup - Obstáculo apareció en línea de fuego");
+                    #endif
                     _currentState = CombatState.REPOSITION;
                     yield break;
                 }
@@ -969,7 +1100,9 @@ namespace Game.NPC
                 // Consumir maná al confirmar ejecución del hechizo
                 if (!TrySpendManaForSlot(chosenAttack.slotIndex))
                 {
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Ataque cancelado: maná insuficiente en ejecución");
+                    #endif
                     _currentState = CombatState.HIDING_TO_RECHARGE;
                     yield break;
                 }
@@ -991,7 +1124,9 @@ namespace Game.NPC
                     // ✅ Verificar visión ANTES de disparar
                     if (!_hasLineOfSight)
                     {
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Disparo cancelado - Jugador se escondió durante animación");
+                        #endif
                         _currentState = CombatState.SEARCHING;
                         yield break;
                     }
@@ -999,7 +1134,9 @@ namespace Game.NPC
                     // ✅ NUEVO: Verificación final de línea de fuego
                     if (!HasClearLineOfFire())
                     {
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Disparo cancelado - Obstáculo en línea de fuego");
+                        #endif
                         _currentState = CombatState.REPOSITION;
                         yield break;
                     }
@@ -1014,7 +1151,9 @@ namespace Game.NPC
                 // ✅ Verificar visión DESPUÉS del ataque
                 if (!_hasLineOfSight)
                 {
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Jugador se escondió después del ataque - Iniciando búsqueda");
+                    #endif
                     _currentState = CombatState.SEARCHING;
                     yield break;
                 }
@@ -1053,7 +1192,9 @@ namespace Game.NPC
             bool canShieldNow = settings.useShield && _shieldController != null && _shieldCd <= 0f;
             if (canShieldNow)
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Activando ESCUDO defensivo por {settings.shieldDuration:F1}s");
+                #endif
                 
                 _shieldController.StartDefending(settings.shieldDuration);
                 _shieldCd = settings.shieldCooldown + settings.shieldDuration;
@@ -1104,7 +1245,9 @@ namespace Game.NPC
                 }
                 
                 StopMove();
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] ✅ Escudo completado - volviendo a evaluar");
+                #endif
                 _currentState = CombatState.EVALUATE;
                 yield break;
             }
@@ -1115,13 +1258,17 @@ namespace Game.NPC
             {
                 if (_shieldCd > 0)
                 {
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] ⏳ Escudo en cooldown ({_shieldCd:F1}s) - buscando cobertura");
+                    #endif
                 }
                 
                 Vector3 coverPos;
                 if (TryGetCoverPosition(out coverPos))
                 {
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] 🌳 Corriendo hacia cobertura para recargar");
+                    #endif
                     MoveTo(coverPos, settings.runSpeed);
                     
                     float timeout = 3f;
@@ -1131,18 +1278,24 @@ namespace Game.NPC
                         yield return null;
                     }
                     
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] ⏳ Esperando tras cobertura, recargando cooldowns...");
+                    #endif
                     yield return new WaitForSeconds(2.0f);
                 }
                 else
                 {
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] 🤸 No hay cobertura - esquiva táctica");
+                    #endif
                     yield return DoDodge();
                 }
             }
             else
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] 😵 Defensa torpe (baja dificultad)");
+                #endif
                 if (UnityEngine.Random.value > 0.5f)
                     yield return DoDodge();
                 else 
@@ -1159,11 +1312,15 @@ namespace Game.NPC
             
             if (isAmbush)
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] 🎭 ESCONDERSE PARA EMBOSCADA - Fingiendo recarga (tiene {_attacksReservedForAmbush} ataques guardados)");
+                #endif
             }
             else
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] 🏃 ESCONDERSE PARA RECARGAR - Buscando cobertura (recarga real)");
+                #endif
             }
             
             // A. Buscar posición de cobertura
@@ -1180,7 +1337,9 @@ namespace Game.NPC
                 if (!NavMesh.SamplePosition(coverPosition, out NavMeshHit navHit, 5f, NavMesh.AllAreas))
                 {
                     // Si no hay NavMesh válido, quedarse donde está y defender
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.LogWarning($"[CombatBrain:{gameObject.name}] ⚠️ No se encontró cobertura ni posición de huida válida");
+                    #endif
                     _currentState = CombatState.DEFENSE;
                     yield break;
                 }
@@ -1188,7 +1347,9 @@ namespace Game.NPC
             }
             
             // B. Moverse hacia la cobertura
+            #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[CombatBrain:{gameObject.name}] 🏃 Corriendo hacia cobertura: {coverPosition}");
+            #endif
             MoveTo(coverPosition, settings.runSpeed);
             
             float moveStartTime = Time.time;
@@ -1204,12 +1365,16 @@ namespace Game.NPC
                 // Si el player le ataca y puede defenderse, usar escudo
                 if (_player != null && IsPlayerAttacking())
                 {
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] ⚔️ ¡ATACADO DURANTE LA HUIDA!");
+                    #endif
                     
                     // Usar escudo si está disponible
                     if (settings.useShield && _shieldController != null && _shieldCd <= 0)
                     {
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Activando escudo durante huida");
+                        #endif
                         _shieldController.StartDefending(settings.shieldDuration);
                         _shieldCd = settings.shieldCooldown + settings.shieldDuration;
                         
@@ -1235,7 +1400,9 @@ namespace Game.NPC
             if (isAmbush)
             {
                 // 🎭 EMBOSCADA: Siempre mostrar interrogación para engañar
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] 🎭 Llegó a cobertura (EMBOSCADA) - Fingiendo búsqueda");
+                #endif
 
                 if (_animator != null)
                 {
@@ -1245,7 +1412,9 @@ namespace Game.NPC
             else if (!_hasLineOfSight)
             {
                 // 🔍 PERDIÓ VISIÓN REAL: Mostrar interrogación porque realmente no sabe dónde está el player
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] ❓ Llegó a cobertura sin visión del player - Búsqueda real");
+                #endif
 
                 if (_animator != null)
                 {
@@ -1256,7 +1425,9 @@ namespace Game.NPC
             {
                 // 👁️ AÚN VE AL PLAYER o SABE QUE ESTÁ CERCA: NO mostrar interrogación
                 // Comportamiento: Mirar alrededor defensivamente sin bajar la guardia
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Llegó a cobertura pero sabe que player está cerca - Alerta defensiva");
+                #endif
                 
                 // NO mostrar interrogación
                 // NO reproducir animación de búsqueda completa
@@ -1269,11 +1440,15 @@ namespace Game.NPC
             // E. Esperar mientras se recargan los hechizos (o finge recargar si es emboscada)
             if (isAmbush)
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] 🎭 Fingiendo recarga... esperando que el player se acerque");
+                #endif
             }
             else
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] ⏳ Recargando hechizos...");
+                #endif
             }
             
             float rechargeStartTime = Time.time;
@@ -1307,12 +1482,16 @@ namespace Game.NPC
                         // Verificar si ve al player ahora
                         if (_hasLineOfSight)
                         {
+                            #if UNITY_EDITOR || DEVELOPMENT_BUILD
                             Debug.Log($"[CombatBrain:{gameObject.name}] 👁️ ¡Player detectado cerca durante recarga! - Preparando respuesta");
+                            #endif
                             
                             // Si tiene suficientes ataques, contraatacar
                             if (currentAttacks >= 1)
                             {
+                                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                                 Debug.Log($"[CombatBrain:{gameObject.name}] ⚡ Interrumpiendo recarga para contraatacar");
+                                #endif
                                 
                                 if (_animator != null)
                                 {
@@ -1327,7 +1506,9 @@ namespace Game.NPC
                             else if (settings.useShield && _shieldController != null && _shieldCd <= 0)
                             {
                                 // Sin ataques pero con escudo → Defender
+                                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                                 Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Player muy cerca - Activando escudo preventivo");
+                                #endif
                                 _shieldController.StartDefending(settings.shieldDuration);
                                 _shieldCd = settings.shieldCooldown + settings.shieldDuration;
                                 yield return new WaitForSeconds(Mathf.Min(settings.shieldDuration, 1.5f));
@@ -1344,7 +1525,9 @@ namespace Game.NPC
                     // ¿El player está buscándome y se acerca?
                     if (distToPlayer <= ambushTriggerDistance)
                     {
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] 🎯 ¡EMBOSCADA ACTIVADA! Player a {distToPlayer:F1}m - ¡ATAQUE SORPRESA!");
+                        #endif
                         
                         // Animación de alerta
                         if (_animator != null)
@@ -1377,12 +1560,16 @@ namespace Game.NPC
                 // Si el player le ataca mientras recarga → Defender o contraatacar
                 if (_player != null && IsPlayerAttacking())
                 {
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] ⚔️ ¡ATACADO MIENTRAS RECARGA!");
+                    #endif
                     
                     // Si es emboscada, revelar la trampa inmediatamente
                     if (isAmbush)
                     {
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] 🎭 ¡Emboscada descubierta! - Contratatacando");
+                        #endif
                         _isUsingDeceptionStrategy = false;
                         _attacksReservedForAmbush = 0;
                         _currentState = CombatState.EVALUATE;
@@ -1395,14 +1582,18 @@ namespace Game.NPC
                     if (attacksNow > 0)
                     {
                         // Tiene al menos un ataque → Contraatacar
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] ⚡ Contratatacando con {attacksNow} ataques disponibles");
+                        #endif
                         _currentState = CombatState.EVALUATE;
                         yield break;
                     }
                     else if (settings.useShield && _shieldController != null && _shieldCd <= 0)
                     {
                         // No tiene ataques pero tiene escudo → Defender
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Defendiendo con escudo");
+                        #endif
                         _shieldController.StartDefending(settings.shieldDuration);
                         _shieldCd = settings.shieldCooldown + settings.shieldDuration;
                         yield return new WaitForSeconds(settings.shieldDuration);
@@ -1415,13 +1606,17 @@ namespace Game.NPC
             // F. Hechizos recargados o emboscada fallida - Momento de salir de cobertura
             if (isAmbush)
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] 🎭 Emboscada no activada (player no se acercó) - Cancelando estrategia");
+                #endif
                 _isUsingDeceptionStrategy = false;
                 _attacksReservedForAmbush = 0;
             }
             else
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] ✅ Hechizos recargados ({CountAttacksReady()} disponibles) - Saliendo de cobertura");
+                #endif
             }
             
             // 🎯 MOMENTO CRÍTICO: Verificar situación al salir de cobertura
@@ -1436,7 +1631,9 @@ namespace Game.NPC
                 if (distanceFromExpected < 5f)
                 {
                     // ✅ Player está DONDE SE ESPERABA (posición A)
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] 👀 ¡Player visible en posición esperada! - Atacar directamente");
+                    #endif
                     
                     // Reproducir animación SenseSomethingStart_NoWeapon
                     if (_animator != null)
@@ -1451,7 +1648,9 @@ namespace Game.NPC
                 else
                 {
                     // ⚠️ Player se MOVIÓ de donde estaba (posición diferente)
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ ¡Player se movió! Era posición A, ahora está en B ({distanceFromExpected:F1}m lejos)");
+                    #endif
                     
                     // Reproducir animación SenseSomethingStart_NoWeapon
                     if (_animator != null)
@@ -1468,7 +1667,9 @@ namespace Game.NPC
             {
                 // 🎯 NO VE AL PLAYER - ¡AQUÍ SALE LA INTERROGACIÓN!
                 // Escenario: Salió del árbol, player NO está en posición A
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] ❓ ¡Player NO está donde se esperaba! - Mostrando interrogación y entrando en búsqueda");
+                #endif
                 
                 // Reproducir animación de búsqueda
                 if (_animator != null)
@@ -1494,8 +1695,7 @@ namespace Game.NPC
         
         private bool HasIncomingProjectileThreat(float scanRadius = 8f)
         {
-            LayerMask projectileMask = LayerMask.GetMask("PlayerProjectile", "Projectile", "ProjectilePlayer", "MagicProjectile");
-            int hitCount = Physics.OverlapSphereNonAlloc(transform.position, scanRadius, _projectileBuffer, projectileMask);
+            int hitCount = Physics.OverlapSphereNonAlloc(transform.position, scanRadius, _projectileBuffer, _projectileThreatMask);
             
             // Fallback: en algunos prefabs los layers no están normalizados.
             // Hacemos un segundo escaneo abierto y filtramos por tipo.
@@ -1591,7 +1791,14 @@ namespace Game.NPC
             {
                 var hit = _coverBuffer[i];
                 if (hit.isTrigger) continue;
-                
+
+                // ✅ FIX #6 (auditoría combate, 15 ago 2026): descartar personajes como
+                // "cobertura" — viven en la capa Default igual que la geometría (CLAUDE.md §2).
+                // Sin este filtro, el NPC podía elegir al jugador, a un aliado o a otro enemigo
+                // como punto de referencia para esconderse; como los personajes se mueven, la
+                // posición calculada dejaba de cubrir nada en el frame siguiente.
+                if (hit.transform.root.GetComponent<NPCSimpleAnimator>() != null) continue;
+
                 // Calcular punto opuesto al player detrás del objeto
                 Vector3 dirFromPlayer = (hit.transform.position - _player.position).normalized;
                 dirFromPlayer.y = 0;
@@ -1614,8 +1821,11 @@ namespace Game.NPC
                     }
                     
                     // Verificar camino accesible
-                    NavMeshPath path = new NavMeshPath();
-                    if (!_agent.enabled || !_agent.isOnNavMesh || !_agent.CalculatePath(navHit.position, path) || path.status != NavMeshPathStatus.PathComplete)
+                    // ✅ FIX #14 (auditoría combate, 15 ago 2026): reusar _reusablePath en vez de
+                    // alocar un NavMeshPath nuevo por cada combinación de obstáculo×distancia
+                    // evaluada en este bucle (la clase ya declara _reusablePath explícitamente
+                    // para evitar esta allocation, pero este sitio no lo usaba).
+                    if (!_agent.enabled || !_agent.isOnNavMesh || !_agent.CalculatePath(navHit.position, _reusablePath) || _reusablePath.status != NavMeshPathStatus.PathComplete)
                     {
                         continue;
                     }
@@ -1694,7 +1904,9 @@ namespace Game.NPC
         {
             // Aquí iría tu lógica de instanciar prefab
             // Usa _ctx.Config.combatConfig.GetSpellPrefab(slotIndex) como tenías antes
+            #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[NPC] Disparando hechizo slot {slotIndex}");
+            #endif
             
             if (_ctx.Config?.combatConfig != null)
             {
@@ -1719,33 +1931,43 @@ namespace Game.NPC
         {
             if (!_agent.enabled || !_agent.isOnNavMesh)
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.LogWarning($"[CombatBrain:{gameObject.name}] ⚠️ Agent no está activo o en NavMesh - no puede moverse");
+                #endif
                 return;
             }
             
             // Verificar que el destino está en NavMesh
             if (!NavMesh.SamplePosition(pos, out NavMeshHit navHit, 3f, NavMesh.AllAreas))
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.LogWarning($"[CombatBrain:{gameObject.name}] ⚠️ Destino {pos} no está en NavMesh");
+                #endif
                 return;
             }
             
             // ✅ OPTIMIZACIÓN: Usar path reutilizable en lugar de crear uno nuevo (reduce GC)
             if (!_agent.CalculatePath(navHit.position, _reusablePath))
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.LogWarning($"[CombatBrain:{gameObject.name}] ⚠️ No se puede calcular camino a {navHit.position}");
+                #endif
                 return;
             }
             
             if (_reusablePath.status != NavMeshPathStatus.PathComplete)
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.LogWarning($"[CombatBrain:{gameObject.name}] ⚠️ Camino incompleto a {navHit.position} - status: {_reusablePath.status}");
+                #endif
                 
                 // Si el camino es parcial, intentar ir al punto más cercano alcanzable
                 if (_reusablePath.status == NavMeshPathStatus.PathPartial && _reusablePath.corners.Length > 1)
                 {
                     Vector3 lastReachablePoint = _reusablePath.corners[_reusablePath.corners.Length - 1];
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] 📍 Usando punto parcial más cercano: {lastReachablePoint}");
+                    #endif
                     
                     if (_agent.enabled && _agent.isOnNavMesh)
                     {
@@ -1877,7 +2099,9 @@ namespace Game.NPC
                 // Verificar si no es el jugador
                 if (!sphereHit.collider.CompareTag("Player"))
                 {
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Proyectil podría rozar con {sphereHit.collider.gameObject.name}");
+                    #endif
                     
                     // Si está muy cerca, no disparar
                     if (sphereHit.distance < 1.5f)
@@ -1956,7 +2180,9 @@ namespace Game.NPC
         /// </summary>
         IEnumerator State_Searching()
         {
+            #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[CombatBrain:{gameObject.name}] 🔍 INICIANDO BÚSQUEDA - Última posición conocida: {_lastKnownPlayerPosition}");
+            #endif
             
             StopMove();
             
@@ -1977,13 +2203,17 @@ namespace Game.NPC
             }
             else
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] 🎯 Combate reciente detectado ({Time.time - _lastSeenTime:F1}s) - Búsqueda sin interrogación");
+                #endif
             }
             
             float searchStartTime = Time.time;
             float searchTimeout = settings.activelySearchForPlayer ? settings.searchDuration : settings.passiveSearchDuration;
             
+            #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[CombatBrain:{gameObject.name}] 🔍 Modo: {(settings.activelySearchForPlayer ? "BÚSQUEDA ACTIVA" : "BÚSQUEDA PASIVA")} - Duración: {searchTimeout}s");
+            #endif
             
             int searchAttempts = 0;
             const int maxSearchAttempts = 5; // Número de veces que buscará en diferentes lugares
@@ -1994,13 +2224,17 @@ namespace Game.NPC
                 // Verificar si encontramos al jugador
                 if (_hasLineOfSight)
                 {
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] ✅ ¡JUGADOR ENCONTRADO! - Mostrando alerta");
+                    #endif
                     
                     // ✅ Reproducir animación SenseSomethingStart_NoWeapon
                     if (_animator != null)
                     {
                         _animator.PlaySenseSomething();
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] 🎬 Reproduciendo animación SenseSomethingStart_NoWeapon");
+                        #endif
                     }
                     
                     // Esperar breve para que se vea el feedback
@@ -2014,17 +2248,23 @@ namespace Game.NPC
                     
                     if (attacksAvailable > 0 && distToPlayer <= settings.maxDistance && HasClearLineOfFire())
                     {
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] ⚡ ¡ATAQUE INMEDIATO! - {attacksAvailable} ataques listos, distancia: {distToPlayer:F1}m");
+                        #endif
                         _currentState = CombatState.ATTACK;
                     }
                     else if (attacksAvailable > 0 && distToPlayer > settings.maxDistance)
                     {
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] 🚶 Jugador muy lejos ({distToPlayer:F1}m) - Acercándose para atacar");
+                        #endif
                         _currentState = CombatState.EVALUATE; // EVALUATE se encargará de acercarse
                     }
                     else
                     {
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] 🎯 Evaluando situación - Ataques: {attacksAvailable}, Dist: {distToPlayer:F1}m");
+                        #endif
                         _currentState = CombatState.EVALUATE;
                     }
                     yield break;
@@ -2047,7 +2287,9 @@ namespace Game.NPC
                     // Verificar que el punto esté en NavMesh
                     if (NavMesh.SamplePosition(searchPoint, out NavMeshHit navHit, searchRadius, NavMesh.AllAreas))
                     {
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] 👣 Movimiento de búsqueda #{searchAttempts} hacia: {navHit.position}");
+                        #endif
                         MoveTo(navHit.position, settings.walkSpeed);
                         
                         // ✅ DURANTE EL MOVIMIENTO: Verificar constantemente
@@ -2058,13 +2300,17 @@ namespace Game.NPC
                             // Si encontramos al jugador durante el movimiento
                             if (_hasLineOfSight)
                             {
+                                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                                 Debug.Log($"[CombatBrain:{gameObject.name}] ✅ ¡Jugador encontrado durante movimiento!");
+                                #endif
                                 
                                 // Reproducir animación SenseSomethingStart_NoWeapon
                                 if (_animator != null)
                                 {
                                     _animator.PlaySenseSomething();
+                                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                                     Debug.Log($"[CombatBrain:{gameObject.name}] 🎬 Reproduciendo SenseSomethingStart_NoWeapon");
+                                    #endif
                                 }
                                 
                                 yield return new WaitForSeconds(0.5f);
@@ -2077,7 +2323,9 @@ namespace Game.NPC
                                 
                                 if (attacks > 0 && dist <= settings.maxDistance && HasClearLineOfFire())
                                 {
+                                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                                     Debug.Log($"[CombatBrain:{gameObject.name}] ⚡ ¡ATAQUE INMEDIATO desde búsqueda!");
+                                    #endif
                                     _currentState = CombatState.ATTACK;
                                 }
                                 else
@@ -2095,7 +2343,9 @@ namespace Game.NPC
                         
                         // ✅ AL DETENERSE: Mostrar interrogación de nuevo y animación
                         // 🔥 CORRECCIÓN: Solo si NO es combate reciente
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] ❓ Parada de búsqueda #{searchAttempts} - No encontrado");
+                        #endif
                         
                         if (showQuestionMark)
                         {
@@ -2117,13 +2367,17 @@ namespace Game.NPC
                         // Verificar de nuevo si lo encontró mientras miraba alrededor
                         if (_hasLineOfSight)
                         {
+                            #if UNITY_EDITOR || DEVELOPMENT_BUILD
                             Debug.Log($"[CombatBrain:{gameObject.name}] ✅ ¡Jugador encontrado mientras miraba alrededor!");
+                            #endif
                             
                             // Reproducir animación SenseSomethingStart_NoWeapon
                             if (_animator != null)
                             {
                                 _animator.PlaySenseSomething();
+                                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                                 Debug.Log($"[CombatBrain:{gameObject.name}] 🎬 Reproduciendo SenseSomethingStart_NoWeapon");
+                                #endif
                             }
                             
                             yield return new WaitForSeconds(0.5f);
@@ -2136,7 +2390,9 @@ namespace Game.NPC
                             
                             if (attacksReady > 0 && distPlayer <= settings.maxDistance && HasClearLineOfFire())
                             {
+                                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                                 Debug.Log($"[CombatBrain:{gameObject.name}] ⚡ ¡ATAQUE INMEDIATO desde búsqueda!");
+                                #endif
                                 _currentState = CombatState.ATTACK;
                             }
                             else
@@ -2155,13 +2411,17 @@ namespace Game.NPC
             }
             
             // ✅ BÚSQUEDA AGOTADA - No encontró al jugador después de todos los intentos
+            #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[CombatBrain:{gameObject.name}] 😞 Búsqueda agotada - {searchAttempts} intentos completados sin éxito");
+            #endif
             
             // ✅ DECISIÓN POST-BÚSQUEDA: ¿Volver al origen o abandonar?
             if (settings.returnToOriginAfterSearch)
             {
                 // OPCIÓN A: Volver a la posición inicial
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] 🏠 Volviendo al origen tras búsqueda fallida: {_combatStartPosition}");
+                #endif
                 MoveTo(_combatStartPosition, settings.walkSpeed);
                 
                 // Esperar a llegar al origen
@@ -2170,13 +2430,17 @@ namespace Game.NPC
                     // Si encuentra al jugador durante el regreso, retomar combate inmediatamente
                     if (_hasLineOfSight)
                     {
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] ✅ ¡Jugador encontrado en el camino de regreso!");
+                        #endif
                         
                         // Reproducir animación SenseSomethingStart_NoWeapon
                         if (_animator != null)
                         {
                             _animator.PlaySenseSomething();
+                            #if UNITY_EDITOR || DEVELOPMENT_BUILD
                             Debug.Log($"[CombatBrain:{gameObject.name}] 🎬 Reproduciendo SenseSomethingStart_NoWeapon");
+                            #endif
                         }
                         
                         yield return new WaitForSeconds(0.5f);
@@ -2189,7 +2453,9 @@ namespace Game.NPC
                         
                         if (attacksNow > 0 && distNow <= settings.maxDistance && HasClearLineOfFire())
                         {
+                            #if UNITY_EDITOR || DEVELOPMENT_BUILD
                             Debug.Log($"[CombatBrain:{gameObject.name}] ⚡ ¡ATAQUE INMEDIATO al detectar jugador!");
+                            #endif
                             _currentState = CombatState.ATTACK;
                         }
                         else
@@ -2203,16 +2469,22 @@ namespace Game.NPC
                 }
                 
                 StopMove();
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] ✅ Regresó al origen - Saliendo del modo combate");
+                #endif
             }
             else
             {
                 // OPCIÓN B: Abandonar directamente sin volver
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] 🚫 No vuelve al origen (returnToOriginAfterSearch = false) - Abandonando combate");
+                #endif
             }
             
             // ✅ ABANDONAR MODO COMBATE
+            #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[CombatBrain:{gameObject.name}] 🏳️ Abandonando modo combate - Jugador no encontrado tras búsqueda exhaustiva");
+            #endif
             StopCombat();
             
             // Notificar al manager que salimos de combate
@@ -2254,11 +2526,15 @@ namespace Game.NPC
             
             if (obstacleCount == 0)
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ No se encontraron obstáculos Default cercanos");
+                #endif
                 return false;
             }
             
+            #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[CombatBrain:{gameObject.name}] 🔍 Encontrados {obstacleCount} obstáculos Default para cobertura");
+            #endif
             
             // Buscar el mejor obstáculo para esconderse
             float bestScore = float.MinValue;
@@ -2274,15 +2550,24 @@ namespace Game.NPC
             for (int i = 0; i < obstacleCount; i++) // ✅ OPTIMIZACIÓN FASE 2: for loop para NonAlloc
             {
                 var obstacle = _obstacleBuffer[i];
-                
+
                 // Ignorar triggers
                 if (obstacle.isTrigger) continue;
-                
+
+                // ✅ FIX #6 (auditoría combate, 15 ago 2026): descartar personajes como
+                // "cobertura" — viven en la capa Default igual que la geometría (CLAUDE.md §2).
+                // Sin este filtro, el NPC podía elegir al jugador, a un aliado o a otro enemigo
+                // como punto de referencia para esconderse; como los personajes se mueven, la
+                // posición calculada dejaba de cubrir nada en el frame siguiente.
+                if (obstacle.transform.root.GetComponent<NPCSimpleAnimator>() != null) continue;
+
                 // Ignorar obstáculos muy grandes (probablemente son terreno o estructuras completas)
                 Bounds bounds = obstacle.bounds;
                 if (bounds.size.x > 15f || bounds.size.z > 15f)
                 {
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] ⏭️ Ignorando {obstacle.gameObject.name} - demasiado grande ({bounds.size})");
+                    #endif
                     continue;
                 }
                 
@@ -2311,15 +2596,19 @@ namespace Game.NPC
                     // Esto evita que el NPC se meta dentro de casas/estructuras
                     if (!HasClearSpace(coverPos, npcRadius, npcHeight, defaultMask))
                     {
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Posición {coverPos} no tiene espacio libre - rechazada");
+                        #endif
                         continue;
                     }
                     
                     // 3. Verificar que el camino desde la posición actual hasta la cobertura es válido
-                    NavMeshPath path = new NavMeshPath();
-                    if (!_agent.enabled || !_agent.isOnNavMesh || !_agent.CalculatePath(coverPos, path) || path.status != NavMeshPathStatus.PathComplete)
+                    // ✅ FIX #14 (auditoría combate, 15 ago 2026): reutiliza _reusablePath en vez de allocar
+                    if (!_agent.enabled || !_agent.isOnNavMesh || !_agent.CalculatePath(coverPos, _reusablePath) || _reusablePath.status != NavMeshPathStatus.PathComplete)
                     {
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Camino a {coverPos} no es accesible - rechazada");
+                        #endif
                         continue;
                     }
                     
@@ -2332,7 +2621,9 @@ namespace Game.NPC
                     if (!Physics.Raycast(rayOrigin, dirToPlayer, distToPlayer * 0.8f, defaultMask))
                     {
                         // NO hay obstáculo entre la cobertura y el jugador - no es una buena cobertura
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Posición {coverPos} no tiene cobertura real contra el jugador");
+                        #endif
                         continue;
                     }
                     
@@ -2363,7 +2654,9 @@ namespace Game.NPC
                         bestPosition = coverPos;
                         foundValidCover = true;
                         
+                        #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Cobertura válida: {obstacle.gameObject.name} pos:{coverPos} (score: {score:F1}, canFire:{canFireFromCover})");
+                        #endif
                     }
                     
                     // Si encontramos una buena posición a esta distancia, no probar más lejos
@@ -2375,11 +2668,15 @@ namespace Game.NPC
             if (foundValidCover)
             {
                 coverPosition = bestPosition;
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] ✅ Mejor cobertura seleccionada en: {coverPosition}");
+                #endif
                 return true;
             }
             
+            #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[CombatBrain:{gameObject.name}] ❌ No se encontró cobertura válida detrás de obstáculos");
+            #endif
             return false;
         }
         
@@ -2394,16 +2691,21 @@ namespace Game.NPC
             Vector3 top = position + Vector3.up * (height - radius);
             
             // Si hay colisión, no hay espacio libre
-            Collider[] colliders = Physics.OverlapCapsule(bottom, top, radius * 0.9f, obstacleMask);
-            
-            if (colliders.Length > 0)
+            // ✅ FIX #11 (auditoría combate, 15 ago 2026): NonAlloc con buffer reutilizable en vez de
+            // Physics.OverlapCapsule (que aloca un array nuevo cada llamada).
+            int clearSpaceCount = Physics.OverlapCapsuleNonAlloc(bottom, top, radius * 0.9f, _clearSpaceBuffer, obstacleMask);
+
+            if (clearSpaceCount > 0)
             {
                 // Hay algo en el camino - verificar si es algo que debería bloquear
-                foreach (var col in colliders)
+                for (int i = 0; i < clearSpaceCount; i++)
                 {
+                    var col = _clearSpaceBuffer[i];
+                    if (col == null) continue;
+
                     // Ignorar triggers
                     if (col.isTrigger) continue;
-                    
+
                     // Si hay un collider sólido, no hay espacio
                     return false;
                 }
@@ -2413,7 +2715,9 @@ namespace Game.NPC
             if (Physics.Raycast(position + Vector3.up * 0.1f, Vector3.up, height + 1f, obstacleMask))
             {
                 // Hay un techo encima - probablemente es interior de una estructura
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Posición {position} tiene techo - probablemente interior");
+                #endif
                 return false;
             }
             
@@ -2437,7 +2741,9 @@ namespace Game.NPC
             // Si hay paredes en más de 5 de 8 direcciones, probablemente está encerrado
             if (wallsDetected >= 5)
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Posición {position} rodeada por {wallsDetected}/8 paredes - espacio cerrado");
+                #endif
                 return false;
             }
             

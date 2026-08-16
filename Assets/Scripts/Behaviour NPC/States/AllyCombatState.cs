@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.Modules;
@@ -59,6 +60,16 @@ namespace Game.NPC.States
         // ✅ OPTIMIZACIÓN FASE 1: Buffer reutilizable para Physics queries (evita allocations)
         private Collider[] _physicsBuffer = new Collider[32];
 
+        // ✅ FIX #17 (auditoría combate, 15 ago 2026): buffer reutilizable para
+        // ActiveCombatRegistry.GetAllInCombatNonAlloc (antes GetAllInCombat() alocaba una List
+        // nueva en cada llamada, incluida desde OnUpdate/FindNearestEnemy con cooldown de 0.3s).
+        private readonly List<GameObject> _combatNpcBuffer = new List<GameObject>(16);
+
+        // ✅ FIX #20 (auditoría combate, 15 ago 2026): LayerMask.GetMask cacheado como static readonly
+        // (antes se recalculaba en FindNearestEnemy y en cada lanzamiento de hechizo).
+        private static readonly int EnemyBossMask = LayerMask.GetMask("Enemy", "Boss");
+        private static readonly int EnemyBossDefaultMask = LayerMask.GetMask("Enemy", "Boss", "Default");
+
         // Cache de Damageable para el target actual (evita GetComponent cada frame)
         private Damageable _currentTargetDamageable;
         private Transform _damageableCachedFor;
@@ -87,7 +98,8 @@ namespace Game.NPC.States
             if (context.DebugMode)
             {
                 Debug.Log($"[AllyCombatState:{context.Transform.name}] ⚔️ ENTRANDO EN COMBATE - ForcedTarget: {_forcedTarget?.name ?? "NULL"}, Registry.Count: {ActiveCombatRegistry.Count}");
-                foreach (var npc in ActiveCombatRegistry.GetAllInCombat())
+                ActiveCombatRegistry.GetAllInCombatNonAlloc(_combatNpcBuffer);
+                foreach (var npc in _combatNpcBuffer)
                     Debug.Log($"[AllyCombatState:{context.Transform.name}]   Registry NPC: {npc?.name ?? "NULL"} (active: {npc?.activeInHierarchy})");
             }
             
@@ -139,10 +151,10 @@ namespace Game.NPC.States
             }
             else
             {
-                var combatNPCs = ActiveCombatRegistry.GetAllInCombat();
-                if (combatNPCs != null && combatNPCs.Count > 0)
+                ActiveCombatRegistry.GetAllInCombatNonAlloc(_combatNpcBuffer);
+                if (_combatNpcBuffer.Count > 0)
                 {
-                    foreach (var npc in combatNPCs)
+                    foreach (var npc in _combatNpcBuffer)
                     {
                         if (npc != null && npc != context.Transform.gameObject && npc.activeInHierarchy && IsTargetAlive(npc.transform))
                         {
@@ -174,29 +186,48 @@ namespace Game.NPC.States
             // PRIORIDAD 1: Si tenemos un target forzado que aún existe y está VIVO, mantenerlo
             if (_forcedTarget != null && _forcedTarget.gameObject != null && _forcedTarget.gameObject.activeInHierarchy)
             {
-                // ✅ FIX: Verificar que el target forzado siga VIVO antes de mantenerlo
-                if (IsTargetAlive(_forcedTarget))
+                // ✅ FIX #9 (auditoría combate, 15 ago 2026): reutiliza el cache de Damageable en vez
+                // de GetComponent<Damageable>() cada frame (IsTargetAlive() lo hacía sin cachear, y
+                // este chequeo se ejecuta todos los frames mientras hay target forzado).
+                if (_damageableCachedFor != _forcedTarget)
+                {
+                    _currentTargetDamageable = _forcedTarget.GetComponent<Damageable>();
+                    _damageableCachedFor = _forcedTarget;
+                }
+                bool forcedTargetAlive = _currentTargetDamageable == null || _currentTargetDamageable.Current > 0;
+
+                if (forcedTargetAlive)
                 {
                     _currentTarget = _forcedTarget;
                     _noEnemyTimer = 0f;
                 }
                 else
                 {
-                    Debug.Log($"[AllyCombatState:{context.Transform.name}] ☠️ Target forzado {_forcedTarget.name} está muerto, liberando target...");
+                    if (context.DebugMode) Debug.Log($"[AllyCombatState:{context.Transform.name}] ☠️ Target forzado {_forcedTarget.name} está muerto, liberando target...");
                     _forcedTarget = null;
                     _forcedTargetName = null;
                     _currentTarget = null;
+                    _currentTargetDamageable = null;
+                    _damageableCachedFor = null;
                 }
             }
             // PRIORIDAD 1.5: Si perdimos el target forzado pero tenemos su nombre, re-buscarlo en registry
             else if (_forcedTarget == null && !string.IsNullOrEmpty(_forcedTargetName))
             {
-                var foundByName = TryFindTargetByName(_forcedTargetName);
-                if (foundByName != null)
+                // ✅ FIX #8 (auditoría combate, 15 ago 2026): TryFindTargetByName cae a
+                // GameObject.Find(...) (recorre toda la escena) cuando no está en el registry. Sin
+                // cooldown esto se ejecutaba cada frame mientras el target forzado no reaparecía.
+                // Reutiliza _searchCooldown (se decrementa en la Prioridad 3 de más abajo, que se
+                // ejecuta en el mismo frame si seguimos sin target).
+                if (_searchCooldown <= 0f)
                 {
-                    _forcedTarget = foundByName;
-                    _currentTarget = foundByName;
-                    _noEnemyTimer = 0f;
+                    var foundByName = TryFindTargetByName(_forcedTargetName);
+                    if (foundByName != null)
+                    {
+                        _forcedTarget = foundByName;
+                        _currentTarget = foundByName;
+                        _noEnemyTimer = 0f;
+                    }
                 }
             }
             // PRIORIDAD 2: Verificar si current target sigue siendo válido
@@ -231,10 +262,10 @@ namespace Game.NPC.States
                     _searchCooldown = 0.3f; // Buscar más frecuentemente (cada 0.3 segundos)
                     
                     // Primero intentar del Registry
-                    var combatNPCs = ActiveCombatRegistry.GetAllInCombat();
-                    if (combatNPCs != null && combatNPCs.Count > 0)
+                    ActiveCombatRegistry.GetAllInCombatNonAlloc(_combatNpcBuffer);
+                    if (_combatNpcBuffer.Count > 0)
                     {
-                        foreach (var npc in combatNPCs)
+                        foreach (var npc in _combatNpcBuffer)
                         {
                             if (npc == null || npc == context.Transform.gameObject || !npc.activeInHierarchy) continue;
                             if (!IsTargetAlive(npc.transform)) continue;
@@ -501,10 +532,10 @@ namespace Game.NPC.States
             float closestDistance = float.MaxValue;
 
             // MÉTODO 1: ActiveCombatRegistry
-            var combatNPCs = ActiveCombatRegistry.GetAllInCombat();
-            if (combatNPCs != null && combatNPCs.Count > 0)
+            ActiveCombatRegistry.GetAllInCombatNonAlloc(_combatNpcBuffer);
+            if (_combatNpcBuffer.Count > 0)
             {
-                foreach (var npc in combatNPCs)
+                foreach (var npc in _combatNpcBuffer)
                 {
                     if (npc == null || npc == context.Transform.gameObject) continue;
                     if (!IsTargetAlive(npc.transform)) continue;
@@ -525,8 +556,7 @@ namespace Game.NPC.States
             }
 
             // MÉTODO 2 (Fallback): Layer "Enemy" / "Boss"
-            int enemyLayers = LayerMask.GetMask("Enemy", "Boss");
-            int hitCount = Physics.OverlapSphereNonAlloc(context.Transform.position, DETECTION_RANGE, _physicsBuffer, enemyLayers);
+            int hitCount = Physics.OverlapSphereNonAlloc(context.Transform.position, DETECTION_RANGE, _physicsBuffer, EnemyBossMask);
 
             for (int i = 0; i < hitCount; i++)
             {
@@ -544,7 +574,7 @@ namespace Game.NPC.States
             if (context.DebugMode)
             {
                 if (_currentTarget != null) Debug.Log($"[AllyCombatState:{context.Transform.name}] ✅ Enemigo via Layer: {_currentTarget.name}");
-                else Debug.Log($"[AllyCombatState:{context.Transform.name}] ❌ Sin enemigos (Registry:{combatNPCs?.Count ?? 0}, Layers:{hitCount})");
+                else Debug.Log($"[AllyCombatState:{context.Transform.name}] ❌ Sin enemigos (Registry:{_combatNpcBuffer.Count}, Layers:{hitCount})");
             }
         }
         
@@ -556,18 +586,15 @@ namespace Game.NPC.States
             if (string.IsNullOrEmpty(targetName)) return null;
             
             // Primero buscar en el registry
-            var combatNPCs = ActiveCombatRegistry.GetAllInCombat();
-            if (combatNPCs != null)
+            ActiveCombatRegistry.GetAllInCombatNonAlloc(_combatNpcBuffer);
+            foreach (var npc in _combatNpcBuffer)
             {
-                foreach (var npc in combatNPCs)
+                if (npc != null && npc.name == targetName && npc.activeInHierarchy)
                 {
-                    if (npc != null && npc.name == targetName && npc.activeInHierarchy)
-                    {
-                        return npc.transform;
-                    }
+                    return npc.transform;
                 }
             }
-            
+
             // Buscar en toda la escena
             var found = GameObject.Find(targetName);
             if (found != null && found.activeInHierarchy && IsTargetAlive(found.transform))
@@ -680,7 +707,9 @@ namespace Game.NPC.States
                 return;
             }
             
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[AllyCombatState:{context.Transform.name}] 📝 Hechizo seleccionado: [{selectedIndex}] {spell.name}");
+#endif
             
             // Rotar al siguiente hechizo para el próximo ataque
             _currentSpellIndex = (_currentSpellIndex + 1) % 3;
@@ -721,8 +750,10 @@ namespace Game.NPC.States
                 AudioService.Instance?.PlaySFX(spell.castSFXKey, worldPosition: context.Transform.position);
             }
             
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[AllyCombatState:{context.Transform.name}] 🔮 Iniciando cast de {spell.name} " +
                       $"(delay:{_castTimer:F2}s, cd:{_attackCooldown:F1}s, speed:{spell.initialSpeed}, dmg:{spell.damage})");
+#endif
         }
         
         /// <summary>
@@ -739,7 +770,9 @@ namespace Game.NPC.States
             // Verificar que aún tenemos target
             if (_currentTarget == null || !_currentTarget.gameObject.activeInHierarchy)
             {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[AllyCombatState:{context.Transform.name}] ⚠️ Target perdido durante casting, cancelando...");
+#endif
                 return;
             }
             
@@ -802,8 +835,8 @@ namespace Game.NPC.States
                     damage = spell.damage,
                     aoeRadius = spell.aoeRadius,
                     knockbackForce = spell.knockbackForce,
-                    hitLayers = LayerMask.GetMask("Enemy", "Boss"),
-                    collisionLayers = LayerMask.GetMask("Enemy", "Boss", "Default"),
+                    hitLayers = EnemyBossMask,
+                    collisionLayers = EnemyBossDefaultMask,
                     destroyOnHit = spell.destroyOnHit,
                     lifeTime = spell.lifeTime,
                     maxRange = spell.maxRange,
@@ -820,8 +853,10 @@ namespace Game.NPC.States
                 magicProj.Configure(config, context.Transform.gameObject);
                 magicProj.Launch(direction, spell.initialSpeed, spell.useGravity);
                 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[AllyCombatState:{context.Transform.name}] 🔥 Lanzando {spell.name} hacia {_currentTarget.name} " +
                           $"(dmg:{spell.damage}, speed:{spell.initialSpeed}, lifeTime:{spell.lifeTime}, maxRange:{spell.maxRange})");
+#endif
             }
             else
             {

@@ -131,7 +131,7 @@ namespace Sendero.Narrative.Editor
         {
             if (_graph == null) return;
             var node = (NarrativeNode)Activator.CreateInstance(t);
-            node.position = pos ?? Vector2.zero;
+            node.position = pos ?? GetViewCenter();
 
             // Asignar capítulo activo al nuevo nodo
             if (_activeChapter != AllChaptersLabel)
@@ -143,6 +143,21 @@ namespace Sendero.Narrative.Editor
             EditorUtility.SetDirty(_graph);
 
             DrawNode(node);
+        }
+
+        /// <summary>
+        /// Centro del viewport actual del grafo, en coordenadas de contenido (misma técnica que ya
+        /// usa el menú contextual de "Create/..." con la posición del ratón). Antes "Añadir Nodo"
+        /// (botón de la toolbar) creaba siempre en Vector2.zero, así que los nodos nuevos se
+        /// apilaban en la esquina superior izquierda del grafo y había que ir a buscarlos.
+        /// </summary>
+        private Vector2 GetViewCenter()
+        {
+            if (_view == null) return Vector2.zero;
+            var bound = _view.worldBound;
+            if (float.IsNaN(bound.center.x) || float.IsNaN(bound.center.y) || bound.width <= 0f)
+                return Vector2.zero;
+            return _view.contentViewContainer.WorldToLocal(bound.center);
         }
 
         private void LoadGraph(NarrativeGraph g)

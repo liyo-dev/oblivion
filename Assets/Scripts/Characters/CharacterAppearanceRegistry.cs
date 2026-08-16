@@ -111,6 +111,12 @@ public class CharacterAppearanceRegistry : MonoBehaviour
             b.RestoreInitialSelection();
             _appearances[(int)slot] = b.GetSelection();
         }
+
+        // FIX AABB de culling atascado (ver ModularAutoBuilder.RefreshRendererBoundsAfterAppearanceChange
+        // para el detalle completo): toda aplicación de apariencia pasa por aquí, así que este es el
+        // punto central para cubrir el bug "personaje flotando/desencajado tras cambiar de apariencia"
+        // de una vez para todos los llamadores, en vez de parchear cada sitio nuevo que lo dispare.
+        b.RefreshRendererBoundsAfterAppearanceChange();
     }
 
     /// <summary>

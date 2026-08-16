@@ -53,6 +53,10 @@
             "value": "Pausa / Menú"
         },
         {
+            "key": "CONTROLS_BIG_MAP",
+            "value": "Ver mapa grande"
+        },
+        {
             "key": "CONTROLS_SPELL_LEFT",
             "value": "Hechizo — slot izquierdo"
         },
@@ -115,6 +119,14 @@
         {
             "key": "GLYPH_DPAD_RIGHT",
             "value": "D-Pad derecha"
+        },
+        {
+            "key": "GLYPH_SHARE",
+            "value": "Share"
+        },
+        {
+            "key": "GLYPH_VIEW",
+            "value": "View"
         },
         {
             "key": "GLYPH_DPAD_UP",
@@ -211,6 +223,10 @@
         {
             "key": "MainMenu_Controls",
             "value": "Controles"
+        },
+        {
+            "key": "MainMenu_Credits",
+            "value": "Créditos"
         },
         {
             "key": "MainMenu_Exit",

@@ -53,6 +53,10 @@
             "value": "Pause / Menu"
         },
         {
+            "key": "CONTROLS_BIG_MAP",
+            "value": "View big map"
+        },
+        {
             "key": "CONTROLS_SPELL_LEFT",
             "value": "Spell — left slot"
         },
@@ -115,6 +119,14 @@
         {
             "key": "GLYPH_DPAD_RIGHT",
             "value": "D-Pad Right"
+        },
+        {
+            "key": "GLYPH_SHARE",
+            "value": "Share"
+        },
+        {
+            "key": "GLYPH_VIEW",
+            "value": "View"
         },
         {
             "key": "GLYPH_DPAD_UP",
@@ -211,6 +223,10 @@
         {
             "key": "MainMenu_Controls",
             "value": "Controls"
+        },
+        {
+            "key": "MainMenu_Credits",
+            "value": "Credits"
         },
         {
             "key": "MainMenu_Exit",

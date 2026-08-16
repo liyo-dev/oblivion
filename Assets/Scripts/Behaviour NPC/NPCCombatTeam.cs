@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.Modules;
+using Game.NPC.States;
 
 namespace Game.NPC
 {
@@ -22,18 +23,14 @@ namespace Game.NPC
         [Tooltip("NPCs que forman parte de este equipo. El NPC con este componente es el líder.")]
         [SerializeField] private List<NPCBehaviourManagerV2> teamMembers = new List<NPCBehaviourManagerV2>();
     
-    [Tooltip("Distancia máxima a la que deben reagruparse los compañeros antes de iniciar combate.")]
-    [SerializeField] private float regroupDistance = 3f;
-    
-    [Tooltip("Distancia alrededor del líder donde se posicionarán los compañeros.")]
+    // NOTA (15 ago 2026): regroupDistance/maxRegroupTime/waitForAllMembers se eliminaron —
+    // pertenecían a Co_RegroupAndStartCombat/Co_MoveMemberToPosition, borrados al migrar a
+    // Co_DetectAndEngage (la detección ahora dispara diálogo+combate al instante, sin caminar a
+    // una formación antes). Si algún encuentro concreto necesita ese comportamiento, reintroducir
+    // los campos entonces en vez de mantenerlos sin uso.
+    [Tooltip("Distancia alrededor del líder donde se posicionarán los compañeros (usado por GetFormationPosition, p.ej. al resucitar como equipo).")]
     [SerializeField] private float formationRadius = 2.5f;
-    
-    [Tooltip("Tiempo máximo de espera para reagruparse (segundos).")]
-    [SerializeField] private float maxRegroupTime = 5f;
-    
-    [Tooltip("Si está marcado, espera a que todos lleguen antes de iniciar el diálogo/combate.")]
-    [SerializeField] private bool waitForAllMembers = true;
-    
+
     [Header("Resurrección Grupal")]
     [Tooltip("Si está marcado, todos los miembros del equipo se levantan cuando el combate termina (si aplica).")]
     [SerializeField] private bool resurrectAsTeam = true;
@@ -51,9 +48,15 @@ namespace Game.NPC
     private NPCBehaviourManagerV2 _leaderManager;
     private bool _isTeamInCombat;
     private bool _isRegrouping;
+    private bool _isResurrecting; // ✅ FIX #21: guard contra Co_ResurrectTeam concurrentes
     private int _defeatedCount;
     private List<NPCBehaviourManagerV2> _allMembers = new List<NPCBehaviourManagerV2>(); // Líder + compañeros
     private Transform _currentTarget; // ✅ FIX: Referencia al jugador para calcular formación
+
+    // Ancla invisible en el punto medio de los miembros vivos del equipo, usada como "npc" al
+    // llamar a DialogueManager.StartBattleDialogue para que la cámara de diálogo (legacy o
+    // cinemática) encuadre a TODO el equipo en vez de solo al líder. Creada una vez y reutilizada.
+    private Transform _groupFocusAnchor;
     
     // Evento para notificar cuando todo el equipo ha sido derrotado
     public System.Action OnTeamDefeated;
@@ -159,12 +162,23 @@ namespace Game.NPC
     #region Public API
     
     /// <summary>
-    /// Llamado cuando el líder o cualquier miembro detecta al jugador.
-    /// Inicia el proceso de reagrupación y combate grupal.
+    /// Llamado cuando CUALQUIER miembro del equipo detecta al jugador (da igual cuál — líder o
+    /// no). Dispara la secuencia completa: todos se paran y miran al jugador, cada uno dice su
+    /// propia frase de entrada (empezando por quien detectó) y combate para todos a la vez. Ver
+    /// Co_DetectAndEngage.
+    /// Devuelve true si la notificación prendió (o el equipo ya estaba en marcha), false si fue
+    /// rechazada (bloqueo global de combate) — el llamador (NPCTeamMember.TryNotifyTeamOfPlayer)
+    /// usa este valor para no marcar la notificación como "hecha" cuando en realidad no lo fue.
     /// </summary>
-    public void OnPlayerDetected(Transform player)
+    /// <param name="detector">
+    /// ✅ NUEVO (15 ago 2026, a petición de Raúl): el miembro del equipo que detectó al jugador.
+    /// Habla primero en la secuencia de diálogo de entrada. Puede ser null (p.ej. si algún día se
+    /// llama desde otro sitio que no sea NPCTeamMember) — en ese caso se usa el orden por defecto
+    /// (líder primero).
+    /// </param>
+    public bool OnPlayerDetected(Transform player, NPCBehaviourManagerV2 detector = null)
     {
-        if (_isTeamInCombat || _isRegrouping) return;
+        if (_isTeamInCombat || _isRegrouping) return true; // ya en marcha, nada que reintentar
 
         // Bloqueo global: si ya hay un combate activo y ningún miembro de este equipo
         // está en combate todavía, no iniciar un segundo combate paralelo.
@@ -175,15 +189,20 @@ namespace Game.NPC
             {
                 Debug.Log($"[NPCCombatTeam] {name}: Combate global activo, se cancela nueva detección del equipo.");
             }
-            return;
+            // ✅ FIX (auditoría combate, 15 ago 2026): antes esto era void y el llamador se
+            // quedaba con _hasNotifiedTeam=true para siempre aunque la notificación se
+            // descartara aquí — el equipo quedaba sordo a la detección del jugador de por vida.
+            // Ahora se devuelve false para que el llamador pueda reintentar más adelante.
+            return false;
         }
-        
+
         if (showDebugLogs)
         {
-            Debug.Log($"[NPCCombatTeam] {name}: ¡Jugador detectado! Iniciando reagrupación del equipo...");
+            Debug.Log($"[NPCCombatTeam] {name}: ¡Jugador detectado! Iniciando secuencia de equipo...");
         }
-        
-        StartCoroutine(Co_RegroupAndStartCombat(player));
+
+        StartCoroutine(Co_DetectAndEngage(player, detector));
+        return true;
     }
 
     private bool IsAnyTeamMemberInCombat()
@@ -199,6 +218,14 @@ namespace Game.NPC
 
         return false;
     }
+
+    /// <summary>
+    /// Versión pública de <see cref="IsAnyTeamMemberInCombat"/>. Usada por IdleState para dejar
+    /// pasar la detección propia de un NPC cuando un compañero de su mismo equipo ya está
+    /// registrado en ActiveCombatRegistry (evita que el bloqueo global de combate deje al resto
+    /// del equipo congelado en IdleState para siempre).
+    /// </summary>
+    public bool IsAnyMemberInCombat() => IsAnyTeamMemberInCombat();
     
     /// <summary>
     /// Notifica que el diálogo post-derrota ha terminado.
@@ -304,31 +331,58 @@ namespace Game.NPC
     public void ResurrectTeam()
     {
         if (!resurrectAsTeam) return;
-        
+        if (_isResurrecting) return; // ✅ FIX #21: evita corrutinas Co_ResurrectTeam concurrentes
+
         StartCoroutine(Co_ResurrectTeam());
     }
-    
+
     /// <summary>
     /// Fuerza a todos los miembros a entrar en combate inmediatamente (sin reagrupación).
     /// </summary>
     public void ForceTeamCombat(Transform player)
     {
         if (_isTeamInCombat) return;
-        
+
         _isTeamInCombat = true;
         _defeatedCount = 0;
         IsPostDefeatDialogueFinished = false; // Resetear flag
-        
+        _currentTarget = player; // ✅ FIX #23: para que GetFormationPosition funcione también por esta ruta
+
         foreach (var member in _allMembers)
         {
             if (member != null && member.gameObject.activeInHierarchy)
             {
-                // Forzar entrada en combate
-                member.ForceEnterCombat(player);
+                TryForceMemberIntoCombat(member, player); // ✅ FIX #1
             }
         }
-        
+
         OnTeamCombatStarted?.Invoke();
+    }
+
+    /// <summary>
+    /// ✅ FIX #1 (CRÍTICO, auditoría combate 15 ago 2026): fuerza a un miembro a entrar en
+    /// combate SOLO si tiene combatConfig asignado. Sin esta guarda, un miembro mal configurado
+    /// (el caso real de Lety: combatConfig vacío) entraba igualmente en CombatState y se
+    /// registraba en ActiveCombatRegistry, pero NPCBehaviourManagerV2 solo añade Damageable si
+    /// HasBehaviour(Combat) && combatConfig != null — así que nunca podía recibir daño ni morir,
+    /// _defeatedCount nunca llegaba a _allMembers.Count, e IsTeamDefeated quedaba en false para
+    /// siempre: un solo NPC mal configurado bloqueaba la condición de victoria de TODO el equipo
+    /// (sin celebración de victoria, sin gates narrativos enganchados a OnTeamDefeated). Ahora,
+    /// si falta la config, el miembro se cuenta como derrotado de inmediato (no combate, pero
+    /// tampoco bloquea al resto) y se loguea el error para detectarlo fácil en el Inspector.
+    /// </summary>
+    private void TryForceMemberIntoCombat(NPCBehaviourManagerV2 member, Transform player)
+    {
+        if (member.Configuration?.combatConfig == null)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogError($"[NPCCombatTeam] {name}: {member.name} no tiene combatConfig asignado — se excluye del combate de equipo (no podrá recibir daño). Revisa su NPCBehaviourManagerV2.");
+#endif
+            OnMemberDefeated(member);
+            return;
+        }
+
+        member.ForceEnterCombat(player);
     }
     
     /// <summary>
@@ -395,216 +449,128 @@ namespace Game.NPC
     #region Private Methods
     
     /// <summary>
-    /// Corrutina que reagrupa al equipo y luego inicia el combate.
+    /// Secuencia única de detección→diálogo→combate del equipo. Sustituye al antiguo
+    /// Co_RegroupAndStartCombat (que hacía caminar a todos a una formación y luego intentaba
+    /// disparar diálogo a través de NPCInteractiveNarrativeExecutor, el sistema narrativo
+    /// LEGACY/CONGELADO — por eso nunca sonaba diálogo en un equipo nuevo como Lety+Vicky).
+    ///
+    /// Ahora se reutiliza exactamente el mismo mecanismo que ya funciona bien para NPCs solos:
+    /// NPCCombatConfig.dialogueOnAlert + DialogueManager.StartBattleDialogue. Cero grafo
+    /// narrativo, cero executor legacy — ninguno de los dos sistemas narrativos se toca aquí.
+    ///
+    /// Da igual qué miembro detectó al jugador: los dos (o más) se paran y miran de inmediato
+    /// (sin caminar antes, "nada más detectarte"). Cada miembro con dialogueOnAlert configurado
+    /// dice SU PROPIA frase, en orden — quien detectó primero, y luego el resto del equipo —
+    /// con la misma cámara grupal (enfocando a todo el equipo) durante toda la secuencia. Al
+    /// terminar (o de inmediato si nadie tiene diálogo configurado) entran en combate todos a la
+    /// vez vía ForceEnterCombat — no dependen de que cada uno "descubra" el combate por su cuenta.
     /// </summary>
-    private IEnumerator Co_RegroupAndStartCombat(Transform player)
+    private IEnumerator Co_DetectAndEngage(Transform player, NPCBehaviourManagerV2 detector = null)
     {
         _isRegrouping = true;
-        _currentTarget = player; // ✅ FIX: Guardar referencia para GetFormationPosition
-        
+        _currentTarget = player;
+
         if (showDebugLogs)
-        {
-            Debug.Log($"[NPCCombatTeam] {name}: Reagrupando equipo...");
-        }
-        
-        // ✅ FIX: Mover TODOS los miembros (incluyendo el líder) a posiciones de formación
-        // Esto asegura que todos estén cerca del jugador para el diálogo cinematográfico
-        List<Coroutine> moveCoroutines = new List<Coroutine>();
-        
-        for (int i = 0; i < _allMembers.Count; i++)
-        {
-            var member = _allMembers[i];
-            if (member == null || !member.gameObject.activeInHierarchy) continue;
-            
-            Vector3 targetPos = GetFormationPosition(i);
-            moveCoroutines.Add(StartCoroutine(Co_MoveMemberToPosition(member, targetPos)));
-        }
-        
-        // Esperar a que todos lleguen (o timeout)
-        if (waitForAllMembers && moveCoroutines.Count > 0)
-        {
-            float startTime = Time.time;
-            bool allArrived = false;
-            
-            while (!allArrived && (Time.time - startTime) < maxRegroupTime)
-            {
-                allArrived = true;
-                
-                // ✅ FIX: Verificar TODOS los miembros (desde index 0)
-                for (int i = 0; i < _allMembers.Count; i++)
-                {
-                    var member = _allMembers[i];
-                    if (member == null || !member.gameObject.activeInHierarchy) continue;
-                    
-                    Vector3 targetPos = GetFormationPosition(i);
-                    float dist = Vector3.Distance(member.transform.position, targetPos);
-                    
-                    if (dist > regroupDistance)
-                    {
-                        allArrived = false;
-                        break;
-                    }
-                }
-                
-                yield return null;
-            }
-            
-            if (showDebugLogs)
-            {
-                if (allArrived)
-                    Debug.Log($"[NPCCombatTeam] {name}: ¡Equipo reagrupado!");
-                else
-                    Debug.Log($"[NPCCombatTeam] {name}: Timeout de reagrupación - iniciando combate de todas formas");
-            }
-        }
-        
-        // Pequeña pausa dramática
-        yield return new WaitForSeconds(0.3f);
-        
-        // Hacer que todos miren al jugador
+            Debug.Log($"[NPCCombatTeam] {name}: ¡Jugador detectado! Deteniendo y encarando al equipo...");
+
+        // 1. TODO el equipo se para y mira al jugador de inmediato. Reutiliza AlertState (icono
+        // de detección, música de alerta, animación de "Sense") con skipDialogue=true: el
+        // diálogo lo dispara este método, no cada miembro por separado.
         foreach (var member in _allMembers)
         {
             if (member == null || !member.gameObject.activeInHierarchy) continue;
-            
-            Vector3 dir = (player.position - member.transform.position);
-            dir.y = 0;
-            if (dir.sqrMagnitude > 0.01f)
-            {
-                member.transform.rotation = Quaternion.LookRotation(dir);
-            }
+            if (member.Context != null) member.Context.Player = player;
+            member.Brain?.ForceState(new AlertState(duration: 999f, walk: false, stopDist: 0f, skipDialogue: true));
         }
-        
-        _isRegrouping = false;
 
-        // ✅ FIX (INC pendiente de numerar - Lety/Vicky "no detecta" / retraso al combate):
-        // este comentario decía "dejamos que el sistema narrativo del líder maneje el flujo" y
-        // mencionaba un EnterCombatAfterDialogue que nunca llegó a implementarse - no había
-        // ninguna llamada real desde aquí hacia NPCInteractiveNarrativeExecutor. El único disparo
-        // que quedaba era el detector independiente y puramente por distancia del propio líder
-        // (NPCInteractiveNarrativeExecutor.DetectPlayerRoutine, sin relación con este reagrupamiento),
-        // lo que producía un retraso variable entre la detección real (Vicky, FOV+raycast) y el
-        // inicio del diálogo/combate - o directamente ningún combate si esa narrativa singleUse ya
-        // se había consumido en otra sesión. Disparamos aquí explícitamente la narrativa del líder
-        // en cuanto el equipo termina de reagruparse.
-        bool leaderNarrativeStarted = false;
-        if (_leaderManager.Configuration != null &&
-            _leaderManager.Configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative))
+        // ✅ REDISEÑO (15 ago 2026, a petición de Raúl): "cada NPC con su propia frase; quien te
+        // ve primero habla primero, luego el resto — así se siente como un equipo sin necesitar
+        // un único diálogo compartido escrito a mano para cada combinación posible". Antes solo
+        // sonaba leaderConfig.dialogueOnAlert (la frase del líder, siempre, sin importar quién
+        // detectó); ahora se recorre el equipo completo empezando por el detector.
+        //
+        // 2. Orden de habla: detector primero (si está vivo y tiene dialogueOnAlert), luego el
+        // resto del equipo en el orden en que fueron añadidos (líder incluido si no fue él quien
+        // detectó). La cámara se mantiene enfocando a TODO el equipo durante toda la secuencia
+        // (mismo _groupFocusAnchor, sin cortes) — solo cambia el ORDEN de las líneas, no el estilo
+        // de cámara.
+        if (DialogueManager.Instance != null)
         {
-            var leaderExecutor = _leaderManager.GetComponent<NPCInteractiveNarrativeExecutor>();
-            if (leaderExecutor != null)
+            UpdateGroupFocusAnchor();
+
+            var speakOrder = new List<NPCBehaviourManagerV2>(_allMembers.Count);
+            if (detector != null && _allMembers.Contains(detector) && detector.gameObject.activeInHierarchy)
+                speakOrder.Add(detector);
+            foreach (var member in _allMembers)
             {
-                leaderNarrativeStarted = leaderExecutor.TryExecuteNarrative();
+                if (member == null || !member.gameObject.activeInHierarchy) continue;
+                if (member == detector) continue; // ya añadido primero
+                speakOrder.Add(member);
             }
+
+            bool isFirstLine = true;
+            foreach (var speaker in speakOrder)
+            {
+                var speakerConfig = speaker.Configuration?.combatConfig;
+                if (speakerConfig == null || speakerConfig.dialogueOnAlert == null) continue;
+
+                bool dialogueDone = false;
+                DialogueManager.Instance.StartBattleDialogue(speakerConfig.dialogueOnAlert, _groupFocusAnchor,
+                    () => dialogueDone = true, applyBattlePrep: isFirstLine);
+                isFirstLine = false;
+                yield return new WaitUntil(() => dialogueDone);
+            }
+
+            if (showDebugLogs && isFirstLine) // nadie llegó a hablar (ningún dialogueOnAlert configurado)
+                Debug.Log($"[NPCCombatTeam] {name}: Ningún miembro tiene dialogueOnAlert configurado — se pasa directo a combate.");
+        }
+        else if (showDebugLogs)
+        {
+            Debug.Log($"[NPCCombatTeam] {name}: DialogueManager no disponible — se pasa directo a combate.");
+        }
+
+        // 3. Combate para TODO el equipo a la vez.
+        _isRegrouping = false;
+        _isTeamInCombat = true;
+        _defeatedCount = 0;
+        IsPostDefeatDialogueFinished = false;
+
+        foreach (var member in _allMembers)
+        {
+            if (member != null && member.gameObject.activeInHierarchy)
+                TryForceMemberIntoCombat(member, player); // ✅ FIX #1
         }
 
         if (showDebugLogs)
-        {
-            Debug.Log(leaderNarrativeStarted
-                ? $"[NPCCombatTeam] {name}: Equipo reagrupado - narrativa del líder disparada."
-                : $"[NPCCombatTeam] {name}: Equipo reagrupado - sin narrativa que disparar (líder sin NPCInteractiveNarrativeExecutor aplicable, ya en ejecución, o narrativa singleUse ya consumida).");
-        }
+            Debug.Log($"[NPCCombatTeam] {name}: Equipo en combate.");
 
-        // Notificar que el equipo está listo (el sistema narrativo continuará el flujo)
         OnTeamCombatStarted?.Invoke();
     }
-    
-    /// <summary>
-    /// Mueve un miembro a su posición de formación.
-    /// </summary>
-    private IEnumerator Co_MoveMemberToPosition(NPCBehaviourManagerV2 member, Vector3 targetPos)
-    {
-        var agent = member.GetComponent<UnityEngine.AI.NavMeshAgent>();
-        if (agent == null || !agent.enabled || !agent.isOnNavMesh) yield break;
-        
-        // Verificar que la posición está en NavMesh
-        if (!UnityEngine.AI.NavMesh.SamplePosition(targetPos, out UnityEngine.AI.NavMeshHit navHit, 3f, UnityEngine.AI.NavMesh.AllAreas))
-        {
-            yield break;
-        }
-        
-        // ✅ CRÍTICO: Asegurar que el agent mueva y rote el transform
-        // Esto puede estar deshabilitado si el NPC tiene NPCCombatBrain previamente inicializado
-        agent.updatePosition = true;
-        
-        // ✅ FIX: Desactivar updateRotation para evitar conflicto con NPCSimpleAnimator
-        // NPCSimpleAnimator se encargará de rotar el NPC hacia la dirección de movimiento
-        agent.updateRotation = false;
 
-        agent.isStopped = false;
-        
-        // ✅ Verificar si hay un NPCCombatBrain activo que pueda interferir
-        var combatBrain = member.GetComponent<NPCCombatBrain>();
-        if (combatBrain != null && combatBrain.enabled)
+    /// <summary>
+    /// Reposiciona (creándola la primera vez) un ancla invisible en el punto medio de los
+    /// miembros vivos del equipo. Se pasa como "npc" a DialogueManager.StartBattleDialogue para
+    /// que la cámara de diálogo encuadre a todo el equipo en vez de solo al líder.
+    /// </summary>
+    private void UpdateGroupFocusAnchor()
+    {
+        if (_groupFocusAnchor == null)
         {
-            // Desactivar temporalmente el combat brain durante el reagrupamiento
-            combatBrain.enabled = false;
-            if (showDebugLogs)
-            {
-                Debug.Log($"[NPCCombatTeam] ⚠️ {member.name} tiene NPCCombatBrain activo - desactivando temporalmente para reagrupamiento");
-            }
+            var go = new GameObject($"{name}_GroupDialogueFocus");
+            go.hideFlags = HideFlags.HideInHierarchy;
+            _groupFocusAnchor = go.transform;
         }
-        
-        agent.SetDestination(navHit.position);
-        
-        // Obtener el animador - usar SimpleAnimator del manager que es más fiable
-        var animator = member.SimpleAnimator;
-        
-        if (showDebugLogs)
+
+        Vector3 sum = Vector3.zero;
+        int count = 0;
+        foreach (var member in _allMembers)
         {
-            Debug.Log($"[NPCCombatTeam] 🚶 {member.name} moviéndose a formación desde {member.transform.position} hacia {navHit.position}, Agent speed: {agent.speed}");
+            if (member == null || !member.gameObject.activeInHierarchy) continue;
+            sum += member.transform.position;
+            count++;
         }
-        
-        // Esperar a que llegue
-        float timeout = maxRegroupTime;
-        while (timeout > 0 && agent.enabled && agent.isOnNavMesh)
-        {
-            if (!agent.pathPending && agent.remainingDistance <= regroupDistance)
-            {
-                break;
-            }
-            
-            // ✅ Actualizar animación según velocidad real cada frame
-            if (animator != null)
-            {
-                float currentSpeed = agent.velocity.magnitude;
-                if (currentSpeed > 0.1f)
-                {
-                    // Normalizar la velocidad: dividir por la velocidad máxima del agent
-                    float normalizedSpeed = currentSpeed / Mathf.Max(agent.speed, 1f);
-                    animator.SetMovementSpeed(normalizedSpeed, 0.1f);
-                }
-                else
-                {
-                    // Si está parado, establecer velocidad a 0
-                    animator.SetMovementSpeed(0f, 0.1f);
-                }
-            }
-            
-            timeout -= Time.deltaTime;
-            yield return null;
-        }
-        
-        // Detener
-        if (agent.enabled && agent.isOnNavMesh)
-        {
-            agent.isStopped = true;
-        }
-        
-        if (animator != null)
-        {
-            animator.SetMovementSpeed(0, 0.1f);
-        }
-        
-        // ✅ Reactivar combat brain si fue desactivado
-        if (combatBrain != null && !combatBrain.enabled)
-        {
-            combatBrain.enabled = true;
-        }
-        
-        if (showDebugLogs)
-        {
-            Debug.Log($"[NPCCombatTeam] ✅ {member.name} llegó a formación");
-        }
+
+        _groupFocusAnchor.position = count > 0 ? sum / count : transform.position;
     }
     
     /// <summary>
@@ -612,31 +578,35 @@ namespace Game.NPC
     /// </summary>
     private IEnumerator Co_ResurrectTeam()
     {
+        _isResurrecting = true; // ✅ FIX #21
+
         if (showDebugLogs)
         {
             Debug.Log($"[NPCCombatTeam] {name}: Resucitando equipo...");
         }
-        
+
         ResetTeamState();
-        
+
         foreach (var member in _allMembers)
         {
             if (member == null) continue;
-            
+
             // Llamar al método de resurrección del NPC
             var lifecycleHandler = member.GetComponent<NPCCombatLifecycleHandler>();
             if (lifecycleHandler != null)
             {
                 lifecycleHandler.Resurrect();
             }
-            
+
             yield return new WaitForSeconds(resurrectDelay);
         }
-        
+
         if (showDebugLogs)
         {
             Debug.Log($"[NPCCombatTeam] {name}: ¡Equipo resucitado!");
         }
+
+        _isResurrecting = false; // ✅ FIX #21
     }
     
     #endregion

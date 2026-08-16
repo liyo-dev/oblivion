@@ -2,7 +2,7 @@
     "texts": [
         {
             "key": "ELDRAN_MISSION2_NAME",
-            "value": "A por la caja de frutas\t"
+            "value": "A por la caja de frutas"
         },
         {
             "key": "ELDRAN_MISSION8",
@@ -62,11 +62,11 @@
         },
         {
             "key": "QUEST_ELDRAN_MISSION12_NAME",
-            "value": "¡Will! Usala contra el demonio, presiona <sprite name=\"interactable_x\"> para derrotarle."
+            "value": "El regreso del demonio"
         },
         {
             "key": "QUEST_ELDRAN_MISSION13_DESC",
-            "value": "Reúnete con Eldran en las afueras del Reino. "
+            "value": "Reúnete con Eldran en las afueras del Reino."
         },
         {
             "key": "QUEST_ELDRAN_MISSION13_DETAIL",
@@ -210,7 +210,7 @@
         },
         {
             "key": "QUEST_ELDRAN_MISSION8_DESC",
-            "value": "Acercate a la gente del Reino y usa los botones para lanzar un hechizo protector."
+            "value": "Acércate a la gente del Reino y usa los botones para lanzar un hechizo protector."
         },
         {
             "key": "QUEST_ELDRAN_MISSION8_DETAIL",
@@ -334,19 +334,83 @@
         },
         {
             "key": "QUEST_TENDERA_ALGAS_DESC",
-            "value": "Consigue 2 algas frescas para Bárbara."
+            "value": "Consigue 2 pociones de magia para Bárbara."
         },
         {
             "key": "QUEST_TENDERA_ALGAS_DETAIL",
-            "value": "Bárbara necesita algas frescas para preparar un remedio urgente. Consigue 2 algas y llévaselas."
+            "value": "Bárbara necesita pociones de magia para sus remedios. Llévale 2 y te dará algas frescas a cambio."
         },
         {
             "key": "QUEST_TENDERA_ALGAS_STEP01_DESC",
-            "value": "Consigue 2 algas frescas y entrégaselas a Bárbara."
+            "value": "Consigue 2 pociones de magia y entrégaselas a Bárbara."
         },
         {
             "key": "READ_THE_LETTER_DESC",
             "value": "leer la carta que hay sobre la mesita."
+        },
+        {
+            "key": "Q_TABERNERA_ALGAS",
+            "value": "El remedio contra la resaca"
+        },
+        {
+            "key": "QUEST_TABERNERA_ALGAS_DESC",
+            "value": "Ayuda a Rosa, la tabernera, a preparar su remedio contra la resaca."
+        },
+        {
+            "key": "QUEST_TABERNERA_ALGAS_DETAIL",
+            "value": "Rosa necesita algas para preparar su famoso remedio contra la resaca. Tráele 2 algas y te recompensará con algo de dinero."
+        },
+        {
+            "key": "QUEST_TABERNERA_ALGAS_STEP01_DESC",
+            "value": "Consigue 2 algas para Rosa."
+        },
+        {
+            "key": "Q_MANUEL_POCIONES",
+            "value": "Pociones para la abuela"
+        },
+        {
+            "key": "QUEST_MANUEL_POCIONES_DESC",
+            "value": "Ayuda a Manuel a conseguir pociones de vida para su abuela."
+        },
+        {
+            "key": "QUEST_MANUEL_POCIONES_DETAIL",
+            "value": "La abuela de Manuel lleva unos días débil. Consigue 2 pociones de vida y tráeselas."
+        },
+        {
+            "key": "QUEST_MANUEL_POCIONES_STEP01_DESC",
+            "value": "Consigue 2 pociones de vida para Manuel."
+        },
+        {
+            "key": "Q_NORA_POCIONES",
+            "value": "Suministros para el hechizo"
+        },
+        {
+            "key": "QUEST_NORA_POCIONES_DESC",
+            "value": "Ayuda a Nora a conseguir pociones de magia para un hechizo que quiere probar."
+        },
+        {
+            "key": "QUEST_NORA_POCIONES_DETAIL",
+            "value": "Nora quiere intentar un hechizo nuevo, pero necesita 3 pociones de magia para tener energía suficiente. A cambio te compensará bien."
+        },
+        {
+            "key": "QUEST_NORA_POCIONES_STEP01_DESC",
+            "value": "Consigue 3 pociones de magia para Nora."
+        },
+        {
+            "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_NAME",
+            "value": "Un lugar seguro"
+        },
+        {
+            "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_DESC",
+            "value": "Eldran te enseña un Punto de Guardado."
+        },
+        {
+            "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_DETAIL",
+            "value": "Antes de seguir su camino, Eldran quiere enseñarte un Punto de Guardado: aquí podrás guardar tu partida y descansar para recuperar tu salud y tu maná."
+        },
+        {
+            "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_STEP01_DESC",
+            "value": "Escucha lo que Eldran tiene que decirte sobre el Punto de Guardado."
         }
     ]
 }

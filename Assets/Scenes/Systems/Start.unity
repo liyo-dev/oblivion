@@ -1001,7 +1001,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9de8d94f64f58a24c99d2b9bb4ed58b8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BootLoader
-  sceneToLoad: MainMenu
+  sceneToLoad: SplashScreen
   delaySeconds: 0
 --- !u!4 &109416902
 Transform:
@@ -1194,11 +1194,11 @@ RectTransform:
   - {fileID: 1239752464}
   m_Father: {fileID: 2040295227}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
+  m_AnchorMin: {x: 0.5, y: 1}
+  m_AnchorMax: {x: 0.5, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 780, y: 270}
-  m_Pivot: {x: 0, y: 1}
+  m_Pivot: {x: 0.5, y: 1}
 --- !u!222 &125996578
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1796,6 +1796,56 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 193604635}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &204844966
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 204844968}
+  - component: {fileID: 204844967}
+  m_Layer: 0
+  m_Name: CursorManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &204844967
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 204844966}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8da636a86edcb6e4f8beb249bf4a58cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CursorManager
+  defaultCursorTexture: {fileID: 2800000, guid: 012fae891de116947a383cd70b3c3482, type: 3}
+  interactCursorTexture: {fileID: 2800000, guid: 6839add091155f240bba9beaeb0cc234, type: 3}
+  defaultHotspot: {x: 32, y: 32}
+  interactHotspot: {x: 10, y: 6}
+  cursorMode: 0
+  hoverCheckEveryNFrames: 1
+--- !u!4 &204844968
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 204844966}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -22579,8 +22629,8 @@ MonoBehaviour:
   _fadeOutDuration: 0.2
   _popInDuration: 0.35
   _popOutDuration: 0.18
-  _bubbleMinWidth: 380
-  _labelHorizontalMargin: 24
+  _bubbleMinWidth: 460
+  _labelHorizontalMargin: 28
   _worldOffset: {x: 0, y: 1.2, z: 0}
 --- !u!114 &3313406703180634780
 MonoBehaviour:
@@ -26984,8 +27034,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 22
-  m_fontSizeBase: 22
+  m_fontSize: 30
+  m_fontSizeBase: 30
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -30113,3 +30163,4 @@ SceneRoots:
   - {fileID: 1818632615}
   - {fileID: 181093088}
   - {fileID: 1743630769}
+  - {fileID: 204844968}

@@ -38,9 +38,9 @@ public class SpeechBubbleUI : MonoBehaviour
 
     [Header("Tamaño")]
     [Tooltip("Ancho mínimo del bocadillo en píxeles de canvas. Aumenta si el texto se corta por los lados.")]
-    [SerializeField] float _bubbleMinWidth = 380f;
+    [SerializeField] float _bubbleMinWidth = 460f;
     [Tooltip("Margen interno horizontal del texto (izquierda y derecha).")]
-    [SerializeField] float _labelHorizontalMargin = 24f;
+    [SerializeField] float _labelHorizontalMargin = 28f;
 
     [Header("Posición")]
     [SerializeField] Vector3 _worldOffset = new Vector3(0f, 2.2f, 0f);

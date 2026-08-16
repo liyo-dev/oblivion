@@ -62,6 +62,11 @@ namespace Core.InputGlyphs
                  "Sin consumidor en HUD todavía (2026-08-12) — se rellena para completar el set.")]
         [SerializeField] private Sprite dpadDown;
 
+        [Header("Ver mapa grande")]
+        [Tooltip("Botón para ampliar el minimapa (BigMapController) — tecla M en teclado, botón " +
+                 "Select/View/Back/\"-\" del mando. Ver InputGlyphNames.Select.")]
+        [SerializeField] private Sprite select;
+
         public Sprite GetSprite(string buttonName)
         {
             switch (buttonName)
@@ -83,6 +88,7 @@ namespace Core.InputGlyphs
                 case InputGlyphNames.DpadRight: return dpadRight;
                 case InputGlyphNames.DpadUp: return dpadUp;
                 case InputGlyphNames.DpadDown: return dpadDown;
+                case InputGlyphNames.Select: return select;
                 default: return null;
             }
         }

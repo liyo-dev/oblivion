@@ -1146,23 +1146,95 @@
         },
         {
             "key": "DLG_TENDERA_ALGAS_01",
-            "value": "A traveler fell ill on the way to market. I need fresh algae for the remedy, and mine has gone bad."
+            "value": "I need a couple of magic potions for my remedies, and I’ve run out at the shop."
         },
         {
             "key": "DLG_TENDERA_ALGAS_02",
-            "value": "Bring me a couple of algae and I'll pay you well."
+            "value": "Bring me two magic potions and I’ll give you fresh algae in return — I have plenty."
         },
         {
             "key": "DLG_TENDERA_ALGAS_03",
-            "value": "Do you have the algae yet? I need them before the traveler gets worse."
+            "value": "Do you have the magic potions yet? I need them for my remedies."
         },
         {
             "key": "DLG_TENDERA_ALGAS_04",
-            "value": "Just in time. Thank you, truly. Here, for your trouble."
+            "value": "Just what I needed. Here, the algae are yours — good trade."
         },
         {
             "key": "QUEST_ELDRAN_MISSION12_DESC_02",
             "value": "Talk to the King."
+        },
+        {
+            "key": "CHAR_TABERNERA",
+            "value": "Rosa"
+        },
+        {
+            "key": "DLG_TABERNERA_ALGAS_01",
+            "value": "Ugh, my head... Last night's party at the tavern ran way too long. I need to make my hangover remedy, but I'm out of seaweed."
+        },
+        {
+            "key": "DLG_TABERNERA_ALGAS_02",
+            "value": "Could you bring me 2 seaweed? I'll pay you well for it, I promise."
+        },
+        {
+            "key": "DLG_TABERNERA_ALGAS_03",
+            "value": "Do you have the seaweed yet? I need it for the remedy, the sooner the better."
+        },
+        {
+            "key": "DLG_TABERNERA_ALGAS_04",
+            "value": "Perfect, just what I needed! Here, this is for you. Now I can finally cure this hangover."
+        },
+        {
+            "key": "DLG_MANUEL_POCIONES_01",
+            "value": "Good thing you're here. My grandmother has been very weak for days and I can't find health potions anywhere."
+        },
+        {
+            "key": "DLG_MANUEL_POCIONES_02",
+            "value": "Could you get me 2 health potions? I'll give you something special in return, I promise."
+        },
+        {
+            "key": "DLG_MANUEL_POCIONES_03",
+            "value": "Do you have the potions yet? My grandmother needs them as soon as possible."
+        },
+        {
+            "key": "DLG_MANUEL_POCIONES_04",
+            "value": "Thank you so much! This will help her a lot. Here, I wanted you to have this — it'll look great on you."
+        },
+        {
+            "key": "DLG_NORA_POCIONES_01",
+            "value": "Great timing! I've been wanting to try a new spell for days, but I need more magic energy than I have."
+        },
+        {
+            "key": "DLG_NORA_POCIONES_02",
+            "value": "If you get me 3 magic potions, I'll make it worth your while, I promise!"
+        },
+        {
+            "key": "DLG_NORA_POCIONES_03",
+            "value": "Do you have the 3 magic potions yet? I can't wait to try the spell."
+        },
+        {
+            "key": "DLG_NORA_POCIONES_04",
+            "value": "Great, now I can try it! Here, this is for you, for the trouble."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION3_COMEWITHME_01",
+            "value": "Well done, Will! By the way... come with me, there's something I want to show you before I go."
+        },
+        {
+            "key": "DLG_ELDRAN_SAVEPOINT_01",
+            "value": "This is a Save Point, Will."
+        },
+        {
+            "key": "DLG_ELDRAN_SAVEPOINT_02",
+            "value": "Here you can save your game and rest to recover your health and mana, so don't hesitate to use it whenever you need to."
+        },
+        {
+            "key": "DLG_ELDRAN_SAVEPOINT_03",
+            "value": "Well, now you know what matters. I'll let you keep exploring."
+        },
+        {
+            "key": "DLG_ELDRAN_SAVEPOINT_TURNIN_01",
+            "value": "Take care, Will. See you soon."
         }
     ]
 }

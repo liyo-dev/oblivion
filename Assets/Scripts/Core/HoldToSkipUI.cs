@@ -43,8 +43,9 @@ public class HoldToSkipUI : MonoBehaviour
 
     public enum SkipAction
     {
-        UnityEventOnly,  // Solo dispara el UnityEvent
-        StopTimeline     // Detiene el Timeline
+        UnityEventOnly,        // Solo dispara el UnityEvent
+        StopTimeline,          // Detiene el Timeline
+        SkipNarrativeSequence  // Llama a CinematicSequencerBase.RequestSkipAll() (ver GlobalCinematicSkipController)
     }
 
     void Awake()
@@ -243,7 +244,13 @@ public class HoldToSkipUI : MonoBehaviour
         {
             StopTimeline();
         }
-        
+        else if (skipAction == SkipAction.SkipNarrativeSequence)
+        {
+            // Salta TODAS las CinematicSequencerBase activas ahora mismo (normalmente una sola).
+            // No-op seguro si no hay ninguna cinemática en curso.
+            CinematicSequencerBase.RequestSkipAll();
+        }
+
         // Siempre disparar el UnityEvent
         OnSkipCompleted?.Invoke();
     }

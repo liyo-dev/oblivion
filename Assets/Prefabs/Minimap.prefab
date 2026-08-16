@@ -132,7 +132,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 2100000, guid: 30eaf2d4acb44178a3a3da72db8bde6a, type: 2}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -408,6 +408,7 @@ GameObject:
   - component: {fileID: 3540409993825747608}
   - component: {fileID: 367498453277848607}
   - component: {fileID: 5378144863373289292}
+  - component: {fileID: 1771492797237605772}
   m_Layer: 0
   m_Name: MinimapCamera
   m_TagString: Untagged
@@ -564,6 +565,21 @@ MonoBehaviour:
   markerSizeEdge: 28
   edgePadding: 12
   edgeAlpha: 0.85
+--- !u!114 &1771492797237605772
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8092311781141524330}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49fe7b4620f4477298e142f091c2d3f9, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::BigMapController
+  minimapRoot: {fileID: 712706916020453845}
+  minimapController: {fileID: 367498453277848607}
+  bigScale: 3
 --- !u!1 &8643496874181828197
 GameObject:
   m_ObjectHideFlags: 0

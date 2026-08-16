@@ -28,3 +28,4 @@ MonoBehaviour:
   dpadRight: {fileID: 21300000, guid: fe0e1ec75b2048f7af675be6cd9e41ed, type: 3}
   dpadUp: {fileID: 21300000, guid: 7c8b9e351c6547bfac7d9bcea42df859, type: 3}
   dpadDown: {fileID: 21300000, guid: 507d2fb74bc54f92a37044752069446a, type: 3}
+  select: {fileID: 21300000, guid: aaa1f1519b2d49a6bd1fa4c0e3158a09, type: 3}

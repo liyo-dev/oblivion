@@ -304,7 +304,28 @@ namespace Game.NPC.Modules
         
         [Tooltip("Si true, prioriza usar escudo sobre buscar cobertura")]
         public bool preferShieldOverCover = false;
-        
+
+        [Header("🎭 Dificultad y Engaño Táctico")]
+        [Range(0f, 1f)]
+        [Tooltip("Nivel de dificultad táctica del NPC (0=Torpe, 1=Experto). Afecta el tiempo de reacción,\n" +
+                 "la probabilidad de decisiones tácticas inteligentes y la probabilidad de engaño (deceptionChance).\n" +
+                 "✅ FIX #13 (auditoría combate, 15 ago 2026): antes estaba hardcodeado a 0.7 para TODOS los NPCs\n" +
+                 "en CombatState.cs — ahora es configurable por NPC desde aquí.")]
+        public float difficultyLevel = 0.7f;
+
+        [Range(0f, 1f)]
+        [Tooltip("Probabilidad de que el NPC finja quedarse sin maná para emboscar al jugador cuando le\n" +
+                 "quedan pocos ataques listos. La probabilidad real aplicada es deceptionChance × difficultyLevel.\n" +
+                 "✅ FIX #5 (auditoría combate, 15 ago 2026): campo añadido — antes no existía en el SO, así que\n" +
+                 "el mapeo a NPCCombatBrain.Settings siempre dejaba este valor en 0 y la estrategia de\n" +
+                 "engaño/emboscada nunca se activaba pese a tener ~150 líneas de lógica ya implementadas.")]
+        public float deceptionChance = 0.3f;
+
+        [Range(1, 3)]
+        [Tooltip("Número mínimo de ataques que el NPC debe tener listos para considerar activar el engaño\n" +
+                 "(fingir quedarse sin maná). Ver deceptionChance.")]
+        public int minAttacksToKeepForAmbush = 1;
+
         [Header("🔍 Sistema de Búsqueda del Jugador")]
         [Tooltip("Si TRUE, el NPC se mueve activamente buscando al jugador (5 intentos de movimiento)\nSi FALSE, se queda quieto durante 'passiveSearchDuration' segundos antes de abandonar")]
         public bool activelySearchForPlayer = true;
@@ -453,37 +474,47 @@ namespace Game.NPC.Modules
         /// <returns>Índice del hechizo seleccionado (0-2) o -1 si ninguno está disponible</returns>
         public int SelectRandomSpell()
         {
-            // Recopilar hechizos disponibles con sus probabilidades
-            var availableSpells = new System.Collections.Generic.List<(int index, float chance)>();
-            
-            if (spell1Prefab != null) availableSpells.Add((0, spell1Chance));
-            if (spell2Prefab != null) availableSpells.Add((1, spell2Chance));
-            if (spell3Prefab != null) availableSpells.Add((2, spell3Chance));
-            
-            if (availableSpells.Count == 0)
+            // ✅ FIX #24 (auditoría combate, 15 ago 2026): antes se alocaba una List<(int,float)>
+            // nueva en cada llamada. Al ser como máximo 3 elementos fijos, se sustituye por
+            // variables locales sin heap allocation — este método puede llamarse varias veces
+            // por combate (una por decisión de ataque).
+            bool has0 = spell1Prefab != null;
+            bool has1 = spell2Prefab != null;
+            bool has2 = spell3Prefab != null;
+
+            float c0 = has0 ? spell1Chance : 0f;
+            float c1 = has1 ? spell2Chance : 0f;
+            float c2 = has2 ? spell3Chance : 0f;
+
+            int availableCount = (has0 ? 1 : 0) + (has1 ? 1 : 0) + (has2 ? 1 : 0);
+            if (availableCount == 0)
                 return -1;
-            
-            // Normalizar probabilidades
-            float totalChance = 0f;
-            foreach (var spell in availableSpells)
-                totalChance += spell.chance;
-            
+
+            float totalChance = c0 + c1 + c2;
+
             if (totalChance <= 0f)
-                return availableSpells[Random.Range(0, availableSpells.Count)].index;
-            
+            {
+                // Elegir uniformemente entre los disponibles (mismo comportamiento que antes)
+                int pick = Random.Range(0, availableCount);
+                int seen = 0;
+                if (has0) { if (seen == pick) return 0; seen++; }
+                if (has1) { if (seen == pick) return 1; seen++; }
+                if (has2) { if (seen == pick) return 2; seen++; }
+                return -1; // inalcanzable: availableCount ya garantiza al menos un has* true
+            }
+
             // Selección ponderada
             float randomValue = Random.Range(0f, totalChance);
             float cumulative = 0f;
-            
-            foreach (var spell in availableSpells)
-            {
-                cumulative += spell.chance;
-                if (randomValue <= cumulative)
-                    return spell.index;
-            }
-            
-            // Fallback al último disponible
-            return availableSpells[availableSpells.Count - 1].index;
+
+            if (has0) { cumulative += c0; if (randomValue <= cumulative) return 0; }
+            if (has1) { cumulative += c1; if (randomValue <= cumulative) return 1; }
+            if (has2) { cumulative += c2; if (randomValue <= cumulative) return 2; }
+
+            // Fallback al último disponible (mismo criterio que antes: el de mayor índice)
+            if (has2) return 2;
+            if (has1) return 1;
+            return 0;
         }
         
         /// <summary>

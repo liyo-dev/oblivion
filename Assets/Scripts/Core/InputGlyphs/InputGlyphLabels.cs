@@ -152,6 +152,15 @@ namespace Core.InputGlyphs
                 case InputGlyphNames.DpadDown: // "G" en teclado
                     return kb ? "G" : Loc("GLYPH_DPAD_DOWN", "D-Pad abajo");
 
+                // Ver mapa grande — GamePlay.ToggleBigMap. En teclado es la tecla M; en mando es el
+                // botón pequeño de la izquierda (distinto de Start/Menu, que es el de la derecha):
+                // "View" en Xbox, "Share"/"Create" en PlayStation, "－" en Switch.
+                case InputGlyphNames.Select:
+                    if (kb) return "M";
+                    return family == InputGlyphDeviceFamily.PlayStation ? Loc("GLYPH_SHARE", "Share")
+                         : family == InputGlyphDeviceFamily.Switch ? "－"
+                         : Loc("GLYPH_VIEW", "View");
+
                 default:
                     return "?";
             }

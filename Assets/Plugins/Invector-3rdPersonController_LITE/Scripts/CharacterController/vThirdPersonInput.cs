@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -115,21 +115,46 @@ namespace Invector.vCharacterController
             InitializeTpCamera();
         }
 
-        protected virtual void FixedUpdate()
-        {
-            cc.UpdateMotor();
-            cc.ControlLocomotionType();
-            cc.ControlRotationType();
-            cc.AirVelocity();
-        }
-
         protected virtual void Update()
         {
             // Leer inputs de GamepadInputReader (centralizado)
             ReadInputsFromGamepadReader();
-            
+
             InputHandle();
-            cc.UpdateAnimator();
+
+            // FIX (demo 14 ago): el motor de movimiento vivía en FixedUpdate (cadencia física fija,
+            // p.ej. 50Hz) mientras que vThirdPersonCamera.cs pasó de FixedUpdate a LateUpdate ese
+            // mismo día (commit a17b6b85a, "enhance cloud and dialogue camera functionality").
+            // Resultado: a framerates > 50fps la cámara reevaluaba y suavizaba su posición/rotación
+            // CADA frame renderizado, pero 'target.position' (este mismo transform) solo cambiaba
+            // 50 veces por segundo — se quedaba quieto varios frames y luego saltaba de golpe. Eso
+            // es justo la sensación de "retraso/lentitud" y mareo reportada en la demo. UpdateMotor/
+            // ControlLocomotionType/ControlRotationType/AirVelocity ya usan Time.deltaTime
+            // internamente (no Time.fixedDeltaTime), así que moverlos aquí es seguro: quedan en la
+            // misma cadencia por frame que la cámara, sin descoordinación entre movimiento y render.
+            //
+            // FIX (15 ago 2026): con SuppressMoveInput=true (PlayerAmbientActivityHandler mientras
+            // el jugador está sentado/comiendo/durmiendo en un NPCWorldPoint — CC ya desactivado a
+            // propósito por ese handler) este bloque seguía ejecutándose igual. cc.UpdateMotor()
+            // hace su propio ground-check y, con el CC apagado, concluye "no grounded"; cc.UpdateAnimator()
+            // empuja ese IsGrounded=false al Animator aquí mismo, en Update(). Unity evalúa las
+            // transiciones del Animator justo después de Update() y ANTES de LateUpdate() — así que
+            // cualquier corrección de IsGrounded hecha en LateUpdate (como la de PlayerAmbientActivityHandler
+            // o SleepTrigger) siempre llega un frame tarde, y la transición hacia el estado de caída ya
+            // se disparó. Mismo bug exacto que ya se encontró y arregló en SleepTrigger (ahí se
+            // desactivó todo el componente); aquí no podemos hacer lo mismo porque este método también
+            // procesa CameraInput() dentro de InputHandle(), y sentado/comiendo el jugador debe poder
+            // seguir mirando alrededor. Saltar solo el bloque de motor/animator cuando SuppressMoveInput
+            // está activo deja CameraInput() funcionando y evita el push erróneo de IsGrounded.
+            if (!SuppressMoveInput)
+            {
+                cc.UpdateMotor();
+                cc.ControlLocomotionType();
+                cc.ControlRotationType();
+                cc.AirVelocity();
+
+                cc.UpdateAnimator();
+            }
         }
 
         /// <summary>

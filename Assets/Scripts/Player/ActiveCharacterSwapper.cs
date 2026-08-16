@@ -59,6 +59,10 @@ public class ActiveCharacterSwapper : MonoBehaviour
     // Temporizador para verificar periódicamente si el Will NPC sigue al jugador
     private float _willFollowCheckTimer;
 
+    // Temporizador para verificar periódicamente que el NPC oculto (representado ahora mismo
+    // por el controller) sigue oculto. Ver EnsureHiddenNpcSuppressed().
+    private float _hiddenCheckTimer;
+
     // Cámara principal cacheada (regla: nunca Camera.main por frame). Se refresca si muere.
     private Camera _mainCamCached;
 
@@ -100,6 +104,26 @@ public class ActiveCharacterSwapper : MonoBehaviour
 
     private void Update()
     {
+        // Red de seguridad periódica contra el bug conocido "dos Estelas y un Will" (ver
+        // comentario en ResetState()): si el NPC actualmente oculto recupera renderers activos
+        // por culpa de otro sistema (ModularAutoBuilder reconstruyendo apariencia, un rejoin al
+        // party, el chequeo periódico de NPCPartyMember.Update()...), se ve DUPLICADO — el NPC
+        // "oculto" reaparece mientras el controller ya luce esa misma apariencia. Antes solo
+        // existía protección contra esta carrera al REVELAR (ReassertVisibilityNextFrames); esta
+        // comprobación cubre el caso simétrico de OCULTAR, igual que EnsureWillNpcVisible cubre a
+        // Will. Gateado a 0.5s, no por frame, así que no incumple la regla de
+        // GetComponentInChildren en Update. Corre siempre (no solo cuando _willNpcInstance existe)
+        // porque el NPC oculto puede ser Liam o Estela sin que Will esté instanciado como NPC.
+        if (_hiddenNpc != null)
+        {
+            _hiddenCheckTimer += Time.deltaTime;
+            if (_hiddenCheckTimer >= 0.5f)
+            {
+                _hiddenCheckTimer = 0f;
+                EnsureHiddenNpcSuppressed();
+            }
+        }
+
         if (_willNpcInstance == null) return;
 
         _willFollowCheckTimer += Time.deltaTime;
@@ -177,6 +201,33 @@ public class ActiveCharacterSwapper : MonoBehaviour
 #endif
 
         DiagnoseAndHealWillVisibility();
+    }
+
+    /// <summary>
+    /// Simétrico de EnsureWillNpcVisible pero para el caso general: reafirma que el NPC
+    /// actualmente oculto (_hiddenNpc, el que el controller está representando) sigue con sus
+    /// renderers apagados. Si algo los reactivó fuera de la ventana de ReassertHiddenNextFrames,
+    /// los vuelve a apagar aquí. Evita el bug "dos Estelas y un Will" (ver ResetState()) cuando
+    /// el NPC afectado es Liam o Estela en vez de Will.
+    /// </summary>
+    private void EnsureHiddenNpcSuppressed()
+    {
+        if (_hiddenNpc == null) return;
+
+        bool hadEnabled = false;
+        foreach (var r in _hiddenNpc.GetComponentsInChildren<Renderer>(true))
+        {
+            if (r != null && r.enabled)
+            {
+                r.enabled = false;
+                hadEnabled = true;
+            }
+        }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (hadEnabled)
+            Debug.LogWarning($"[ActiveCharacterSwapper] NPC oculto '{_hiddenNpc.name}' tenía renderers reactivados fuera de la ventana de ReassertHiddenNextFrames — vuelto a ocultar por la red de seguridad periódica (0.5s). Bug 'dos Estelas y un Will' evitado.");
+#endif
     }
 
     /// <summary>
@@ -431,7 +482,19 @@ public class ActiveCharacterSwapper : MonoBehaviour
     {
         Debug.Log("[ActiveCharacterSwapper] 🔄 Reseteando estado.");
         DestroyWillNpc();
+
+        // FIX: red de seguridad para el bug "dos Estelas y un Will" tras Game Over. En el camino
+        // normal (recarga completa de escena) _hiddenNpc ya apunta a un objeto destruido y esto
+        // es un no-op. Pero si por cualquier motivo ResetState() se llama SIN que la escena se
+        // haya recargado de verdad (p. ej. un camino futuro que reutilice la escena actual), el
+        // NPC que el controller estaba representando se quedaba oculto para siempre — y
+        // WorldBootstrap podía instanciar un NPC nuevo y totalmente visible para ese mismo
+        // personaje encima, dando la sensación de "personaje duplicado". Restaurar su visibilidad
+        // antes de soltar la referencia evita ese escenario sin coste en el camino normal.
+        if (_hiddenNpc != null)
+            SetNpcVisible(_hiddenNpc, true);
         _hiddenNpc = null;
+
         // Asegurarse de que los hechizos de Will se capturen de nuevo si es necesario
         CaptureWillSpells();
         _ready = true; // Asegurarse de que esté listo para operar
@@ -713,6 +776,8 @@ public class ActiveCharacterSwapper : MonoBehaviour
         // más para blindarnos de esa condición de carrera.
         if (visible)
             StartCoroutine(ReassertVisibilityNextFrames(npc));
+        else
+            StartCoroutine(ReassertHiddenNextFrames(npc));
 
         // Cuando el NPC está oculto, desactivar sus colliders para que los proyectiles enemigos
         // no choquen físicamente con el NPC y puedan alcanzar el CharacterController del jugador.
@@ -786,6 +851,33 @@ public class ActiveCharacterSwapper : MonoBehaviour
     }
 
     /// <summary>
+    /// FIX "dos Estelas y un Will" (ver ResetState() y EnsureHiddenNpcSuppressed): simétrico de
+    /// ReassertVisibilityNextFrames pero para OCULTAR. SetNpcVisible(npc, false) apaga los
+    /// renderers al cambiar de personaje, pero si algo los reactiva un frame después
+    /// (ModularAutoBuilder reconstruyendo apariencia, OnJoinedParty, el chequeo periódico de
+    /// NPCPartyMember.Update()...) el NPC "oculto" reaparecía junto al controller, que ya luce esa
+    /// misma apariencia — se ven dos copias del mismo personaje a la vez. Antes solo el camino de
+    /// REVELAR tenía esta protección; este es el mismo patrón de reintentos (frame siguiente,
+    /// +0.25s, +0.75s) para el camino de OCULTAR. Aborta si mientras tanto el NPC dejó de ser el
+    /// oculto actual (respeta el estado más reciente, igual que ReassertVisibilityNextFrames
+    /// respeta si volvió a ser el oculto).
+    /// </summary>
+    private System.Collections.IEnumerator ReassertHiddenNextFrames(NPCPartyMember npc)
+    {
+        yield return null;
+        if (npc == null || npc != _hiddenNpc) yield break;
+        ApplyRendererVisibility(npc, false);
+
+        yield return new WaitForSeconds(0.25f);
+        if (npc == null || npc != _hiddenNpc) yield break;
+        ApplyRendererVisibility(npc, false);
+
+        yield return new WaitForSeconds(0.5f);
+        if (npc == null || npc != _hiddenNpc) yield break;
+        ApplyRendererVisibility(npc, false);
+    }
+
+    /// <summary>
     /// FIX INC-050: reafirma la visibilidad del Will NPC recién spawneado, igual que
     /// ReassertVisibilityNextFrames hace para Liam/Estela. Necesario porque ModularAutoBuilder
     /// (o su fallback ActivateWillPartsByName) puede tocar los Renderer hijos un frame después
@@ -843,6 +935,18 @@ public class ActiveCharacterSwapper : MonoBehaviour
         else
             npc.transform.position = pos;
         npc.transform.rotation = rot;
+
+        // FIX Will invisible — mismo AABB de culling atascado que documentan SpawnWillNpc() y
+        // EnsureWillNpcVisible() más arriba, pero este call site se quedó sin el fix (gap conocido:
+        // Will podía quedar invisible tras un warp cerca de un puzle). Un teleport brusco puede
+        // dejar el bounds de culling calculado con la posición ANTERIOR hasta que algo lo refresque.
+        var anim = npc.GetComponentInChildren<Animator>(true);
+        if (anim != null) anim.Update(0f);
+        foreach (var smr in npc.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+        {
+            if (!smr.updateWhenOffscreen) smr.updateWhenOffscreen = true;
+            if (smr.gameObject.activeInHierarchy) _ = smr.bounds;
+        }
     }
 
     /// <summary>

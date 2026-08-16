@@ -47,6 +47,27 @@ public class NPCInteractiveNarrativeConfigEditor : Editor
             EditorGUILayout.BeginHorizontal();
             narrativeProp.isExpanded = EditorGUILayout.Foldout(narrativeProp.isExpanded, label, true, EditorStyles.foldoutHeader);
             GUILayout.FlexibleSpace();
+
+            GUI.enabled = i > 0;
+            if (GUILayout.Button("▲", GUILayout.Width(22)))
+            {
+                _conditionalNarratives.MoveArrayElement(i, i - 1);
+                GUI.enabled = true;
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.EndVertical();
+                break;
+            }
+            GUI.enabled = i < _conditionalNarratives.arraySize - 1;
+            if (GUILayout.Button("▼", GUILayout.Width(22)))
+            {
+                _conditionalNarratives.MoveArrayElement(i, i + 1);
+                GUI.enabled = true;
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.EndVertical();
+                break;
+            }
+            GUI.enabled = true;
+
             if (GUILayout.Button("✕", GUILayout.Width(22)))
             {
                 _conditionalNarratives.DeleteArrayElementAtIndex(i);

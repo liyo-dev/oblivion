@@ -114,7 +114,7 @@
         },
         {
             "key": "DG_AMIGOELDRAN_BEFORE",
-            "value": "Hola chicos, se ve que teneis magia a distancia"
+            "value": "Hola chicos, se ve que tenéis magia a distancia"
         },
         {
             "key": "DG_AMIGOELDRAN_TURNIN",
@@ -134,7 +134,7 @@
         },
         {
             "key": "DG_LIAM_ARRESTO_04",
-            "value": "A ver yo solo quería ayudar.... estupendo bonita, mira quien viene por ahi...."
+            "value": "A ver yo solo quería ayudar.... estupendo bonita, mira quién viene por ahí...."
         },
         {
             "key": "DG_LIBROHECHIZOS_01",
@@ -154,11 +154,11 @@
         },
         {
             "key": "DG_LIBROHECHIZOS_05",
-            "value": "¿Sabeis lo peligroso que es lo que me estais pidiendo?"
+            "value": "¿Sabéis lo peligroso que es lo que me estáis pidiendo?"
         },
         {
             "key": "DG_LIBROHECHIZOS_06",
-            "value": "Si, lo sabemos pero mas peligroso es no hacer nada y dejar que sigan atacando el Reino..."
+            "value": "Sí, lo sabemos pero más peligroso es no hacer nada y dejar que sigan atacando el Reino..."
         },
         {
             "key": "DG_LIBROHECHIZOS_07",
@@ -170,19 +170,19 @@
         },
         {
             "key": "DG_LIBROHECHIZOS_09",
-            "value": "A ver lo unico que se es que es custodiado por un guardian. Al final del camino Rocoso hay unas Ruinas..."
+            "value": "A ver lo único que sé es que es custodiado por un guardián. Al final del camino Rocoso hay unas Ruinas..."
         },
         {
             "key": "DG_LIBROHECHIZOS_10",
-            "value": "Se dice que allí un guardian custodia un importante libro de hechizos pero nadie ha sido capaz de conseguirlo y poco a poco la gente a dejado de visitar el templo."
+            "value": "Se dice que allí un guardián custodia un importante libro de hechizos pero nadie ha sido capaz de conseguirlo y poco a poco la gente ha dejado de visitar el templo."
         },
         {
             "key": "DG_LIBROHECHIZOS_11",
-            "value": "Perdonad. ¿de qué hablais? Es que estaba pensando en ir a esa taberna de ahi y perdí el hilo..."
+            "value": "Perdonad. ¿De qué habláis? Es que estaba pensando en ir a esa taberna de ahí y perdí el hilo..."
         },
         {
             "key": "DG_LIBROHECHIZOS_12",
-            "value": "Disculpala.... la pobre no da para más...."
+            "value": "Discúlpala.... la pobre no da para más...."
         },
         {
             "key": "DG_LIBROHECHIZOS_13",
@@ -194,7 +194,7 @@
         },
         {
             "key": "DG_LIBROHECHIZOS_15",
-            "value": "A empezado él."
+            "value": "Ha empezado él."
         },
         {
             "key": "DG_LIBROHECHIZOS_16",
@@ -242,7 +242,7 @@
         },
         {
             "key": "DLG_ANTIPATICO_06",
-            "value": "Estuve nadando y olvidé ponermelas."
+            "value": "Estuve nadando y olvidé ponérmelas."
         },
         {
             "key": "DLG_ANTIPATICO_07",
@@ -262,7 +262,7 @@
         },
         {
             "key": "DLG_ANTIPATICO_TURNIN_03",
-            "value": "Con ellas podrás saltar. Denada muchacho... Ahora fuera de mi vista."
+            "value": "Con ellas podrás saltar. De nada muchacho... Ahora fuera de mi vista."
         },
         {
             "key": "DLG_ELDRAN_MISSION1_01",
@@ -410,7 +410,7 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_10",
-            "value": "Por último habla con Erika y dile que te entrene. Necesistas entrenamiento antes de salir a  enfrentarse al mundo."
+            "value": "Por último habla con Erika y dile que te entrene. Necesitas entrenamiento antes de salir a enfrentarte al mundo."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_PROGRESS_01",
@@ -430,7 +430,7 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_01",
-            "value": "Bien hecho Willl, ahora puedes ponerte la capa de mago desde el menú."
+            "value": "Bien hecho Will, ahora puedes ponerte la capa de mago desde el menú."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_02",
@@ -454,7 +454,7 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_07",
-            "value": "No se mucho de ella pero en el Reino es famosa por ser la más poderosa de la región."
+            "value": "No sé mucho de ella pero en el Reino es famosa por ser la más poderosa de la región."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_08",
@@ -550,11 +550,11 @@
         },
         {
             "key": "DLG_ESTELA_PRISION_08",
-            "value": "Will vamos a busccar una forma de salir de aqui..."
+            "value": "Will vamos a buscar una forma de salir de aquí..."
         },
         {
             "key": "DLG_ESTELA_PRISION_09",
-            "value": "Asi al salir Eldran puede hablar con el Rey y contarle lo que ha pasado mientras nosotros intentamos averiguar qué ocurre."
+            "value": "Así al salir Eldran puede hablar con el Rey y contarle lo que ha pasado mientras nosotros intentamos averiguar qué ocurre."
         },
         {
             "key": "DLG_ESTELA_PRISION_10",
@@ -586,11 +586,11 @@
         },
         {
             "key": "DLG_FUEGO_FATUO_05",
-            "value": "Hay mucha gente que trabaja de dia y tiene que volver a sus casas y estan atrapados."
+            "value": "Hay mucha gente que trabaja de día y tiene que volver a sus casas y están atrapados."
         },
         {
             "key": "DLG_FUEGO_FATUO_06",
-            "value": "Nosotros justo ibamos hacia alli. "
+            "value": "Nosotros justo íbamos hacia allí."
         },
         {
             "key": "DLG_FUEGO_FATUO_07",
@@ -598,7 +598,7 @@
         },
         {
             "key": "DLG_FUEGO_FATUO_08",
-            "value": "Muchas gracias! Venid a verme si lo conseguis, os daré algo a cambio..."
+            "value": "¡Muchas gracias! Venid a verme si lo conseguís, os daré algo a cambio..."
         },
         {
             "key": "DLG_FUEGO_FATUO_09",
@@ -618,7 +618,7 @@
         },
         {
             "key": "DLG_GUARD_01",
-            "value": "Alto ahí... ¿os creeis que podeis ir destruyendo montañas como si nada?"
+            "value": "Alto ahí... ¿os creéis que podéis ir destruyendo montañas como si nada?"
         },
         {
             "key": "DLG_GUARD_02",
@@ -638,7 +638,7 @@
         },
         {
             "key": "DLG_GUARD_06",
-            "value": "Seguidme y no os quedeis atrás."
+            "value": "Seguidme y no os quedéis atrás."
         },
         {
             "key": "DLG_GUERRERACHINA_01",
@@ -686,7 +686,7 @@
         },
         {
             "key": "DLG_KING_01",
-            "value": "Asi que vosotros sois los que habéis destruido la montaña."
+            "value": "Así que vosotros sois los que habéis destruido la montaña."
         },
         {
             "key": "DLG_KING_02",
@@ -698,7 +698,7 @@
         },
         {
             "key": "DLG_KING_04",
-            "value": "Me temo que eso no será aquí. Por la segurdad de nuestros ciudadanos me veo obligado a deteneros."
+            "value": "Me temo que eso no será aquí. Por la seguridad de nuestros ciudadanos me veo obligado a deteneros."
         },
         {
             "key": "DLG_KING_05",
@@ -742,7 +742,7 @@
         },
         {
             "key": "DLG_KING_15",
-            "value": "Lo que si os voy a pedir es que no comentéis nada por el Reino de este tema..."
+            "value": "Lo que sí os voy a pedir es que no comentéis nada por el Reino de este tema..."
         },
         {
             "key": "DLG_KING_16",
@@ -994,7 +994,7 @@
         },
         {
             "key": "DLG_VICTORIA_01",
-            "value": "Asi que te manda Eldran... en qué estará metido ahora..."
+            "value": "Así que te manda Eldran... en qué estará metido ahora..."
         },
         {
             "key": "DLG_VICTORIA_02",
@@ -1046,11 +1046,11 @@
         },
         {
             "key": "LORE_CELDA_5",
-            "value": "El Sendero no es más que un portal que conduce a un mundo ubicado en algun lugar en las estrellas."
+            "value": "El Sendero no es más que un portal que conduce a un mundo ubicado en algún lugar en las estrellas."
         },
         {
             "key": "LORE_CELDA_6",
-            "value": "Dentro de ese mundo habra que superar unas pruebas. Una por cada persona que entre."
+            "value": "Dentro de ese mundo habrá que superar unas pruebas. Una por cada persona que entre."
         },
         {
             "key": "LORE_CELDA_7",
@@ -1070,7 +1070,7 @@
         },
         {
             "key": "LORE_ESCOLTA_GUARDIA_10",
-            "value": "Os lo creáis o no puede que ahí esten vuestras respuestas... "
+            "value": "Os lo creáis o no puede que ahí estén vuestras respuestas..."
         },
         {
             "key": "LORE_ESCOLTA_GUARDIA_11",
@@ -1146,23 +1146,95 @@
         },
         {
             "key": "DLG_TENDERA_ALGAS_01",
-            "value": "Un viajero enfermó camino al mercado. Necesito algas frescas para el remedio, y las mías se han echado a perder."
+            "value": "Necesito un par de pociones de magia para mis remedios, y se me han agotado en la tienda."
         },
         {
             "key": "DLG_TENDERA_ALGAS_02",
-            "value": "Si me traes un par de algas, te lo pagaré bien."
+            "value": "Si me traes dos pociones de magia, te daré algas frescas a cambio — tengo de sobra."
         },
         {
             "key": "DLG_TENDERA_ALGAS_03",
-            "value": "¿Ya tienes las algas? Las necesito antes de que el viajero empeore."
+            "value": "¿Ya tienes las pociones de magia? Las necesito para mis remedios."
         },
         {
             "key": "DLG_TENDERA_ALGAS_04",
-            "value": "Justo a tiempo. Gracias, de verdad. Toma, por las molestias."
+            "value": "Justo lo que necesitaba. Toma, las algas son tuyas — buen trato."
         },
         {
             "key": "QUEST_ELDRAN_MISSION12_DESC_02",
             "value": "Habla con el Rey."
+        },
+        {
+            "key": "CHAR_TABERNERA",
+            "value": "Rosa"
+        },
+        {
+            "key": "DLG_TABERNERA_ALGAS_01",
+            "value": "Ay, qué cabeza... Anoche la fiesta en la taberna se alargó más de la cuenta. Necesito preparar mi remedio contra la resaca, pero se me han acabado las algas."
+        },
+        {
+            "key": "DLG_TABERNERA_ALGAS_02",
+            "value": "¿Podrías traerme 2 algas? Te pagaré bien por ellas, te lo prometo."
+        },
+        {
+            "key": "DLG_TABERNERA_ALGAS_03",
+            "value": "¿Ya tienes las algas? Las necesito para el remedio, cuanto antes mejor."
+        },
+        {
+            "key": "DLG_TABERNERA_ALGAS_04",
+            "value": "¡Perfecto, justo lo que necesitaba! Toma, esto es para ti. Ahora sí podré curarme esta resaca."
+        },
+        {
+            "key": "DLG_MANUEL_POCIONES_01",
+            "value": "Menos mal que pasas por aquí. Mi abuela lleva unos días muy débil y no consigo pociones de vida en ningún sitio."
+        },
+        {
+            "key": "DLG_MANUEL_POCIONES_02",
+            "value": "¿Podrías conseguirme 2 pociones de vida? Te daré algo especial a cambio, te lo prometo."
+        },
+        {
+            "key": "DLG_MANUEL_POCIONES_03",
+            "value": "¿Tienes ya las pociones? Mi abuela las necesita cuanto antes."
+        },
+        {
+            "key": "DLG_MANUEL_POCIONES_04",
+            "value": "¡Muchísimas gracias! Esto le hará mucho bien. Toma, quería dártelo a ti, seguro que te queda genial."
+        },
+        {
+            "key": "DLG_NORA_POCIONES_01",
+            "value": "¡Qué bien que apareces! Llevo días queriendo probar un hechizo nuevo, pero necesito más energía mágica de la que tengo."
+        },
+        {
+            "key": "DLG_NORA_POCIONES_02",
+            "value": "Si me consigues 3 pociones de magia, te compensaré bien, ¡lo prometo!"
+        },
+        {
+            "key": "DLG_NORA_POCIONES_03",
+            "value": "¿Ya tienes las 3 pociones de magia? Estoy deseando probar el hechizo."
+        },
+        {
+            "key": "DLG_NORA_POCIONES_04",
+            "value": "¡Genial, ya puedo intentarlo! Toma, esto es para ti, por las molestias."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION3_COMEWITHME_01",
+            "value": "¡Muy bien, Will! Por cierto... ven conmigo, quiero enseñarte algo antes de irme."
+        },
+        {
+            "key": "DLG_ELDRAN_SAVEPOINT_01",
+            "value": "Esto es un Punto de Guardado, Will."
+        },
+        {
+            "key": "DLG_ELDRAN_SAVEPOINT_02",
+            "value": "Aquí podrás guardar tu partida y descansar para recuperar tu salud y tu maná, así que no dudes en usarlo cuando lo necesites."
+        },
+        {
+            "key": "DLG_ELDRAN_SAVEPOINT_03",
+            "value": "Bueno, con esto ya sabes lo importante. Te dejo seguir explorando."
+        },
+        {
+            "key": "DLG_ELDRAN_SAVEPOINT_TURNIN_01",
+            "value": "Ve con cuidado, Will. Nos vemos pronto."
         }
     ]
 }

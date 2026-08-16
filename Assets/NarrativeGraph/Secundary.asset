@@ -29,6 +29,13 @@ MonoBehaviour:
   - rid: 7719302845561928002
   - rid: 7719302845561928003
   - rid: 7719302845561928004
+  - rid: 1033424269097474018
+  - rid: 1827795099163868709
+  - rid: 1635490750706514273
+  - rid: 1328963130609840822
+  - rid: 1078245657900615900
+  - rid: 1788894763175737732
+  - rid: 1479465354230462173
   applicableSceneNames:
   - MainWorld
   references:
@@ -116,6 +123,9 @@ MonoBehaviour:
         - fa24c4e1-e60f-4788-b4c0-a6d276e5cddb
         - 1f4a2b3c-5d6e-4f70-8a91-b2c3d4e5f601
         - 3b6c4d5e-7f80-4192-ab13-d4e5f6071823
+        - c3149093-4f7b-48e2-81e1-8bbaba2350f2
+        - b38702f2-1671-472b-b58d-ce3a8050f085
+        - db4b04b0-fed3-4756-b4d8-6a01b4459193
     - rid: 5623891481250759595
       type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
@@ -274,7 +284,7 @@ MonoBehaviour:
     - rid: 7719302845561928004
       type: {class: GiveInventoryItemNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: Nos da 15 monedas
+        displayTitle: Nos da 3 algas
         chapter:
         blockSaving: 0
         inputAnchor: 0
@@ -283,6 +293,121 @@ MonoBehaviour:
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 4c7d5e6f-8091-42a3-bc24-e5f607182934
         position: {x: 871, y: 1400}
+        outputs: []
+        item: {fileID: 11400000, guid: bb3bcf64887e34149b4ee8bb86b1a155, type: 2}
+        amount: 3
+        logWarnings: 0
+        onlyOnce: 1
+    - rid: 1033424269097474018
+      type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: El remedio contra la resaca (Tabernera)
+        chapter:
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: c3149093-4f7b-48e2-81e1-8bbaba2350f2
+        position: {x: 399, y: 1700}
+        outputs:
+        - 1769126c-f9bd-455f-b76f-96f0d096bac6
+        questId: Q_TABERNERA_ALGAS
+        debugLogs: 0
+    - rid: 1827795099163868709
+      type: {class: GiveInventoryItemNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Nos da 25 monedas
+        chapter:
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 1769126c-f9bd-455f-b76f-96f0d096bac6
+        position: {x: 871, y: 1700}
+        outputs: []
+        item: {fileID: 11400000, guid: 25c804f6289cb4945a3a9761b8e94e96, type: 2}
+        amount: 25
+        logWarnings: 0
+        onlyOnce: 1
+    - rid: 1635490750706514273
+      type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Pociones para la abuela (Manuel)
+        chapter:
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: b38702f2-1671-472b-b58d-ce3a8050f085
+        position: {x: 399, y: 2000}
+        outputs:
+        - 231b6f08-67fc-47a5-b544-7b88b4a36290
+        questId: Q_MANUEL_POCIONES
+        debugLogs: 0
+    - rid: 1328963130609840822
+      type: {class: UnlockWardrobeItemNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Recibo orejas de conejo
+        chapter:
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 231b6f08-67fc-47a5-b544-7b88b4a36290
+        position: {x: 871, y: 2000}
+        outputs: []
+        wardrobeItem: {fileID: 11400000, guid: 3cfc9393280d2da4fa5680d5fbd21f36, type: 2}
+        logWarnings: 1
+    - rid: 1078245657900615900
+      type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Suministros para el hechizo (Nora)
+        chapter:
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: db4b04b0-fed3-4756-b4d8-6a01b4459193
+        position: {x: 399, y: 2300}
+        outputs:
+        - b4502fed-c3e7-4fe9-a48a-d3151dd615da
+        questId: Q_NORA_POCIONES
+        debugLogs: 0
+    - rid: 1788894763175737732
+      type: {class: GiveInventoryItemNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Nos da 3 pociones de vida
+        chapter:
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: b4502fed-c3e7-4fe9-a48a-d3151dd615da
+        position: {x: 871, y: 2300}
+        outputs:
+        - 9f7e4a93-96a1-45e9-9426-6a214f7c837f
+        item: {fileID: 11400000, guid: cd7bbd4a76acaf04da947d03b56a071a, type: 2}
+        amount: 3
+        logWarnings: 0
+        onlyOnce: 1
+    - rid: 1479465354230462173
+      type: {class: GiveInventoryItemNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Nos da 15 monedas
+        chapter:
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 9f7e4a93-96a1-45e9-9426-6a214f7c837f
+        position: {x: 1343, y: 2300}
         outputs: []
         item: {fileID: 11400000, guid: 25c804f6289cb4945a3a9761b8e94e96, type: 2}
         amount: 15

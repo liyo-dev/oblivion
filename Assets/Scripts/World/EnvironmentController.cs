@@ -128,15 +128,52 @@ public class EnvironmentController : MonoBehaviour
         if (Instance == this) Instance = null;
     }
 
-    void HandleActiveSceneChanged(Scene _, Scene __) => OnSceneChanged();
-    void HandleSceneLoaded(Scene _, LoadSceneMode __) => OnSceneChanged();
+    void HandleActiveSceneChanged(Scene _, Scene to) => OnSceneChanged(to.name);
+    void HandleSceneLoaded(Scene scene, LoadSceneMode __) => OnSceneChanged(scene.name);
 
-    void OnSceneChanged()
+    // Escenas que no son mundo de juego: nunca deben heredar el skybox/ambient "congelado" de la
+    // última vez que estuvimos en exterior/interior (ver FIX en OnSceneChanged más abajo).
+    static readonly string[] NonGameplaySceneNames =
+    {
+        "MainMenu", "Credits", "CharacterCreator", "LoadingScreen", "SplashScreen"
+    };
+
+    void OnSceneChanged(string sceneName)
     {
         _cam = null; _appliedCam = null;
         _cinematicReapplyPending = false;
+
+        // FIX (iluminación del MainMenu inconsistente tras Game Over): este objeto es
+        // DontDestroyOnLoad y, antes de este fix, _mode nunca se reseteaba entre escenas —
+        // solo el _needReapply de abajo decidía si tocar RenderSettings o no. Al volver al
+        // MainMenu (p.ej. tras morir e ir a GameOverManager.TransitionToMainMenu()), _mode
+        // seguía siendo Interior/Exterior de la última sesión de juego, así que en cuanto
+        // Update() detectaba la cámara nueva del menú, Reapply()/ApplyExteriorTo() volvía a
+        // pintar encima el skybox/clearFlags "congelados" (snapshot de exterior tomado la
+        // primera vez que se entró a un interior esa sesión, con el time-of-day de aquel
+        // momento) sobre el RenderSettings ya correcto que MainMenu.unity trae horneado — de
+        // ahí que la iluminación del menú cambiara según dónde/cuándo había muerto el jugador.
+        // Al entrar a una escena que no es mundo de juego, resetear a Unknown para que este
+        // controlador no toque nada y se respete siempre la iluminación propia de la escena.
+        if (IsNonGameplayScene(sceneName))
+        {
+            _mode = EnvironmentMode.Unknown;
+            _hasSnapshot = false;
+            _needReapply = false;
+            return;
+        }
+
         // no invalidamos el snapshot: si estabas en interior, lo necesitamos para volver a exterior
         _needReapply = (_mode != EnvironmentMode.Unknown); // re-aplicar el modo actual cuando haya cámara
+    }
+
+    static bool IsNonGameplayScene(string sceneName)
+    {
+        if (string.IsNullOrEmpty(sceneName)) return false;
+        foreach (var n in NonGameplaySceneNames)
+            if (string.Equals(n, sceneName, StringComparison.OrdinalIgnoreCase))
+                return true;
+        return false;
     }
 
     void Update()

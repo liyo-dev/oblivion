@@ -295,6 +295,24 @@ public class PrologueDreamSequencer : CinematicSequencerBase
         Cleanup();
     }
 
+    /// Ver CinematicSequencerBase.OnSkipCleanup(). Cleanup() (más abajo) ya es una limpieza de
+    /// emergencia completa y probada: resetea Time.timeScale, para el loop del latido, destruye
+    /// los PlayableGraph y VFX de conjuración, REACTIVA Camera.main del mundo real (esta secuencia
+    /// la desactiva al entrar y es la única forma de que vuelva a encenderse si no se llega a
+    /// Co_Awaken) y destruye por completo el escenario procedural (_stageRoot: actores, cámara
+    /// propia, luces, Volume de post-proceso). Cleanup() no para la MÚSICA del sueño en sí (solo el
+    /// loop de latido) — se añade aquí en seco, igual que hace Co_Awaken en el cierre normal.
+    protected override void OnSkipCleanup()
+    {
+        if (AudioService.Instance != null)
+            AudioService.Instance.StopMusic(0.05f);
+        Cleanup();
+    }
+
+    // El cierre normal (Co_Awaken) nunca restaura música de escena, solo la para en seco
+    // (silencio total = "vende el golpe del despertar") — el skip respeta el mismo criterio.
+    protected override bool SkipRestoresMusic => false;
+
     // ══════════════════════════════════════════════════════════════════════════
     // Construcción del escenario (todo por código, una sola vez en Awake)
     // ══════════════════════════════════════════════════════════════════════════

@@ -71,6 +71,8 @@ public class GameBootService : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap()
     {
+        ApplyLogStackTraceSettings();
+
         if (_instance != null) return;
 
         // Con BeforeSceneLoad no hay escena cargada aún, FindAnyObjectByType siempre retorna null.
@@ -81,6 +83,24 @@ public class GameBootService : MonoBehaviour
         {
             _instance = existing;
         }
+    }
+
+    /// <summary>
+    /// Rendimiento (auditoría 15 ago 2026, ver TDD.md § "Rendimiento — degradación progresiva"):
+    /// cada Debug.Log/Warning captura un stack trace completo (StackTraceLogType.ScriptOnly,
+    /// el valor por defecto del proyecto) aunque el mensaje ya lleve todo el contexto necesario
+    /// ($"[Sistema:{name}] ..."). Con cientos de logs de diagnóstico en sistemas que corren por
+    /// NPC (Behaviour NPC/), ese coste se paga en cada llamada, en Editor y en Development Build
+    /// por igual — que es justo donde se capturó el Player.log con la degradación.
+    /// Log/Warning no necesitan stack trace para depurarse (el mensaje ya dice qué sistema y qué
+    /// NPC); Error/Exception sí lo necesitan para localizar crashes, así que esos NO se tocan aquí.
+    /// Se aplica en código (no en Player Settings) para que no dependa de recordar cambiar un
+    /// ajuste distinto por plataforma/configuración de build.
+    /// </summary>
+    private static void ApplyLogStackTraceSettings()
+    {
+        Application.SetStackTraceLogType(LogType.Log, StackTraceLogType.None);
+        Application.SetStackTraceLogType(LogType.Warning, StackTraceLogType.None);
     }
 
 #if UNITY_EDITOR

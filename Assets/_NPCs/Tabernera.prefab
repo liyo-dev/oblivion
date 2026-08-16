@@ -18216,7 +18216,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b687a38d9c603ef4ea2c981103c66173, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  mode: 0
+  mode: 2
   hint: {fileID: 3271472478285902274}
   hideHintAtStart: 1
   hintAnimDuration: 0.25
@@ -18333,10 +18333,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
   configuration:
-    behaviourType: 1
+    behaviourType: 5
     ambientConfig: {fileID: 0}
     combatConfig: {fileID: 0}
-    questConfig: {fileID: 0}
+    questConfig: {fileID: 11400000, guid: f951cd2fb9b64e15b3149f5918149e68, type: 2}
     interactiveNarrativeConfig: {fileID: 0}
     partyConfig: {fileID: 0}
     socialConfig: {fileID: 0}

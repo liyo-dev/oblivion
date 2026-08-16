@@ -18921,17 +18921,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b687a38d9c603ef4ea2c981103c66173, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  mode: 0
+  mode: 2
   hint: {fileID: 4555727012736925580}
   hideHintAtStart: 1
   hintAnimDuration: 0.25
   iconSet: {fileID: 11400000, guid: 9120cc0f8d6f411aa56d4ef968de44c5, type: 2}
   singleUse: 0
   initiallyEnabled: 1
-  persistentIdOverride: 
+  persistentIdOverride:
   includeSceneInPersistentId: 1
-  dialogueCharacterId: 
-  dialogue: {fileID: 11400000, guid: a30d5a82a5f4b1a428f29662a3fa8d13, type: 2}
+  dialogueCharacterId:
+  dialogue: {fileID: 0}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}
   confirmFollowUp: {fileID: 0}
@@ -18986,10 +18986,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
   configuration:
-    behaviourType: 0
+    behaviourType: 4
     ambientConfig: {fileID: 0}
     combatConfig: {fileID: 0}
-    questConfig: {fileID: 0}
+    questConfig: {fileID: 11400000, guid: 05a7262efd5044d8a7dd589de0bf9913, type: 2}
     interactiveNarrativeConfig: {fileID: 0}
     partyConfig: {fileID: 0}
     socialConfig: {fileID: 11400000, guid: 2cf9748af4afc1341be1595c0d022f5a, type: 2}

@@ -54,14 +54,27 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
     [SerializeField] private ParticleSystem crystalBallParticles;
 
     [Header("Efectos atmosféricos")]
+    // FIX (16/08/2026): pedido de diseño — la secuencia se veía "demasiado iluminada" (se
+    // distinguía de más la habitación real detrás del overlay), restando tensión al momento en
+    // que se revela que Liam es el villano. Se sube el alpha por defecto y además se fuerza un
+    // suelo mínimo en Co_FadeInEvilOverlay() (ver MinRoomDarkenAlpha): así la sala queda siempre
+    // lo bastante oscura aunque algún valor antiguo más claro quedara guardado en el Inspector.
     [Tooltip("Color del overlay persistente que oscurece la escena durante la cinemática. Alpha controla intensidad.")]
-    [SerializeField] private Color evilOverlayColor  = new Color(0.08f, 0f, 0.04f, 0.38f);
+    [SerializeField] private Color evilOverlayColor  = new Color(0.05f, 0f, 0.03f, 0.55f);
     [Tooltip("Tiempo de fade-in del overlay oscuro (ocurre durante el plano de la bola de cristal).")]
     [SerializeField] private float overlayFadeIn     = 0.6f;
     [Tooltip("Color del pulso siniestro que aparece entre frases. Alpha bajo para sutileza.")]
-    [SerializeField] private Color evilFlashColor    = new Color(0.7f, 0f, 0.05f, 0.10f);
+    [SerializeField] private Color evilFlashColor    = new Color(0.7f, 0f, 0.05f, 0.16f);
     [Tooltip("Duración del fade-out de cada pulso siniestro.")]
     [SerializeField] private float evilFlashDuration = 2.5f;
+    [Tooltip("Intensidad del camera shake que acompaña cada pulso siniestro (vende más la amenaza).")]
+    [SerializeField] private float evilPulseShakeIntensity = 0.3f;
+    [Tooltip("Duración del camera shake de cada pulso siniestro.")]
+    [SerializeField] private float evilPulseShakeDuration  = 0.35f;
+
+    /// Suelo mínimo de opacidad del overlay que oscurece la sala, aplicado en Co_FadeInEvilOverlay()
+    /// independientemente del valor configurado en evilOverlayColor. Ver FIX 16/08/2026 arriba.
+    private const float MinRoomDarkenAlpha = 0.55f;
 
     // ── Fase 1 — Bola de cristal: visión de Will ─────────────────────────────
 
@@ -214,6 +227,16 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
     protected override void OnDestroy()
     {
         base.OnDestroy();
+        EmergencyCleanup();
+    }
+
+    /// Limpieza de emergencia compartida por OnDestroy() (destrucción real del objeto) y
+    /// OnSkipCleanup() (skip a mitad de secuencia): para el pulso/loop de la bola de cristal,
+    /// destruye el overlay tenebroso persistente y desactiva la cámara de visión. _visionPulsing en
+    /// false basta para que Co_PulseCrystalVision (fire-and-forget) salga de su propio bucle solo,
+    /// sin necesidad de StopCoroutine explícito — mismo mecanismo que ya usa Co_HideCrystalVision.
+    private void EmergencyCleanup()
+    {
         _visionPulsing = false;
         AudioService.Instance?.StopLoopingSFX(CrystalPulseLoopId);
         DestroyEvilOverlay();
@@ -221,6 +244,15 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
         crystalBallParticles?.Stop();
         if (crystalBallRenderer != null)
             crystalBallRenderer.SetPropertyBlock(null);
+    }
+
+    /// Ver CinematicSequencerBase.OnSkipCleanup(). Reutiliza la misma limpieza de emergencia que
+    /// OnDestroy() (overlay tenebroso, pulso de la bola de cristal, cámara de visión) y además
+    /// libera a Liam, que UnfreezeLiamNavigation() solo hacía en el cierre normal.
+    protected override void OnSkipCleanup()
+    {
+        EmergencyCleanup();
+        UnfreezeLiamNavigation();
     }
 
     // ── Secuencia principal ───────────────────────────────────────────────────
@@ -251,6 +283,7 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
         yield return new WaitUntil(() => line1Done);
 
         FeedbackService.ScreenFlash(evilFlashColor, evilFlashDuration);
+        FeedbackService.CameraShake(evilPulseShakeIntensity, evilPulseShakeDuration);
         AudioService.Instance?.PlaySFX("CrystalBall_EvilPulse", 1f, liamTransform.position);
 
         // ── Fase 3: Mismo plano — segunda revelación ──────────────────────────
@@ -265,6 +298,7 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
         yield return new WaitUntil(() => line2Done);
 
         FeedbackService.ScreenFlash(evilFlashColor, evilFlashDuration);
+        FeedbackService.CameraShake(evilPulseShakeIntensity, evilPulseShakeDuration);
         AudioService.Instance?.PlaySFX("CrystalBall_EvilPulse", 1f, liamTransform.position);
 
         // ── Fase 4: Primer plano del rostro — risa final ──────────────────────
@@ -321,17 +355,22 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
         rt.offsetMin  = rt.offsetMax = Vector2.zero;
         _evilOverlayImg.color = Color.clear;
 
+        // Suelo mínimo de oscuridad (ver MinRoomDarkenAlpha) — nunca más claro que esto aunque
+        // evilOverlayColor se haya quedado con un alpha antiguo más bajo en el Inspector.
+        Color targetColor = evilOverlayColor;
+        if (targetColor.a < MinRoomDarkenAlpha) targetColor.a = MinRoomDarkenAlpha;
+
         float elapsed = 0f;
         while (elapsed < overlayFadeIn)
         {
             if (_evilOverlayImg == null) yield break;
             elapsed += Time.unscaledDeltaTime;
-            _evilOverlayImg.color = Color.Lerp(Color.clear, evilOverlayColor, elapsed / overlayFadeIn);
+            _evilOverlayImg.color = Color.Lerp(Color.clear, targetColor, elapsed / overlayFadeIn);
             yield return null;
         }
 
         if (_evilOverlayImg != null)
-            _evilOverlayImg.color = evilOverlayColor;
+            _evilOverlayImg.color = targetColor;
     }
 
     private void DestroyEvilOverlay()

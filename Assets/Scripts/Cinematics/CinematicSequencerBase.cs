@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 using EasyTransition;
@@ -58,9 +59,39 @@ public abstract class CinematicSequencerBase : MonoBehaviour
     private static int s_activeSequenceCount;
     public static bool AnySequenceActive => s_activeSequenceCount > 0;
 
+    /// Se dispara cuando AnySequenceActive cambia (false→true al bloquear la primera cinemática
+    /// encadenada, true→false al desbloquear la última). Pensado para que un controlador de UI
+    /// persistente (ej. el botón global de "saltar cinemática") pueda mostrarse/ocultarse sin
+    /// tener que sondear AnySequenceActive en Update() — ver GlobalCinematicSkipController.
+    public static event Action<bool> OnAnySequenceActiveChanged;
+
+    // ── Skip ("saltar cinemática") — registro de secuencias en curso ───────────
+    // Lista de instancias con Co_Sequence() activo ahora mismo (normalmente una, pero puede haber
+    // más de una encadenada, ver s_activeSequenceCount arriba). El botón global de skip llama a
+    // RequestSkipAll() sin necesitar saber qué sequencer concreto está sonando.
+    private static readonly List<CinematicSequencerBase> s_runningSequences = new();
+    public static IReadOnlyList<CinematicSequencerBase> RunningSequences => s_runningSequences;
+
+    /// Solicita saltar TODAS las cinemáticas activas ahora mismo (normalmente una sola). Pensado
+    /// para el botón global de skip — no falla si no hay ninguna activa.
+    public static void RequestSkipAll()
+    {
+        if (s_runningSequences.Count == 0) return;
+        // Copia defensiva: RequestSkip() modifica s_runningSequences (se auto-elimina de la lista),
+        // no se puede iterar la lista original mientras se modifica.
+        var running = s_runningSequences.ToArray();
+        foreach (var seq in running)
+            seq.RequestSkip();
+    }
+
 #if UNITY_EDITOR
     [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetStaticsBase() => s_activeSequenceCount = 0;
+    private static void ResetStaticsBase()
+    {
+        s_activeSequenceCount = 0;
+        s_runningSequences.Clear();
+        OnAnySequenceActiveChanged = null;
+    }
 #endif
 
     // FIX INC-052: si Co_Sequence() lanza una excepción o el objeto se destruye a mitad de la
@@ -80,6 +111,17 @@ public abstract class CinematicSequencerBase : MonoBehaviour
     // modo Cinematic en vez de volver al gameplay. Ignorar la señal mientras ya hay una secuencia
     // en curso mantiene Push/Pop siempre equilibrados sin importar cuántas veces dispare el grafo.
     private bool _sequenceRunning;
+
+    // Handle de la corrutina Co_SequenceGuarded() activa, para poder detenerla en seco desde
+    // RequestSkip() sin depender de que su try/finally se ejecute (StopCoroutine no garantiza
+    // Dispose() de los IEnumerator anidados vía "yield return subrutina", a diferencia de
+    // StartCoroutine hijas independientes). Todo el cierre limpio al saltar corre en
+    // Co_SkipToEnd(), de forma explícita.
+    private Coroutine _activeSequenceCoroutine;
+
+    // True mientras se está resolviendo un RequestSkip() para esta instancia (evita disparos dobles
+    // si el jugador mantiene pulsado el botón más allá del primer frame en que se completa el hold).
+    private bool _skipRequested;
 
     // FIX A7 (auditoría 2026-08-07): handlers activos de Co_Transition, guardados a nivel de
     // instancia para poder desuscribirlos desde OnDestroy. TransitionManager es persistente
@@ -103,7 +145,7 @@ public abstract class CinematicSequencerBase : MonoBehaviour
 #endif
                 return;
             }
-            StartCoroutine(Co_SequenceGuarded());
+            _activeSequenceCoroutine = StartCoroutine(Co_SequenceGuarded());
         };
         DefaultNarrativeSignals.EnsureInstance().OnCustom(_signalIn, _signalInHandler);
     }
@@ -113,6 +155,7 @@ public abstract class CinematicSequencerBase : MonoBehaviour
     private IEnumerator Co_SequenceGuarded()
     {
         _sequenceRunning = true;
+        s_runningSequences.Add(this);
         try
         {
             yield return Co_Sequence();
@@ -120,6 +163,8 @@ public abstract class CinematicSequencerBase : MonoBehaviour
         finally
         {
             _sequenceRunning = false;
+            _activeSequenceCoroutine = null;
+            s_runningSequences.Remove(this);
             if (_cinematicLocked)
             {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -156,7 +201,9 @@ public abstract class CinematicSequencerBase : MonoBehaviour
     private void LockCinematic()
     {
         _cinematicLocked = true;
+        bool wasInactive = s_activeSequenceCount == 0;
         s_activeSequenceCount++;
+        if (wasInactive) OnAnySequenceActiveChanged?.Invoke(true);
         ResolveActionManager()?.PushMode(ActionMode.Cinematic);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (PlayerHUDV2.Instance == null)
@@ -185,6 +232,7 @@ public abstract class CinematicSequencerBase : MonoBehaviour
         if (!_cinematicLocked) return; // Ya restaurado (evita Pop/ShowHUD duplicados si se llama dos veces)
         _cinematicLocked = false;
         s_activeSequenceCount = Mathf.Max(0, s_activeSequenceCount - 1);
+        if (s_activeSequenceCount == 0) OnAnySequenceActiveChanged?.Invoke(false);
 
         FeedbackService.CancelAllShakes();
         _cinematicCamera?.Deactivate();
@@ -304,6 +352,83 @@ public abstract class CinematicSequencerBase : MonoBehaviour
 
         yield return new WaitUntil(() => done);
     }
+
+    // ── Skip ("saltar cinemática") ───────────────────────────────────────────
+
+    [Header("Skip")]
+    [Tooltip("Duración del fundido a negro al saltar esta cinemática con el botón global de skip.")]
+    [SerializeField] private float _skipFadeDuration = 0.25f;
+
+    /// Solicita saltar la cinemática en curso de ESTA instancia. No hace nada si no tiene una
+    /// secuencia activa ahora mismo o si ya se solicitó un skip para ella. Detiene Co_Sequence()
+    /// en el punto exacto en que esté (StopCoroutine, sin depender de que el try/finally de
+    /// Co_SequenceGuarded se ejecute) y cierra la cinemática de forma determinista vía
+    /// Co_SkipToEnd(): limpieza propia de la subclase (OnSkipCleanup) + fundido a negro +
+    /// EndCinematic()/RestoreMusic()/señal de salida — el mismo patrón que ya usan varios
+    /// sequencers para su cierre normal (Co_EndCinematicStayBlack).
+    public void RequestSkip()
+    {
+        if (!_sequenceRunning || _skipRequested) return;
+        _skipRequested = true;
+
+        if (_activeSequenceCoroutine != null)
+            StopCoroutine(_activeSequenceCoroutine);
+        _activeSequenceCoroutine = null;
+
+        _sequenceRunning = false;
+        s_runningSequences.Remove(this);
+
+        StartCoroutine(Co_SkipToEnd());
+    }
+
+    private IEnumerator Co_SkipToEnd()
+    {
+        yield return Co_EndCinematicStayBlack(() =>
+        {
+            try
+            {
+                OnSkipCleanup();
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+
+            if (SkipRestoresMusic) RestoreMusic();
+        }, _skipFadeDuration);
+
+        string customSignal = SkipCompletionSignal;
+        if (!string.IsNullOrEmpty(customSignal))
+            RaiseSignal(customSignal);
+        else
+            RaiseSignalOut();
+
+        _skipRequested = false;
+    }
+
+    /// Hook de limpieza específico de cada sequencer, llamado UNA VEZ con la pantalla ya cubierta
+    /// de negro (dentro del fundido de Co_SkipToEnd), antes de EndCinematic(). Debe ser síncrono
+    /// (no una corrutina): congelar/liberar NPCs, destruir overlays u otros VFX/objetos runtime,
+    /// resetear Time.timeScale, parar corrutinas fire-and-forget propias (bucles, locks de
+    /// rotación, pulsos...), etc. — todo lo que en el flujo normal solo se limpia al llegar al
+    /// final natural de Co_Sequence() y que StopCoroutine() del punto medio NO limpia por sí solo.
+    /// Cada sequencer con ese tipo de estado DEBE sobrescribir esto reutilizando su propia lógica
+    /// de emergencia existente (Cleanup()/OnDestroy si ya la tiene) — por defecto no hace nada.
+    protected virtual void OnSkipCleanup() { }
+
+    /// Señal narrativa a levantar al saltar, en vez de RaiseSignalOut() (_signalOut heredado).
+    /// Usar cuando el sequencer no emite _signalOut en su flujo normal (ej. StarAwakeningSequencer,
+    /// que levanta señales propias de éxito/fallo) — sin este override el WaitCustomEventNode real
+    /// del grafo nunca recibiría nada y el juego se quedaría bloqueado tras el skip. Vacío/null
+    /// (por defecto) = usar RaiseSignalOut() normal.
+    protected virtual string SkipCompletionSignal => null;
+
+    /// Si el skip debe restaurar la música de escena (RestoreMusic()) al cerrar. Poner a false en
+    /// sequencers cuyo cierre normal deliberadamente NO restaura música porque el sistema siguiente
+    /// gestiona su propio crossfade (ver comentario en ReinoExitBanterSequencer.Co_Sequence) —
+    /// restaurarla en el skip igualmente reintroduciría el bug ya solucionado de "dos músicas
+    /// sonando a la vez".
+    protected virtual bool SkipRestoresMusic => true;
 
     // ── Música ────────────────────────────────────────────────────────────────
 

@@ -20,7 +20,7 @@ MonoBehaviour:
   fogEndDistance: 100
   controlAmbientLight: 1
   ambientLightColor: {r: 0.9433962, g: 0.66602594, b: 0.23584905, a: 1}
-  ambientLightIntensity: 0.5
+  ambientLightIntensity: 0.15
   enableCameraOverlay: 0
   overlayColor: {r: 0.85, g: 0.88, b: 0.92, a: 1}
   overlayMaxAlpha: 0.85

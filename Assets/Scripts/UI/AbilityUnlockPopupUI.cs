@@ -9,8 +9,14 @@ using DG.Tweening;
 /// Muestra un popup cuando se desbloquea una habilidad.
 /// Aparece en el lado derecho con animación DOTween y se cierra automáticamente.
 /// Solo aparece una vez por habilidad — el flag se persiste en el preset.
+///
+/// Implementa ISceneBoundUIHideGuard: mientras el popup está en pantalla (_isShowing == true),
+/// el SceneBoundUI de este mismo GameObject no lo apagará aunque un cambio de escena/cámara
+/// (viaje entre mundos, pantalla de carga, etc.) ocurra en ese instante — es información
+/// importante (ej. desbloqueo de "Bola Prisma" / "Llama Astral") y el jugador debe poder leerla
+/// sí o sí, sin depender de que el corte de cámara le dé tiempo.
 /// </summary>
-public class AbilityUnlockPopupUI : MonoBehaviour
+public class AbilityUnlockPopupUI : MonoBehaviour, ISceneBoundUIHideGuard
 {
     [Header("UI")]
     [SerializeField] private RectTransform popupRoot;
@@ -42,13 +48,21 @@ public class AbilityUnlockPopupUI : MonoBehaviour
     private bool _awaitingBossIntroEnd;
     // Oculto temporalmente porque hay un menú (pausa, equipo, tienda...) abierto encima.
     private bool _hiddenByMenu;
+    // SceneBoundUI del mismo GameObject (si lo tiene): se usa para liberar, vía
+    // ReapplySceneState(), un ocultado por cambio de escena que quedó pospuesto mientras
+    // BlocksSceneHide() devolvía true.
+    private SceneBoundUI _sceneBoundUI;
 
     const string AbilityFlagPrefix = "ABILITY_POPUP_ID:";
     const string AbilityKeyFlagPrefix = "ABILITY_POPUP_KEY:";
     const string SpellFlagPrefix = "SPELL_POPUP_ID:";
 
+    /// <summary>ISceneBoundUIHideGuard: mientras el popup esté en pantalla, no se apaga por cambio de escena.</summary>
+    public bool BlocksSceneHide() => _isShowing;
+
     void Awake()
     {
+        _sceneBoundUI = GetComponent<SceneBoundUI>();
         if (popupRoot != null)
             popupRoot.gameObject.SetActive(false);
     }
@@ -270,7 +284,14 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         if (popupCanvasGroup != null) popupCanvasGroup.DOKill();
 
         popupRoot.DOAnchorPosX(slideOffscreenX, animOutDuration).SetEase(Ease.InBack).SetUpdate(true)
-            .OnComplete(() => { if (popupRoot != null) popupRoot.gameObject.SetActive(false); });
+            .OnComplete(() =>
+            {
+                if (popupRoot != null) popupRoot.gameObject.SetActive(false);
+                // Si un cambio de escena intentó apagar este objeto mientras el popup seguía en
+                // pantalla, SceneBoundUI lo pospuso (BlocksSceneHide() daba true). Ahora que ya
+                // terminó de mostrarse, se reintenta para que ese ocultado no se quede sin aplicar.
+                _sceneBoundUI?.ReapplySceneState();
+            });
         if (popupCanvasGroup != null)
             popupCanvasGroup.DOFade(0f, animOutDuration).SetUpdate(true);
     }

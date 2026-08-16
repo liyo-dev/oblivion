@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.UI;
 using Sendero.Core.Feedback;
 
 /// Orquestador de la secuencia en la que Liam, viendo a Estela unirse a Will,
@@ -57,6 +58,27 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
     [Tooltip("Color del flash de pantalla cuando aparece el círculo mágico (alpha bajo para sutileza)")]
     [SerializeField] private Color _summonFlashColor   = new Color(0.5f, 0f, 0.8f, 0.15f);
     [SerializeField] private float _summonFlashFadeOut = 2.0f;
+    [Tooltip("Intensidad del camera shake al aparecer el círculo mágico (vende el peso de la invocación).")]
+    [SerializeField] private float _summonShakeIntensity = 0.35f;
+    [SerializeField] private float _summonShakeDuration  = 0.4f;
+
+    // FIX (16/08/2026): pedido de diseño — "las secuencias de Liam" (esta y LiamCrystalBallSequencer)
+    // se veían demasiado iluminadas, se distinguía de más la habitación real y restaba tensión a la
+    // amenaza. A diferencia de LiamCrystalBallSequencer, esta secuencia no tenía ningún overlay que
+    // oscureciera la sala — el flash de conjuración es un destello puntual que se desvanece en
+    // segundos, no un oscurecimiento persistente. Se añade el mismo mecanismo de overlay UI
+    // persistente que ya usa LiamCrystalBallSequencer (evilOverlayColor), con un suelo mínimo
+    // reforzado en código (MinRoomDarkenAlpha) para que no dependa de un valor guardado en el
+    // Inspector de la escena.
+    [Header("Oscurecimiento de sala — tensión")]
+    [Tooltip("Color del overlay persistente que oscurece la sala durante toda la secuencia (mismo mecanismo que LiamCrystalBallSequencer.evilOverlayColor). Alpha controla intensidad.")]
+    [SerializeField] private Color _roomDarkenColor  = new Color(0.05f, 0.02f, 0.08f, 0.5f);
+    [Tooltip("Tiempo de fade-in del oscurecimiento de sala (arranca nada más empezar la secuencia).")]
+    [SerializeField] private float _roomDarkenFadeIn = 0.6f;
+
+    /// Suelo mínimo de opacidad del overlay que oscurece la sala, aplicado en Co_FadeInRoomDarken()
+    /// independientemente del valor configurado en _roomDarkenColor. Ver FIX 16/08/2026 arriba.
+    private const float MinRoomDarkenAlpha = 0.5f;
 
     // ── Fase 1 — Liam ve a Estela en la bola de cristal ──────────────────────
 
@@ -97,6 +119,7 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
     private ParticleSystem _bodyAuraVFX;
     private MaterialPropertyBlock _mpb;
     private bool _visionPulsing;
+    private Image _roomDarkenImg;
     private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
 
     protected override void Awake()
@@ -199,6 +222,15 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
     protected override void OnDestroy()
     {
         base.OnDestroy();
+        EmergencyCleanup();
+    }
+
+    /// Limpieza de emergencia compartida por OnDestroy() (destrucción real del objeto) y
+    /// OnSkipCleanup() (skip a mitad de secuencia). _visionPulsing en false basta para que
+    /// Co_PulseCrystalVision (fire-and-forget) salga de su propio bucle solo — mismo mecanismo que
+    /// ya usa Co_HideCrystalVision, no hace falta StopCoroutine explícito.
+    private void EmergencyCleanup()
+    {
         _visionPulsing = false;
         AudioService.Instance?.StopLoopingSFX(CrystalPulseLoopId);
         _crystalVisionCamera?.Deactivate();
@@ -206,7 +238,25 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
         if (_crystalBallRenderer != null)
             _crystalBallRenderer.SetPropertyBlock(null);
         DestroyVFX();
+        DestroyRoomDarken();
     }
+
+    /// Ver CinematicSequencerBase.OnSkipCleanup(). Reutiliza la limpieza de emergencia de
+    /// OnDestroy() (visión de bola de cristal, VFX de conjuración, oscurecimiento de sala) y además
+    /// libera a Liam, que UnfreezeLiamNavigation() solo hacía en el cierre normal.
+    protected override void OnSkipCleanup()
+    {
+        EmergencyCleanup();
+        UnfreezeLiamNavigation();
+    }
+
+    // FIX: mismo motivo que documenta el cierre normal de Co_Sequence (ver el comentario "NO
+    // restaurar aquí la música de mundo" más abajo) — en cuanto se levanta la señal de salida el
+    // grafo encadena sin bifurcación al StartBattleNode del gólem, y AudioService.BeginBattleMusic
+    // ya hace su propio crossfade a la música de batalla. Restaurar la música de mundo aquí
+    // (en el skip) competiría con ese crossfade y reintroduciría el mismo bug de "las dos músicas
+    // sonando a la vez" que el flujo normal evita a propósito.
+    protected override bool SkipRestoresMusic => false;
 
     // ── Secuencia principal ───────────────────────────────────────────────────
 
@@ -217,6 +267,7 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
         yield return Co_BeginCinematicWithTransition(_shotCrystalBall, FreezeLiamNavigation);
 
         PlaySequenceMusic();
+        StartCoroutine(Co_FadeInRoomDarken());
 
         // ── Fase 1: Plano bola de cristal — Liam ve a Estela unirse a Will ────
         StartCoroutine(Co_ShowCrystalVision());
@@ -241,6 +292,7 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
         _magicCircleVFX?.Play();
         _bodyAuraVFX?.Play();
         FeedbackService.ScreenFlash(_summonFlashColor, _summonFlashFadeOut);
+        FeedbackService.CameraShake(_summonShakeIntensity, _summonShakeDuration);
         AudioService.Instance?.PlaySFX("GolemSummon_Invoke", 1f,
             _liamTransform != null ? _liamTransform.position : transform.position);
 
@@ -267,6 +319,7 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
         yield return new WaitForSeconds(_holdAfterEnd);
 
         DestroyVFX();
+        DestroyRoomDarken();
 
         yield return Co_EndCinematicStayBlack(() =>
         {
@@ -358,6 +411,54 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
         }
         _crystalBallRenderer.SetPropertyBlock(null);
         _crystalVisionCamera?.Deactivate();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Oscurecimiento de sala (ver FIX 16/08/2026 junto a _roomDarkenColor)
+    // ══════════════════════════════════════════════════════════════════════════
+
+    private IEnumerator Co_FadeInRoomDarken()
+    {
+        var go = new GameObject("LiamRoomDarkenOverlay") { hideFlags = HideFlags.HideAndDontSave };
+        var canvas = go.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 9990; // debajo del flash (9999) y el fade (9998)
+        var cg = go.AddComponent<CanvasGroup>();
+        cg.interactable   = false;
+        cg.blocksRaycasts = false;
+
+        var imgGO = new GameObject("Image");
+        imgGO.transform.SetParent(go.transform, false);
+        _roomDarkenImg = imgGO.AddComponent<Image>();
+        var rt = _roomDarkenImg.GetComponent<RectTransform>();
+        rt.anchorMin  = Vector2.zero;
+        rt.anchorMax  = Vector2.one;
+        rt.offsetMin  = rt.offsetMax = Vector2.zero;
+        _roomDarkenImg.color = Color.clear;
+
+        // Suelo mínimo de oscuridad (ver MinRoomDarkenAlpha) — nunca más claro que esto aunque
+        // _roomDarkenColor se haya quedado con un alpha antiguo más bajo en el Inspector.
+        Color targetColor = _roomDarkenColor;
+        if (targetColor.a < MinRoomDarkenAlpha) targetColor.a = MinRoomDarkenAlpha;
+
+        float elapsed = 0f;
+        while (elapsed < _roomDarkenFadeIn)
+        {
+            if (_roomDarkenImg == null) yield break;
+            elapsed += Time.unscaledDeltaTime;
+            _roomDarkenImg.color = Color.Lerp(Color.clear, targetColor, elapsed / _roomDarkenFadeIn);
+            yield return null;
+        }
+
+        if (_roomDarkenImg != null)
+            _roomDarkenImg.color = targetColor;
+    }
+
+    private void DestroyRoomDarken()
+    {
+        if (_roomDarkenImg == null) return;
+        Destroy(_roomDarkenImg.transform.parent.gameObject);
+        _roomDarkenImg = null;
     }
 
     // ══════════════════════════════════════════════════════════════════════════

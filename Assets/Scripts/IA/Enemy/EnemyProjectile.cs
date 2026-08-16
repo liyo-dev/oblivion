@@ -69,6 +69,13 @@ public class EnemyProjectile : MonoBehaviour
     private float _aoeDamage;
     private bool _bypassInvulnerabilityOnHit;
 
+    // VFX de "grieta en el suelo" al impactar contra terreno (configurado por GolemBossAI para que
+    // sus rocas reutilicen el mismo VFX que el aterrizaje de Fase 3 — ver ConfigureGroundImpactVfx)
+    private GameObject _groundCrackVfx;
+    private float _groundCrackVfxScale = 1f;
+    private GameObject _groundDustVfx;
+    private float _groundDustVfxScale = 1f;
+
     void Awake()
     {
         // ✅ Configurar el collider - NO forzamos isTrigger para permitir OnCollisionEnter con el player
@@ -146,6 +153,40 @@ public class EnemyProjectile : MonoBehaviour
         _aoeRadius = radius;
         _aoeDamage = aoeDmg;
         _bypassInvulnerabilityOnHit = true;
+    }
+
+    /// <summary>
+    /// Configura el VFX de "grieta en el suelo" que se reproduce cuando esta roca impacta contra
+    /// el suelo/terreno (no contra el jugador). Pensado para que las rocas del Golem (lanzadas o
+    /// caídas de la lluvia) reutilicen el mismo VFX que su aterrizaje de Fase 3
+    /// (shockwaveVFX + landingDustVFX), en vez de solo el hitEffectPrefab genérico del proyectil.
+    /// Cualquiera de los dos prefabs puede ser null.
+    /// </summary>
+    public void ConfigureGroundImpactVfx(GameObject crackVfx, float crackScale, GameObject dustVfx, float dustScale)
+    {
+        _groundCrackVfx = crackVfx;
+        _groundCrackVfxScale = crackScale;
+        _groundDustVfx = dustVfx;
+        _groundDustVfxScale = dustScale;
+    }
+
+    /// <summary>
+    /// Reproduce el VFX de grieta configurado (si lo hay) en la posición actual de impacto, vía
+    /// VfxPoolService (regla de proyecto: ningún VFX de un solo uso con Instantiate/Destroy directo).
+    /// </summary>
+    private void PlayGroundImpactVfx()
+    {
+        if (_groundCrackVfx)
+        {
+            Transform vfx = VfxPoolService.Instance.Play(_groundCrackVfx, transform.position, Quaternion.identity, 2f);
+            if (vfx != null) vfx.localScale = Vector3.one * _groundCrackVfxScale;
+        }
+
+        if (_groundDustVfx)
+        {
+            Transform dust = VfxPoolService.Instance.Play(_groundDustVfx, transform.position, Quaternion.identity, 2f);
+            if (dust != null) dust.localScale = Vector3.one * _groundDustVfxScale;
+        }
     }
 
     private void ApplyAoEImpact()
@@ -404,6 +445,7 @@ public class EnemyProjectile : MonoBehaviour
         {
             if (other.isTrigger) return;
             hasHit = true;
+            PlayGroundImpactVfx();
             if (_dealAoEOnImpact) ApplyAoEImpact();
             DestroyProjectile();
             return;
@@ -412,6 +454,7 @@ public class EnemyProjectile : MonoBehaviour
         if (!other.isTrigger)
         {
             hasHit = true;
+            PlayGroundImpactVfx();
             if (_dealAoEOnImpact) ApplyAoEImpact();
             DestroyProjectile();
         }

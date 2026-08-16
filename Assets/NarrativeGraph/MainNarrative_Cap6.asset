@@ -103,10 +103,10 @@ MonoBehaviour:
         guid: eb2ae8e6-c475-41f9-920f-d86ac850f82a
         position: {x: 1014, y: 4386}
         outputs: []
-        questId: 
+        questId: FUEGOFATUO_1
         stepConditionIds:
-        - FUEGOFATUO_DESC_02
-        steps: 
+        - FUEGOFATUO_02
+        steps:
         completeQuest: 0
         logWarnings: 1
     - rid: 5290829725662445802

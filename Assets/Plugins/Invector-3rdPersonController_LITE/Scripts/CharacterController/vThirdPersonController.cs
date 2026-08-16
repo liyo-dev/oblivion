@@ -85,6 +85,27 @@ namespace Invector.vCharacterController
         {
             if (!this.enabled) return;
 
+            // FIX (16 ago 2026): "se sienta/tumba y enseguida se pone a flotar" en las camas/
+            // asientos interactivos (NPCWorldPoint + PlayerAmbientActivityHandler) — causa real,
+            // encontrada leyendo este método, no adivinada. Este resync NO comprobaba
+            // lockMovement (el propio comentario de ResetInputSmoothing() en vThirdPersonMotor.cs
+            // y el de PlayerLockService.ApplyHardLock() ya avisaban de este hueco: "el snap-sync
+            // ... solo ocurre cuando inputSmooth == Vector3.zero exactamente"). En cuanto
+            // PlayerAmbientActivityHandler.SnapToSeat() suprime el input (SuppressMoveInput +
+            // MoveInput()), inputSmooth llega a cero en un puñado de frames — y la línea de abajo
+            // pisa transform.position con el animator.rootPosition de ESTE Animator (el de la raíz
+            // del jugador, que este motor usa solo para tracking de root motion; el Animator
+            // VISIBLE que reproduce Sleeping_NoWeapon/Sit*_Loop vive en el hijo "model" y es un
+            // componente distinto — ver el comentario de SleepTrigger.SetupSleep() sobre
+            // GetComponentInChildren<Animator>). Como nada mueve el rootPosition de ESTE Animator
+            // a la posición del asiento/cama, este snap-back devuelve al jugador a donde estaba
+            // ANTES de sentarse/tumbarse — visualmente, "flotando" sobre la cama. Bloquearlo
+            // mientras lockMovement esté activo evita que este resync automático pelee con el
+            // snap manual que hace PlayerAmbientActivityHandler.SnapToSeat()/SleepTrigger.SetupSleep()
+            // justo después. Arreglado aquí (fuente común) en vez de en cada llamador, para que
+            // cubra automáticamente a cualquiera que use lockMovement en el futuro.
+            if (lockMovement) return;
+
             if (inputSmooth == Vector3.zero)
             {
                 transform.position = animator.rootPosition;

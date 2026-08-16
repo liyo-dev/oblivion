@@ -89,11 +89,17 @@ namespace Core.InputGlyphs
         public const string DpadUp = "interactable_dpad_up";
         public const string DpadDown = "interactable_dpad_down";
 
+        // Botón "Ver mapa grande" — GamePlay.ToggleBigMap (tecla M en teclado, botón
+        // Select/View/Back/"-" del mando según fabricante, ver PlayerControls.inputactions y
+        // BigMapController). Físicamente distinto de Start (que abre el menú de pausa) en las 3
+        // familias de mando, así que necesita su propio nombre e icono en vez de reutilizar Start.
+        public const string Select = "interactable_select";
+
         public static readonly string[] All =
         {
             South, East, West, North, ShoulderLeft, ShoulderRight,
             TriggerLeft, TriggerRight, Dpad, Stick, Start, Confirm, Teleport,
-            DpadLeft, DpadRight, DpadUp, DpadDown
+            DpadLeft, DpadRight, DpadUp, DpadDown, Select
         };
     }
 }

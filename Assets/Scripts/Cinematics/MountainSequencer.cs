@@ -148,6 +148,23 @@ public class MountainSequencer : CinematicSequencerBase
         _enemyCollisionLayers = LayerMask.GetMask("Enemy", "Boss", "Default");
     }
 
+    /// Ver CinematicSequencerBase.OnSkipCleanup(). Este sequencer no tenía ninguna red de
+    /// seguridad propia (ni siquiera un OnDestroy()) — a diferencia de otros, aquí la limpieza de
+    /// emergencia se escribe por primera vez, no se reutiliza una existente:
+    ///   - UnfreezeEstela(): FreezeEstela() se llama incondicionalmente al principio de
+    ///     Co_Sequence(), así que si el skip corta en cualquier punto posterior, Estela SIEMPRE
+    ///     necesita descongelarse o deja de seguir al grupo para siempre.
+    ///   - FinishWillFlee(): reactiva el CharacterController de Will si Co_GroupFlees lo había
+    ///     desactivado — si no, el jugador se queda sin poder moverse tras el skip.
+    ///   - Destruir _closeupShot: Transform generado en runtime por BuildCloseupShot() (Fase 2),
+    ///     huérfano si nadie más lo destruye.
+    protected override void OnSkipCleanup()
+    {
+        UnfreezeEstela();
+        FinishWillFlee();
+        if (_closeupShot != null) { Destroy(_closeupShot.gameObject); _closeupShot = null; }
+    }
+
     // ── Secuencia principal ───────────────────────────────────────────────────
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

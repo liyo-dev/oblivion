@@ -20,7 +20,8 @@ namespace Game.NPC.States
         private float _timer;
         private bool _waitingForDialogue;
         private bool _hasPlayedChallenge;
-        private bool _dialogueCompleted; 
+        private bool _dialogueCompleted;
+        private NPCTeamMember _teamMember; // ✅ FIX #10: cacheado en OnEnter, no GetComponent cada frame en OnUpdate
         
         // Timers de Animación
         private float _senseTimer;
@@ -45,6 +46,9 @@ namespace Game.NPC.States
             }
 
             context.Log("[AlertState] ⚠️ INICIANDO ALERTA");
+
+            // ✅ FIX #10: cachear una vez, en vez de GetComponent en cada frame de OnUpdate
+            _teamMember = context.Transform.GetComponent<NPCTeamMember>();
 
             // FIX INC-019: el icono de detección (❗) estaba definido en NPCCombatConfig
             // (alertIconPrefab/questionIconPrefab/exclamationIconPrefab) y el sistema que lo
@@ -102,8 +106,8 @@ namespace Game.NPC.States
             
             // ✅ FIX: Si el NPC pertenece a un equipo que está reagrupándose,
             // dejar que NPCCombatTeam maneje el movimiento
-            var teamMember = context.Transform.GetComponent<NPCTeamMember>();
-            if (teamMember != null && teamMember.Team != null && teamMember.Team.IsRegrouping)
+            // ✅ FIX #10: _teamMember ya viene cacheado desde OnEnter (antes: GetComponent cada frame)
+            if (_teamMember != null && _teamMember.Team != null && _teamMember.Team.IsRegrouping)
             {
                 // Solo mirar al jugador, el movimiento lo maneja NPCCombatTeam
                 Vector3 directionToPlayer = (context.Player.position - context.Transform.position).normalized;

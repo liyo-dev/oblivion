@@ -115,7 +115,7 @@ MonoBehaviour:
     completionMode: 0
     autoDetectItemDelivery: 0
     itemDeliveryStepIndex: 0
-    itemTag: 
+    itemTag:
     ignoreFovForItem: 0
     overrideDetectionRadius: 0
     requiredItems: []
@@ -140,10 +140,10 @@ MonoBehaviour:
       m_PersistentCalls:
         m_Calls: []
     postAction:
-      actionType: 1
-      dialogueBeforeAction: {fileID: 11400000, guid: dfff9e52f2d58754dab45789fe6fc230, type: 2}
+      actionType: 0
+      dialogueBeforeAction: {fileID: 0}
       maxDialogueDistance: 30
-      targetAnchorName: House_FrontDoor
+      targetAnchorName:
       targetTransform: {fileID: 0}
       maxMovementDuration: 3
       walkDisplayDuration: 3
@@ -151,7 +151,7 @@ MonoBehaviour:
       combatTarget: {fileID: 0}
       dialogueToPlay: {fileID: 0}
       delayBeforeAction: 0
-      transitionSettings: {fileID: 11400000, guid: d641980330b54c243a644222c797e582, type: 2}
+      transitionSettings: {fileID: 0}
       useTransition: 1
       transitionDelay: 0
       customAction:

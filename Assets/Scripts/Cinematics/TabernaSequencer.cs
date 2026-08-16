@@ -244,6 +244,40 @@ public class TabernaSequencer : CinematicSequencerBase
 
     }
 
+    /// Ver CinematicSequencerBase.OnSkipCleanup(). Reproduce exactamente la misma limpieza que ya
+    /// hace el callback del cierre normal (additionalOnCut de Co_EndCinematicWithTransition, al
+    /// final de Co_Sequence()) — bucle de comer, locks de rotación y el plano generado en runtime
+    /// son corrutinas/objetos fire-and-forget que StopCoroutine() del cierre genérico no toca. Se
+    /// añade además el reset de Time.timeScale (por si el skip corta durante la cámara lenta de la
+    /// Fase 6) que hoy solo vive en OnDestroy().
+    protected override void OnSkipCleanup()
+    {
+        StopEatLoop();
+        if (_estelaFacingLock != null) { StopCoroutine(_estelaFacingLock); _estelaFacingLock = null; }
+        if (_liamFacingLock   != null) { StopCoroutine(_liamFacingLock);  _liamFacingLock  = null; }
+        if (_liamCloseupShot  != null) { Destroy(_liamCloseupShot.gameObject); _liamCloseupShot = null; }
+
+        if (_rageAuraVFXInstance  != null) { Destroy(_rageAuraVFXInstance);  _rageAuraVFXInstance  = null; }
+        if (_lightningVFXInstance != null) { Destroy(_lightningVFXInstance); _lightningVFXInstance = null; }
+
+        Time.timeScale      = 1f;
+        Time.fixedDeltaTime = 0.02f;
+
+        CleanupSeatsIfNeeded();
+        if (_liamAgent != null && _liamAgent.isOnNavMesh && _liamTransform != null)
+        {
+            _liamAgent.nextPosition   = _liamTransform.position;
+            _liamAgent.updatePosition = true;
+            _liamAgent.updateRotation = true;
+        }
+        _liamSimpleAnim?.EnableAutoRotation();
+        RestorePlayerPosition();
+    }
+
+    // FIX: mismo motivo documentado en el cierre normal de Co_Sequence (ver "Sin RestoreMusic" más
+    // abajo) — la música de comida debe seguir en bucle hasta que el minijuego tome el control.
+    protected override bool SkipRestoresMusic => false;
+
     // ── Secuencia principal ───────────────────────────────────────────────────
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

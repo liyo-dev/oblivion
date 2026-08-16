@@ -1,9 +1,18 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.AI;
 using Game.NPC;
 
 /// Orquestador del banter previo a la salida del Reino:
-///   0. Will se detiene; Estela y Liam siguen caminando unos pasos y se giran al notar que no les sigue.
+///   0. Bajo un corte a negro, el grupo se recoloca de golpe en su posición DE PARTIDA (marcha
+///      normal, los tres juntos) — nunca en la posición real que tuvieran al cruzar el límite del
+///      Reino. Con la pantalla ya visible, Will se detiene ahí mismo mientras Estela y Liam
+///      adelantan caminando unos pasos y se giran al notar que no les sigue, como si volvieran a
+///      ver qué le pasa. BUGFIX (Agosto 2026): antes arrancaban esa caminata desde la posición
+///      real de cada uno en el momento del disparo, y se veía mal si el personaje activo al
+///      cruzar el límite no era Will (ver comentario largo en ResolveCharacters()). Al partir
+///      siempre de la misma marca fija bajo negro, la caminata sale igual de bien sin importar
+///      quién cruzara el límite.
 ///   1. Liam pregunta qué ocurre.
 ///   2. Will confiesa que tiene miedo de lo que viene.
 ///   3. Estela lo anima a su manera.
@@ -64,12 +73,35 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
     [Tooltip("Velocidad del viento en unidades/seg. ApplyWind() anula la gravedad y el impulso inicial aleatorio del prefab para que esta dirección se vea claramente, así que puede quedar más lento de lo que parece necesario.")]
     [SerializeField] private float _petalWindSpeed = 3.5f;
 
-    // ── Fase 0 — Will se detiene; Estela y Liam siguen caminando y se giran ──────
+    // ── Fase 0 — marca de partida bajo blackout + caminata visible ──────────────
 
-    [Header("Fase 0 — Estela y Liam continúan y se giran")]
-    [Tooltip("Punto al que camina Estela antes de girarse hacia Will.")]
+    [Header("Fase 0a — marcas de PARTIDA (Warp bajo blackout, ver RepositionCharactersForBanter)")]
+    [Tooltip("BUGFIX (Agosto 2026): antes de recolocarlos aquí, Estela y Liam arrancaban su " +
+             "caminata visible desde su posición REAL en el momento del disparo. Se veía bien " +
+             "cuando Will era el personaje activo al cruzar el límite del Reino (esa posición " +
+             "real era razonable — iban justo detrás), pero mal si el activo era Estela o Liam: " +
+             "con ActiveCharacterSwapper, el personaje NO activo pasa a ser un NPC con su propia " +
+             "IA (puede estar en cualquier sitio) y el que SÍ está activo deja su NPC real oculto " +
+             "y congelado donde estaba al tomar el control. Ahora, mientras la pantalla está en " +
+             "negro, los tres se colocan de un salto (Warp) en estas marcas de PARTIDA — pensadas " +
+             "como \"marcha normal, los tres juntos\" — y solo entonces, ya con la pantalla " +
+             "visible, Estela y Liam caminan de verdad hasta _estelaContinueTarget/" +
+             "_liamContinueTarget y se giran. Da igual dónde estuviera nadie de verdad: la " +
+             "caminata siempre arranca desde el mismo sitio.")]
+    [SerializeField] private Transform _estelaWalkStartMark;
+    [Tooltip("Igual que _estelaWalkStartMark pero para Liam.")]
+    [SerializeField] private Transform _liamWalkStartMark;
+    [Tooltip("Marca donde queda Will nada más revelarse la cinemática: se detiene ahí y no se " +
+             "mueve más en toda la Fase 0 (es Estela y Liam quienes caminan y se giran a mirarlo). " +
+             "Se aplica de forma instantánea (Warp) junto con las dos anteriores, en negro.")]
+    [SerializeField] private Transform _willMark;
+
+    [Header("Fase 0b — Estela y Liam adelantan a Will y se giran (caminata visible en pantalla)")]
+    [Tooltip("Punto al que camina Estela, ya con la pantalla visible, antes de girarse hacia Will " +
+             "(más adelantada que él). Colocar ya girada mirando hacia _willMark: esa rotación es " +
+             "la que adopta al llegar.")]
     [SerializeField] private Transform _estelaContinueTarget;
-    [Tooltip("Punto al que camina Liam antes de girarse hacia Will.")]
+    [Tooltip("Igual que _estelaContinueTarget pero para Liam.")]
     [SerializeField] private Transform _liamContinueTarget;
     [SerializeField] private float _continueWalkDuration = 1.5f;
     [SerializeField] private float _continueWalkMaxDuration = 6f;
@@ -112,6 +144,8 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
     // ── Cache ─────────────────────────────────────────────────────────────────
 
     private Transform _willTransform;
+    private Transform _estelaTransform;
+    private Transform _liamTransform;
     private NPCBehaviourManagerV2 _estelaManager;
     private NPCBehaviourManagerV2 _liamManager;
 
@@ -124,24 +158,30 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
     {
         ResolveCharacters();
 
-        // Sin transición asignada, esto corta de inmediato sin fundido (ver Co_Transition):
-        // el banter arranca en marcha, sin interrumpir la caminata con un negro.
-        // SpawnPetalDecor() va como additionalOnCut (no como sentencia suelta después del yield):
-        // así se dispara en el MISMO instante en que _cinematicCamera.Cut(_shotWalkGroup) coloca la
-        // cámara en el plano del grupo, nunca antes. Si en el futuro se asigna un _entryTransition
-        // con fundido, los pétalos seguirán naciendo justo en el punto de corte (pantalla cubierta),
-        // no se verán ya cayendo cuando la pantalla se revele.
-        yield return Co_BeginCinematicWithTransition(_shotWalkGroup, SpawnPetalDecor);
+        // additionalOnCut agrupa dos cosas que deben ocurrir en el MISMO instante en que la
+        // pantalla queda cubierta (nunca antes, nunca después de revelar):
+        //   - RepositionCharactersForBanter(): Warp de Will/Estela/Liam a sus marcas de PARTIDA
+        //     de Fase 0. Si no hay _entryTransition asignada, Co_Transition llama a esto
+        //     igualmente sin animación (corte seco) — el grupo sigue recolocándose bajo cubierto,
+        //     solo que sin fundido; nunca se ve el salto.
+        //   - SpawnPetalDecor(): igual que antes, para que los pétalos nazcan ya con la cámara en
+        //     el plano del grupo, no antes ni después del reveal.
+        yield return Co_BeginCinematicWithTransition(_shotWalkGroup, () =>
+        {
+            RepositionCharactersForBanter();
+            SpawnPetalDecor();
+        });
 
         // Apagamos la música de gameplay al inicio. PlaySequenceMusic() se retrasa hasta
-        // después de la Fase 0 (≈ _continueWalkDuration): para cuando el grupo se gira,
-        // la música antigua ya ha terminado su fade y la nueva arranca limpia sin crossfade
-        // contra la de gameplay. Si no hay clip de secuencia, la pausa queda en silencio
-        // hasta que KingdomExitTransitionNode arranque el tema principal.
+        // después de la Fase 0 (≈ _continueWalkDuration): para cuando el grupo termina de
+        // adelantar a Will y girarse, la música antigua ya ha terminado su fade y la nueva
+        // arranca limpia sin crossfade contra la de gameplay. Si no hay clip de secuencia, la
+        // pausa queda en silencio hasta que KingdomExitTransitionNode arranque el tema principal.
         AudioService.Instance?.StopMusic(1.5f);
 
-        // ── Fase 0: Will se detiene; Estela y Liam siguen caminando y se giran ──
-        yield return Co_GroupContinuesAndTurns();
+        // ── Fase 0: Will ya está parado (recolocado bajo negro); Estela y Liam caminan de ──
+        // verdad, ya en pantalla, adelantándolo y girándose al notar que no les sigue.
+        yield return Co_GroupAdvancesAndTurns();
         PlaySequenceMusic();
 
         // ── Fase 1: Liam pregunta ───────────────────────────────────────────────
@@ -171,18 +211,51 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
         });
     }
 
+    /// <summary>
+    /// Resuelve quién representa AHORA MISMO a cada uno de los tres, teniendo en cuenta que el
+    /// jugador puede haber cruzado el límite del Reino controlando a Will, a Estela o a Liam
+    /// (ver ActiveCharacterSwapper/PartyControlManager).
+    ///
+    /// BUGFIX (Agosto 2026), causa raíz del bug reportado ("con Will se ve bien, con Estela mal"):
+    /// esta función asumía siempre "Will = PlayerService.Player" y "Estela/Liam = FindPartyMember()
+    /// en PlayerParty". Pero PlayerService.Player NO es fijo: es el único GameObject con tag
+    /// Player, y ActiveCharacterSwapper hace que ese mismo GameObject visualmente "sea" Will,
+    /// Estela o Liam según cuál esté activo. Cuando el activo es Estela o Liam, su
+    /// NPCPartyMember real (el que encuentra FindPartyMember) se queda oculto e inmóvil justo
+    /// donde estaba al tomar el control — no es lo que se ve en pantalla — y Will pasa a ser un
+    /// NPC aparte con su propia IA (ActiveCharacterSwapper.WillNpcInstance), no el jugador.
+    /// Ahora se resuelve el slot activo (PartyControlManager.ActiveSlot) y, para ESE personaje,
+    /// se usa el controller; para los otros dos, su NPC real como antes (o WillNpcInstance para
+    /// Will cuando no es el activo).
+    /// </summary>
     private void ResolveCharacters()
     {
+        var activeSlot = PartyControlManager.Instance != null
+            ? PartyControlManager.Instance.ActiveSlot
+            : PartyControlManager.CharacterSlot.Will;
+
+        Transform controllerTransform = null;
         if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
-            _willTransform = playerGo.transform;
+            controllerTransform = playerGo.transform;
+
+        _willTransform = activeSlot == PartyControlManager.CharacterSlot.Will
+            ? controllerTransform
+            : ActiveCharacterSwapper.Instance?.WillNpcInstance?.transform;
 
         _estelaManager = FindPartyMember(_estelaCharacterId);
-        _liamManager   = FindPartyMember(_liamCharacterId);
+        _estelaTransform = activeSlot == PartyControlManager.CharacterSlot.Estela
+            ? controllerTransform
+            : _estelaManager?.transform;
+
+        _liamManager = FindPartyMember(_liamCharacterId);
+        _liamTransform = activeSlot == PartyControlManager.CharacterSlot.Liam
+            ? controllerTransform
+            : _liamManager?.transform;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        if (_willTransform == null) Debug.LogWarning("[ReinoExitBanterSequencer] No se encontró al jugador (Will).");
-        if (_estelaManager == null) Debug.LogWarning($"[ReinoExitBanterSequencer] No se encontró a Estela (id='{_estelaCharacterId}') en PlayerParty.");
-        if (_liamManager   == null) Debug.LogWarning($"[ReinoExitBanterSequencer] No se encontró a Liam (id='{_liamCharacterId}') en PlayerParty.");
+        if (_willTransform == null) Debug.LogWarning("[ReinoExitBanterSequencer] No se pudo resolver a Will (ni el controller activo ni ActiveCharacterSwapper.WillNpcInstance).");
+        if (_estelaTransform == null) Debug.LogWarning($"[ReinoExitBanterSequencer] No se pudo resolver a Estela (id='{_estelaCharacterId}').");
+        if (_liamTransform == null) Debug.LogWarning($"[ReinoExitBanterSequencer] No se pudo resolver a Liam (id='{_liamCharacterId}').");
 #endif
     }
 
@@ -287,25 +360,121 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    // Fase 0 — Will se detiene; Estela y Liam siguen caminando y se giran
+    // Fase 0 — marca de partida bajo blackout + caminata visible
     // ══════════════════════════════════════════════════════════════════════════
 
-    private IEnumerator Co_GroupContinuesAndTurns()
+    /// <summary>
+    /// Recoloca a los tres en sus marcas de PARTIDA de un salto (Warp), nunca caminando. Se llama
+    /// desde el additionalOnCut de Co_BeginCinematicWithTransition, con la pantalla cubierta — el
+    /// warp nunca se ve. Will va directo a su marca final (_willMark: se detiene ahí y no se
+    /// mueve más en Fase 0); Estela y Liam van a su marca de PARTIDA (_estelaWalkStartMark/
+    /// _liamWalkStartMark, no a su destino) porque son ellos quienes deben caminar EN PANTALLA
+    /// adelantando a Will y girándose — ver Co_GroupAdvancesAndTurns(). Ver el comentario largo de
+    /// ResolveCharacters() para la causa raíz que esto arregla: al no depender de dónde estuviera
+    /// nadie de verdad en el momento del disparo, la caminata visible arranca siempre desde el
+    /// mismo sitio, sin importar qué personaje cruzara el límite del Reino.
+    /// </summary>
+    private void RepositionCharactersForBanter()
     {
-        // Will (el jugador) ya está bloqueado por LockCinematic() dentro de
-        // Co_BeginCinematicWithTransition: se para en seco donde estaba.
-        bool estelaDone = _estelaManager == null || _estelaContinueTarget == null;
-        bool liamDone   = _liamManager   == null || _liamContinueTarget   == null;
+        WarpActor(_willTransform, _willMark);
+        WarpActor(_estelaTransform, _estelaWalkStartMark);
+        WarpActor(_liamTransform, _liamWalkStartMark);
+    }
+
+    /// Mueve `actor` a la posición/rotación de `mark` sin caminar ni un frame de por medio.
+    /// Usa NavMeshAgent.Warp para los NPCs normales (Estela/Liam en su forma habitual, o el
+    /// clon de Will cuando no es el personaje activo) para no desincronizar su pathfinding; para
+    /// el controller del jugador (CharacterController, sin NavMeshAgent — es él cuando ES el
+    /// personaje activo) desactiva el CharacterController un frame, que es lo único que permite
+    /// mover su transform directamente (mismo patrón que ActiveCharacterSwapper.TeleportPlayer()).
+    private static void WarpActor(Transform actor, Transform mark)
+    {
+        if (actor == null || mark == null) return;
+
+        var agent = actor.GetComponent<NavMeshAgent>();
+        if (agent != null && agent.isOnNavMesh)
+        {
+            agent.Warp(mark.position);
+            actor.rotation = mark.rotation;
+            return;
+        }
+
+        var cc = actor.GetComponent<CharacterController>();
+        if (cc != null) cc.enabled = false;
+        actor.SetPositionAndRotation(mark.position, mark.rotation);
+        if (cc != null) cc.enabled = true;
+    }
+
+    /// <summary>
+    /// Hace que Estela y Liam caminen EN PANTALLA desde su marca de partida hasta adelantar a
+    /// Will, y se giren a mirarlo — el gag visual de "se dan cuenta de que no les sigue y vuelven
+    /// a comprobar qué le pasa". Corre ambos en paralelo (StartCoroutine, no yield directo) igual
+    /// que hacía el viejo Co_GroupContinuesAndTurns, y espera a que los dos terminen.
+    /// </summary>
+    private IEnumerator Co_GroupAdvancesAndTurns()
+    {
+        bool estelaDone = _estelaTransform == null || _estelaContinueTarget == null;
+        bool liamDone   = _liamTransform   == null || _liamContinueTarget   == null;
 
         if (!estelaDone)
-            _estelaManager.MoveToPosition(_estelaContinueTarget.position, _continueWalkDuration,
-                _continueWalkMaxDuration, turn: true, onComplete: () => estelaDone = true);
-
+            StartCoroutine(Co_AdvanceAndTurn(_estelaTransform, _estelaContinueTarget, () => estelaDone = true));
         if (!liamDone)
-            _liamManager.MoveToPosition(_liamContinueTarget.position, _continueWalkDuration,
-                _continueWalkMaxDuration, turn: true, onComplete: () => liamDone = true);
+            StartCoroutine(Co_AdvanceAndTurn(_liamTransform, _liamContinueTarget, () => liamDone = true));
 
         yield return new WaitUntil(() => estelaDone && liamDone);
+    }
+
+    /// <summary>
+    /// Hace avanzar a `actor` hasta `target` y girarlo a mirar hacia donde `target` mira —
+    /// adelantar a Will y girarse a comprobarlo. Dos caminos según qué sea `actor` ahora mismo
+    /// (ver ResolveCharacters()):
+    ///   - NPC normal (tiene NPCBehaviourManagerV2 — el caso habitual, tanto si es Estela/Liam
+    ///     siguiendo como IA como si es el clon de Will): usa su propio sistema de movimiento
+    ///     cinemático (FSM + NavMeshAgent), que ya anima el paso y resuelve colisiones con el
+    ///     terreno — es el mismo MoveToPosition que usaba el viejo Co_GroupContinuesAndTurns.
+    ///   - Controller del jugador (CharacterController, SIN NPCBehaviourManagerV2 — pasa cuando
+    ///     este personaje concreto es el activo, ver ActiveCharacterSwapper): no hay FSM de NPC
+    ///     que lo mueva, así que se interpola el transform directamente, moviendo el
+    ///     CharacterController con cc.Move() delta a delta para no atravesar el escenario.
+    /// </summary>
+    private IEnumerator Co_AdvanceAndTurn(Transform actor, Transform target, System.Action onComplete)
+    {
+        var npcManager = actor.GetComponent<NPCBehaviourManagerV2>();
+        if (npcManager != null)
+        {
+            bool npcDone = false;
+            npcManager.MoveToPosition(target.position, _continueWalkDuration, _continueWalkMaxDuration,
+                turn: true, onComplete: () => npcDone = true);
+            yield return new WaitUntil(() => npcDone);
+            onComplete?.Invoke();
+            yield break;
+        }
+
+        var cc = actor.GetComponent<CharacterController>();
+        Vector3 startPos = actor.position;
+        Quaternion startRot = actor.rotation;
+        Vector3 endPos = target.position;
+        Quaternion endRot = target.rotation;
+
+        float t = 0f;
+        while (t < _continueWalkDuration)
+        {
+            t += Time.deltaTime;
+            float k = Mathf.Clamp01(t / _continueWalkDuration);
+            Vector3 nextPos = Vector3.Lerp(startPos, endPos, k);
+            actor.rotation = Quaternion.Slerp(startRot, endRot, k);
+
+            if (cc != null) cc.Move(nextPos - actor.position);
+            else actor.position = nextPos;
+
+            yield return null;
+        }
+
+        if (cc != null) cc.Move(endPos - actor.position);
+        else actor.position = endPos;
+        actor.rotation = endRot;
+
+        onComplete?.Invoke();
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -315,7 +484,7 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
     private IEnumerator Co_LiamPregunta()
     {
         if (_shotLiamClose != null) _cinematicCamera.Cut(_shotLiamClose);
-        yield return ShowBubblePaged(_liamManager?.transform, Loc(_keyLiamPregunta),
+        yield return ShowBubblePaged(_liamTransform, Loc(_keyLiamPregunta),
             _liamPreguntaDuration, _animLiamPregunta, loopAnim: true);
     }
 
@@ -337,7 +506,7 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
     private IEnumerator Co_EstelaAnimo()
     {
         if (_shotEstelaClose != null) _cinematicCamera.Cut(_shotEstelaClose);
-        yield return ShowBubblePaged(_estelaManager?.transform, Loc(_keyEstelaAnimo),
+        yield return ShowBubblePaged(_estelaTransform, Loc(_keyEstelaAnimo),
             _estelaAnimoDurationPerPage, _animEstelaAnimo, loopAnim: true);
     }
 
@@ -348,7 +517,7 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
     private IEnumerator Co_LiamApoyo()
     {
         if (_shotLiamClose != null) _cinematicCamera.Cut(_shotLiamClose);
-        yield return ShowBubblePaged(_liamManager?.transform, Loc(_keyLiamApoyo),
+        yield return ShowBubblePaged(_liamTransform, Loc(_keyLiamApoyo),
             _liamApoyoDurationPerPage, _animLiamApoyo, loopAnim: true);
     }
 

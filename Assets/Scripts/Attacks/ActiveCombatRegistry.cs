@@ -39,21 +39,25 @@ public static class ActiveCombatRegistry
         
         if (_npcsInCombat.Add(npc))
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[ActiveCombatRegistry] ⚔️ NPC '{npc.name}' registrado en combate");
+#endif
             OnNPCEnteredCombat?.Invoke(npc);
         }
     }
-    
+
     /// <summary>
     /// Quita un NPC del registro de combate
     /// </summary>
     public static void UnregisterNPC(GameObject npc)
     {
         if (npc == null) return;
-        
+
         if (_npcsInCombat.Remove(npc))
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[ActiveCombatRegistry] 🏳️ NPC '{npc.name}' removido del combate");
+#endif
             OnNPCExitedCombat?.Invoke(npc);
         }
     }
@@ -91,15 +95,16 @@ public static class ActiveCombatRegistry
     /// </summary>
     public static GameObject GetClosestCombatNPC(Vector3 position, float maxDistance = 50f)
     {
-        Debug.Log($"[ActiveCombatRegistry] GetClosestCombatNPC: Buscando entre {_npcsInCombat.Count} NPCs");
-        Debug.Log($"[ActiveCombatRegistry]   - Posición búsqueda: {position}");
-        Debug.Log($"[ActiveCombatRegistry]   - Distancia máxima: {maxDistance}m");
-        
+        // ✅ FIX #16 (auditoría combate, 15 ago 2026): antes había ~5 Debug.Log por NPC evaluado,
+        // sin gatear, en un método pensado para poder llamarse con cierta frecuencia.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[ActiveCombatRegistry] GetClosestCombatNPC: Buscando entre {_npcsInCombat.Count} NPCs (pos={position}, maxDist={maxDistance}m)");
+#endif
+
         GameObject closest = null;
         float closestDist = maxDistance;
-        int checkedCount = 0;
         int nullCount = 0;
-        
+
         foreach (var npc in _npcsInCombat)
         {
             if (npc == null)
@@ -107,38 +112,48 @@ public static class ActiveCombatRegistry
                 nullCount++;
                 continue; // NPC destruido
             }
-            
-            checkedCount++;
+
             float dist = Vector3.Distance(npc.transform.position, position);
-            
-            Debug.Log($"[ActiveCombatRegistry]   - NPC '{npc.name}': distancia = {dist:F1}m");
-            
             if (dist < closestDist)
             {
                 closestDist = dist;
                 closest = npc;
-                Debug.Log($"[ActiveCombatRegistry]     ✅ Este es el más cercano por ahora");
             }
         }
-        
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (nullCount > 0)
-        {
             Debug.LogWarning($"[ActiveCombatRegistry] ⚠️ {nullCount} NPCs null en el registro (destruidos)");
-        }
-        
         Debug.Log($"[ActiveCombatRegistry] Resultado: {(closest != null ? $"'{closest.name}' a {closestDist:F1}m" : "NINGUNO")}");
-        
+#endif
+
         return closest;
     }
-    
+
     /// <summary>
-    /// Obtiene una lista de TODOS los NPCs actualmente en combate
+    /// Obtiene una lista de TODOS los NPCs actualmente en combate.
+    /// Aloca una List nueva cada llamada — evitar desde Update/bucles de búsqueda periódica.
+    /// Para esos casos usar <see cref="GetAllInCombatNonAlloc"/> con un buffer reutilizado.
     /// </summary>
     public static List<GameObject> GetAllInCombat()
     {
         // Limpiar NPCs destruidos primero
         _npcsInCombat.RemoveWhere(npc => npc == null);
         return new List<GameObject>(_npcsInCombat);
+    }
+
+    /// <summary>
+    /// ✅ FIX #17 (auditoría combate, 15 ago 2026): variante sin allocation de GetAllInCombat,
+    /// para llamadores guiados por Update/cooldown periódico (p.ej. AllyCombatState.FindNearestEnemy)
+    /// que antes copiaban el HashSet completo a una List nueva cada vez. El buffer lo mantiene y
+    /// reutiliza el llamador.
+    /// </summary>
+    public static void GetAllInCombatNonAlloc(List<GameObject> buffer)
+    {
+        if (buffer == null) return;
+        _npcsInCombat.RemoveWhere(npc => npc == null);
+        buffer.Clear();
+        buffer.AddRange(_npcsInCombat);
     }
     
     /// <summary>
@@ -154,7 +169,9 @@ public static class ActiveCombatRegistry
     /// </summary>
     public static void ClearAll()
     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"[ActiveCombatRegistry] 🧹 Limpiando {_npcsInCombat.Count} NPCs del registro");
+#endif
         _npcsInCombat.Clear();
     }
     

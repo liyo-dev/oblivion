@@ -65,7 +65,19 @@ public class TagMinigameController : MonoBehaviour
     [SerializeField] private Transform chaserSpawnPoint;
 
     [Header("Reaparición al Fallar (Atrapado / Tiempo Agotado)")]
-    [Tooltip("SpawnAnchor de la escena donde debe reaparecer el jugador si falla el minijuego (le atrapan o se agota el tiempo). Ej: el anchor de la Taberna. Si está vacío, se mantiene el comportamiento anterior: el jugador reaparece en el último punto guardado.")]
+    // [No usado por el flujo por defecto] FIX (15 ago 2026): este override sobreescribía
+    // preset.spawnAnchorId a mano justo antes de recargar la escena, pero en modo test/preset
+    // (GameBootService.IsPresetOverrideActive) ReloadTestPreset() llama justo después a
+    // EnsureRuntimePresetFromTemplate(bootPreset), que vuelca el preset desde cero y pisa este
+    // valor — el override nunca sobrevivía en modo test, que es precisamente cuando se estaba
+    // reproduciendo el bug reportado (flash en Taberna → teleport al último guardado →
+    // reaparecen las instrucciones del minijuego). Sustituido por el mismo patrón que ya usan
+    // los CinematicSequencerBase: emitir una señal narrativa al fallar (ver RaiseFailSignal /
+    // MINIGAME_{minigameId}_FAILED más abajo) y dejar que el grafo decida el punto de reanudación
+    // con un WaitCustomEventNode — igual que WaitCustomEventNode "AWAKEN_FAILED" en
+    // MainNarrative_Cap1. El campo se conserva (sin usarse) para no perder valores ya asignados
+    // en prefabs/escenas.
+    [Tooltip("[No usado por el flujo por defecto — ver comentario en el código] SpawnAnchor de la escena donde debe reaparecer el jugador si falla el minijuego. Sustituido por señal narrativa MINIGAME_{minigameId}_FAILED; configura el punto de reanudación en el grafo.")]
     [SerializeField] private SpawnAnchor failRespawnAnchor;
 
     [Header("Gestión del Party")]
@@ -1851,45 +1863,15 @@ public class TagMinigameController : MonoBehaviour
                 bootProfile.LoadProfile(saveSystem);
         }
 
-        // Si se asignó un anchor de reaparición (failRespawnAnchor), forzarlo AHORA — después de
-        // recargar el guardado/preset (que es quien normalmente decide el spawnAnchorId) y justo
-        // antes de recargar la escena, para que WorldBootstrap coloque al jugador ahí en vez de en
-        // el último punto guardado.
-        ApplyFailRespawnAnchorOverride();
+        // FIX (15 ago 2026): ya NO se fuerza aquí un anchor de reaparición por código (ver
+        // comentario de failRespawnAnchor más arriba) — RaiseFailSignal() ya se llamó antes de
+        // entrar aquí (ver RestartAfterCaught/RestartAfterTimeout), así que si el grafo tiene un
+        // WaitCustomEventNode escuchando MINIGAME_{minigameId}_FAILED, decide él el punto de
+        // reanudación. El reload de guardado/preset de abajo simplemente restaura el estado tal
+        // cual estaba guardado.
 
         Time.timeScale = 1f;
         SceneTransitionLoader.Load(sceneName);
-    }
-
-    /// <summary>
-    /// Sobreescribe el spawnAnchorId del preset activo con failRespawnAnchor (si está asignado),
-    /// para que al fallar el minijuego (atrapado o tiempo agotado) el jugador reaparezca en ese
-    /// anchor (p.ej. la Taberna) en vez de en el último punto guardado.
-    /// NOTA: en modo test/preset override (GameBootService.IsPresetOverrideActive), WorldBootstrap
-    /// vuelve a llamar EnsureRuntimePresetFromTemplate() al inicializar la escena recargada, lo que
-    /// pisa este valor con el anchor del bootPreset — el override solo es 100% fiable en partida
-    /// normal (sin preset de testeo forzado).
-    /// </summary>
-    private void ApplyFailRespawnAnchorOverride()
-    {
-        if (failRespawnAnchor == null) return;
-
-        if (string.IsNullOrEmpty(failRespawnAnchor.anchorId))
-        {
-            Debug.LogWarning("[TagMinigame] failRespawnAnchor asignado pero sin anchorId — se ignora el override de reaparición.");
-            return;
-        }
-
-        var bootProfile = GameBootService.Profile;
-        var preset = bootProfile != null ? bootProfile.GetActivePresetResolved() : null;
-        if (preset == null)
-        {
-            Debug.LogWarning($"[TagMinigame] No se pudo forzar el anchor de reaparición '{failRespawnAnchor.anchorId}': preset activo no disponible.");
-            return;
-        }
-
-        preset.spawnAnchorId = failRespawnAnchor.anchorId;
-        Debug.Log($"[TagMinigame] 📍 Minijuego fallado — el jugador reaparecerá en '{failRespawnAnchor.anchorId}'.");
     }
 
     private IEnumerator StartWithCountdown(bool isRestart = false)
@@ -2493,6 +2475,7 @@ public class TagMinigameController : MonoBehaviour
         yield return FeedbackService.ScreenFadeAsync(Color.black, 0.5f, fadeIn: true);
 
         Debug.Log($"[TagMinigame] 🔄 Reiniciando desde el último guardado (atrapado #{catchCount})");
+        RaiseFailSignal("CAUGHT");
         ReloadSceneFromLastSave();
     }
 
@@ -2524,6 +2507,7 @@ public class TagMinigameController : MonoBehaviour
         yield return FeedbackService.ScreenFadeAsync(Color.black, 0.5f, fadeIn: true);
 
         Debug.Log("[TagMinigame] 🔄 Reiniciando desde el último guardado (tiempo agotado)");
+        RaiseFailSignal("TIMEOUT");
         ReloadSceneFromLastSave();
     }
 
@@ -2783,6 +2767,40 @@ public class TagMinigameController : MonoBehaviour
         else
         {
             Debug.LogWarning("[TagMinigame] No se encontró DefaultNarrativeSignals para emitir la señal de victoria.");
+        }
+    }
+
+    /// <summary>
+    /// Emite la señal narrativa de fallo del minijuego (atrapado o tiempo agotado), ANTES de
+    /// recargar la escena — mismo patrón que RaiseWinSignal()/DoAbort() y que
+    /// CinematicSequencerBase.RaiseSignalOut() en las secuencias. Se emiten dos claves:
+    /// - "MINIGAME_{minigameId}_FAILED": genérica, para un único WaitCustomEventNode que trate
+    ///   cualquier fallo por igual.
+    /// - "MINIGAME_{minigameId}_FAILED_{reason}" (CAUGHT/TIMEOUT): específica, por si el diseño
+    ///   narrativo quiere reaccionar distinto según la causa (p.ej. diálogo distinto de Estela).
+    /// RaiseCustom banca el evento en _pending/_raised si todavía no hay ningún
+    /// WaitCustomEventNode suscrito (p.ej. porque el grafo se está reiniciando en ese instante),
+    /// así que el orden respecto a ReloadSceneFromLastSave() no es crítico — pero se llama antes
+    /// para que quede registrado incluso si algo interrumpe el reload a medio camino.
+    /// </summary>
+    private void RaiseFailSignal(string reason)
+    {
+        var signals = DefaultNarrativeSignals.Instance;
+        if (signals == null)
+        {
+            Debug.LogWarning("[TagMinigame] No se encontró DefaultNarrativeSignals para emitir la señal de fallo.");
+            return;
+        }
+
+        string genericKey = $"MINIGAME_{minigameId}_FAILED";
+        signals.RaiseCustom(genericKey, name);
+        Debug.Log($"[TagMinigame] Señal emitida: '{genericKey}' (motivo: {reason})");
+
+        if (!string.IsNullOrEmpty(reason))
+        {
+            string specificKey = $"MINIGAME_{minigameId}_FAILED_{reason}";
+            signals.RaiseCustom(specificKey, name);
+            Debug.Log($"[TagMinigame] Señal emitida: '{specificKey}'");
         }
     }
 

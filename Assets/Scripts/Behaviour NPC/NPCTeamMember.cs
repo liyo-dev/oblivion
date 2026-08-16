@@ -58,15 +58,24 @@ namespace Game.NPC
     public bool TryNotifyTeamOfPlayer(Transform player)
     {
         if (_team == null) return false;
-        
+
         // ✅ FIX: Evitar notificaciones repetidas que causan bucle infinito
         if (_hasNotifiedTeam) return true; // Retornamos true para indicar que ya se manejó
-        
-        _hasNotifiedTeam = true;
-        
-        // Notificar al equipo
-        _team.OnPlayerDetected(player);
-        return true;
+
+        // ✅ FIX (auditoría combate, 15 ago 2026): antes se marcaba _hasNotifiedTeam=true de forma
+        // incondicional, ANTES de saber si el equipo aceptó la notificación. Si OnPlayerDetected
+        // la rechazaba (p.ej. otro equipo ya en combate global), el flag se quemaba igual — y como
+        // el único reset es tras derrota+resurrección del equipo, este NPC quedaba sordo a la
+        // detección del jugador para siempre (IdleState.CheckPlayerDetection corta en cuanto ve
+        // HasNotifiedTeam=true). Ahora solo se quema si la notificación realmente prendió.
+        // ✅ REDISEÑO (15 ago 2026, a petición de Raúl): se pasa `_manager` (este mismo NPC) como
+        // "detector" para que el equipo sepa QUIÉN vio primero al jugador — ese NPC habla primero
+        // en la secuencia de frases de entrada (ver NPCCombatTeam.Co_DetectAndEngage).
+        bool accepted = _team.OnPlayerDetected(player, _manager);
+        if (accepted)
+            _hasNotifiedTeam = true;
+
+        return accepted;
     }
     
     /// <summary>

@@ -66,7 +66,7 @@
         },
         {
             "id": "EVT_11",
-            "text": "¡Will! Usala contra el demonio, presiona <sprite name=\"interactable_x\"> y derrotale."
+            "text": "¡Will! Úsala contra el demonio, presiona <sprite name=\"interactable_x\"> y derrótale."
         },
         {
             "id": "EVT_AWAKEN_01",
@@ -302,7 +302,7 @@
         },
         {
             "id": "EVT_TABERNA_03",
-            "text": "Por fin llega la comida y nuestross héroes se diponen a comer."
+            "text": "Por fin llega la comida y nuestros héroes se disponen a comer."
         },
         {
             "id": "EVT_TABERNA_04",
@@ -310,11 +310,11 @@
         },
         {
             "id": "EVT_TABERNA_05",
-            "text": "Eldran y Will sorprendidos por la forma de ccomer de Estela pierden el apetito"
+            "text": "Eldran y Will, sorprendidos por la forma de comer de Estela, pierden el apetito."
         },
         {
             "id": "EVT_TABERNA_06",
-            "text": "En ese momento se acercca Liam que estaba escuchando la conversación desde lo lejos"
+            "text": "En ese momento se acerca Liam, que estaba escuchando la conversación desde lejos."
         },
         {
             "id": "EVT_TABERNA_07",
@@ -326,7 +326,7 @@
         },
         {
             "id": "EVT_TABERNA_09",
-            "text": "Los tres se sorprenden.. ¿? "
+            "text": "Los tres se sorprenden..."
         },
         {
             "id": "EVT_TABERNA_10",

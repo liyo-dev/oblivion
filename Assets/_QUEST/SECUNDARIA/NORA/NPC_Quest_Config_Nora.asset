@@ -1,0 +1,86 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 673a376f7c9f48f8b92672ae6514fceb, type: 3}
+  m_Name: NPC_Quest_Config_Nora
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.Modules.NPCQuestConfig
+  moduleName:
+  description:
+  questChain:
+  - questData: {fileID: 11400000, guid: 11340db1ceff49c19c364e5d7375fe1f, type: 2}
+    completionMode: 2
+    autoDetectItemDelivery: 0
+    itemDeliveryStepIndex: 0
+    itemTag:
+    ignoreFovForItem: 0
+    overrideDetectionRadius: 0
+    requiredItems:
+    - item: {fileID: 11400000, guid: e420f009517398f4aa2f67aed445c278, type: 2}
+      amount: 3
+      stepConditionId:
+      stepIndex: 0
+      consumeOnComplete: 1
+    requiredWardrobeItems: []
+    requiredPartyMembers: []
+    requiredCharacter: -1
+    dlgWrongCharacter: {fileID: 0}
+    dlgBefore: {fileID: 11400000, guid: 25ec8a3421e1437097f7319e2da2b5bd, type: 2}
+    dlgInProgress: {fileID: 11400000, guid: 3a52ec6049c047cebf20aef2bcde780c, type: 2}
+    dlgTurnIn: {fileID: 11400000, guid: 2bd1bda41e964aeda76785556d3b2e23, type: 2}
+    dlgCompleted: {fileID: 11400000, guid: 2bd1bda41e964aeda76785556d3b2e23, type: 2}
+    onQuestCompleted:
+      m_PersistentCalls:
+        m_Calls: []
+    onOfferDialogueStarted:
+      m_PersistentCalls:
+        m_Calls: []
+    onOfferDialogueFinished:
+      m_PersistentCalls:
+        m_Calls: []
+    onPostActionCompleted:
+      m_PersistentCalls:
+        m_Calls: []
+    postAction:
+      actionType: 0
+      dialogueBeforeAction: {fileID: 0}
+      maxDialogueDistance: 30
+      targetAnchorName:
+      targetTransform: {fileID: 0}
+      maxMovementDuration: 0
+      walkDisplayDuration: 0
+      turnAroundOnArrival: 0
+      combatTarget: {fileID: 0}
+      dialogueToPlay: {fileID: 0}
+      delayBeforeAction: 0
+      transitionSettings: {fileID: 0}
+      useTransition: 1
+      transitionDelay: 0
+      customAction:
+        m_PersistentCalls:
+          m_Calls: []
+      chainNextQuestAfterAction: 0
+      chainDelay: 0.5
+  enableItemDetection: 1
+  detectionRadius: 3
+  detectionAngle: 90
+  detectionLayer:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  detectionInterval: 0.33
+  autoStartOnDetection: 0
+  rotationSpeed: 360
+  questIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
+  questIconOffset: {x: 0, y: 2.5, z: 0}
+  showIconWhenQuestAvailable: 1
+  showIconWhenQuestInProgress: 1
+  showIconWhenQuestReadyToTurnIn: 1
+  turnInIconPrefab: {fileID: 6303534759802428624, guid: e3166847a7c81b443bdbe623a681ae52, type: 3}
+  hideIconWhenAllCompleted: 1

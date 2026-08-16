@@ -104,13 +104,20 @@ namespace Game.NPC.States
                     lowManaRetreatThreshold = cc.lowManaRetreatThreshold,
                     
                     // Tácticas & Defensa
-                    difficultyLevel = 0.7f, // Valor por defecto equilibrado
+                    difficultyLevel = cc.difficultyLevel, // ✅ FIX #13: configurable por NPC (antes hardcodeado a 0.7f para todos)
                     useShield = cc.useShield,
                     shieldDuration = cc.shieldMaxDuration,
                     shieldCooldown = cc.shieldCooldown,
                     coverLayerMask = cc.coverLayerMask,
                     coverSearchRadius = cc.coverSearchRadius,
                     dodgeDistance = 3f,
+
+                    // 🎭 FIX #5: completar el mapeo de la estrategia de engaño/emboscada — antes
+                    // estos dos campos ni existían en el struct-initializer, así que quedaban en
+                    // 0f/0 por defecto y la mecánica de fingir quedarse sin maná para emboscar
+                    // (~150 líneas ya implementadas en NPCCombatBrain) nunca se activaba.
+                    deceptionChance = cc.deceptionChance,
+                    minAttacksToKeepForAmbush = cc.minAttacksToKeepForAmbush,
                     
                     // 🔍 Búsqueda del Jugador
                     activelySearchForPlayer = cc.activelySearchForPlayer,
@@ -223,6 +230,13 @@ namespace Game.NPC.States
 
             // Damageable (Salud)
             var damageable = context.Transform.GetComponent<Damageable>();
+            // FIX: si el NPC ya tenía este componente (re-enganche tras alejarse del combate sin
+            // llegar a morir), NO se debe curar a tope más abajo — solo un combate nuevo de
+            // verdad (primer Damageable de este NPC) debe arrancar con vida llena. Antes, cada
+            // OnEnter volvía a poner damageable.SetMaxAndCurrent(cc.health, cc.health)
+            // incondicionalmente, así que alejarse un poco de la pelea y volver a acercarse
+            // "curaba" al NPC del todo y el combate empezaba de 0.
+            bool isFirstCombatEngagement = damageable == null;
             if (damageable == null)
             {
                 damageable = context.Transform.gameObject.AddComponent<Damageable>();
@@ -248,7 +262,10 @@ namespace Game.NPC.States
             // Solo resetear vida y spawnear barra si NO ha sido derrotado previamente
             if (!context.WasDefeatedInCombat)
             {
-                damageable.SetMaxAndCurrent(cc.health, cc.health);
+                // Solo curar a tope en el primer enganche real (ver comentario arriba). Un
+                // re-enganche conserva la vida con la que el NPC se quedó al salir de combate.
+                if (isFirstCombatEngagement)
+                    damageable.SetMaxAndCurrent(cc.health, cc.health);
                 if (cc.healthBarPrefab != null) healthBar.SetHealthBarPrefab(cc.healthBarPrefab);
                 healthBar.SpawnHealthBar();
                 

@@ -21,6 +21,9 @@ public class GolemBossAI : MonoBehaviour
     [SerializeField] private Animator animator;
     [SerializeField] private Damageable damageable;
     [SerializeField] private NavMeshAgent agent;
+    // Rigidbody del objetivo actual, cacheado junto a "player" (nunca via GetComponent en Update/FixedUpdate)
+    // — usado para predecir hacia dónde se moverá al lanzar una roca (ver PredictThrowTargetPosition).
+    private Rigidbody _playerRigidbody;
 
     [Header("Configuración General")]
     [SerializeField] private float detectionRange = 25f;
@@ -60,6 +63,8 @@ public class GolemBossAI : MonoBehaviour
     [SerializeField] private float rockRainAoeDamage = 15f;
     [Tooltip("VFX de advertencia en el suelo antes de que caiga la roca")]
     [SerializeField] private GameObject rockWarningVFX;
+    [Tooltip("Escala del VFX de grieta/aterrizaje (el mismo shockwaveVFX + landingDustVFX que usa el salto de Fase 3) aplicada al impacto de UNA roca — más pequeña que el aterrizaje completo del Golem")]
+    [SerializeField] private float rockLandingVfxScale = 0.6f;
 
     [Header("Fase 3 - Salto y Onda Expansiva")]
     [Tooltip("Porcentaje de vida para activar Fase 3 (0.25 = 25%)")]
@@ -210,8 +215,23 @@ public class GolemBossAI : MonoBehaviour
         
         if (!player && PlayerService.Player != null)
         {
-            player = PlayerService.Player.transform;
+            SetTarget(PlayerService.Player.transform);
         }
+        else if (player)
+        {
+            _playerRigidbody = player.GetComponent<Rigidbody>();
+        }
+    }
+
+    /// <summary>
+    /// Cambia el objetivo actual (jugador o aliado) y cachea su Rigidbody junto con él, para poder
+    /// predecir su movimiento al lanzar una roca sin llamar a GetComponent en Update/FixedUpdate.
+    /// </summary>
+    private void SetTarget(Transform target)
+    {
+        if (player == target) return;
+        player = target;
+        _playerRigidbody = target ? target.GetComponent<Rigidbody>() : null;
     }
 
     void Start()
@@ -301,7 +321,7 @@ public class GolemBossAI : MonoBehaviour
         {
             _targetRefreshTimer = 0f;
             var nearest = CombatTargetProvider.GetNearestTarget(transform.position);
-            if (nearest != null) player = nearest;
+            if (nearest != null) SetTarget(nearest);
         }
 
         if (!player) return;
@@ -673,6 +693,43 @@ public class GolemBossAI : MonoBehaviour
     #region Ataque - Lanzar Roca
 
     /// <summary>
+    /// FIX: la roca se lanzaba en línea recta (sin gravedad) apuntando a la posición del jugador
+    /// en el instante exacto del lanzamiento, sin ningún tipo de predicción. Entre el tell de la
+    /// animación (~1s) y el tiempo de vuelo (hasta ~0.83s a rango máximo), un jugador que camina
+    /// se aleja de sobra del punto apuntado — el resultado es que la roca "ni siquiera pasa cerca"
+    /// de un jugador en movimiento, como si el ataque no existiera. Aquí se anticipa el punto de
+    /// impacto sumando la velocidad horizontal actual del objetivo por el tiempo de vuelo estimado,
+    /// igual que un lead de disparo clásico, para que el tiro sí amenace a un jugador que se mueve.
+    /// </summary>
+    private Vector3 PredictThrowTargetPosition(Vector3 spawnPos, float projectileSpeed)
+    {
+        Vector3 aimPoint = player.position + Vector3.up * 1.2f;
+
+        if (_playerRigidbody != null)
+        {
+            float estimatedFlightTime = Vector3.Distance(spawnPos, aimPoint) / Mathf.Max(projectileSpeed, 0.01f);
+            Vector3 velocity = _playerRigidbody.linearVelocity;
+            velocity.y = 0f; // Solo predecir desplazamiento horizontal, no saltos/caídas
+            aimPoint += velocity * estimatedFlightTime;
+        }
+
+        return aimPoint;
+    }
+
+    /// <summary>
+    /// Reproduce el mismo VFX de "grieta en el suelo" que usa el aterrizaje de Fase 3
+    /// (<see cref="shockwaveVFX"/> + <see cref="landingDustVFX"/>), pero a la escala de una sola
+    /// roca. Se pasa a cada <see cref="EnemyProjectile"/> para que lo reproduzca él mismo al
+    /// impactar contra el suelo — así una roca lanzada o caída de la lluvia comparte la misma
+    /// lectura visual ("el suelo se agrieta") que el salto del Golem.
+    /// </summary>
+    private void ConfigureRockLandingVfx(EnemyProjectile proj)
+    {
+        if (!proj) return;
+        proj.ConfigureGroundImpactVfx(shockwaveVFX, rockLandingVfxScale, landingDustVFX, rockLandingVfxScale);
+    }
+
+    /// <summary>
     /// Lanza una roca al jugador.
     /// El proyectil (EnemyProjectile) maneja todo el daño.
     /// </summary>
@@ -741,9 +798,9 @@ public class GolemBossAI : MonoBehaviour
             // Desadhirir de la mano
             rock.transform.SetParent(null);
             
-            // Calcular dirección hacia el jugador
-            Vector3 targetPos = player.position + Vector3.up * 1.2f;
+            // Calcular dirección hacia el jugador (con predicción de movimiento, ver PredictThrowTargetPosition)
             Vector3 spawnPos = rock.transform.position;
+            Vector3 targetPos = PredictThrowTargetPosition(spawnPos, rockSpeed);
             Vector3 direction = (targetPos - spawnPos).normalized;
             
             // Configurar layer del proyectil
@@ -784,6 +841,7 @@ public class GolemBossAI : MonoBehaviour
             if (proj)
             {
                 proj.enabled = true;
+                ConfigureRockLandingVfx(proj);
                 // El daño se configura en el prefab (baseDamage del EnemyProjectile)
                 // Pasamos -1 para usar el daño configurado en el prefab
                 proj.Initialize(direction, -1f);
@@ -874,11 +932,12 @@ public class GolemBossAI : MonoBehaviour
         if (rock && player)
         {
             rock.transform.SetParent(null);
-            
-            Vector3 targetPos = player.position + Vector3.up * 1.2f;
+
+            // Predicción de movimiento (ver PredictThrowTargetPosition) — mismo fix que RockThrowAttack
             Vector3 spawnPos = rock.transform.position;
+            Vector3 targetPos = PredictThrowTargetPosition(spawnPos, rockSpeed);
             Vector3 direction = (targetPos - spawnPos).normalized;
-            
+
             SetupRockProjectile(rock, direction, rockSpeed);
             
             Destroy(rock, 5f);
@@ -1044,6 +1103,7 @@ public class GolemBossAI : MonoBehaviour
         if (proj)
         {
             proj.enabled = true;
+            ConfigureRockLandingVfx(proj);
             proj.Initialize(direction, -1f); // Usar daño del prefab
         }
     }

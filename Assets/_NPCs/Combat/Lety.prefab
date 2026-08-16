@@ -758,9 +758,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
   configuration:
-    behaviourType: 128
+    behaviourType: 130
     ambientConfig: {fileID: 0}
-    combatConfig: {fileID: 0}
+    combatConfig: {fileID: 11400000, guid: 91555e401bb636b408b41e91dd8efdd5, type: 2}
     questConfig: {fileID: 0}
     interactiveNarrativeConfig: {fileID: 11400000, guid: f507696188caadd4591686b4205958aa, type: 2}
     partyConfig: {fileID: 0}

@@ -685,4 +685,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::QuestKillContributor
   questId: Q_GUARDIABOSQUE_ARANAS
   onlyIfQuestActive: 1
-  debugLogs: 0
+  debugLogs: 1

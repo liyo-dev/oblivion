@@ -17681,6 +17681,11 @@ MonoBehaviour:
   timeSettings:
   - timeOfDay: 6
     skybox: {fileID: 2100000, guid: 9991b6265f7f87d43b7e3c676739f203, type: 2}
+    skyboxTint: {r: 1, g: 1, b: 1, a: 1}
+    skyboxIntensity: 1
+    skyboxExponent: 1
+    skyboxDirectionYaw: 0
+    skyboxDirectionPitch: 0
     lightColor: {r: 1, g: 1, b: 1, a: 1}
     lightIntensity: 1.2
     sunRotationX: 50
@@ -17695,6 +17700,11 @@ MonoBehaviour:
     fogChance: 0
   - timeOfDay: 1
     skybox: {fileID: 2100000, guid: 0b846be1b116429409a7669cacf2a62e, type: 2}
+    skyboxTint: {r: 1, g: 1, b: 1, a: 1}
+    skyboxIntensity: 1
+    skyboxExponent: 1
+    skyboxDirectionYaw: 0
+    skyboxDirectionPitch: 0
     lightColor: {r: 1, g: 1, b: 1, a: 1}
     lightIntensity: 1.4
     sunRotationX: 60
@@ -17709,6 +17719,11 @@ MonoBehaviour:
     fogChance: 0
   - timeOfDay: 0
     skybox: {fileID: 2100000, guid: 1cf32c17fea93ef4fb120e8e0cdfbef1, type: 2}
+    skyboxTint: {r: 1, g: 1, b: 1, a: 1}
+    skyboxIntensity: 1
+    skyboxExponent: 1
+    skyboxDirectionYaw: 0
+    skyboxDirectionPitch: 0
     lightColor: {r: 1, g: 1, b: 1, a: 1}
     lightIntensity: 1.3
     sunRotationX: 80
@@ -17723,6 +17738,11 @@ MonoBehaviour:
     fogChance: 0
   - timeOfDay: 3
     skybox: {fileID: 2100000, guid: 82b660520bdecce4daf45d270ec93fe4, type: 2}
+    skyboxTint: {r: 1, g: 1, b: 1, a: 1}
+    skyboxIntensity: 1
+    skyboxExponent: 1
+    skyboxDirectionYaw: 0
+    skyboxDirectionPitch: 0
     lightColor: {r: 1, g: 1, b: 1, a: 1}
     lightIntensity: 0.9
     sunRotationX: 100
@@ -17737,6 +17757,11 @@ MonoBehaviour:
     fogChance: 0
   - timeOfDay: 8
     skybox: {fileID: 2100000, guid: ac2eeb98f1b423941b373f537bc56e18, type: 2}
+    skyboxTint: {r: 1, g: 1, b: 1, a: 1}
+    skyboxIntensity: 1
+    skyboxExponent: 1
+    skyboxDirectionYaw: 0
+    skyboxDirectionPitch: 0
     lightColor: {r: 1, g: 1, b: 1, a: 1}
     lightIntensity: 0.6
     sunRotationX: 110
@@ -17751,6 +17776,11 @@ MonoBehaviour:
     fogChance: 0
   - timeOfDay: 7
     skybox: {fileID: 2100000, guid: 493bfb50af5d9424da505ba945c86600, type: 2}
+    skyboxTint: {r: 1, g: 1, b: 1, a: 1}
+    skyboxIntensity: 1
+    skyboxExponent: 1
+    skyboxDirectionYaw: 0
+    skyboxDirectionPitch: 0
     lightColor: {r: 1, g: 1, b: 1, a: 1}
     lightIntensity: 0.3
     sunRotationX: 140
@@ -17765,6 +17795,11 @@ MonoBehaviour:
     fogChance: 0
   - timeOfDay: 5
     skybox: {fileID: 2100000, guid: 97637a2a763b7f24b8da4e139e4144ca, type: 2}
+    skyboxTint: {r: 1, g: 1, b: 1, a: 1}
+    skyboxIntensity: 1
+    skyboxExponent: 1
+    skyboxDirectionYaw: 0
+    skyboxDirectionPitch: 0
     lightColor: {r: 1, g: 1, b: 1, a: 1}
     lightIntensity: 0.2
     sunRotationX: 180
@@ -17777,6 +17812,7 @@ MonoBehaviour:
     forceRain: 0
     rainChance: 0
     fogChance: 0
+  sharedSkyboxMaterial: {fileID: 0}
   directionalLight: {fileID: 1448444570}
   transitionDuration: 10
   useSmoothTransitions: 1
@@ -17847,9 +17883,14 @@ MonoBehaviour:
   jitter: 0.5
   scaleRange: {x: 5, y: 9}
   maxCloudInstances: 300
+  heightJitter: 12
   minClearanceAboveFollowTarget: 25
   recenterCheckInterval: 2
   stormCloudColor: {r: 0.42, g: 0.43, b: 0.47, a: 1}
+  stormShadowAmount: 0.55
+  cloudShaderMode: 0
+  visibleAlphaThreshold: 0.5
+  billboard: 1
   syncWithRainDarken: 1
   fadeDuration: 6
 --- !u!1001 &1190223791
@@ -33653,6 +33694,7 @@ MonoBehaviour:
   OnConsumed:
     m_PersistentCalls:
       m_Calls: []
+  defaultSightHeight: 1.4
 --- !u!199 &1553279036
 ParticleSystemRenderer:
   serializedVersion: 7
@@ -43630,6 +43672,7 @@ MonoBehaviour:
   OnConsumed:
     m_PersistentCalls:
       m_Calls: []
+  defaultSightHeight: 1.4
 --- !u!199 &1587272003
 ParticleSystemRenderer:
   serializedVersion: 7

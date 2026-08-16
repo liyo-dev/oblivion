@@ -94,6 +94,7 @@ MonoBehaviour:
   - rid: 648455816183546019
   - rid: 648455816183546020
   - rid: 648455816183546051
+  - rid: 648456012993134753
   applicableSceneNames:
   - MainWorld
   references:
@@ -147,6 +148,21 @@ MonoBehaviour:
         waitForCompletion: 1
         restoreSceneMusicWhenDone: 1
         restoreMusicFade: 2
+    - rid: 648456012993134753
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Si fallamos el minijuego de Estela
+        chapter: Cap. 3
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 9cd155cc-d7b8-4641-87ce-9f9433922413
+        position: {x: 2117, y: 1371}
+        outputs:
+        - 7805ae8b-67ae-4dbb-8de2-c4dc8a2fa368
+        eventKey: MINIGAME_TAG_MINIGAME_01_FAILED
     - rid: 857239824104947715
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
@@ -867,10 +883,10 @@ MonoBehaviour:
         guid: eb2ae8e6-c475-41f9-920f-d86ac850f82a
         position: {x: 514, y: 4388}
         outputs: []
-        questId: 
+        questId: FUEGOFATUO_1
         stepConditionIds:
-        - FUEGOFATUO_DESC_02
-        steps: 
+        - FUEGOFATUO_02
+        steps:
         completeQuest: 0
         logWarnings: 1
     - rid: 5290829367972724959
@@ -1277,10 +1293,11 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 330dfba1-aa17-4afd-9a25-ced60a36d329
-        position: {x: 2665, y: 1242}
+        position: {x: 2665, y: 1249}
         outputs:
         - 9e591b44-387a-444a-abbc-78cf60c03c2b
         - cbae3ae8-7b91-4e24-8268-2f4268abcf62
+        - 9cd155cc-d7b8-4641-87ce-9f9433922413
         minigameId: TAG_MINIGAME_01
         activateOnStart: 1
         deactivateOnEnd: 0

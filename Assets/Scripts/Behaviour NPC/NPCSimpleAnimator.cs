@@ -1522,6 +1522,27 @@ public class NPCSimpleAnimator : MonoBehaviour
         string beginState = GetActivityBeginState(activity);
         string loopState  = GetActivityLoopState(activity);
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // Diagnóstico (15 ago 2026): a diferencia de PlaySocialGesture (que sí avisa si el estado
+        // no existe), este método no dejaba ningún rastro en consola cuando el Animator Controller
+        // no tenía el estado begin/loop (p.ej. los clips de SitGround están "pendientes de
+        // importar", ver comentario en GetActivityBeginState más abajo) — el NPC simplemente se
+        // quedaba de pie sin ningún indicio de por qué (reportado por Raúl: los NPCs bajo el árbol
+        // "se quedan quietos" en vez de sentarse o tiritar de frío). Este log confirma en la
+        // práctica si es un problema de CONTENIDO (clip/estado faltante en ESTE controller en
+        // concreto) y no de la lógica que llama a PlayAmbientActivity — que si llega hasta aquí,
+        // ya está haciendo su parte correctamente.
+        bool hasBeginState = !string.IsNullOrEmpty(beginState) && animator != null && animator.HasState(0, Animator.StringToHash(beginState));
+        bool hasLoopState  = !string.IsNullOrEmpty(loopState)  && animator != null && animator.HasState(0, Animator.StringToHash(loopState));
+        if (!hasBeginState && !hasLoopState && (!string.IsNullOrEmpty(beginState) || !string.IsNullOrEmpty(loopState)))
+        {
+            Debug.LogWarning($"[NPCAnimator:{gameObject.name}] ⚠️ PlayAmbientActivity({activity}): ni '{beginState}' ni '{loopState}' " +
+                $"existen en el Base Layer del Animator Controller " +
+                $"'{(animator != null && animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name : "null")}'. " +
+                "El NPC se quedará de pie en vez de sentarse — revisar si los clips están importados y wireados en ESE controller.");
+        }
+#endif
+
         // Animación de inicio (one-shot)
         if (!string.IsNullOrEmpty(beginState) && animator != null && animator.HasState(0, Animator.StringToHash(beginState)))
         {
