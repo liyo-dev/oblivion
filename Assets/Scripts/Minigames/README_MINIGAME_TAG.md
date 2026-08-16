@@ -126,7 +126,7 @@ minigameController.OnMinigameWon.AddListener(() => {
 | `Start Message` | Mensaje al empezar | "¡HUYE!" |
 | `Caught Message` | Mensaje al ser atrapado | "¡Te atraparon!" |
 | `Win Message` | Mensaje al ganar | "¡Escapaste!" |
-| `Fail Respawn Anchor` | `SpawnAnchor` de la escena donde reaparece el jugador si falla el minijuego (le atrapan o se agota el tiempo). Arrastra aquí, por ejemplo, el anchor de la Taberna. Si se deja vacío, el jugador reaparece en el último punto guardado (comportamiento anterior). | El `SpawnAnchor` del punto de reaparición deseado |
+| `Fail Respawn Anchor` | ⚠️ No usado por el flujo por defecto (ver comentario en `TagMinigameController.failRespawnAnchor`). Si el jugador es atrapado o se agota el tiempo, el minijuego reinicia el intento **en el sitio** (posiciones reseteadas, cuenta atrás de nuevo) sin recargar la escena — ver nota "FIX (16 ago 2026)" en `RestartAfterCaught`/`RestartAfterTimeout`. | — |
 
 ---
 
@@ -136,7 +136,7 @@ El `TagMinigameController` expone estos eventos que puedes usar en el Inspector:
 
 - `OnMinigameStarted`: Se dispara cuando empieza el juego (después del countdown)
 - `OnMinigameWon`: Se dispara cuando el jugador sobrevive los 30 segundos
-- `OnMinigameLost`: (No implementado - el minijuego no tiene "perder", solo reinicia)
+- `OnMinigameLost`: Se dispara al agotarse el tiempo (el minijuego no tiene "perder" de verdad — tras este evento el intento se reinicia solo, en el sitio)
 - `OnPlayerCaught`: Se dispara cada vez que el jugador es atrapado
 
 ---

@@ -161,6 +161,7 @@ MonoBehaviour:
   consumedInteractableIds:
   - MainWorld:Carta_1231,6_1000,8_3,4
   completedInteractiveNarratives:
+  - NPC_Eldran_CN1
   - ELDRAN_MAIN_NARRATIVE_CN3
   - oliver-narrative-b8a7c6d5-unique
   - oliver-narrative-b8a7c6d5-unique_CN0

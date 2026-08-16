@@ -459,7 +459,29 @@ public class DialogueCinematicController : MonoBehaviour
         // Recalcula el centro del grupo e interpola el punto de mira hacia el speaker actual.
         if (_isGroupConversation && isInCinematicMode && currentPlayer != null)
         {
-            // Recalcular centro del grupo (los personajes pueden haberse movido ligeramente)
+            // Recalcular centro del grupo (los personajes pueden haberse movido ligeramente).
+            //
+            // FIX (Agosto 2026): este era el TERCER lugar del archivo que recalculaba el centro
+            // del grupo sumando player+NPC+party members, y el ÚNICO que se quedó sin el filtro
+            // del decoy oculto / inclusión del clon de Will que ya llevan CalculateCameraPosition()
+            // y UpdateGroupFacing() (ver comentarios ahí). A diferencia de esos dos —que solo se
+            // ejecutan una vez al fijar el plano o al cambiar de línea—, este bloque corre en
+            // TODOS los LateUpdate mientras dura la conversación grupal y es el que de verdad
+            // pilota la ROTACIÓN de la cámara activa (currentVirtualCamera/dialogueCamera) vía
+            // Quaternion.LookRotation(_groupLookAtTarget - camPos) más abajo. Al sumar la posición
+            // de ActiveCharacterSwapper.HiddenNpc (el NPCPartyMember del propio personaje activo,
+            // invisible y congelado en el punto donde estaba la ÚLTIMA VEZ que se cambió de
+            // personaje — puede ser en cualquier sala/altura del mapa, sin relación con la escena
+            // actual) el lookAt se arrastraba cada frame hacia ese punto contaminado, girando la
+            // cámara de grupo a un ángulo absurdo (a menudo casi cenital) aunque su POSICIÓN
+            // siguiera siendo la correcta calculada por CalculateCameraPosition(). Con Will activo
+            // esto era invisible porque HiddenNpc es null (Will no tiene decoy); con Liam/Estela
+            // activos el decoy siempre existe y contamina el lookAt en cada línea de diálogo
+            // grupal — encaja con el reporte "solo pasa cuando el activo no es Will".
+            var swapper = ActiveCharacterSwapper.Instance;
+            var hiddenNpc = swapper != null ? swapper.HiddenNpc : null;
+            var willNpc = swapper != null ? swapper.WillNpcInstance : null;
+
             Vector3 groupCenter = currentPlayer.position;
             int count = 1;
             if (currentNPC != null) { groupCenter += currentNPC.position; count++; }
@@ -467,10 +489,12 @@ public class DialogueCinematicController : MonoBehaviour
             {
                 foreach (var m in Game.NPC.PlayerParty.Instance.Members)
                 {
-                    if (m != null && m.IsActiveInParty)
+                    if (m != null && m != hiddenNpc && m.IsActiveInParty)
                     { groupCenter += m.transform.position; count++; }
                 }
             }
+            if (willNpc != null && willNpc != hiddenNpc && IsWillNpcParticipating(willNpc))
+            { groupCenter += willNpc.transform.position; count++; }
             groupCenter /= count;
             _cachedGroupCenter = groupCenter;
 
@@ -1639,11 +1663,33 @@ public class DialogueCinematicController : MonoBehaviour
                 var party = Game.NPC.PlayerParty.HasInstance ? Game.NPC.PlayerParty.Instance : null;
                 if (party != null)
                 {
+                    // FIX "cámara de grupo en negro cuando el personaje activo no es Will":
+                    // ActiveCharacterSwapper.HiddenNpc es el NPCPartyMember "decoy" del propio
+                    // personaje activo (currentPlayer) — el mismo patrón ya resuelto en
+                    // FindSpeakerTransform (ver "isActiveCharacterDecoy" más abajo). Ese decoy
+                    // se queda invisible y con el NavMeshAgent congelado en la posición donde
+                    // estaba la ÚLTIMA VEZ que se cambió de personaje (puede ser en cualquier
+                    // punto del mapa, sin relación con la escena actual). Sin este filtro su
+                    // posición se sumaba al promedio y arrastraba groupCenter fuera del set,
+                    // colocando la cámara de grupo embebida en geometría o en el vacío (pantalla
+                    // en negro). Con Will activo esto era invisible porque Will nunca vive en
+                    // party.Members (ver SpawnWillNpc/IsPartyMember), así que nunca había decoy
+                    // que filtrar.
+                    var hiddenNpc = ActiveCharacterSwapper.Instance != null ? ActiveCharacterSwapper.Instance.HiddenNpc : null;
                     foreach (var m in party.Members)
                     {
-                        if (m != null && m.IsActiveInParty)
+                        if (m != null && m != hiddenNpc && m.IsActiveInParty)
                         { groupCenter += m.transform.position; participantCount++; }
                     }
+
+                    // Simétrico: si Will NO es el personaje activo, su NPC clonado
+                    // (ActiveCharacterSwapper.WillNpcInstance) tampoco vive en party.Members y
+                    // quedaba fuera del cálculo del centro del grupo, aunque sí participa
+                    // visualmente en la escena (ver IsPartyMember más abajo, que ya lo trata
+                    // como party member a efectos de render/oclusión).
+                    var willNpc = ActiveCharacterSwapper.Instance != null ? ActiveCharacterSwapper.Instance.WillNpcInstance : null;
+                    if (willNpc != null && willNpc != hiddenNpc && IsWillNpcParticipating(willNpc))
+                    { groupCenter += willNpc.transform.position; participantCount++; }
                 }
                 groupCenter /= participantCount;
                 _cachedGroupCenter = groupCenter;
@@ -2237,6 +2283,29 @@ public class DialogueCinematicController : MonoBehaviour
         }
         return false;
     }
+
+    /// <summary>
+    /// Equivalente a NPCPartyMember.IsActiveInParty pero para el clon de Will
+    /// (ActiveCharacterSwapper.WillNpcInstance), que a propósito NUNCA pasa por JoinParty()
+    /// (ver comentario en IsPartyMember más arriba) — así que su campo interno _isInParty se
+    /// queda en false para siempre y willNpc.IsActiveInParty NUNCA es true.
+    ///
+    /// FIX (Agosto 2026): tanto CalculateCameraPosition() como el breathing del LateUpdate
+    /// llevaban un filtro "willNpc != hiddenNpc && willNpc.IsActiveInParty" con la intención
+    /// documentada de sumar la posición de Will al centro del grupo — pero por lo anterior esa
+    /// condición nunca se cumplía y el filtro era código muerto: la posición de Will NUNCA
+    /// llegaba a entrar en el cálculo, pese a que el comentario decía lo contrario. Replicamos
+    /// aquí el resto de condiciones de IsActiveInParty (no combate, no cinemática, no secuencia
+    /// activa) sin depender de _isInParty, que para este NPC no aplica.
+    /// </summary>
+    private bool IsWillNpcParticipating(Game.NPC.NPCPartyMember willNpc)
+    {
+        if (willNpc == null || willNpc.NPCManager == null || willNpc.NPCManager.Context == null)
+            return false;
+
+        var ctx = willNpc.NPCManager.Context;
+        return !ctx.IsInCombat && !ctx.IsInCinematic && !CinematicSequencerBase.AnySequenceActive;
+    }
     
     /// <summary>
     /// Hace que el speaker mire hacia el NPC con quien está hablando
@@ -2277,9 +2346,13 @@ public class DialogueCinematicController : MonoBehaviour
         // Compañeros del party: mirar al speaker (el propio speaker limpia su override)
         if (Game.NPC.PlayerParty.HasInstance)
         {
+            // Mismo decoy que en CalculateCameraPosition: el NPCPartyMember oculto del personaje
+            // activo no debe recibir instrucciones de mirada (está invisible y congelado en otra
+            // parte del mapa).
+            var hiddenNpc = ActiveCharacterSwapper.Instance != null ? ActiveCharacterSwapper.Instance.HiddenNpc : null;
             foreach (var m in Game.NPC.PlayerParty.Instance.Members)
             {
-                if (m == null || !m.IsActiveInParty) continue;
+                if (m == null || m == hiddenNpc || !m.IsActiveInParty) continue;
                 bool isSpeaker = m.transform == currentSpeaker;
                 m.SetDialogueLookTarget(isSpeaker ? null : currentSpeaker);
                 // Cabeza: el compañero que habla mira al NPC del diálogo; los demás, al speaker

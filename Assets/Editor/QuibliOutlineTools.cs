@@ -20,7 +20,9 @@ using UnityEngine;
 ///      YA usan un shader de Quibli con la propiedad _OutlineEnabled expuesta
 ///      (se comprueba con Material.HasProperty antes de tocar nada).
 ///   2. NUNCA recorre toda la escena sola. Solo actúa sobre los GameObjects
-///      que tengas seleccionados en la Hierarchy en ese momento (y sus hijos).
+///      que tengas seleccionados en la Hierarchy en ese momento (y sus hijos) —
+///      excepto la opción explícita de sincronización de todo el proyecto,
+///      pensada para reparar desincronizaciones ya existentes (ver abajo).
 ///   3. Soporta Undo (Ctrl+Z) como cualquier otra operación del Editor.
 ///
 /// Uso:
@@ -30,6 +32,29 @@ using UnityEngine;
 ///   3. Ajusta color/grosor a mano en el Inspector del material si el valor
 ///      por defecto no encaja (cada material puede tener su propio ancho).
 ///
+/// FIX (16 ago 2026 — coste de rendimiento fantasma): la versión original de
+/// esta herramienta solo tocaba el FLOAT `_OutlineEnabled` con `SetFloat`.
+/// Ese float es solo la etiqueta de UI del atributo `[Toggle(DR_OUTLINE_ON)]`
+/// del shader — cambiarlo por script NO enciende/apaga sola la keyword
+/// `DR_OUTLINE_ON` (eso solo ocurre si se toca el toggle a mano desde el
+/// Inspector). Y el propio shader (`StylizedLit.shader`, pase "Outline",
+/// `Tags {"LightMode"="SRPDefaultUnlit"}`) decide si dibuja geometría real
+/// SOLO mirando la keyword (`#if defined(DR_OUTLINE_ON)`), no el float.
+/// Además, quien de verdad evita que ese pase se envíe a la GPU como draw
+/// call — `Material.SetShaderPassEnabled("SRPDefaultUnlit", ...)` — solo se
+/// llama dentro de `QuibliEditor.OnGUI` (`Assets/Plugins/Quibli/Scripts/Editor/QuibliEditor.cs`,
+/// línea ~302), que es código de Inspector: no corre en build, y ni siquiera
+/// corre en el Editor a menos que alguien abra el Inspector de ese material
+/// en concreto. Resultado real: al activar/desactivar outline en bloque con
+/// la versión anterior de esta herramienta, el float cambiaba pero el pase
+/// "Outline" seguía enviándose como draw call extra en cada objeto, activado
+/// o no — coste de rendimiento fantasma (no visible, pero sí en el profiler:
+/// duplica las llamadas a `SRPBRender.ApplyShader`/`SRPBatcher.Flush` en
+/// `DrawOpaqueObjects`). Ahora `SetOutlineOnSelection` sincroniza los tres
+/// estados a la vez (float + keyword + pase), y hay un nuevo comando de
+/// menú para reparar materiales que ya quedaron desincronizados por el uso
+/// anterior de la herramienta (ver `SyncOutlineStateProjectWide`).
+///
 /// Instalación: coloca este archivo en cualquier carpeta llamada "Editor"
 /// dentro de Assets (ya vive en Assets/Editor/QuibliOutlineTools.cs).
 /// </summary>
@@ -38,6 +63,12 @@ public static class QuibliOutlineTools
     private const string OutlineEnabledProp = "_OutlineEnabled";
     private const string OutlineColorProp = "_OutlineColor";
     private const string OutlineWidthProp = "_OutlineWidth";
+
+    // Keyword real que lee el shader (#if defined(DR_OUTLINE_ON)) y nombre
+    // del pase ("Name \"Outline\"", Tags LightMode=SRPDefaultUnlit) que hay
+    // que desactivar de verdad para que no se envíe el draw call extra.
+    private const string OutlineKeyword = "DR_OUTLINE_ON";
+    private const string OutlinePassName = "SRPDefaultUnlit";
 
     private static readonly Color DefaultOutlineColor = Color.black;
     private const float DefaultOutlineWidth = 1.2f;
@@ -52,6 +83,111 @@ public static class QuibliOutlineTools
     private static void DisableOutlineOnSelection()
     {
         SetOutlineOnSelection(false);
+    }
+
+    [MenuItem("Tools/Quibli/Outline/Desactivar outline en TODO el proyecto (decisión final — no reactivar sin preguntar)")]
+    private static void DisableOutlineProjectWideForGood()
+    {
+        // DECISIÓN (16 ago 2026): el outline de Quibli fue una prueba visual,
+        // no se queda en el juego. Este comando apaga los tres estados a la
+        // vez (float + keyword + pase "Outline") en TODOS los materiales del
+        // proyecto que exponen _OutlineEnabled, sin importar en qué estado
+        // estuvieran — es la forma de garantizar que no queda ni un draw call
+        // extra del pase "Outline" en ningún material, no solo los 71 que se
+        // activaron a mano el 12 de agosto. Ver TDD.md § 19.4.7 / § 21 para
+        // el contexto de por qué se activó y por qué se revirtió.
+        var guids = AssetDatabase.FindAssets("t:Material");
+        var toFix = new List<Material>();
+
+        foreach (var guid in guids)
+        {
+            var path = AssetDatabase.GUIDToAssetPath(guid);
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat == null || mat.shader == null) continue;
+            if (!mat.HasProperty(OutlineEnabledProp)) continue;
+
+            bool floatOn = mat.GetFloat(OutlineEnabledProp) > 0f;
+            bool keywordOn = mat.IsKeywordEnabled(OutlineKeyword);
+            bool passOn = mat.GetShaderPassEnabled(OutlinePassName);
+
+            if (!floatOn && !keywordOn && !passOn) continue; // ya apagado del todo, no tocar
+
+            toFix.Add(mat);
+        }
+
+        if (toFix.Count == 0)
+        {
+            Debug.Log("[Quibli Outline] El outline ya está apagado (float + keyword + pase \"Outline\") " +
+                      "en todos los materiales del proyecto. Cero draw calls extra por outline. Nada que hacer.");
+            return;
+        }
+
+        Undo.RecordObjects(toFix.ToArray(), "Desactivar outline Quibli (proyecto completo, decisión final)");
+
+        foreach (var mat in toFix)
+        {
+            mat.SetFloat(OutlineEnabledProp, 0f);
+            mat.DisableKeyword(OutlineKeyword);
+            mat.SetShaderPassEnabled(OutlinePassName, false);
+            EditorUtility.SetDirty(mat);
+        }
+
+        AssetDatabase.SaveAssets();
+
+        Debug.Log($"[Quibli Outline] Outline apagado del todo (float + keyword + pase, cero draw calls extra) " +
+                   $"en {toFix.Count} material(es):\n  · " +
+                   string.Join("\n  · ", toFix.Select(m => AssetDatabase.GetAssetPath(m)).OrderBy(p => p)));
+    }
+
+    [MenuItem("Tools/Quibli/Outline/Sincronizar outline en TODO el proyecto (arregla draw calls fantasma)")]
+    private static void SyncOutlineStateProjectWide()
+    {
+        var guids = AssetDatabase.FindAssets("t:Material");
+        var toFix = new List<Material>();
+
+        foreach (var guid in guids)
+        {
+            var path = AssetDatabase.GUIDToAssetPath(guid);
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat == null || mat.shader == null) continue;
+            if (!mat.HasProperty(OutlineEnabledProp)) continue;
+
+            bool shouldBeOn = mat.GetFloat(OutlineEnabledProp) > 0f;
+            bool keywordOn = mat.IsKeywordEnabled(OutlineKeyword);
+            bool passOn = mat.GetShaderPassEnabled(OutlinePassName);
+
+            // Ya sincronizado: nada que hacer (evita ensuciar el asset sin motivo).
+            if (keywordOn == shouldBeOn && passOn == shouldBeOn) continue;
+
+            toFix.Add(mat);
+        }
+
+        if (toFix.Count == 0)
+        {
+            Debug.Log("[Quibli Outline] Todos los materiales del proyecto con _OutlineEnabled ya tienen " +
+                      "la keyword DR_OUTLINE_ON y el pase \"Outline\" sincronizados con su valor actual. Nada que reparar.");
+            return;
+        }
+
+        Undo.RecordObjects(toFix.ToArray(), "Sincronizar outline Quibli (proyecto completo)");
+
+        foreach (var mat in toFix)
+        {
+            bool shouldBeOn = mat.GetFloat(OutlineEnabledProp) > 0f;
+
+            if (shouldBeOn) mat.EnableKeyword(OutlineKeyword);
+            else mat.DisableKeyword(OutlineKeyword);
+
+            mat.SetShaderPassEnabled(OutlinePassName, shouldBeOn);
+
+            EditorUtility.SetDirty(mat);
+        }
+
+        AssetDatabase.SaveAssets();
+
+        Debug.Log($"[Quibli Outline] Reparados {toFix.Count} material(es) desincronizados (keyword/pase no coincidía " +
+                   $"con _OutlineEnabled) — el pase \"Outline\" ya no se dibuja de más en los que lo tenían apagado:\n  · " +
+                   string.Join("\n  · ", toFix.Select(m => AssetDatabase.GetAssetPath(m)).OrderBy(p => p)));
     }
 
     [MenuItem("Tools/Quibli/Outline/Buscar materiales Quibli sin outline (en selección)")]
@@ -95,6 +231,13 @@ public static class QuibliOutlineTools
         foreach (var mat in materials)
         {
             mat.SetFloat(OutlineEnabledProp, enable ? 1f : 0f);
+
+            // Sincronizar también la keyword real que lee el shader y el pase
+            // "Outline" que la emite como draw call — SetFloat por sí solo no
+            // toca ninguna de las dos (ver nota FIX de la cabecera del archivo).
+            if (enable) mat.EnableKeyword(OutlineKeyword);
+            else mat.DisableKeyword(OutlineKeyword);
+            mat.SetShaderPassEnabled(OutlinePassName, enable);
 
             if (enable)
             {

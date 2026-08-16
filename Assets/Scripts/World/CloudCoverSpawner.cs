@@ -428,4 +428,20 @@ public class CloudCoverSpawner : MonoBehaviour
         else
             HandleCloudsBuildingUp();
     }
+
+    /// <summary>
+    /// Activa/desactiva SOLO los renderers del techo ya construido, sin tocar _currentAlpha, el
+    /// fundido en curso ni el estado de la lluvia/tormenta real. Pensado para ocultar el techo un
+    /// momento durante un enfoque de cámara puntual (ver FocusCameraNode) sin interferir con
+    /// CloudsBuildingUp/RainStopped: al restaurar (visible=true) el techo vuelve exactamente al
+    /// alfa que tenía antes de ocultarlo.
+    /// </summary>
+    public void SetRenderersVisible(bool visible)
+    {
+        for (int i = 0; i < _renderers.Count; i++)
+        {
+            var r = _renderers[i];
+            if (r != null) r.enabled = visible;
+        }
+    }
 }

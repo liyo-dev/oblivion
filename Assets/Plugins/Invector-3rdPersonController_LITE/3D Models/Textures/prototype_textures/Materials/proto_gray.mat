@@ -14,6 +14,7 @@ Material:
   m_ValidKeywords:
   - _DETAILMAPBLENDINGMODE_MULTIPLY
   - _NORMALMAP
+  - _RECEIVE_SHADOWS_OFF
   - _TEXTUREBLENDINGMODE_MULTIPLY
   m_InvalidKeywords:
   - _RECEIVESHADOWS_OFF
@@ -24,7 +25,8 @@ Material:
   m_CustomRenderQueue: 2000
   stringTagMap:
     RenderType: Opaque
-  disabledShaderPasses: []
+  disabledShaderPasses:
+  - SRPDEFAULTUNLIT
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3

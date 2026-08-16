@@ -200,6 +200,16 @@ public class CombatCameraTargeting : MonoBehaviour
             thirdPersonCamera.SetLockTarget(newTarget.transform);
         }
 
+        // Mientras el lock-on de cámara está activo, el marker/target de PlayerTargeting debe
+        // depender EXCLUSIVAMENTE de IsFacingTarget() (aquí y en EnsureVisualLockSync). Si no se
+        // suprime el auto-scan de PlayerTargeting, este reengancha el target usando el FOV de la
+        // cámara (que durante el lock-on SIEMPRE apunta al enemigo), pisando el gate y provocando
+        // que el marker se muestre aunque el jugador ya no esté mirando hacia el enemigo.
+        if (syncWithProjectileTargeting && playerTargeting != null)
+        {
+            playerTargeting.SetAutoScanSuppressed(true);
+        }
+
         if (syncWithProjectileTargeting && playerTargeting != null && !_isInDialogue && IsFacingTarget())
         {
             playerTargeting.SetManualTarget(newTarget.transform);
@@ -283,6 +293,7 @@ public class CombatCameraTargeting : MonoBehaviour
         if (syncWithProjectileTargeting && playerTargeting != null)
         {
             playerTargeting.ClearManualTarget();
+            playerTargeting.SetAutoScanSuppressed(false);
         }
         Log("🔓 Lock de cámara liberado");
     }

@@ -11,7 +11,7 @@ Texture2D:
     serializedVersion: 2
     Hash: 00000000000000000000000000000000
   m_IsAlphaChannelOptional: 0
-  serializedVersion: 3
+  serializedVersion: 4
   m_Width: 256
   m_Height: 1
   m_CompleteImageSize: 1024
@@ -60,7 +60,6 @@ Material:
   m_ValidKeywords:
   - DR_ENABLE_LIGHTMAP_DIR
   - DR_LIGHT_ATTENUATION
-  - DR_OUTLINE_ON
   - DR_RIM_ON
   - DR_SPECULAR_ON
   - _DETAILMAPBLENDINGMODE_ADD
@@ -72,7 +71,8 @@ Material:
   m_CustomRenderQueue: 2000
   stringTagMap:
     RenderType: Opaque
-  disabledShaderPasses: []
+  disabledShaderPasses:
+  - SRPDEFAULTUNLIT
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -183,6 +183,7 @@ Material:
     - _ClearCoatSmoothness: 0
     - _Cull: 0
     - _Cutoff: 0
+    - _DecalPaintOver: 0
     - _DetailAlbedoMapScale: 1
     - _DetailMapBlendingMode: 1
     - _DetailMapImpact: 0.03
@@ -211,7 +212,7 @@ Material:
     - _Metallic: 0
     - _OcclusionStrength: 1
     - _OutlineDepthOffset: 0
-    - _OutlineEnabled: 1
+    - _OutlineEnabled: 0
     - _OutlineScale: 1
     - _OutlineWidth: 0.89
     - _OverrideBakedGi: 0

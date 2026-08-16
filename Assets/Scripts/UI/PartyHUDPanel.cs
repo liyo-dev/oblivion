@@ -199,6 +199,13 @@ namespace Sendero.UI
 
             var t = _portraits[index].transform;
             t.DOKill();
+            // Reiniciar la escala antes de lanzar un nuevo punch: si el cambio de personaje activo
+            // llega mientras el punch anterior todavía está en marcha (p.ej. mashing de DPad-Izq/Der
+            // en PartyControlManager, que no tiene cooldown), DOKill() deja la escala a mitad de la
+            // vibración en vez de en Vector3.one, y el siguiente DOPunchScale se acumula sobre ese
+            // valor ya deformado en vez de partir de la escala normal — el retrato se ve estirado/
+            // encogido de forma no uniforme. Mismo patrón ya usado en DialogueManager.cs (submitHint).
+            t.localScale = Vector3.one;
             if (target >= activeAlpha)
                 t.DOPunchScale(Vector3.one * portraitPunchStrength, portraitPunchDuration, 1, 0.5f).SetUpdate(true);
         }

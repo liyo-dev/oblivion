@@ -244,4 +244,20 @@ public class AmbientCloudDirector : MonoBehaviour
 
     [ContextMenu("Forzar una nube ambiental ahora (debug)")]
     void DebugForceSpawnCloud() => SpawnPassingCloud();
+
+    /// <summary>
+    /// Activa/desactiva los renderers de TODAS las nubes del pool (volando o no), sin tocar sus
+    /// corrutinas de vuelo ni el paseo aleatorio de cobertura. Pensado para el mismo uso puntual
+    /// que CloudCoverSpawner.SetRenderersVisible: un enfoque de cámara breve (ver
+    /// FocusCameraNode) que no debe quedar tapado por una nube suelta que en ese instante esté
+    /// cruzando por delante.
+    /// </summary>
+    public void SetAmbientCloudsVisible(bool visible)
+    {
+        for (int i = 0; i < _pool.Count; i++)
+        {
+            var drifter = _pool[i];
+            if (drifter != null) drifter.SetRenderersVisible(visible);
+        }
+    }
 }

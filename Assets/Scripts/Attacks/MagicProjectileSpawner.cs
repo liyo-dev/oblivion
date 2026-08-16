@@ -97,7 +97,7 @@ public class MagicProjectileSpawner : MonoBehaviour
 
         // Obtener TODOS los colliders del proyectil
         var projCols = projectile.GetComponentsInChildren<Collider>(true);
-        
+
         // Obtener TODOS los colliders del instigator (jugador) y sus hijos
         var instigatorCols = instigator.GetComponentsInChildren<Collider>(true);
 

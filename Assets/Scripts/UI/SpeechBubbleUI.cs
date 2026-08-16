@@ -39,6 +39,8 @@ public class SpeechBubbleUI : MonoBehaviour
     [Header("Tamaño")]
     [Tooltip("Ancho mínimo del bocadillo en píxeles de canvas. Aumenta si el texto se corta por los lados.")]
     [SerializeField] float _bubbleMinWidth = 560f;
+    [Tooltip("Ancho máximo del bocadillo en píxeles de canvas antes de partir el texto en varias líneas. BUGFIX (Agosto 2026): antes el bocadillo solo tenía un ancho MÍNIMO y nunca crecía con el texto real, así que cualquier línea más larga que ese mínimo se salía por los lados en todas las secuencias (ver captura del bug). Ahora el ancho se calcula a partir del texto real en Show(), entre este máximo y _bubbleMinWidth. El ALTO no se toca aquí — lo calcula solo el ContentSizeFitter/VerticalLayoutGroup del hijo \"Bubble\" en el prefab (ver Show()).")]
+    [SerializeField] float _bubbleMaxWidth = 900f;
     [Tooltip("Margen interno horizontal del texto (izquierda y derecha).")]
     [SerializeField] float _labelHorizontalMargin = 32f;
 
@@ -147,12 +149,37 @@ public class SpeechBubbleUI : MonoBehaviour
         _label.margin = new Vector4(_labelHorizontalMargin, _label.margin.y,
                                     _labelHorizontalMargin, _label.margin.w);
 
-        // Ancho mínimo: si el bocadillo es más pequeño que _bubbleMinWidth lo forzamos
-        if (_bubbleMinWidth > 0f && _bubbleRect != null)
+        // BUGFIX (Agosto 2026): el bocadillo solo tenía un ancho MÍNIMO fijo (_bubbleMinWidth) y
+        // nunca se adaptaba al texto real, así que cualquier línea más larga que ese mínimo se
+        // salía por los lados — pasaba en todas las secuencias, no era un caso puntual. Ahora se
+        // mide el ancho que ocuparía el texto en una sola línea (GetPreferredValues) y el
+        // bocadillo crece hasta _bubbleMaxWidth para acomodarlo antes de partir el texto en
+        // varias líneas (word wrap).
+        //
+        // OJO — el ALTO no se toca aquí a mano. El GameObject "Bubble" (padre de _label, ver
+        // prefab SpeechBubbleUI/Bubble) ya tiene un VerticalLayoutGroup (padding real: 18 arriba,
+        // 58 abajo para dejar sitio al pico del bocadillo) + ContentSizeFitter con
+        // m_VerticalFit=PreferredSize — es decir, el alto SIEMPRE lo calcula ese sistema a partir
+        // del preferredHeight del texto ya envuelto, no nosotros. El primer intento de este
+        // arreglo calculaba también el alto a mano con un margen inventado que no coincidía con
+        // ese padding real (18/58, asimétrico por el pico) — el resultado quedaba más bajo que el
+        // texto de verdad y la primera línea se salía por ARRIBA del bocadillo (bug reportado tras
+        // el primer pase). Ahora solo tocamos el ancho y forzamos un rebuild de layout inmediato
+        // para que el ContentSizeFitter recalcule el alto ANTES del pop-in — si no, se ve un frame
+        // con el alto del texto anterior mientras el ancho ya ha cambiado.
+        if (_bubbleRect != null && _label != null)
         {
+            _label.enableWordWrapping = true;
+
+            Vector2 singleLineSize = _label.GetPreferredValues(text, 0f, 0f);
+            float desiredWidth = singleLineSize.x + _labelHorizontalMargin * 2f;
+            float bubbleWidth = Mathf.Clamp(desiredWidth, _bubbleMinWidth, _bubbleMaxWidth);
+
             Vector2 sd = _bubbleRect.sizeDelta;
-            if (sd.x < _bubbleMinWidth)
-                _bubbleRect.sizeDelta = new Vector2(_bubbleMinWidth, sd.y);
+            sd.x = bubbleWidth;
+            _bubbleRect.sizeDelta = sd;
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_bubbleRect);
         }
 
         if (_bubbleImage != null)

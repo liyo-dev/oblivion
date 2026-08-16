@@ -41,8 +41,14 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     
     public Transform CurrentTarget { get; private set; }
     public bool IsManualTargetActive => _isManualTargetActive;
-    
+
     private bool _isManualTargetActive;
+    // Cuando está activo, se ignora el auto-scan (Scan()) por completo: un sistema externo
+    // (ej. CombatCameraTargeting durante el lock-on de cámara) tiene control exclusivo del
+    // target/marker. Sin esto, el auto-scan reengancha el marker usando el FOV de la cámara
+    // (que durante el lock-on SIEMPRE apunta al enemigo), pisando el gate de "¿el jugador
+    // realmente está mirando al enemigo?" que hace el sistema de cámara.
+    private bool _autoScanSuppressed;
     private float _nextScan;
     private Transform _marker;
     private Camera _cam;
@@ -234,6 +240,18 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
         UpdateMarker();
     }
 
+    /// <summary>
+    /// Suprime/reactiva el auto-scan (Scan()). Lo usa CombatCameraTargeting mientras el lock-on
+    /// de cámara está activo, para que el target/marker dependa únicamente de si el jugador está
+    /// mirando (de cuerpo) hacia el enemigo, y no del auto-scan reenganchándolo por el FOV de cámara.
+    /// </summary>
+    public void SetAutoScanSuppressed(bool suppressed)
+    {
+        if (_autoScanSuppressed == suppressed) return;
+        _autoScanSuppressed = suppressed;
+        if (verboseLogging) Debug.Log($"[PlayerTargeting] Auto-scan suprimido: {suppressed}");
+    }
+
     void Update()
     {
         if (_isManualTargetActive)
@@ -245,6 +263,8 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
             }
             return;
         }
+
+        if (_autoScanSuppressed) return;
 
         if (updatesPerSecond <= 0f || Time.time >= _nextScan)
         {
@@ -277,7 +297,13 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
             if (requireDamageableAlive)
             {
                 var damageable = h.GetComponentInParent<Damageable>();
-                if (damageable == null || !damageable.IsAlive) continue;
+                if (damageable == null || !damageable.IsAlive)
+                {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    Debug.Log($"[DEBUG-AIM] '{h.gameObject.name}' descartado: sin Damageable vivo (damageable={(damageable == null ? "NULL" : "existe")}, alive={(damageable != null && damageable.IsAlive)})");
+#endif
+                    continue;
+                }
             }
 
             Vector3 center = GetTargetCenter(h.transform);
@@ -286,21 +312,49 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
             if (dist < 0.01f) continue;
 
             var cfg = h.GetComponentInParent<Targetable>();
-            if (cfg && !cfg.isInActiveCombat) continue;
+            if (cfg && !cfg.isInActiveCombat)
+            {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.Log($"[DEBUG-AIM] '{h.gameObject.name}' descartado: Targetable.isInActiveCombat=false");
+#endif
+                continue;
+            }
             float allowedRadius = (cfg && cfg.targetingRadius > 0) ? cfg.targetingRadius : radius;
-            if (dist > allowedRadius) continue;
+            if (dist > allowedRadius)
+            {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.Log($"[DEBUG-AIM] '{h.gameObject.name}' descartado: dist={dist:F2} > allowedRadius={allowedRadius:F2}");
+#endif
+                continue;
+            }
 
             Vector3 dir = to / dist;
-            if (Vector3.Angle(fwd, dir) > fovDegrees * 0.5f) continue;
+            float angle = Vector3.Angle(fwd, dir);
+            if (angle > fovDegrees * 0.5f)
+            {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.Log($"[DEBUG-AIM] '{h.gameObject.name}' descartado: fuera de FOV (angle={angle:F1} > {fovDegrees * 0.5f:F1}) fwd={fwd} dir={dir}");
+#endif
+                continue;
+            }
 
             if (mustBeOnScreen && _cam)
             {
                 Vector3 vp = _cam.WorldToViewportPoint(center);
-                if (vp.z <= 0f || vp.x < screenEdgePadding || vp.x > 1f - screenEdgePadding || vp.y < screenEdgePadding || vp.y > 1f - screenEdgePadding) continue;
+                if (vp.z <= 0f || vp.x < screenEdgePadding || vp.x > 1f - screenEdgePadding || vp.y < screenEdgePadding || vp.y > 1f - screenEdgePadding)
+                {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    Debug.Log($"[DEBUG-AIM] '{h.gameObject.name}' descartado: fuera de pantalla (viewport={vp})");
+#endif
+                    continue;
+                }
             }
 
             if (requireLineOfSight && Physics.Raycast(origin, dir, out var rh, dist, ~0, QueryTriggerInteraction.Ignore) && rh.collider.transform.root != h.transform.root)
             {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.Log($"[DEBUG-AIM] '{h.gameObject.name}' descartado: línea de visión bloqueada por '{rh.collider.gameObject.name}' (root='{rh.collider.transform.root.name}') a {rh.distance:F2}m de {dist:F2}m totales");
+#endif
                 continue;
             }
 
@@ -308,6 +362,10 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
             if (score > bestScore) { bestScore = score; best = h.transform; }
         }
         CurrentTarget = best;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (hitCount > 0)
+            Debug.Log($"[DEBUG-AIM] Scan() candidatos={hitCount} CurrentTarget={(best ? best.name : "NULL")}");
+#endif
     }
 
     void OnTargetChanged(Transform newT)
@@ -406,8 +464,14 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
         if (CurrentTarget)
         {
             Vector3 targetPos = GetTargetCenter(CurrentTarget) + markerOffset;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log($"[DEBUG-AIM] GetAimDirectionFrom: usando CurrentTarget='{CurrentTarget.name}' targetPos={targetPos} dir={(targetPos - origin.position).normalized}");
+#endif
             return (targetPos - origin.position).normalized;
         }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[DEBUG-AIM] GetAimDirectionFrom: CurrentTarget=NULL, usando fallbackForward={fallbackForward}");
+#endif
         return fallbackForward;
     }
 

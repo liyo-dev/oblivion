@@ -15,6 +15,12 @@ using Sendero.Core.Feedback;
 /// medio del gameplay visible), el nodo se comporta exactamente igual que antes.
 ///
 /// Opcionalmente aplica zoom in → hold → zoom out cambiando el FOV de la cámara.
+///
+/// 16 ago 2026: también oculta el techo de nubes de tormenta (CloudCoverSpawner) y las nubes
+/// sueltas ambientales (AmbientCloudDirector) mientras dura el foco, por si alguna tapa el punto
+/// que se quiere mostrar (caso detectado en el foco de MOUNTAIN_EXPLOSION_EVENT). Solo se tocan
+/// los renderers, nunca el estado interno de esos sistemas, así que la lluvia/tormenta en curso
+/// no se ve afectada y todo vuelve exactamente como estaba al terminar el foco.
 /// </summary>
 [Serializable]
 public sealed class FocusCameraNode : NarrativeNode
@@ -93,6 +99,17 @@ public sealed class FocusCameraNode : NarrativeNode
         bool fogWasEnabled = RenderSettings.fog;
         RenderSettings.fog = false;
 
+        // Ocultar nubes (techo de tormenta + nubes sueltas ambientales) durante el foco: si una
+        // nube cae delante del punto de foco (p.ej. la explosión de la montaña en
+        // MountainSequencer) puede tapar del todo lo que se quiere mostrar. Solo se desactivan
+        // los renderers (ver SetRenderersVisible/SetAmbientCloudsVisible), nunca su estado
+        // interno, así que al restaurar vuelven exactamente como estaban.
+        var cloudCover = UnityEngine.Object.FindAnyObjectByType<CloudCoverSpawner>();
+        if (cloudCover != null) cloudCover.SetRenderersVisible(false);
+
+        var ambientClouds = UnityEngine.Object.FindAnyObjectByType<AmbientCloudDirector>();
+        if (ambientClouds != null) ambientClouds.SetAmbientCloudsVisible(false);
+
         CameraDirectorService.Claim(this);
         cam.transform.SetPositionAndRotation(target.transform.position, target.transform.rotation);
 
@@ -147,6 +164,8 @@ public sealed class FocusCameraNode : NarrativeNode
 
         // --- CUT OUT ---
         RenderSettings.fog = fogWasEnabled;
+        if (cloudCover != null) cloudCover.SetRenderersVisible(true);
+        if (ambientClouds != null) ambientClouds.SetAmbientCloudsVisible(true);
         CameraDirectorService.Release(this);
         if (dayNight != null && dayNightWasEnabled) dayNight.enabled = true;
 

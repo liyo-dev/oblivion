@@ -136,4 +136,20 @@ public class AmbientCloudDrifter : MonoBehaviour
             _routine = null;
         }
     }
+
+    /// <summary>
+    /// Activa/desactiva SOLO los renderers, sin tocar la corrutina de vuelo (FlyRoutine sigue
+    /// moviendo/animando la nube igual). Pensado para ocultarla un momento durante un enfoque de
+    /// cámara puntual (ver FocusCameraNode) sin cortar su ruta ni su ciclo de fundido/reciclado:
+    /// SetActive(false) mataría la corrutina (Unity para las corrutinas de un GameObject
+    /// desactivado y no las reanuda solas), esto no.
+    /// </summary>
+    public void SetRenderersVisible(bool visible)
+    {
+        if (_renderers == null) return;
+        for (int i = 0; i < _renderers.Length; i++)
+        {
+            if (_renderers[i] != null) _renderers[i].enabled = visible;
+        }
+    }
 }

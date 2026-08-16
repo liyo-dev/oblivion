@@ -116,7 +116,6 @@ MonoBehaviour:
         guid: 330dfba1-aa17-4afd-9a25-ced60a36d329
         position: {x: 2665, y: 1242}
         outputs:
-        - 9e591b44-387a-444a-abbc-78cf60c03c2b
         - 814eca55-294e-44c5-8d91-1126f07306d8
         minigameId: TAG_MINIGAME_01
         activateOnStart: 1

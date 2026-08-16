@@ -191,6 +191,17 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
         // ── Fase 0: Will ya está parado (recolocado bajo negro); Estela y Liam caminan de ──
         // verdad, ya en pantalla, adelantándolo y girándose al notar que no les sigue.
         yield return Co_GroupAdvancesAndTurns();
+
+        // BUGFIX (Agosto 2026): Will se quedaba mirando hacia donde apuntara _willMark en la
+        // escena (a menudo de perfil o dándoles la espalda a Estela y Liam), porque WarpActor
+        // solo copia la rotación de esa marca sin tener en cuenta hacia dónde han quedado los
+        // otros dos tras Co_GroupAdvancesAndTurns(). En vez de depender de ajustar a mano la
+        // rotación de _willMark en el editor (frágil: cualquier retoque de las marcas de Fase 0b
+        // la desincroniza), Will gira aquí hacia el punto medio de Estela y Liam nada más
+        // terminar ellos de adelantarlo y girarse — mismo FaceTarget que usan el resto de
+        // sequencers para mirar a un personaje concreto.
+        FaceWillTowardsGroup();
+
         PlaySequenceMusic();
 
         // ── Fase 1: Liam pregunta ───────────────────────────────────────────────
@@ -500,6 +511,25 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
 
         if (cc != null) cc.enabled = true;
         onComplete?.Invoke();
+    }
+
+    /// <summary>
+    /// Gira a Will (instantáneo, sin animación) hacia el punto medio entre Estela y Liam una vez
+    /// que ambos han terminado de adelantarlo y girarse en Co_GroupAdvancesAndTurns(). Ver el
+    /// comentario BUGFIX en Co_Sequence() para la causa raíz: la rotación de _willMark por sí
+    /// sola no garantiza que Will quede mirando al grupo.
+    /// </summary>
+    private void FaceWillTowardsGroup()
+    {
+        if (_willTransform == null) return;
+
+        int count = 0;
+        Vector3 groupCenter = Vector3.zero;
+        if (_estelaTransform != null) { groupCenter += _estelaTransform.position; count++; }
+        if (_liamTransform != null)   { groupCenter += _liamTransform.position;   count++; }
+        if (count == 0) return;
+
+        FaceTarget(_willTransform, groupCenter / count);
     }
 
     // ══════════════════════════════════════════════════════════════════════════

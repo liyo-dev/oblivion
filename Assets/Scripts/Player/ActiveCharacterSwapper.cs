@@ -272,12 +272,14 @@ public class ActiveCharacterSwapper : MonoBehaviour
         bool algunoActivoYEncendido = false;
         int activos = 0;
         int visibles = 0;
+        Renderer firstActive = null;
         var renderers = _willNpcInstance.GetComponentsInChildren<Renderer>(true);
         foreach (var r in renderers)
         {
             if (r == null || !r.gameObject.activeInHierarchy || !r.enabled) continue;
             algunoActivoYEncendido = true;
             activos++;
+            if (firstActive == null) firstActive = r;
             // Nota editor: isVisible también cuenta la Scene View. Si la Scene View está
             // renderizando a Will, este detector no salta — probar con la Scene View cerrada
             // (Game view maximizado) o en build para una lectura fiable.
@@ -290,17 +292,37 @@ public class ActiveCharacterSwapper : MonoBehaviour
         // estas líneas dicen DÓNDE está Will de verdad (¿bajo el suelo? ¿desplazado del botón?),
         // a qué distancia de la cámara, y cuántos renderers se están renderizando — distingue
         // "no se renderiza" de "está en otro sitio" sin depender de reproducirlo con el inspector.
+        //
+        // AMPLIADO tras descartar Occlusion Culling (2026-08-16, segunda repro: renderers
+        // activos=6/218 visibles=0 IDÉNTICO con allowOcclusionWhenDynamic=false ya aplicado):
+        // se añaden bounds reales, escala del objeto, layer y la cámara+cullingMask que Unity
+        // usa de verdad, para no tener que adivinar una tercera causa a ciegas la próxima vez.
         _willDiagTick++;
         if (_willDiagTick >= 5)
         {
             _willDiagTick = 0;
             var diagAgent = _willNpcInstance.GetComponent<NavMeshAgent>();
+            string boundsInfo = "sinRenderers";
+            string layerInfo = "?";
+            if (firstActive != null)
+            {
+                var b = firstActive.bounds;
+                boundsInfo = $"center={b.center} size={b.size}";
+                layerInfo = $"{LayerMask.LayerToName(firstActive.gameObject.layer)}({firstActive.gameObject.layer})";
+            }
+            Vector3 scale = _willNpcInstance.transform.lossyScale;
+            bool inCullingMask = firstActive != null && (cam.cullingMask & (1 << firstActive.gameObject.layer)) != 0;
             Debug.Log($"[ActiveCharacterSwapper] 🫀 WillNPC pos={_willNpcInstance.transform.position} " +
                 $"distCam={dist:F1}m enEncuadre={enEncuadre} vp=({vp.x:F2},{vp.y:F2},{vp.z:F2}) " +
                 $"renderers activos={activos}/{renderers.Length} visibles={visibles} " +
                 $"pinned={_willNpcInstance.NPCManager?.Context?.IsPinnedByParty.ToString() ?? "?"} " +
                 $"estado={_willNpcInstance.NPCManager?.Brain?.CurrentState?.StateName ?? "?"} " +
-                $"onNavMesh={(diagAgent != null && diagAgent.isOnNavMesh)}");
+                $"onNavMesh={(diagAgent != null && diagAgent.isOnNavMesh)} " +
+                $"cam={cam.name}(cullingMask={cam.cullingMask:X}) rendererLayer={layerInfo} " +
+                $"inCullingMask={inCullingMask} lossyScale={scale} rendererBounds=[{boundsInfo}] " +
+                $"useOcclusionCulling={cam.useOcclusionCulling} allowOcclusionWhenDynamic={(firstActive != null ? firstActive.allowOcclusionWhenDynamic.ToString() : "?")} " +
+                $"materialNull={(firstActive != null && firstActive.sharedMaterial == null)} " +
+                $"shader={(firstActive != null ? firstActive.sharedMaterial?.shader?.name ?? "NULL" : "?")}");
         }
 #endif
 
@@ -593,6 +615,24 @@ public class ActiveCharacterSwapper : MonoBehaviour
         foreach (var smr in go.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             smr.updateWhenOffscreen = true;
 
+        // FIX Will invisible — CAUSA RAÍZ real (confirmada con log 2026-08-16 en MainWorld, ver
+        // renderers activos=6/218 visibles=0 sostenido varios segundos SIN que el heal de
+        // DiagnoseAndHealWillVisibility lo resolviera): MainWorld.unity es la única escena del
+        // proyecto con Occlusion Culling horneado (Assets/Scenes/Worlds/MainWorld/
+        // OcclusionCullingData.asset). Todos los fixes anteriores (updateWhenOffscreen, forzar
+        // .bounds, el toggle de Renderer.enabled) atacan el FRUSTUM culling — un sistema
+        // completamente distinto del Occlusion Culling, que decide visibilidad contra un mapa
+        // horneado de antemano de qué zonas tapan a cuáles. El clon de Will se instancia en
+        // cualquier posición runtime que el bake nunca vio; si esa celda queda marcada como
+        // "tapada" por geometría cercana (una pared, un pilar), Unity lo da por no-visible de
+        // forma legítima y PERMANENTE para ese sistema — ningún toggle de Renderer.enabled ni
+        // recálculo de bounds lo revierte, porque no es a lo que esos fixes apuntan. Cada
+        // Renderer nace con allowOcclusionWhenDynamic=true (m_DynamicOccludee=1 en el prefab):
+        // aquí lo desactivamos para que el clon de Will nunca sea occlusion-culled dinámicamente,
+        // ya que su posición no formó parte del bake y no debería probarse contra él.
+        foreach (var rend in go.GetComponentsInChildren<Renderer>(true))
+            rend.allowOcclusionWhenDynamic = false;
+
         // ✅ Aplicar la apariencia actual de Will al NPC instanciado
         if (CharacterAppearanceRegistry.Instance != null)
         {
@@ -825,7 +865,15 @@ public class ActiveCharacterSwapper : MonoBehaviour
     {
         if (npc == null) return;
         foreach (var r in npc.GetComponentsInChildren<Renderer>(true))
+        {
             r.enabled = visible;
+            // Mismo FIX de causa raíz que SpawnWillNpc (ver comentario allí): Liam/Estela también
+            // son NPCs dinámicos que se muestran/ocultan en cualquier posición de MainWorld, la
+            // única escena con Occlusion Culling horneado — sin este flag pueden sufrir el mismo
+            // "invisible pero presente" que Will al revelarse cerca de geometría no contemplada
+            // en el bake.
+            r.allowOcclusionWhenDynamic = false;
+        }
     }
 
     private System.Collections.IEnumerator ReassertVisibilityNextFrames(NPCPartyMember npc)

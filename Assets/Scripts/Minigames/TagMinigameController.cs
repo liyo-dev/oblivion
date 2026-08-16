@@ -65,19 +65,11 @@ public class TagMinigameController : MonoBehaviour
     [SerializeField] private Transform chaserSpawnPoint;
 
     [Header("Reaparición al Fallar (Atrapado / Tiempo Agotado)")]
-    // [No usado por el flujo por defecto] FIX (15 ago 2026): este override sobreescribía
-    // preset.spawnAnchorId a mano justo antes de recargar la escena, pero en modo test/preset
-    // (GameBootService.IsPresetOverrideActive) ReloadTestPreset() llama justo después a
-    // EnsureRuntimePresetFromTemplate(bootPreset), que vuelca el preset desde cero y pisa este
-    // valor — el override nunca sobrevivía en modo test, que es precisamente cuando se estaba
-    // reproduciendo el bug reportado (flash en Taberna → teleport al último guardado →
-    // reaparecen las instrucciones del minijuego). Sustituido por el mismo patrón que ya usan
-    // los CinematicSequencerBase: emitir una señal narrativa al fallar (ver RaiseFailSignal /
-    // MINIGAME_{minigameId}_FAILED más abajo) y dejar que el grafo decida el punto de reanudación
-    // con un WaitCustomEventNode — igual que WaitCustomEventNode "AWAKEN_FAILED" en
-    // MainNarrative_Cap1. El campo se conserva (sin usarse) para no perder valores ya asignados
-    // en prefabs/escenas.
-    [Tooltip("[No usado por el flujo por defecto — ver comentario en el código] SpawnAnchor de la escena donde debe reaparecer el jugador si falla el minijuego. Sustituido por señal narrativa MINIGAME_{minigameId}_FAILED; configura el punto de reanudación en el grafo.")]
+    // [No usado] FIX (16 ago 2026): al ser atrapado o agotar el tiempo, el minijuego ya no
+    // recarga la escena ni reaparece en ningún punto — reinicia el intento en el sitio (ver
+    // RestartAfterCaught/RestartAfterTimeout más abajo), así que este anchor no tiene función.
+    // Se conserva el campo (sin usarse) para no perder valores ya asignados en prefabs/escenas.
+    [Tooltip("[No usado — el minijuego reinicia el intento en el sitio al fallar, no reaparece en ningún punto] SpawnAnchor legacy, sin efecto.")]
     [SerializeField] private SpawnAnchor failRespawnAnchor;
 
     [Header("Gestión del Party")]
@@ -1840,40 +1832,6 @@ public class TagMinigameController : MonoBehaviour
         SceneTransitionLoader.Load(_minigameSceneName);
     }
 
-    // Resetea el estado en memoria al último guardado y recarga la escena.
-    // Se llama cuando el jugador pierde (atrapado o tiempo agotado).
-    // Usa SceneTransitionLoader.Load (igual que DoAbort) para que el ciclo de boot
-    // completo se ejecute y PlayerParty restaure el party desde el preset con los
-    // NPCs nuevos ya en escena — el reload aditivo de ConfirmationPopupUI disparaba
-    // OnProfileReady antes de que los nuevos NPCs existieran, dejando a Estela fuera del party.
-    private void ReloadSceneFromLastSave()
-    {
-        string sceneName = _minigameSceneName;
-        StopMinigame();
-
-        if (GameBootService.IsPresetOverrideActive)
-        {
-            GameBootService.ReloadTestPreset();
-        }
-        else
-        {
-            var bootProfile = GameBootService.Profile;
-            var saveSystem = GameBootService.SaveSystem;
-            if (bootProfile != null && saveSystem != null)
-                bootProfile.LoadProfile(saveSystem);
-        }
-
-        // FIX (15 ago 2026): ya NO se fuerza aquí un anchor de reaparición por código (ver
-        // comentario de failRespawnAnchor más arriba) — RaiseFailSignal() ya se llamó antes de
-        // entrar aquí (ver RestartAfterCaught/RestartAfterTimeout), así que si el grafo tiene un
-        // WaitCustomEventNode escuchando MINIGAME_{minigameId}_FAILED, decide él el punto de
-        // reanudación. El reload de guardado/preset de abajo simplemente restaura el estado tal
-        // cual estaba guardado.
-
-        Time.timeScale = 1f;
-        SceneTransitionLoader.Load(sceneName);
-    }
-
     private IEnumerator StartWithCountdown(bool isRestart = false)
     {
         isCountingDown = true;
@@ -1983,8 +1941,12 @@ public class TagMinigameController : MonoBehaviour
             Debug.Log($"[TagMinigame] 🏃 GameObject activo: {chaser.gameObject.activeInHierarchy}");
             Debug.Log($"[TagMinigame] 🏃 Componente habilitado: {chaser.enabled}");
             
-            // ✅ Aplicar configuración de dificultad al perseguidor
-            ApplyChaserDifficulty();
+            // ✅ Aplicar configuración de dificultad al perseguidor (solo en el arranque inicial:
+            // en un reinicio tras ser atrapado ya está aplicada, y volver a leer chaser.ChaseSpeed
+            // aquí capturaría el valor YA modificado como si fuera el "original", perdiendo para
+            // siempre el valor real que RestoreChaserDifficulty() debe restaurar al terminar)
+            if (!isRestart)
+                ApplyChaserDifficulty();
             FeedbackService.CameraShake(chaseStartShakeIntensity, chaseStartShakeDuration);
             
             Debug.Log($"[TagMinigame] 🏃 Llamando a StartChasing()...");
@@ -2451,21 +2413,26 @@ public class TagMinigameController : MonoBehaviour
         StartCoroutine(RestartAfterCaught());
     }
 
+    // FIX (16 ago 2026): antes, ser atrapado recargaba la escena entera desde el último
+    // guardado (ReloadSceneFromLastSave). Como StartTagMinigameNode solo hace avanzar el grafo
+    // narrativo al ganar (o al abortar), el nodo "current" del NarrativeRunner persistente
+    // seguía siendo este mismo StartTagMinigameNode durante toda la persecución. Al recargar la
+    // escena, NarrativeGraphStarter.StartGraphs() se ejecuta de nuevo (se dispara en cada carga
+    // de escena de gameplay) y retoma el grafo desde ese mismo nodo "current" → vuelve a llamar
+    // a StartMinigame() automáticamente → el jugador muere otra vez → nueva recarga → bucle
+    // infinito sin salida al menú (bug reportado: "cuando mueres en el minijuego con Estela se
+    // queda en bucle y no puedes ni terminarlo ni salir al menú").
+    // Arreglo: en vez de recargar la escena/partida, reiniciar el intento EN EL SITIO (mismo
+    // punto del grafo, "como si no hubiera pasado nada") — el comportamiento ya documentado en
+    // README_MINIGAME_TAG.md ("las posiciones se reinician y se continúa la cuenta") y para el
+    // que ya existía StartWithCountdown(isRestart: true), sin usar hasta ahora. Al no recargar
+    // la escena tampoco hace falta liberar aquí el bloqueo de WillOnlyMomentManager (el "momento"
+    // sigue activo durante todos los reintentos; solo se libera al terminar de verdad, en
+    // StopMinigame()/WinMinigame()).
     private IEnumerator RestartAfterCaught()
     {
         isRunning = false;
         isTeleporting = false;
-
-        // FIX: a diferencia de StopMinigame() y WinMinigame(), esta ruta de fallo recargaba
-        // la escena sin liberar el bloqueo de WillOnlyMomentManager. Si el minijuego requería
-        // Will (requiresWill=true), el cambio de personaje quedaba bloqueado de forma
-        // PERMANENTE para el resto de la sesión — incluso tras recargar partida, porque
-        // WillOnlyMomentManager es un singleton persistente (DontDestroyOnLoad) y nada volvía
-        // a llamar ExitMoment() para este momento. Bug de referencia: tras ser "atrapado" en un
-        // minijuego con requiresWill, el DPad de cambio de personaje dejaba de responder para
-        // siempre, incluso en partidas totalmente distintas cargadas después.
-        if (requiresWill)
-            WillOnlyMomentManager.Instance?.ExitMoment(minigameId);
 
         if (chaser) chaser.StopChasing();
         HideAllProtectionIcons();
@@ -2474,9 +2441,11 @@ public class TagMinigameController : MonoBehaviour
 
         yield return FeedbackService.ScreenFadeAsync(Color.black, 0.5f, fadeIn: true);
 
-        Debug.Log($"[TagMinigame] 🔄 Reiniciando desde el último guardado (atrapado #{catchCount})");
-        RaiseFailSignal("CAUGHT");
-        ReloadSceneFromLastSave();
+        Debug.Log($"[TagMinigame] 🔄 Reiniciando intento en el sitio (atrapado #{catchCount})");
+
+        yield return FeedbackService.ScreenFadeAsync(Color.black, 0.5f, fadeIn: false);
+
+        yield return StartCoroutine(StartWithCountdown(isRestart: true));
     }
 
     private void LoseByTimeout()
@@ -2486,11 +2455,6 @@ public class TagMinigameController : MonoBehaviour
         isRunning = false;
         isTeleporting = false;
 
-        // FIX: mismo leak que en RestartAfterCaught (ver comentario ahí) — liberar el momento
-        // Will-only también en la derrota por tiempo agotado.
-        if (requiresWill)
-            WillOnlyMomentManager.Instance?.ExitMoment(minigameId);
-
         if (chaser) chaser.StopChasing();
 
         OnMinigameLost?.Invoke();
@@ -2498,6 +2462,9 @@ public class TagMinigameController : MonoBehaviour
         StartCoroutine(RestartAfterTimeout());
     }
 
+    // Ver comentario de RestartAfterCaught: mismo arreglo (reiniciar en el sitio en vez de
+    // recargar la escena/partida) para evitar el mismo bucle infinito también al perder por
+    // tiempo agotado.
     private IEnumerator RestartAfterTimeout()
     {
         HideAllProtectionIcons();
@@ -2506,9 +2473,11 @@ public class TagMinigameController : MonoBehaviour
 
         yield return FeedbackService.ScreenFadeAsync(Color.black, 0.5f, fadeIn: true);
 
-        Debug.Log("[TagMinigame] 🔄 Reiniciando desde el último guardado (tiempo agotado)");
-        RaiseFailSignal("TIMEOUT");
-        ReloadSceneFromLastSave();
+        Debug.Log("[TagMinigame] 🔄 Reiniciando intento en el sitio (tiempo agotado)");
+
+        yield return FeedbackService.ScreenFadeAsync(Color.black, 0.5f, fadeIn: false);
+
+        yield return StartCoroutine(StartWithCountdown(isRestart: true));
     }
 
     private void ResetPositions()
@@ -2767,40 +2736,6 @@ public class TagMinigameController : MonoBehaviour
         else
         {
             Debug.LogWarning("[TagMinigame] No se encontró DefaultNarrativeSignals para emitir la señal de victoria.");
-        }
-    }
-
-    /// <summary>
-    /// Emite la señal narrativa de fallo del minijuego (atrapado o tiempo agotado), ANTES de
-    /// recargar la escena — mismo patrón que RaiseWinSignal()/DoAbort() y que
-    /// CinematicSequencerBase.RaiseSignalOut() en las secuencias. Se emiten dos claves:
-    /// - "MINIGAME_{minigameId}_FAILED": genérica, para un único WaitCustomEventNode que trate
-    ///   cualquier fallo por igual.
-    /// - "MINIGAME_{minigameId}_FAILED_{reason}" (CAUGHT/TIMEOUT): específica, por si el diseño
-    ///   narrativo quiere reaccionar distinto según la causa (p.ej. diálogo distinto de Estela).
-    /// RaiseCustom banca el evento en _pending/_raised si todavía no hay ningún
-    /// WaitCustomEventNode suscrito (p.ej. porque el grafo se está reiniciando en ese instante),
-    /// así que el orden respecto a ReloadSceneFromLastSave() no es crítico — pero se llama antes
-    /// para que quede registrado incluso si algo interrumpe el reload a medio camino.
-    /// </summary>
-    private void RaiseFailSignal(string reason)
-    {
-        var signals = DefaultNarrativeSignals.Instance;
-        if (signals == null)
-        {
-            Debug.LogWarning("[TagMinigame] No se encontró DefaultNarrativeSignals para emitir la señal de fallo.");
-            return;
-        }
-
-        string genericKey = $"MINIGAME_{minigameId}_FAILED";
-        signals.RaiseCustom(genericKey, name);
-        Debug.Log($"[TagMinigame] Señal emitida: '{genericKey}' (motivo: {reason})");
-
-        if (!string.IsNullOrEmpty(reason))
-        {
-            string specificKey = $"MINIGAME_{minigameId}_FAILED_{reason}";
-            signals.RaiseCustom(specificKey, name);
-            Debug.Log($"[TagMinigame] Señal emitida: '{specificKey}'");
         }
     }
 

@@ -410,7 +410,7 @@ GameObject:
   - component: {fileID: 4423205742555801771}
   - component: {fileID: 2228025990798578823}
   - component: {fileID: 3934879012085031816}
-  - component: {fileID: 9988776655443322111}
+  - component: {fileID: 4589410262978653035}
   m_Layer: 7
   m_Name: Spider1
   m_TagString: Untagged
@@ -671,7 +671,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 5572779666037973626}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &9988776655443322111
+--- !u!114 &4589410262978653035
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
