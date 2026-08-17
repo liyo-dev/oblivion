@@ -170,10 +170,23 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
                 $"({_liamTransform.position} → objetivo {_liamDesignPosition}), probablemente por corrección " +
                 $"automática del NavMeshAgent al activarse. Restaurando.");
 #endif
-            if (_liamAgent != null && _liamAgent.isOnNavMesh)
+            // FIX (17/08/2026) — mismo bug de causa raíz confirmado en EstelaAppearsSequencer /
+            // LiamCrystalBallSequencer: no gatear el Warp() detrás de isOnNavMesh, porque si da
+            // false en este momento (frecuente justo tras cargar la escena) es precisamente el
+            // estado que Warp() tiene que corregir. Gatearlo dejaba al agente desincronizado del
+            // NavMesh para siempre, y JoinParty() fallaba entonces de forma permanente con
+            // "NavMeshAgent no está en NavMesh" cada vez que PlayerParty intentaba restaurar a
+            // Liam al equipo tras cargar partida.
+            if (_liamAgent != null)
+            {
                 _liamAgent.Warp(_liamDesignPosition);
+                if (!_liamAgent.isOnNavMesh)
+                    _liamTransform.position = _liamDesignPosition;
+            }
             else
+            {
                 _liamTransform.position = _liamDesignPosition;
+            }
         }
 
         _liamTransform.rotation = _liamDesignRotation;
@@ -206,10 +219,17 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
         // transición de entrada.
         if (_liamTransform != null)
         {
-            if (_liamAgent != null && _liamAgent.isOnNavMesh)
+            // FIX (17/08/2026) — mismo motivo que en Co_RestoreLiamDesignPosition() arriba.
+            if (_liamAgent != null)
+            {
                 _liamAgent.Warp(_liamDesignPosition);
+                if (!_liamAgent.isOnNavMesh)
+                    _liamTransform.position = _liamDesignPosition;
+            }
             else
+            {
                 _liamTransform.position = _liamDesignPosition;
+            }
             _liamTransform.rotation = _liamDesignRotation;
         }
     }

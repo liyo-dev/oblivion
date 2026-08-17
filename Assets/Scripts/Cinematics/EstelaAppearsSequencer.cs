@@ -348,10 +348,30 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
             $"NavMeshAgent al activarse. Restaurando (esto es lo que desencuadraba los planos de cámara).");
 #endif
 
-        if (agent != null && agent.isOnNavMesh)
+        // FIX (17/08/2026) — CAUSA RAÍZ CONFIRMADA POR CONSOLA: antes solo se llamaba a Warp() si
+        // el agente YA estaba isOnNavMesh=true; si el chequeo daba false (frecuente justo tras
+        // cargar la escena, antes de que el NavMesh de la zona esté completamente listo), caía al
+        // "else" y movía el Transform a pelo. Eso arregla el encuadre de cámara de esta secuencia,
+        // pero deja al NavMeshAgent desincronizado del NavMesh PARA SIEMPRE (agent.isOnNavMesh se
+        // queda false de forma permanente, ya que nada más en el juego vuelve a re-colocarlo).
+        // Log del jugador (17/08/2026): tras cargar una partida, PlayerParty encontraba a Estela
+        // correctamente en el NPCRegistry en CADA reintento (cada 2s, indefinidamente), pero
+        // JoinParty() fallaba siempre con "NavMeshAgent no está en NavMesh" — Estela nunca volvía
+        // a aparecer en el equipo. Warp() intenta colocar el agente en el punto de NavMesh válido
+        // más cercano incluso si isOnNavMesh es false en este momento — es la forma correcta de
+        // re-sincronizarlo, no un simple teleport de Transform. Se llama siempre que haya agente;
+        // solo si ni así encuentra NavMesh válido cerca (bake de la zona aún sin terminar de
+        // cargar) caemos al Transform directo como último recurso, igual que antes.
+        if (agent != null)
+        {
             agent.Warp(designPosition);
+            if (!agent.isOnNavMesh)
+                t.position = designPosition;
+        }
         else
+        {
             t.position = designPosition;
+        }
 
         t.rotation = designRotation;
     }

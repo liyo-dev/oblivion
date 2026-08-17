@@ -913,11 +913,31 @@ public class GameBootProfile : ScriptableObject
                     Debug.LogWarning($"[GameBootProfile] Posición persistida de NPC '{id}' inválida (sin NavMesh ni suelo cerca de {pos}); se mantiene la posición actual en escena para no dejarlo flotando.");
                 }
 
-                // Si tiene NavMeshAgent, usar Warp para evitar física/paths
+                // Si tiene NavMeshAgent, usar Warp para evitar física/paths.
+                // FIX (17 ago 2026) — CAUSA RAÍZ del bug crítico "Estela/Liam desaparecen del
+                // party tras cerrar y reabrir el juego": este método se llama desde el flujo
+                // normal de WorldBootstrap justo cuando MainWorld termina de cargar, para
+                // reposicionar TODOS los NPCs con posición guardada (incluidos _ESTELA y _LIAM).
+                // Antes, igual que en EstelaAppearsSequencer/LiamCrystalBallSequencer/etc., se
+                // gateaba el Warp() detrás de "agent.isOnNavMesh" — pero justo tras un arranque
+                // en frío del juego (proceso de Unity recién lanzado) el NavMeshAgent puede
+                // reportar isOnNavMesh=false todavía en este frame, aunque el NavMesh en sí ya
+                // esté disponible. En una recarga "caliente" (game over, o salir al menú y
+                // volver a entrar dentro del mismo proceso) el runtime de NavMesh ya estaba
+                // inicializado de antes y esto nunca fallaba — de ahí que el bug SOLO apareciera
+                // tras cerrar y volver a abrir el juego. Al caer en el "else", se hacía
+                // transform.position = targetPos directamente, sin pasar por el NavMeshAgent, lo
+                // que deja agent.isOnNavMesh en false PARA SIEMPRE (nada más en el juego lo
+                // resincroniza) — y JoinParty() exige isOnNavMesh=true para unir al NPC al party,
+                // así que Estela/Liam se encontraban siempre en NPCRegistry pero jamás podían
+                // unirse. Warp() sí coloca al agente sobre el punto de NavMesh válido más cercano
+                // incluso partiendo de isOnNavMesh=false, así que ahora se llama siempre.
                 var agent = npc.GetComponent<UnityEngine.AI.NavMeshAgent>();
-                if (agent != null && agent.isOnNavMesh)
+                if (agent != null)
                 {
                     agent.Warp(targetPos);
+                    if (!agent.isOnNavMesh)
+                        npc.transform.position = targetPos;
                 }
                 else
                 {

@@ -646,9 +646,16 @@ namespace Game.NPC
             if (NavMesh.SamplePosition(targetPosition, out NavMeshHit hit, 3f, NavMesh.AllAreas))
                 targetPosition = hit.position;
 
+            // FIX (17 ago 2026): mismo anti-patrón que GameBootProfile.ApplyNpcPositionsToScene —
+            // no gatear Warp() detrás de isOnNavMesh, porque si da false en ese instante deja al
+            // agente desincronizado del NavMesh para siempre (ver comentario extenso allí).
             var navAgent = member.NPCManager?.Agent;
-            if (navAgent != null && navAgent.isOnNavMesh)
+            if (navAgent != null)
+            {
                 navAgent.Warp(targetPosition);
+                if (!navAgent.isOnNavMesh)
+                    member.transform.position = targetPosition;
+            }
             else
                 member.transform.position = targetPosition;
 
@@ -1023,23 +1030,43 @@ namespace Game.NPC
                 if (npcManager == null)
                 {
                     Log($"  🔍 ÚLTIMO RECURSO: Buscando en escena...");
-                    var allPartyMembers = UnityEngine.Object.FindObjectsByType<NPCPartyMember>();
+                    // FIX (17/08/2026): esta búsqueda es el último recurso precisamente para cubrir
+                    // los casos en que NPCRegistry no tiene (o aún no tiene) a este NPC — por lo que
+                    // NO debe depender de que el NPC esté activo. FindObjectsByType<T>() sin
+                    // FindObjectsInactive excluye por defecto los GameObjects inactivos; si Liam o
+                    // Estela existen en la escena pero están desactivados en ese momento (p.ej. por
+                    // un sistema de LOD/culling por distancia, o porque su Awake() aún no ha corrido
+                    // en el primer frame tras una carga en frío), este escaneo los pasaba por alto
+                    // exactamente igual que el registro — dejándolos pendientes para siempre pese a
+                    // existir físicamente en la escena. Ver informe del jugador (17/08/2026): tras
+                    // cerrar el juego del todo y recargar una partida con Estela/Liam en el equipo,
+                    // solo aparece Will.
+                    var allPartyMembers = UnityEngine.Object.FindObjectsByType<NPCPartyMember>(UnityEngine.FindObjectsInactive.Include);
                     Log($"  📋 {allPartyMembers.Length} NPCPartyMember encontrados en escena");
-                    
+
                     var idLower = id.ToLowerInvariant().Replace("_", "").Replace(" ", "");
                     foreach (var pm in allPartyMembers)
                     {
                         var goNameClean = pm.gameObject.name.ToLowerInvariant().Replace("_", "").Replace(" ", "").Replace("(clone)", "");
                         var displayNameClean = pm.DisplayName != null ? pm.DisplayName.ToLowerInvariant().Replace("_", "").Replace(" ", "") : "";
-                        
+
                         Log($"    Comparando con: GO='{pm.gameObject.name}' ({goNameClean}), DisplayName='{pm.DisplayName}' ({displayNameClean})");
-                        
+
                         if (goNameClean.Contains(idLower) || idLower.Contains(goNameClean) ||
                             (pm.DisplayName != null && (displayNameClean.Contains(idLower) || idLower.Contains(displayNameClean))))
                         {
                             Log($"  ✅ Encontrado en escena: '{pm.gameObject.name}'");
                             if (!HasMember(pm))
                             {
+                                // Si lo encontramos gracias al FIX de arriba (FindObjectsInactive.Include),
+                                // puede estar desactivado — reactivarlo antes de unirlo. SetActive(true)
+                                // dispara Awake() de forma síncrona si el objeto nunca había estado activo,
+                                // así que _npcManager/_agent ya estarán listos para el JoinParty() siguiente.
+                                if (!pm.gameObject.activeSelf)
+                                {
+                                    Log($"  🔆 '{pm.gameObject.name}' estaba inactivo — reactivando antes de unirlo al equipo");
+                                    pm.gameObject.SetActive(true);
+                                }
                                 pm.JoinParty(isRestore: true);
                             }
                             npcManager = pm.NPCManager; // Marca como encontrado
@@ -1348,10 +1375,15 @@ namespace Game.NPC
             if (NavMesh.SamplePosition(targetPos, out NavMeshHit hit, 5f, NavMesh.AllAreas))
                 targetPos = hit.position;
 
+            // FIX (17 ago 2026): mismo anti-patrón que GameBootProfile.ApplyNpcPositionsToScene —
+            // no gatear Warp() detrás de isOnNavMesh, porque si da false en ese instante deja al
+            // agente desincronizado del NavMesh para siempre (ver comentario extenso allí).
             var agent = member.GetComponent<NavMeshAgent>();
-            if (agent != null && agent.isOnNavMesh)
+            if (agent != null)
             {
                 agent.Warp(targetPos);
+                if (!agent.isOnNavMesh)
+                    member.transform.position = targetPos;
             }
             else
             {

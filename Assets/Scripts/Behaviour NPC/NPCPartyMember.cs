@@ -297,10 +297,44 @@ namespace Game.NPC
             // ✅ FIX: Verificar que el NavMeshAgent esté en un NavMesh
             if (!_agent.isOnNavMesh)
             {
-                LogWarning("NavMeshAgent no está en NavMesh, no se puede unir al party ahora");
-                return false;
+                // FIX (17 ago 2026) — CAUSA RAÍZ REAL confirmada por consola + inspector del bug
+                // crítico "Estela/Liam no vuelven al party tras cerrar y reabrir el juego":
+                // NPCBehaviourManagerV2.UpdateDistanceLOD() "duerme" a cualquier NPC lejos del
+                // jugador (EnterFarState() → agent.enabled = false, optimización de rendimiento
+                // para NPCs ambientales dispersos por el mundo). En un arranque en frío, un
+                // compañero de equipo aparece en su posición de diseño de escena — que puede
+                // estar a cientos de metros del punto de guardado del jugador (Estela: 578m) —
+                // y ese chequeo de distancia se dispara ANTES de que PlayerParty consiga
+                // restaurarlo. HasActiveAiExemption() solo exime de dormir a NPCs con
+                // IsAlly=true (ya unidos al party) — un compañero todavía PENDIENTE de unirse no
+                // cuenta, así que nunca se despertaba: dormido porque no está en el party,
+                // incapaz de unirse al party porque está dormido (agent.enabled=false, por lo que
+                // ni SamplePosition+Warp sirven de nada — un NavMeshAgent deshabilitado no puede
+                // estar "on mesh" pase lo que pase). Este método es el único sitio por el que
+                // pasa CUALQUIER intento de unirse al equipo (incluido cada reintento cada 2s
+                // desde PlayerParty.RetryPendingMembers), así que es el punto correcto para
+                // reactivarlo: en cuanto el join tenga éxito más abajo, IsAlly pasará a true y el
+                // propio Update() de NPCBehaviourManagerV2 llamará a ExitFarState() de forma
+                // normal en su siguiente ciclo, dejando todo consistente (Brain, animaciones, etc).
+                if (_agent.enabled == false)
+                {
+                    _agent.enabled = true;
+                    LogWarning("NavMeshAgent estaba deshabilitado (NPC 'dormido' por estar lejos del jugador — UpdateDistanceLOD/EnterFarState) — reactivado para poder unirse al party");
+                }
+
+                if (NavMesh.SamplePosition(transform.position, out var navHit, 10f, NavMesh.AllAreas))
+                {
+                    _agent.Warp(navHit.position);
+                    LogWarning($"NavMeshAgent no estaba en NavMesh — auto-recuperado con Warp a {navHit.position} (pos. previa: {transform.position})");
+                }
+
+                if (!_agent.isOnNavMesh)
+                {
+                    LogWarning("NavMeshAgent no está en NavMesh, no se puede unir al party ahora (auto-recuperación falló: no se encontró NavMesh cerca de la posición actual)");
+                    return false;
+                }
             }
-            
+
             _isJoining = true;
 
             _party = PlayerParty.Instance;

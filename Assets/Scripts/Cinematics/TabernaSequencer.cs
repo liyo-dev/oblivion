@@ -279,10 +279,20 @@ public class TabernaSequencer : CinematicSequencerBase
             _liamTransform.gameObject.SetActive(true);
             if (_liamApproachTarget != null)
             {
-                if (_liamAgent != null && _liamAgent.isOnNavMesh)
+                // FIX (17/08/2026) — mismo bug de causa raíz confirmado en EstelaAppearsSequencer /
+                // LiamCrystalBallSequencer / LiamGolemSummonSequencer: no gatear el Warp() detrás
+                // de isOnNavMesh, sobre todo aquí, justo después de un SetActive(true) — el momento
+                // más probable para que isOnNavMesh todavía dé false en este mismo frame. Gatearlo
+                // dejaba al agente desincronizado del NavMesh para siempre, y JoinParty() fallaba
+                // entonces de forma permanente con "NavMeshAgent no está en NavMesh" cada vez que
+                // PlayerParty intentaba restaurar a Liam al equipo.
+                if (_liamAgent != null)
                 {
                     _liamAgent.Warp(_liamApproachTarget.position);
-                    _liamAgent.ResetPath();
+                    if (_liamAgent.isOnNavMesh)
+                        _liamAgent.ResetPath();
+                    else
+                        _liamTransform.position = _liamApproachTarget.position;
                 }
                 else
                 {
@@ -576,13 +586,24 @@ public class TabernaSequencer : CinematicSequencerBase
         // Teletransportar a Liam a la taberna antes de que la cámara lo muestre
         if (_liamTransform != null && _liamApproachTarget != null)
         {
-            if (_liamAgent != null && _liamAgent.isOnNavMesh)
+            // FIX (17/08/2026) — mismo bug de causa raíz que en Co_Sequence()/OnSkipCleanup más
+            // arriba: no gatear el Warp() detrás de isOnNavMesh, sobre todo justo después de un
+            // SetActive(true) (línea de arriba), el momento más probable para que isOnNavMesh
+            // todavía dé false en este mismo frame.
+            if (_liamAgent != null)
             {
                 _liamAgent.Warp(_liamApproachTarget.position);
-                _liamAgent.ResetPath();
-                // Bloquear posición y rotación para que el brain no mueva ni rote a Liam
-                _liamAgent.updatePosition = false;
-                _liamAgent.updateRotation = false;
+                if (_liamAgent.isOnNavMesh)
+                {
+                    _liamAgent.ResetPath();
+                    // Bloquear posición y rotación para que el brain no mueva ni rote a Liam
+                    _liamAgent.updatePosition = false;
+                    _liamAgent.updateRotation = false;
+                }
+                else
+                {
+                    _liamTransform.position = _liamApproachTarget.position;
+                }
             }
             else
                 _liamTransform.position = _liamApproachTarget.position;

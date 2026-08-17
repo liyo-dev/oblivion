@@ -1830,7 +1830,33 @@ public class TagMinigameController : MonoBehaviour
             var bootProfile = GameBootService.Profile;
             var saveSystem = GameBootService.SaveSystem;
             if (bootProfile != null && saveSystem != null)
+            {
                 bootProfile.LoadProfile(saveSystem);
+
+                // FIX (16 ago 2026): "el popup del minijuego de Estela reaparece tras salir y se
+                // queda en bucle roto". bootProfile.LoadProfile(saveSystem) aquí SOLO recarga los
+                // datos de partida (posición, quests, inventario...) en el runtimePreset — nunca
+                // disparaba OnProfileReady. NarrativeGraphStarter.RestoreBlackboardsFromPreset()
+                // solo se ejecuta UNA vez por sesión (ver _hasRestoredBlackboardsThisSession) y ese
+                // flag solo se resetea cuando algo dispara OnProfileReady. Sin este aviso, el
+                // Blackboard del NarrativeRunner persistente (DontDestroyOnLoad, ver
+                // NarrativeRunner.cs) seguía apuntando a "__currentNodeGuid" = el nodo
+                // StartTagMinigameNode que arrancó este mismo minijuego (nunca avanza en el abort:
+                // ver StartTagMinigameNode._onAbortCallback, que solo desuscribe sin llamar a
+                // onReadyToAdvance). Al recargar la escena de abajo, NarrativeGraphStarter.
+                // StartGraphs() se dispara de nuevo, el fork con el blackboard aún "sucio" retoma
+                // desde ese mismo nodo StartTagMinigameNode → vuelve a llamar a
+                // controller.StartMinigame() automáticamente → reaparece el popup de instrucciones
+                // del minijuego encima de la "última partida guardada" recién cargada, y cualquier
+                // input (incl. el botón A) se interpreta dentro de ese popup fantasma en vez del
+                // gameplay normal → bucle roto. Mismo patrón de bug, mismo fix, que
+                // GameBootService.NotifyProfileReady() ya documenta haber corregido para
+                // MainMenuController.OnClickContinue() (ver comentario de NotifyProfileReady en
+                // GameBootService.cs): avisar explícitamente tras un LoadProfile() manual para que
+                // los sistemas suscritos (incluido el blackboard narrativo) se re-sincronicen con
+                // la partida recién cargada ANTES de que la escena se recargue.
+                GameBootService.NotifyProfileReady();
+            }
         }
         Time.timeScale = 1f;
 

@@ -3,7 +3,8 @@ using UnityEngine;
 /// Muestra/oculta el botón global de "saltar secuencia" (HoldToSkipUI, con
 /// SkipAction = SkipNarrativeSequence) según NarrativeSkipHub.AnySkippable /
 /// OnAnySkippableChanged — es decir, según haya o no AL MENOS UN sistema registrado ahora mismo en
-/// el hub como "tengo algo activo que se puede saltar".
+/// el hub como "tengo algo activo que se puede saltar" — Y TAMBIÉN según
+/// CinematicSequencerBase.AnySequenceActive (ver FIX 16/08/2026 más abajo).
 ///
 /// FIX (16/08/2026, segunda vuelta): la primera versión de este fix escuchaba
 /// PlayerActionManager.IsInMode(ActionMode.Cinematic) — mejor que el CinematicSequencerBase
@@ -32,6 +33,19 @@ using UnityEngine;
 /// Colocación: como componente en un GameObject siempre activo de Start.unity (junto al resto de
 /// managers persistentes), con skipButtonRoot apuntando al GameObject raíz de una instancia del
 /// prefab HoldToSkipUI.prefab (hijo, con SkipAction = SkipNarrativeSequence en el Inspector).
+///
+/// FIX (16/08/2026): el cambio a NarrativeSkipHub como única fuente de visibilidad (ver más
+/// arriba) dejó fuera, sin querer, a las cinemáticas del sistema VIEJO (CinematicSequencerBase —
+/// PrologueDreamSequencer, StarAwakeningSequencer, LiamCrystalBallSequencer,
+/// EstelaAppearsSequencer, LiamGolemSummonSequencer, TabernaSequencer...), que siguen en uso y
+/// nunca se suscriben a NarrativeSkipHub (solo llevan su propio contador estático
+/// s_activeSequenceCount / OnAnySequenceActiveChanged, que es lo que el controlador ANTERIOR sí
+/// escuchaba). Resultado: en esas 6 cinemáticas el botón de skip dejó de aparecer aunque
+/// HoldToSkipUI.ExecuteSkipAction() siga llamando correctamente a
+/// CinematicSequencerBase.RequestSkipAll() (la ACCIÓN de saltar nunca se rompió, solo la
+/// VISIBILIDAD del botón). En vez de revertir el fix de NarrativeSkipHub (que sí soluciona el
+/// caso real de bocadillos sin LockPlayerNode), este controlador ahora escucha AMBAS fuentes y
+/// muestra el botón si cualquiera de las dos tiene algo activo.
 [DisallowMultipleComponent]
 public class GlobalCinematicSkipController : MonoBehaviour
 {
@@ -49,20 +63,26 @@ public class GlobalCinematicSkipController : MonoBehaviour
     private void OnEnable()
     {
         NarrativeSkipHub.OnAnySkippableChanged += HandleAnySkippableChanged;
+        CinematicSequencerBase.OnAnySequenceActiveChanged += HandleAnySequenceActiveChanged;
         // Por si este controlador se activa/recarga mientras ya hay algo saltable en curso
         // (recarga de dominio en el Editor, por ejemplo) — sincroniza el estado inicial.
         if (skipButtonRoot != null)
-            skipButtonRoot.SetActive(NarrativeSkipHub.AnySkippable);
+            skipButtonRoot.SetActive(NarrativeSkipHub.AnySkippable || CinematicSequencerBase.AnySequenceActive);
     }
 
     private void OnDisable()
     {
         NarrativeSkipHub.OnAnySkippableChanged -= HandleAnySkippableChanged;
+        CinematicSequencerBase.OnAnySequenceActiveChanged -= HandleAnySequenceActiveChanged;
     }
 
-    private void HandleAnySkippableChanged(bool active)
+    private void HandleAnySkippableChanged(bool active) => Refresh();
+
+    private void HandleAnySequenceActiveChanged(bool active) => Refresh();
+
+    private void Refresh()
     {
         if (skipButtonRoot != null)
-            skipButtonRoot.SetActive(active);
+            skipButtonRoot.SetActive(NarrativeSkipHub.AnySkippable || CinematicSequencerBase.AnySequenceActive);
     }
 }

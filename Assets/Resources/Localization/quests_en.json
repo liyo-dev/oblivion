@@ -1,416 +1,480 @@
 {
-    "texts": [
-        {
-            "key": "ELDRAN_MISSION2_NAME",
-            "value": "Get the Fruit Crate"
-        },
-        {
-            "key": "ELDRAN_MISSION8",
-            "value": "Protect the citizens of the Kingdom from Estela's wrath."
-        },
-        {
-            "key": "FUEGOFATUO_DESC_01",
-            "value": "Gather supplies with Estela"
-        },
-        {
-            "key": "FUEGOFATUO_DESC_02",
-            "value": "Scout the area with Will and Liam"
-        },
-        {
-            "key": "FUEGOFATUO_DETAIL",
-            "value": "Something strange is happening in the forest at night. There are two things you need to do to investigate:\n1. Gather supplies with Estela.\n2. Scout the area with Will and Liam.\nComplete both tasks to find out what's lurking among the trees."
-        },
-        {
-            "key": "FUEGOFATUO_NAME",
-            "value": "Something's happening in the forest at night"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION0_DETAIL",
-            "value": "There's a letter waiting for you on the small table in your room. Walk up to it and read it to find out how your adventure begins."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION10_DESC",
-            "value": "Find a way to escape."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION10_DETAIL",
-            "value": "You find yourself trapped and need to find a way out. Explore your surroundings in search of an exit."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION10_NAME",
-            "value": "Trapped"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION11_DESC",
-            "value": "Go back the way you came and leave the castle."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION11_DETAIL",
-            "value": "You've got what you needed. Now retrace your steps back the way you came and leave the castle."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION11_NAME",
-            "value": "Leave the Castle"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION12_DESC",
-            "value": "Use the whole party to defeat the demon."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION12_DETAIL",
-            "value": "The demon has reappeared, stronger than before. Gather your whole party and work together to bring it down; when Will gets the chance, have her use her special ability against the demon."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION12_NAME",
-            "value": "Defeat the Demon Again"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION13_DESC",
-            "value": "Meet Eldran on the outskirts of the Kingdom."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION13_DETAIL",
-            "value": "Eldran has asked to meet you outside the Kingdom. Leave the city and find him there."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION13_NAME",
-            "value": "See You Outside"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION14_DESC",
-            "value": "Find Eldran's friend in the neighboring village."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION14_DETAIL",
-            "value": "Eldran has told you about an old friend of his who lives in the neighboring village. Travel there and find him."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION14_NAME",
-            "value": "Operation Ostrich 2.0"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION15_DESC",
-            "value": "Find the forgotten temple."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION15_DESC_01",
-            "value": "Find the book of forbidden spells."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION15_DETAIL",
-            "value": "Legend speaks of a forgotten temple hidden somewhere nearby. Find it and, once inside, explore it thoroughly until you locate the book of forbidden spells kept within."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION15_NAME",
-            "value": "The Forgotten Temple"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION1_DESC",
-            "value": "Go talk to Eldran at the kingdom entrance"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION1_DETAIL",
-            "value": "A new day has begun. Head out and make your way to the entrance of the Kingdom, where Eldran is waiting to talk to you. Follow the main path until you reach the Kingdom gates."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION1_NAME",
-            "value": "Early Morning"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION2_DESC",
-            "value": "Find the fruit crate in the forest and bring it to Eldran"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION2_DETAIL",
-            "value": "Eldran needs a crate of fruit that got left behind in the forest. Head into the trees and search the area until you find it; once you have it, return to the Kingdom and hand it over to Eldran."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION2_NAME",
-            "value": "Get the Fruit Crate"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION3_DESC",
-            "value": "Defeat the demon."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION3_DETAIL",
-            "value": "A demon has appeared before you. Get ready for battle and use your abilities to defeat it — this will be your first real challenge as a Star."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION3_NAME",
-            "value": "The Awakening of a Star"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION4_DESC",
-            "value": "Go talk to Eldran when you're ready."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION4_DETAIL",
-            "value": "Once you feel ready, go back to Eldran to tell him what happened and receive his next instructions."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION4_NAME",
-            "value": "Return to Eldran"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION5_DESC",
-            "value": "Follow Eldran's instructions."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION5_DESC_01",
-            "value": "Find Victoria and ask her for a wizard's cloak."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION5_DESC_02",
-            "value": "Buy a <sprite name=\"lifePotion\">."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION5_DESC_03",
-            "value": "Train with Erika, you can find her near the castle."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION5_DETAIL",
-            "value": "Eldran wants to make sure you're properly prepared before moving on. There are three things you need to do:\n1. Find Victoria and ask her for a wizard's cloak.\n2. Buy a life potion.\n3. Train with Erika, who you can find near the castle.\nComplete all three tasks, in whichever order you like, to finish your preparation."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION5_NAME",
-            "value": "The Wizard's Preparation"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION6_DESC",
-            "value": "Return with Estela to see Eldran."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION6_DESC_01",
-            "value": "Find Estela in the forbidden forest."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION6_DESC_02",
-            "value": "Return with Estela to see Eldran."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION6_DETAIL",
-            "value": "Estela has ventured into the Forbidden Forest. Search for her among the trees and, once you find her, head back together to see Eldran."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION6_NAME",
-            "value": "Toward the Forbidden Forest"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION7_DESC",
-            "value": "Meet Eldran at the tavern."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION7_DETAIL",
-            "value": "Eldran is waiting for you at the village tavern. Head over and meet him there."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION7_NAME",
-            "value": "See You at the Tavern"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION8_DESC",
-            "value": "Approach the citizens of the Kingdom and use the buttons to cast a protective spell."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION8_DETAIL",
-            "value": "Estela's wrath threatens the people of the Kingdom. Approach each person in danger and use the buttons shown on screen to cast a protective spell over them."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION8_NAME",
-            "value": "Protect the Citizens."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION9_2_DESC",
-            "value": "Follow the guard, enter the castle, and speak with the King."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION9_2_NAME",
-            "value": "Arrested"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION9_DESC",
-            "value": "Follow the guard to the palace to see the King."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION9_DESC_02",
-            "value": "Enter the castle and speak with the King."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION9_DETAIL",
-            "value": "A royal guard has taken you into custody. Follow him to the palace and, once inside the castle, present yourself before the King to find out why you've been arrested."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION9_NAME",
-            "value": "Arrested"
-        },
-        {
-            "key": "QUEST_MISSION1_STEP1",
-            "value": "Talk to Eldran"
-        },
-        {
-            "key": "QUEST_NIÑOPEZ_CARACOLA_DESC",
-            "value": "Find the fish boy's conch."
-        },
-        {
-            "key": "QUEST_NIÑOPEZ_CARACOLA_DETAIL",
-            "value": "The fish boy has lost his conch shell. Search the surrounding area for it and bring it back to him."
-        },
-        {
-            "key": "QUEST_NIÑOPEZ_DESC",
-            "value": "Get <sprite name=\"algas\"> for the fish boy."
-        },
-        {
-            "key": "QUEST_NIÑOPEZ_DETAIL",
-            "value": "The fish boy needs seaweed before you can enter the water. Search the area for it and bring it to him so he'll let you swim."
-        },
-        {
-            "key": "QUEST_ROBERTO_MISSION1_DESC",
-            "value": "Get a <sprite name=\"lifePotion\"> for Roberto."
-        },
-        {
-            "key": "QUEST_ROBERTO_MISSION1_DETAIL",
-            "value": "Roberto is feeling dizzy and needs help. Get a life potion and bring it to him so he can recover."
-        },
-        {
-            "key": "QUEST_RUDOLFO_DESC",
-            "value": "Find Rudolfo's <sprite name=\"boots\"> near the water."
-        },
-        {
-            "key": "QUEST_RUDOLFO_DETAIL",
-            "value": "Rudolfo has lost his boots near the water. Search along the shore for them and bring them back to him."
-        },
-        {
-            "key": "QUEST_STATE_ACTIVE",
-            "value": "Active"
-        },
-        {
-            "key": "QUEST_STATE_COMPLETED",
-            "value": "Completed"
-        },
-        {
-            "key": "QUEST_STATE_INACTIVE",
-            "value": "Inactive"
-        },
-        {
-            "key": "Q_NIÑOPEZ",
-            "value": "Before entering the water you need to help the fish boy."
-        },
-        {
-            "key": "Q_ROBERTO",
-            "value": "Roberto's Dizziness."
-        },
-        {
-            "key": "Q_GUARDIABOSQUE_ARANAS",
-            "value": "The Spider Plague."
-        },
-        {
-            "key": "QUEST_GUARDIABOSQUE_ARANAS_DESC",
-            "value": "Defeat the spiders that have invaded the Forbidden Forest."
-        },
-        {
-            "key": "QUEST_GUARDIABOSQUE_ARANAS_DETAIL",
-            "value": "The forest guard needs help: several spiders have taken over the paths of the Forbidden Forest. Defeat them and talk to him again to collect your reward."
-        },
-        {
-            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP01_DESC",
-            "value": "Defeat a spider in the Forbidden Forest."
-        },
-        {
-            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP02_DESC",
-            "value": "Defeat another spider in the Forbidden Forest."
-        },
-        {
-            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP03_DESC",
-            "value": "Defeat another spider in the Forbidden Forest."
-        },
-        {
-            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP04_DESC",
-            "value": "Defeat the last spider in the Forbidden Forest."
-        },
-        {
-            "key": "Q_TENDERA_ALGAS",
-            "value": "Barbara's Remedy."
-        },
-        {
-            "key": "QUEST_TENDERA_ALGAS_DESC",
-            "value": "Get 2 magic potions for Barbara."
-        },
-        {
-            "key": "QUEST_TENDERA_ALGAS_DETAIL",
-            "value": "Barbara needs magic potions for her remedies. Bring her 2 and she’ll give you fresh algae in return."
-        },
-        {
-            "key": "QUEST_TENDERA_ALGAS_STEP01_DESC",
-            "value": "Get 2 magic potions and give them to Barbara."
-        },
-        {
-            "key": "READ_THE_LETTER_DESC",
-            "value": "Read the letter on the side table."
-        },
-        {
-            "key": "Q_TABERNERA_ALGAS",
-            "value": "The Hangover Remedy"
-        },
-        {
-            "key": "QUEST_TABERNERA_ALGAS_DESC",
-            "value": "Help Rosa, the tavernkeeper, prepare her hangover remedy."
-        },
-        {
-            "key": "QUEST_TABERNERA_ALGAS_DETAIL",
-            "value": "Rosa needs seaweed to prepare her famous hangover remedy. Bring her 2 seaweed and she'll reward you with some coin."
-        },
-        {
-            "key": "QUEST_TABERNERA_ALGAS_STEP01_DESC",
-            "value": "Get 2 seaweed for Rosa."
-        },
-        {
-            "key": "Q_MANUEL_POCIONES",
-            "value": "Potions for Grandma"
-        },
-        {
-            "key": "QUEST_MANUEL_POCIONES_DESC",
-            "value": "Help Manuel get health potions for his grandmother."
-        },
-        {
-            "key": "QUEST_MANUEL_POCIONES_DETAIL",
-            "value": "Manuel's grandmother has been feeling weak for days. Get 2 health potions and bring them to him."
-        },
-        {
-            "key": "QUEST_MANUEL_POCIONES_STEP01_DESC",
-            "value": "Get 2 health potions for Manuel."
-        },
-        {
-            "key": "Q_NORA_POCIONES",
-            "value": "Supplies for the Spell"
-        },
-        {
-            "key": "QUEST_NORA_POCIONES_DESC",
-            "value": "Help Nora get magic potions for a spell she wants to try."
-        },
-        {
-            "key": "QUEST_NORA_POCIONES_DETAIL",
-            "value": "Nora wants to try a new spell, but needs 3 magic potions for enough energy. She'll pay you back well in return."
-        },
-        {
-            "key": "QUEST_NORA_POCIONES_STEP01_DESC",
-            "value": "Get 3 magic potions for Nora."
-        },
-        {
-            "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_NAME",
-            "value": "A Safe Place"
-        },
-        {
-            "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_DESC",
-            "value": "Eldran shows you a Save Point."
-        },
-        {
-            "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_DETAIL",
-            "value": "Before going his own way, Eldran wants to show you a Save Point: here you can save your game and rest to recover your health and mana."
-        },
-        {
-            "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_STEP01_DESC",
-            "value": "Listen to what Eldran has to say about the Save Point."
-        }
-    ]
+  "texts": [
+    {
+      "key": "ELDRAN_MISSION2_NAME",
+      "value": "Get the Fruit Crate"
+    },
+    {
+      "key": "ELDRAN_MISSION8",
+      "value": "Protect the citizens of the Kingdom from Estela's wrath."
+    },
+    {
+      "key": "FUEGOFATUO_DESC_01",
+      "value": "Gather supplies with Estela"
+    },
+    {
+      "key": "FUEGOFATUO_DESC_02",
+      "value": "Scout the area with Will and Liam"
+    },
+    {
+      "key": "FUEGOFATUO_DETAIL",
+      "value": "Something strange is happening in the forest at night. There are two things you need to do to investigate:\n1. Gather supplies with Estela.\n2. Scout the area with Will and Liam.\nComplete both tasks to find out what's lurking among the trees."
+    },
+    {
+      "key": "FUEGOFATUO_NAME",
+      "value": "Something's happening in the forest at night"
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION0_DETAIL",
+      "value": "There's a letter waiting for you on the small table in your room. Walk up to it and read it to find out how your adventure begins."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION10_DESC",
+      "value": "Find a way to escape."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION10_DETAIL",
+      "value": "You find yourself trapped and need to find a way out. Explore your surroundings in search of an exit."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION10_NAME",
+      "value": "Trapped"
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION11_DESC",
+      "value": "Go back the way you came and leave the castle."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION11_DETAIL",
+      "value": "You've got what you needed. Now retrace your steps back the way you came and leave the castle."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION11_NAME",
+      "value": "Leave the Castle"
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION12_DESC",
+      "value": "Use the whole party to defeat the demon."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION12_DETAIL",
+      "value": "The demon has reappeared, stronger than before. Gather your whole party and work together to bring it down; when Will gets the chance, have her use her special ability against the demon."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION12_NAME",
+      "value": "Defeat the Demon Again"
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION13_DESC",
+      "value": "Meet Eldran on the outskirts of the Kingdom."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION13_DETAIL",
+      "value": "Eldran has asked to meet you outside the Kingdom. Leave the city and find him there."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION13_NAME",
+      "value": "See You Outside"
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION14_DESC",
+      "value": "Find Eldran's friend in the neighboring village."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION14_DETAIL",
+      "value": "Eldran has told you about an old friend of his who lives in the neighboring village. Travel there and find him."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION14_NAME",
+      "value": "Operation Ostrich 2.0"
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION15_DESC",
+      "value": "Find the forgotten temple."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION15_DESC_01",
+      "value": "Find the book of forbidden spells."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION15_DETAIL",
+      "value": "Legend speaks of a forgotten temple hidden somewhere nearby. Find it and, once inside, explore it thoroughly until you locate the book of forbidden spells kept within."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION15_NAME",
+      "value": "The Forgotten Temple"
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION1_DESC",
+      "value": "Go talk to Eldran at the kingdom entrance"
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION1_DETAIL",
+      "value": "A new day has begun. Head out and make your way to the entrance of the Kingdom, where Eldran is waiting to talk to you. Follow the main path until you reach the Kingdom gates."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION1_NAME",
+      "value": "Early Morning"
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION2_DESC",
+      "value": "Find the fruit crate in the forest and bring it to Eldran"
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION2_DETAIL",
+      "value": "Eldran needs a crate of fruit that got left behind in the forest. Head into the trees and search the area until you find it; once you have it, return to the Kingdom and hand it over to Eldran."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION2_NAME",
+      "value": "Get the Fruit Crate"
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION3_DESC",
+      "value": "Defeat the demon."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION3_DETAIL",
+      "value": "A demon has appeared before you. Get ready for battle and use your abilities to defeat it — this will be your first real challenge as a Star."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION3_NAME",
+      "value": "The Awakening of a Star"
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION4_DESC",
+      "value": "Go talk to Eldran when you're ready."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION4_DETAIL",
+      "value": "Once you feel ready, go back to Eldran to tell him what happened and receive his next instructions."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION4_NAME",
+      "value": "Return to Eldran"
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION5_DESC",
+      "value": "Follow Eldran's instructions."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION5_DESC_01",
+      "value": "Find Victoria and ask her for a wizard's cloak."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION5_DESC_02",
+      "value": "Buy a <sprite name=\"lifePotion\">."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION5_DESC_03",
+      "value": "Train with Erika, you can find her near the castle."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION5_DETAIL",
+      "value": "Eldran wants to make sure you're properly prepared before moving on. There are three things you need to do:\n1. Find Victoria and ask her for a wizard's cloak.\n2. Buy a life potion.\n3. Train with Erika, who you can find near the castle.\nComplete all three tasks, in whichever order you like, to finish your preparation."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION5_NAME",
+      "value": "The Wizard's Preparation"
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION6_DESC",
+      "value": "Return with Estela to see Eldran."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION6_DESC_01",
+      "value": "Find Estela in the forbidden forest."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION6_DESC_02",
+      "value": "Return with Estela to see Eldran."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION6_DETAIL",
+      "value": "Estela has ventured into the Forbidden Forest. Search for her among the trees and, once you find her, head back together to see Eldran."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION6_NAME",
+      "value": "Toward the Forbidden Forest"
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION7_DESC",
+      "value": "Meet Eldran at the tavern."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION7_DETAIL",
+      "value": "Eldran is waiting for you at the village tavern. Head over and meet him there."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION7_NAME",
+      "value": "See You at the Tavern"
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION8_DESC",
+      "value": "Approach the citizens of the Kingdom and use the buttons to cast a protective spell."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION8_DETAIL",
+      "value": "Estela's wrath threatens the people of the Kingdom. Approach each person in danger and use the buttons shown on screen to cast a protective spell over them."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION8_NAME",
+      "value": "Protect the Citizens."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION9_2_DESC",
+      "value": "Follow the guard, enter the castle, and speak with the King."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION9_2_NAME",
+      "value": "Arrested"
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION9_DESC",
+      "value": "Follow the guard to the palace to see the King."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION9_DESC_02",
+      "value": "Enter the castle and speak with the King."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION9_DETAIL",
+      "value": "A royal guard has taken you into custody. Follow him to the palace and, once inside the castle, present yourself before the King to find out why you've been arrested."
+    },
+    {
+      "key": "QUEST_ELDRAN_MISSION9_NAME",
+      "value": "Arrested"
+    },
+    {
+      "key": "QUEST_MISSION1_STEP1",
+      "value": "Talk to Eldran"
+    },
+    {
+      "key": "QUEST_NIÑOPEZ_CARACOLA_DESC",
+      "value": "Find the fish boy's conch."
+    },
+    {
+      "key": "QUEST_NIÑOPEZ_CARACOLA_DETAIL",
+      "value": "The fish boy has lost his conch shell. Search the surrounding area for it and bring it back to him."
+    },
+    {
+      "key": "QUEST_NIÑOPEZ_DESC",
+      "value": "Get <sprite name=\"algas\"> for the fish boy."
+    },
+    {
+      "key": "QUEST_NIÑOPEZ_DETAIL",
+      "value": "The fish boy needs seaweed before you can enter the water. Search the area for it and bring it to him so he'll let you swim."
+    },
+    {
+      "key": "QUEST_ROBERTO_MISSION1_DESC",
+      "value": "Get a <sprite name=\"lifePotion\"> for Roberto."
+    },
+    {
+      "key": "QUEST_ROBERTO_MISSION1_DETAIL",
+      "value": "Roberto is feeling dizzy and needs help. Get a life potion and bring it to him so he can recover."
+    },
+    {
+      "key": "QUEST_RUDOLFO_DESC",
+      "value": "Find Rudolfo's <sprite name=\"boots\"> near the water."
+    },
+    {
+      "key": "QUEST_RUDOLFO_DETAIL",
+      "value": "Rudolfo has lost his boots near the water. Search along the shore for them and bring them back to him."
+    },
+    {
+      "key": "QUEST_STATE_ACTIVE",
+      "value": "Active"
+    },
+    {
+      "key": "QUEST_STATE_COMPLETED",
+      "value": "Completed"
+    },
+    {
+      "key": "QUEST_STATE_INACTIVE",
+      "value": "Inactive"
+    },
+    {
+      "key": "Q_NIÑOPEZ",
+      "value": "Before entering the water you need to help the fish boy."
+    },
+    {
+      "key": "Q_ROBERTO",
+      "value": "Roberto's Dizziness."
+    },
+    {
+      "key": "Q_GUARDIABOSQUE_ARANAS",
+      "value": "The Spider Plague."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_DESC",
+      "value": "Defeat the spiders that have invaded the Forbidden Forest."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_DETAIL",
+      "value": "The forest guard needs help: several spiders have taken over the paths of the Forbidden Forest. Defeat them and talk to him again to collect your reward."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP01_DESC",
+      "value": "Defeat a spider in the Forbidden Forest."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP02_DESC",
+      "value": "Defeat another spider in the Forbidden Forest."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP03_DESC",
+      "value": "Defeat another spider in the Forbidden Forest."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP04_DESC",
+      "value": "Defeat another spider in the Forbidden Forest."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP05_DESC",
+      "value": "Defeat another spider in the Forbidden Forest."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP06_DESC",
+      "value": "Defeat another spider in the Forbidden Forest."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP07_DESC",
+      "value": "Defeat another spider in the Forbidden Forest."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP08_DESC",
+      "value": "Defeat another spider in the Forbidden Forest."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP09_DESC",
+      "value": "Defeat another spider in the Forbidden Forest."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP10_DESC",
+      "value": "Defeat another spider in the Forbidden Forest."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP11_DESC",
+      "value": "Defeat another spider in the Forbidden Forest."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP12_DESC",
+      "value": "Defeat another spider in the Forbidden Forest."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP13_DESC",
+      "value": "Defeat another spider in the Forbidden Forest."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP14_DESC",
+      "value": "Defeat another spider in the Forbidden Forest."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP15_DESC",
+      "value": "Defeat another spider in the Forbidden Forest."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP16_DESC",
+      "value": "Defeat another spider in the Forbidden Forest."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP17_DESC",
+      "value": "Defeat another spider in the Forbidden Forest."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP18_DESC",
+      "value": "Defeat another spider in the Forbidden Forest."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP19_DESC",
+      "value": "Defeat another spider in the Forbidden Forest."
+    },
+    {
+      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP20_DESC",
+      "value": "Defeat the last spider in the Forbidden Forest."
+    },
+    {
+      "key": "Q_TENDERA_ALGAS",
+      "value": "Barbara's Remedy."
+    },
+    {
+      "key": "QUEST_TENDERA_ALGAS_DESC",
+      "value": "Get 2 magic potions for Barbara."
+    },
+    {
+      "key": "QUEST_TENDERA_ALGAS_DETAIL",
+      "value": "Barbara needs magic potions for her remedies. Bring her 2 and she’ll give you fresh algae in return."
+    },
+    {
+      "key": "QUEST_TENDERA_ALGAS_STEP01_DESC",
+      "value": "Get 2 magic potions and give them to Barbara."
+    },
+    {
+      "key": "READ_THE_LETTER_DESC",
+      "value": "Read the letter on the side table."
+    },
+    {
+      "key": "Q_TABERNERA_ALGAS",
+      "value": "The Hangover Remedy"
+    },
+    {
+      "key": "QUEST_TABERNERA_ALGAS_DESC",
+      "value": "Help Rosa, the tavernkeeper, prepare her hangover remedy."
+    },
+    {
+      "key": "QUEST_TABERNERA_ALGAS_DETAIL",
+      "value": "Rosa needs seaweed to prepare her famous hangover remedy. Bring her 2 seaweed and she'll reward you with some coin."
+    },
+    {
+      "key": "QUEST_TABERNERA_ALGAS_STEP01_DESC",
+      "value": "Get 2 seaweed for Rosa."
+    },
+    {
+      "key": "Q_MANUEL_POCIONES",
+      "value": "Potions for Grandma"
+    },
+    {
+      "key": "QUEST_MANUEL_POCIONES_DESC",
+      "value": "Help Manuel get health potions for his grandmother."
+    },
+    {
+      "key": "QUEST_MANUEL_POCIONES_DETAIL",
+      "value": "Manuel's grandmother has been feeling weak for days. Get 2 health potions and bring them to him."
+    },
+    {
+      "key": "QUEST_MANUEL_POCIONES_STEP01_DESC",
+      "value": "Get 2 health potions for Manuel."
+    },
+    {
+      "key": "Q_NORA_POCIONES",
+      "value": "Supplies for the Spell"
+    },
+    {
+      "key": "QUEST_NORA_POCIONES_DESC",
+      "value": "Help Nora get magic potions for a spell she wants to try."
+    },
+    {
+      "key": "QUEST_NORA_POCIONES_DETAIL",
+      "value": "Nora wants to try a new spell, but needs 3 magic potions for enough energy. She'll pay you back well in return."
+    },
+    {
+      "key": "QUEST_NORA_POCIONES_STEP01_DESC",
+      "value": "Get 3 magic potions for Nora."
+    },
+    {
+      "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_NAME",
+      "value": "A Safe Place"
+    },
+    {
+      "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_DESC",
+      "value": "Eldran shows you a Save Point."
+    },
+    {
+      "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_DETAIL",
+      "value": "Before going his own way, Eldran wants to show you a Save Point: here you can save your game and rest to recover your health and mana."
+    },
+    {
+      "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_STEP01_DESC",
+      "value": "Listen to what Eldran has to say about the Save Point."
+    }
+  ]
 }

@@ -99,6 +99,16 @@ public class CloudCoverSpawner : MonoBehaviour
     private float _currentAlpha;
     private float _safetyHeightBonus;
     private bool _built;
+    // FIX (16 ago 2026): "las nubes se ven en un interior" + "sigue lloviendo pero no hay nubes
+    // tras teletransportarse fuera". Este componente estaba "totalmente desacoplado de
+    // DayNightCycle" (ver doc de clase) a propósito, pero eso significaba que NUNCA se enteraba
+    // de si el jugador está en un interior: DayNightCycle.HandleInteriorEntered() sí oculta la
+    // lluvia/niebla (SetRainVisualActive/SetMistVisualActive) al entrar, pero ese método no toca
+    // el techo de nubes de este componente en absoluto — de ahí que las nubes seguían viéndose
+    // por encima del techo del interior aunque la lluvia/niebla ya se hubieran cortado
+    // correctamente. Nos suscribimos aquí a los mismos eventos de EnvironmentController que ya
+    // usa DayNightCycle, con el mismo patrón (ocultar al entrar, restaurar al salir).
+    private bool _hiddenByInterior;
 
     void Awake()
     {
@@ -121,6 +131,27 @@ public class CloudCoverSpawner : MonoBehaviour
             Debug.LogWarning("[CloudCoverSpawner] No se encontró ningún DayNightCycle en la escena; el techo de nubes nunca se activará.");
         }
 #endif
+
+        EnvironmentController.OnInteriorEntered += HandleInteriorEntered;
+        EnvironmentController.OnInteriorExited  += HandleInteriorExited;
+
+        // Si ya estábamos en un interior al activarnos (p.ej. esta escena se cargó directamente
+        // dentro de un interior), arrancar ya suprimidos — mismo criterio que usa
+        // DayNightCycle.OnEnable() para _outdoorWeatherSuppressedIndoors.
+        var ec = EnvironmentController.Instance;
+        _hiddenByInterior = ec != null && ec.IsEffectivelyInterior;
+
+        // FIX "sigue lloviendo pero no hay nubes tras teletransportarse": este componente vive en
+        // la escena de mundo y se destruye/recrea con ella (ver DestroyCover() en OnDisable()).
+        // Antes de este fix solo se enteraba de que hay que mostrar nubes vía el evento
+        // CloudsBuildingUp, que DayNightCycle dispara al EMPEZAR a nublarse — pero si la escena se
+        // recarga (p.ej. una recarga de escena disparada por un teletransporte) mientras YA estaba
+        // lloviendo, DayNightCycle.InitializeCycle() restaura IsRaining=true directamente sin pasar
+        // otra vez por esa transición de "empezando a nublarse", así que el evento nunca volvía a
+        // dispararse y el techo de nubes no se reconstruía aunque la lluvia siguiera sonando/
+        // cayendo con toda normalidad. Nos ponemos al día aquí explícitamente si ya está lloviendo.
+        if (!_hiddenByInterior && dayNightCycle != null && dayNightCycle.IsRaining)
+            HandleCloudsBuildingUp();
     }
 
     void OnDisable()
@@ -131,6 +162,9 @@ public class CloudCoverSpawner : MonoBehaviour
             dayNightCycle.RainStopped -= HandleRainStopped;
         }
 
+        EnvironmentController.OnInteriorEntered -= HandleInteriorEntered;
+        EnvironmentController.OnInteriorExited  -= HandleInteriorExited;
+
         if (_fadeCoroutine != null)
         {
             StopCoroutine(_fadeCoroutine);
@@ -138,6 +172,21 @@ public class CloudCoverSpawner : MonoBehaviour
         }
 
         DestroyCover();
+    }
+
+    void HandleInteriorEntered()
+    {
+        _hiddenByInterior = true;
+        if (_root != null) _root.gameObject.SetActive(false);
+    }
+
+    void HandleInteriorExited()
+    {
+        _hiddenByInterior = false;
+        // Solo reactivar si de verdad hay techo construido y con algo de alfa que mostrar —
+        // si nunca ha llovido en esta sesión no hay nada que revelar.
+        if (_built && _root != null && _currentAlpha > 0f)
+            _root.gameObject.SetActive(true);
     }
 
     void HandleCloudsBuildingUp()
@@ -158,6 +207,12 @@ public class CloudCoverSpawner : MonoBehaviour
         }
 
         StartFade(1f);
+
+        // Si empieza a llover (o nos ponemos al día con una tormenta ya en marcha, ver OnEnable())
+        // mientras el jugador está dentro de un interior, no revelar el techo todavía — se
+        // mostrará solo, ya con el alfa correcto, en cuanto HandleInteriorExited() lo reactive.
+        if (_hiddenByInterior && _root != null)
+            _root.gameObject.SetActive(false);
     }
 
     void HandleRainStopped()

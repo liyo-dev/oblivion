@@ -31,6 +31,19 @@ namespace Invector.vCharacterController
         private static System.Reflection.PropertyInfo attackMagicSpecialPressedProp;
         private static bool reflectionInitialized;
 
+        // FIX COMPILACIÓN (16 ago 2026): este script vive en Assets/Plugins (assembly separado,
+        // compilado ANTES que Assets/Scripts). Referenciar "Core.PlayerInputManager" directamente
+        // aquí, como se hizo en un fix anterior de este mismo método, no compila
+        // (CS0103: The name 'Core' does not exist in the current context) por la misma razón exacta
+        // por la que GamepadInputReader/PlayerSettings de arriba se acceden vía reflexión en vez de
+        // por referencia directa — ver también el comentario equivalente en
+        // vThirdPersonCamera.cs sobre EnvironmentQuery como puente hacia EnvironmentController.
+        // Mismo patrón de caché que gamepadInputReaderType: se resuelve una sola vez en
+        // InitializeReflection(), no en cada Update().
+        private static Type playerInputManagerType;
+        private static System.Reflection.PropertyInfo playerInputManagerInstanceProp;
+        private static System.Reflection.PropertyInfo isInUIModeProp;
+
         [HideInInspector] public vThirdPersonController cc;
         [HideInInspector] public vThirdPersonCamera tpCamera;
         [HideInInspector] public Camera cameraMain;
@@ -80,10 +93,43 @@ namespace Invector.vCharacterController
                 attackMagicLeftPressedProp = gamepadInputReaderType.GetProperty("AttackMagicLeftPressed", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
                 attackMagicRightPressedProp = gamepadInputReaderType.GetProperty("AttackMagicRightPressed", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
                 attackMagicSpecialPressedProp = gamepadInputReaderType.GetProperty("AttackMagicSpecialPressed", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+
+                // Ver comentario junto a los campos playerInputManagerType/... más arriba.
+                playerInputManagerType = Type.GetType("Core.PlayerInputManager, Assembly-CSharp");
+                if (playerInputManagerType == null)
+                {
+                    Debug.LogWarning("[vThirdPersonInput] No se pudo encontrar Core.PlayerInputManager. La supresión de cámara al abrir menús no funcionará.");
+                }
+                else
+                {
+                    playerInputManagerInstanceProp = playerInputManagerType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                    isInUIModeProp = playerInputManagerType.GetProperty("IsInUIMode", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                }
             }
             catch (Exception ex)
             {
                 Debug.LogError($"[vThirdPersonInput] Error inicializando reflexión: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// True si Core.PlayerInputManager.Instance.IsInUIMode está activo ahora mismo, resuelto vía
+        /// reflexión (ver comentario junto a playerInputManagerType). Nunca lanza: cualquier fallo
+        /// de reflexión se trata como "no suprimir", el comportamiento que había antes de este fix.
+        /// </summary>
+        private static bool IsPlayerInputManagerInUIMode()
+        {
+            if (playerInputManagerInstanceProp == null || isInUIModeProp == null) return false;
+
+            try
+            {
+                var instance = playerInputManagerInstanceProp.GetValue(null);
+                if (instance == null) return false;
+                return (bool)isInUIModeProp.GetValue(instance);
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
 
@@ -171,9 +217,19 @@ namespace Invector.vCharacterController
                 if (moveProp != null)
                     moveInput = (Vector2)moveProp.GetValue(null);
                 
-                // Cámara (siempre disponible)
+                // Cámara: normalmente siempre disponible (para poder seguir mirando alrededor
+                // durante bocadillos/diálogos que no empujan modo UI), PERO se suprime mientras
+                // hay una pantalla de UI a pantalla completa abierta (tienda, menú principal,
+                // inventario...). Sin esto, mover el ratón sobre los botones de esas pantallas
+                // seguía llegando aquí y acumulando en mouseX/mouseY de vThirdPersonCamera —  y
+                // como esas pantallas paran el tiempo (Time.timeScale = 0), el Slerp de
+                // CameraMovement() no podía ir aplicando esa rotación en tiempo real: se quedaba
+                // "guardada" y se descargaba de golpe al cerrar la pantalla y reanudar el tiempo,
+                // lo que se veía como la cámara temblando/girando sola un rato hasta converger.
+                // FIX (16/08/2026): cámara tiembla al volver de tienda/menú a gameplay.
+                bool suppressCameraLook = IsPlayerInputManagerInUIMode();
                 if (cameraLookProp != null)
-                    cameraInput = ApplyLookInversionSafe((Vector2)cameraLookProp.GetValue(null));
+                    cameraInput = suppressCameraLook ? Vector2.zero : ApplyLookInversionSafe((Vector2)cameraLookProp.GetValue(null));
                 
                 // Sprint (respeta supresión y validación)
                 if (CanSprint() && sprintHeldProp != null)

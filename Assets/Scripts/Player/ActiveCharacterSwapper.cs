@@ -995,6 +995,22 @@ public class ActiveCharacterSwapper : MonoBehaviour
             if (!smr.updateWhenOffscreen) smr.updateWhenOffscreen = true;
             if (smr.gameObject.activeInHierarchy) _ = smr.bounds;
         }
+
+        // FIX (16/08/2026): "Will desaparece cerca de un punto de guardado al cambiar de personaje".
+        // El fix de Occlusion Culling horneado (ver SpawnWillNpc(), líneas de arriba —
+        // allowOcclusionWhenDynamic=false) SOLO se aplicaba al instanciar el NPC de Will desde
+        // cero. Este método (WarpNpcToPosition) también reposiciona a Will cuando ya estaba
+        // instanciado (cambio Liam↔Estela con Will de fondo, línea ~488) Y reposiciona al NPC de
+        // Liam/Estela que se abandona (línea ~423) — un NPC residente en escena desde el arranque
+        // que JAMÁS pasó por SpawnWillNpc() y por tanto nunca recibió este fix. Los puntos de
+        // guardado suelen estar en hornacinas con pilares/paredes para enmarcarlos visualmente —
+        // justo el tipo de geometría que el bake de Occlusion Culling marca como "tapada". Sin
+        // este flag, el NPC puede caer en una celda oculta del bake nada más llegar ahí y
+        // quedarse invisible de forma permanente para ese sistema, sin que ningún recálculo de
+        // bounds (arriba) lo revierta — esa parte solo cubre el frustum culling, un sistema
+        // distinto.
+        foreach (var rend in npc.GetComponentsInChildren<Renderer>(true))
+            rend.allowOcclusionWhenDynamic = false;
     }
 
     /// <summary>

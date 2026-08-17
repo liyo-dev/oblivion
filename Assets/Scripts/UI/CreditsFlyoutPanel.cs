@@ -42,7 +42,11 @@ public class CreditsFlyoutPanel : MonoBehaviour
     [Header("Contenido")]
     [TextArea(10, 60)]
     [SerializeField] string creditsText =
-        "Un juego de\n\nRaúl Báez\n\n\n\n" +
+        // FIX (16 ago 2026): Raúl pidió quitar su nombre de los créditos y seguía apareciendo
+        // — estaba también duplicado en CreditsSceneController.cs (el crawl completo de
+        // Credits.unity), así que había que editar los dos sitios a la vez para que
+        // desapareciera de verdad en ambas pantallas de créditos (el panel rápido de pausa y
+        // el crawl cinemático final).
         "Créditos de assets\n\n\n\n" +
         "VFX\n\n" +
         "Matthew Guz - Spell Area of Effect, Orbs Effects\n\n" +
@@ -142,7 +146,42 @@ public class CreditsFlyoutPanel : MonoBehaviour
 
     void Start()
     {
-        WireCreditsButton();
+        // FIX (16 ago 2026): "el botón CRÉDITOS del menú principal a veces funciona y a veces no".
+        // WireCreditsButton() localizaba el botón CRÉDITOS con FindObjectsByType<Button>(...) UNA
+        // sola vez, en este Start(). Ese overload de FindObjectsByType excluye objetos inactivos
+        // por defecto, y el botón/panel de MainMenu.unity puede no estar activo todavía en el mismo
+        // frame en que este Start() se ejecuta (depende del orden de ejecución de scripts frente a
+        // lo que active el panel de botones — animación de entrada, MainMenuFlyingCompanion,
+        // TitleLogoController, etc. — que no está garantizado respecto a este componente). Si ese
+        // frame concreto el botón todavía estaba inactivo, FindCreditsButton() no lo encontraba,
+        // se quedaba en el Debug.LogWarning silencioso de abajo y el botón CRÉDITOS se quedaba con
+        // el listener original (o sin ninguno) para el resto de la sesión — de ahí la
+        // intermitencia: dependía de qué tan rápido/lento arrancara el resto del menú esa partida
+        // concreta. Mismo patrón que NarrativeGraphStarter.WaitForHubAndStart(): reintentar durante
+        // un margen de frames en vez de un intento único.
+        StartCoroutine(WireCreditsButtonWithRetry());
+    }
+
+    IEnumerator WireCreditsButtonWithRetry()
+    {
+        const float maxWaitSeconds = 2f;
+        float deadline = Time.unscaledTime + maxWaitSeconds;
+
+        while (Time.unscaledTime < deadline)
+        {
+            if (TryWireCreditsButton())
+                yield break;
+
+            yield return null;
+        }
+
+        // Último intento tras agotar el margen, para que el log de abajo (si falla) refleje el
+        // estado final real en vez de un intento del primer frame.
+        if (!TryWireCreditsButton())
+        {
+            Debug.LogWarning("[CreditsFlyoutPanel] No se encontró el botón CRÉDITOS automáticamente " +
+                              $"tras reintentar durante {2f:0.#}s. Asigna 'Credits Button Override' a mano en el Inspector.");
+        }
     }
 
     void Update()
@@ -197,26 +236,30 @@ public class CreditsFlyoutPanel : MonoBehaviour
 
     // ── Conexión con el botón CRÉDITOS ya existente en MainMenu.unity ───────
 
-    void WireCreditsButton()
+    bool TryWireCreditsButton()
     {
+        // Ya conectado en un intento anterior de esta misma sesión — no hace falta seguir.
+        if (_openButton != null)
+            return true;
+
         _openButton = creditsButtonOverride != null ? creditsButtonOverride : FindCreditsButton();
 
         if (_openButton == null)
-        {
-            Debug.LogWarning("[CreditsFlyoutPanel] No se encontró el botón CRÉDITOS automáticamente. " +
-                              "Asigna 'Credits Button Override' a mano en el Inspector.");
-            return;
-        }
+            return false;
 
         // Sustituye el listener existente (el que cargaba Credits.unity) por el toggle del panel.
         // No se toca el botón en el Editor: esto ocurre en runtime, así que MainMenu.unity queda intacto.
         _openButton.onClick.RemoveAllListeners();
         _openButton.onClick.AddListener(TogglePanel);
+        return true;
     }
 
     static Button FindCreditsButton()
     {
-        var all = FindObjectsByType<Button>(FindObjectsSortMode.None);
+        // FIX (16 ago 2026, ver comentario en Start()): FindObjectsInactive.Include en vez del
+        // valor por defecto (Exclude) — el botón puede estar temporalmente inactivo (panel de
+        // menú aún no revelado por su animación de entrada) en el frame en que se busca.
+        var all = FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         foreach (var b in all)
         {
             if (Matches(b.gameObject.name)) return b;

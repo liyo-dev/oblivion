@@ -177,10 +177,25 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
                 $"({liamTransform.position} → objetivo {_liamDesignPosition}), probablemente por corrección " +
                 $"automática del NavMeshAgent al activarse. Restaurando.");
 #endif
-            if (_liamAgent != null && _liamAgent.isOnNavMesh)
+            // FIX (17/08/2026) — mismo bug de causa raíz confirmado en EstelaAppearsSequencer
+            // (ver su RestoreDesignTransform): solo llamar a Warp() cuando isOnNavMesh YA era true
+            // deja al agente desincronizado del NavMesh para siempre si en este frame concreto
+            // (justo tras cargar la escena) todavía valía false — JoinParty() falla entonces de
+            // forma permanente con "NavMeshAgent no está en NavMesh" cada vez que PlayerParty
+            // intenta restaurar a Liam al equipo. Warp() coloca el agente en el punto de NavMesh
+            // válido más cercano incluso partiendo de isOnNavMesh=false, así que se llama siempre
+            // que haya agente; solo si ni así encuentra NavMesh válido cerca caemos al Transform
+            // directo como último recurso.
+            if (_liamAgent != null)
+            {
                 _liamAgent.Warp(_liamDesignPosition);
+                if (!_liamAgent.isOnNavMesh)
+                    liamTransform.position = _liamDesignPosition;
+            }
             else
+            {
                 liamTransform.position = _liamDesignPosition;
+            }
         }
 
         liamTransform.rotation = _liamDesignRotation;
@@ -213,10 +228,19 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
         // transición de entrada.
         if (liamTransform != null)
         {
-            if (_liamAgent != null && _liamAgent.isOnNavMesh)
+            // FIX (17/08/2026) — mismo motivo que en Co_RestoreLiamDesignPosition() arriba: no
+            // gatear el Warp() detrás de isOnNavMesh, porque si da false en este momento es
+            // precisamente el estado que Warp() tiene que corregir, no una razón para saltárselo.
+            if (_liamAgent != null)
+            {
                 _liamAgent.Warp(_liamDesignPosition);
+                if (!_liamAgent.isOnNavMesh)
+                    liamTransform.position = _liamDesignPosition;
+            }
             else
+            {
                 liamTransform.position = _liamDesignPosition;
+            }
             liamTransform.rotation = _liamDesignRotation;
         }
     }
