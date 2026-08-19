@@ -372,7 +372,17 @@ public class ActiveCharacterSwapper : MonoBehaviour
                     smr.updateWhenOffscreen = true;
             }
             var anim = _willNpcInstance.GetComponentInChildren<Animator>(true);
-            if (anim != null) anim.Update(0f);
+            if (anim != null)
+            {
+                // FIX Will invisible — mismo AlwaysAnimate que SpawnWillNpc()/WarpNpcToPosition()
+                // (ver comentario detallado en SpawnWillNpc): si este heal periódico llega a
+                // dispararse es que el interbloqueo de CullUpdateTransforms ya se rearmó una vez
+                // pese al fix de spawn/warp — reafirmar AlwaysAnimate aquí es la red de seguridad
+                // por si algo (ModularAutoBuilder reconstruyendo el rig, un Animator distinto tras
+                // reaplicar apariencia, etc.) lo hubiera revertido al valor por defecto.
+                anim.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                anim.Update(0f);
+            }
         }
     }
     #endregion
@@ -666,7 +676,29 @@ public class ActiveCharacterSwapper : MonoBehaviour
         // la pose correcta, antes de que la cámara real haga su primer test de culling.
         var willAnimator = go.GetComponentInChildren<Animator>(true);
         if (willAnimator != null)
+        {
+            // FIX Will invisible — causa raíz del interbloqueo (2026-08-19, reaparición pese a
+            // los tres fixes de arriba: log real con renderers activos=7/218 visibles=0 sostenido
+            // varios segundos, y rendererBounds.center clavado en un punto a ~650 unidades de la
+            // posición real de Will, sin moverse un ápice entre latidos de 2,5s del 🫀 de
+            // DiagnoseAndHealWillVisibility). Este rig usa Animator.CullingMode.CullUpdateTransforms
+            // (valor por defecto del componente, ver comentario de arriba): con ese modo, mientras
+            // el renderer no se considera "visible" el Animator deja de actualizar los huesos, así
+            // que el SkinnedMeshRenderer nunca recalcula sus bounds — y al no recalcular bounds
+            // nunca pasa a considerarse visible. Es el mismo círculo que ya diagnosticaba el
+            // comentario de arriba, pero willAnimator.Update(0f) solo fuerza UN frame puntual: si
+            // ese único frame no basta para que Unity marque el renderer como visible antes del
+            // siguiente test de culling, el interbloqueo se rearma de inmediato — de ahí que
+            // updateWhenOffscreen + leer .bounds + el toggle de Renderer.enabled del heal
+            // periódico (DiagnoseAndHealWillVisibility) no lo cerraran del todo. AlwaysAnimate
+            // saca al Animator de ese modo por completo: los huesos (y por tanto los bounds) se
+            // actualizan todos los frames pase lo que pase, así que no hay estado "nunca visible"
+            // del que depender para salir del bucle. Coste real: 3-4 NPCs de equipo, no cientos —
+            // irrelevante en el profiler. Pendiente de confirmar en Play Mode (no se puede abrir
+            // el Editor desde esta sesión) que esto cierra el bug de verdad y no solo lo reduce.
+            willAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             willAnimator.Update(0f);
+        }
         foreach (var smr in go.GetComponentsInChildren<SkinnedMeshRenderer>(true))
         {
             if (smr.gameObject.activeInHierarchy)
@@ -989,7 +1021,16 @@ public class ActiveCharacterSwapper : MonoBehaviour
         // Will podía quedar invisible tras un warp cerca de un puzle). Un teleport brusco puede
         // dejar el bounds de culling calculado con la posición ANTERIOR hasta que algo lo refresque.
         var anim = npc.GetComponentInChildren<Animator>(true);
-        if (anim != null) anim.Update(0f);
+        if (anim != null)
+        {
+            // FIX Will invisible — mismo AlwaysAnimate que SpawnWillNpc() (ver comentario
+            // detallado allí): este call site reposiciona a Will (cambio Liam↔Estela con Will de
+            // fondo) y también a Liam/Estela residentes en escena que nunca pasaron por
+            // SpawnWillNpc(), así que necesitan el mismo fix de raíz contra el interbloqueo de
+            // CullUpdateTransforms, no solo el Update(0f) puntual que ya había aquí.
+            anim.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            anim.Update(0f);
+        }
         foreach (var smr in npc.GetComponentsInChildren<SkinnedMeshRenderer>(true))
         {
             if (!smr.updateWhenOffscreen) smr.updateWhenOffscreen = true;
