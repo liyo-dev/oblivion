@@ -673,6 +673,20 @@ Gestiona la cola de popups de coleccionables.
 
 `Canvas.ForceUpdateCanvases()` en `PlayLifecycle` fuerza rebuild de todos los canvases activos. Reemplazar por `LayoutRebuilder.ForceRebuildLayoutImmediate(parentRect)`.
 
+### LanguageSelectPanel (selector de idioma de primer arranque)
+
+`Assets/Scripts/UI/LanguageSelectPanel.cs` (Agosto 2026)
+
+Panel que `MainMenuController` enseña tapando el menú normal la primera vez que se arranca una instalación — antes de eso, el jugador no puede ver Continuar/Nueva Partida/Ajustes. Sigue el mismo patrón `Show()`/`Close(silent)` que `SettingsMenuController`/`ControlsMenuController`, pero **no** se puede cerrar con Start/Cancel: solo se cierra eligiendo un idioma, igual que el selector de idioma de arranque de una consola.
+
+**Criterio de "primera vez":** no es `SaveSystem.HasSave()` (eso es progreso de partida, se borra en cada Nueva Partida) sino `PlayerSettings.LanguageSelected`, un flag booleano nuevo en `player_settings.json` (preferencia de la instalación, independiente del save). Se pone a `true` con `PlayerSettings.MarkLanguageSelected()`, llamado aparte de `SetLanguage()` porque si el jugador elige el idioma que ya es por defecto ("es") `SetLanguage()` no escribiría nada a disco por sí solo (no-op cuando el locale no cambia) y el flag nunca se guardaría.
+
+Cada botón lleva su propio texto rotulado a mano en su idioma ("Español"/"English") en el Editor — el panel no depende de que `LocalizationManager` haya cargado ningún catálogo. Array de opciones (`locale` + `Button`) en vez de dos botones fijos, para poder añadir más idiomas sin tocar código.
+
+`MainMenuController.OnEnable()` decide mostrarlo (`languageSelectPanel != null && !PlayerSettings.LanguageSelected`) reutilizando la misma coreografía de suspensión/restauración que ya usa para Ajustes/Controles (`SuspendMainMenuInteraction`, `buttonPanel` oculto, `RestartArmAfterSettingsClose` al volver) — ver `MainMenuController.ShowLanguageSelectFirst()`. La animación de entrada del menú (`PlayIntro()`) se retrasa hasta que el jugador elige idioma, para que lo primero que vea sea el selector sin fundido.
+
+**Construcción del panel:** `Assets/Scripts/Editor/LanguageSelectPanelBuilder.cs` (menú `El Sendero → Controles → Construir Selector de Idioma en MainMenu`) crea el GameObject en `MainMenu.unity` y cablea el Inspector por código, mismo patrón que `ControlsMenuSceneBuilder`/`MainMenuCreditsExitButtonsBuilder`: clona el panel de Ajustes como fondo (mismo estilo que el resto de sub-paneles) y clona el botón CONTROLES dos veces para "Español"/"English" (mismo fondo de cristal `RowGlassBG`). A diferencia de los botones que sí se traducen (Créditos/Salir), aquí se **elimina** el `LocalizedText` de cada clon en vez de reapuntar su clave — este panel se enseña antes de que haya idioma elegido, así que cada botón debe mostrar su idioma fijo siempre, nunca traducirse según el locale activo. Idempotente (reutiliza `PanelSelectorIdioma` si ya existe) y no toca el YAML de la escena a mano.
+
 ---
 
 ## 12. Reglas de Rendimiento

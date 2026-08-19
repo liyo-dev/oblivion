@@ -44,6 +44,10 @@ public class MainMenuController : MonoBehaviour
     [Header("Controls")]
     [SerializeField] private ControlsMenuController controlsMenu;
 
+    [Header("Language Select (primer arranque)")]
+    [Tooltip("Panel de selección de idioma. Se muestra una única vez, antes del menú, mientras PlayerSettings.LanguageSelected siga en false. Opcional: si se deja vacío, el menú arranca como hasta ahora sin selector de idioma.")]
+    [SerializeField] private LanguageSelectPanel languageSelectPanel;
+
     [Header("Scene when continuing")]
     [SerializeField] private string nextSceneContinue = "MainWorld";
 
@@ -112,11 +116,17 @@ public class MainMenuController : MonoBehaviour
         if (!controlsMenu)
             controlsMenu = GetComponentInChildren<ControlsMenuController>(true);
 
+        if (!languageSelectPanel)
+            languageSelectPanel = GetComponentInChildren<LanguageSelectPanel>(true);
+
         if (settingsMenu)
             settingsMenu.Close(silent: true);
 
         if (controlsMenu)
             controlsMenu.Close(silent: true);
+
+        if (languageSelectPanel)
+            languageSelectPanel.Close(silent: true);
 
         WireButton(continueButton, OnClickContinue, "CONTINUE");
         WireButton(newGameButton, OnClickNewGame, "NEW GAME");
@@ -177,14 +187,31 @@ public class MainMenuController : MonoBehaviour
 
         _isLoading = false; // reset por si vuelves al menú
         UpdateContinueVisibility();
-        PlayIntro();
-        
-        // Asegurar que los botones tienen UIButtonAudio
+
+        // Asegurar que los botones (incluidos los del selector de idioma, si toca enseñarlo)
+        // tienen UIButtonAudio antes de que nada se seleccione, para que el silenciado de abajo
+        // cubra también su posible "blip" de selección inicial.
         EnsureButtonAudio();
-        
+
         // Silenciar temporalmente los sonidos de UI para evitar el sonido de selección inicial
         UIButtonAudio.MuteAll = true;
-        AutoSelectFirstIfNeeded();
+
+        bool needsLanguageSelect = languageSelectPanel != null && !PlayerSettings.LanguageSelected;
+        if (needsLanguageSelect)
+        {
+            // Primer arranque de esta instalación: todavía no hay idioma confirmado. Se enseña
+            // el selector sin la animación de entrada del menú (rootGroup a alpha 1 directo) —
+            // PlayIntro() se reserva para cuando el jugador ya eligió idioma y aparece el menú
+            // real, en ShowLanguageSelectFirst().
+            if (rootGroup) rootGroup.alpha = 1f;
+            ShowLanguageSelectFirst();
+        }
+        else
+        {
+            PlayIntro();
+            AutoSelectFirstIfNeeded();
+        }
+
         // Rehabilitar sonidos después de un frame
         StartCoroutine(EnableUISoundsNextFrame());
         
@@ -508,6 +535,35 @@ public class MainMenuController : MonoBehaviour
 
         Debug.Log("[MainMenu] Cargando escena de Nueva Partida...");
         LoadNewGameScene();
+    }
+
+    /// <summary>
+    /// Enseña el selector de idioma de primer arranque tapando el menú normal, reutilizando
+    /// exactamente la misma coreografía de suspensión/restauración que OnClickSettings/
+    /// OnClickControls (SuspendMainMenuInteraction, buttonPanel oculto, re-armado de input al
+    /// volver). Solo se llama desde OnEnable cuando PlayerSettings.LanguageSelected es false.
+    /// </summary>
+    void ShowLanguageSelectFirst()
+    {
+        if (buttonPanel != null)
+            buttonPanel.SetActive(false);
+
+        SuspendMainMenuInteraction();
+
+        languageSelectPanel.Show(() =>
+        {
+            RestoreMainMenuInteraction();
+
+            if (buttonPanel != null)
+                buttonPanel.SetActive(true);
+
+            // El jugador ya eligió idioma: ahora sí toca la animación de entrada normal del
+            // menú, como si acabara de aparecer (mismo efecto que un arranque sin selector).
+            PlayIntro();
+
+            RestartArmAfterSettingsClose();
+            StartCoroutine(RestoreSelectionNextFrame(null));
+        });
     }
 
     public void OnClickSettings()

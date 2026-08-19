@@ -28,6 +28,12 @@ public static class PlayerSettings
     private class PlayerSettingsData
     {
         public string language = "es";
+        // FEATURE (primer arranque): distingue "nunca se ha elegido idioma" de "se ha elegido
+        // español" (que además es el valor por defecto de arriba). Sin este flag sería
+        // imposible saber si player_settings.json no existe porque el jugador nunca ha tocado
+        // ajustes, o porque explícitamente confirmó español en el selector de idioma inicial.
+        // Ver PlayerSettings.MarkLanguageSelected() y LanguageSelectPanel.
+        public bool languageSelected = false;
         public float masterVolume = 1f;
         public float sfxVolume = 1f;
         public float musicVolume = 1f;
@@ -48,6 +54,20 @@ public static class PlayerSettings
         {
             EnsureLoaded();
             return _data.language;
+        }
+    }
+
+    /// <summary>
+    /// True si el jugador ya ha confirmado un idioma alguna vez en esta instalación (ver
+    /// MarkLanguageSelected). MainMenuController lo consulta para decidir si debe mostrar el
+    /// selector de idioma de primer arranque antes de dejar ver el menú.
+    /// </summary>
+    public static bool LanguageSelected
+    {
+        get
+        {
+            EnsureLoaded();
+            return _data.languageSelected;
         }
     }
 
@@ -140,6 +160,24 @@ public static class PlayerSettings
         SaveToDisk();
         LocalizationManager.Instance?.ChangeLanguage(locale);
         LanguageChanged?.Invoke(locale);
+    }
+
+    /// <summary>
+    /// Marca que el jugador ya ha confirmado un idioma en esta instalación. Se llama justo
+    /// después de SetLanguage() desde LanguageSelectPanel al elegir en el selector de primer
+    /// arranque. Se persiste explícitamente aparte de SetLanguage() porque, si el jugador elige
+    /// el mismo idioma que ya es por defecto ("es"), SetLanguage() no escribiría nada a disco
+    /// por sí solo (no-op cuando el locale no cambia) y el flag nunca llegaría a guardarse.
+    /// Idempotente: una vez a true, no vuelve a tocar disco.
+    /// </summary>
+    public static void MarkLanguageSelected()
+    {
+        EnsureLoaded();
+        if (_data.languageSelected)
+            return;
+
+        _data.languageSelected = true;
+        SaveToDisk();
     }
 
     public static void SetMasterVolume(float value01)
