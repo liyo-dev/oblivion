@@ -277,6 +277,34 @@ public class PlayerPresetService : MonoBehaviour
         var estelaApp = registry.GetAppearance(PartyControlManager.CharacterSlot.Estela);
         var liamApp   = registry.GetAppearance(PartyControlManager.CharacterSlot.Liam);
 
+        // FIX (20 ago 2026) — bug "dos Estelas y un Will" (ver también ActiveCharacterSwapper,
+        // que ya documentaba y mitigaba una variante distinta del mismo bug con
+        // EnsureHiddenNpcSuppressed). Reportado por Raúl con logs reales: tras cargar partida,
+        // "[CharacterAppearanceRegistry] 📸 Pre-snapshot Will tomado: [Body:Body09,
+        // Head:Head02_Female, Hair:Hair08, Eyes:Eye02, Mouth:Mouth02, Accessory:AC09_Ribbon]" —
+        // esa es la apariencia de ESTELA, no la de Will. willSnap se toma de lo que el builder
+        // muestra en el momento del boot (SnapshotWillFromBuilderIfNeeded), ANTES de aplicar
+        // nada; si por lo que sea el builder arranca mostrando ya la apariencia de Estela/Liam,
+        // esta referencia queda corrompida ELLA MISMA. A partir de ahí, la selección REAL y
+        // correcta del preset (Body05/Head01_Male/Hair01... de Will) "difiere del snapshot" en
+        // todas sus partes, así que basta con que 2 de ellas coincidan con partes genéricas
+        // compartidas por otro personaje (p.ej. Eyes/Mouth por defecto, reutilizados entre
+        // personajes) para que el preset —el único dato correcto de los dos— se descartara como
+        // "corrupto" y se re-aplicara el snapshot malo, dejando el controller (Will) vestido de
+        // Estela para siempre mientras la Estela real del equipo también sigue visible: de ahí
+        // las "dos Estelas". Antes de usar willSnap como referencia, comprobar que el propio
+        // snapshot no se parece ya a Estela/Liam — si se parece, no es un punto de comparación
+        // fiable y se omite la detección de corrupción por completo, confiando en
+        // preset.appearance (que SnapshotAppearanceToPreset() solo escribe cuando el personaje
+        // activo es Will, ver comentario ahí — por diseño debería llegar limpio).
+        if (LooksLikeOtherCharacter(willSnap, estelaApp, liamApp))
+        {
+            Debug.LogWarning("[PlayerPresetService] ⚠️ El pre-snapshot de Will coincide con la " +
+                "apariencia de Estela/Liam — no es una referencia fiable para detectar corrupción " +
+                "(bug 'dos Estelas y un Will'). Se omite la comprobación y se confía en preset.appearance.");
+            return false;
+        }
+
         int corruptCount = 0;
         foreach (var kv in selection)
         {
@@ -299,6 +327,27 @@ public class PlayerPresetService : MonoBehaviour
             return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// True si <paramref name="snap"/> coincide en ≥2 categorías con la apariencia registrada de
+    /// Estela o de Liam — es decir, si el propio snapshot "es" ya otro personaje en vez de Will.
+    /// Ver comentario en IsSelectionCorrupted (FIX 20 ago 2026, bug "dos Estelas y un Will").
+    /// </summary>
+    private static bool LooksLikeOtherCharacter(Dictionary<PartCategory, string> snap,
+        Dictionary<PartCategory, string> estelaApp, Dictionary<PartCategory, string> liamApp)
+    {
+        int matches = 0;
+        foreach (var kv in snap)
+        {
+            if (string.IsNullOrEmpty(kv.Value)) continue;
+            bool matchesOther =
+                (estelaApp.TryGetValue(kv.Key, out var ev) && ev == kv.Value) ||
+                (liamApp.TryGetValue(kv.Key,   out var lv) && lv == kv.Value);
+            if (matchesOther)
+                matches++;
+        }
+        return matches >= 2;
     }
 
     public void SnapshotAppearanceToPreset()

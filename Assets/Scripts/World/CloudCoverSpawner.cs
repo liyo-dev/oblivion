@@ -126,6 +126,8 @@ public class CloudCoverSpawner : MonoBehaviour
     [SerializeField, Range(0f, 0.9f)] private float durationJitter = 0.35f;
     [Tooltip("Multiplicador de perCloudTravelDuration SOLO al irse (tras RainStopped), para que la despedida se sienta un poco más pausada que la llegada ('se van yendo poco a poco'). 1 = misma duración que al llegar.")]
     [SerializeField, Range(1f, 3f)] private float departureDurationMultiplier = 1.3f;
+    [Tooltip("FIX 20 ago 2026 — 'en Scene view se ve perfecto pero en Game view desaparece de golpe': la nube sigue viajando en línea recta hacia su posición lejana/alta durante TODA la partida, pero eso puede sacarla del encuadre de la cámara de juego (FOV limitado, no mira hacia arriba como la cámara libre del Editor) antes de que el alfa termine de bajar — con la cámara del Editor, que sí puede seguirla, se ve el fundido completo; con la cámara de juego, en cuanto sale de plano deja de dibujarse y el jugador solo ve la parte ya-invisible-hecha-golpe. Con esta fracción (0-1), el ALFA/disolución termina de llegar a 0 mucho ANTES de que la posición termine su recorrido: p.ej. 0.55 = el alfa ya es 0 cuando a la nube le queda el 45% final de su viaje por recorrer. Así, tanto si la cámara la sigue viendo lejos/arriba (Scene view) como si no (Game view), el resultado es el mismo: ya es invisible antes de la parte del trayecto que puede quedar fuera de cámara. Solo afecta a la PARTIDA (al llegar, alfa y posición avanzan juntos, sin cambios, porque ahí no había queja).")]
+    [SerializeField, Range(0.1f, 0.95f)] private float departureAlphaFraction = 0.55f;
 
     [Header("Transición (heredado, ya no lo usa la ola de llegada/partida)")]
     // CS0414: estos dos campos se asignan (vía Inspector/serialización) pero nunca se leen — a
@@ -155,6 +157,8 @@ public class CloudCoverSpawner : MonoBehaviour
     private Coroutine _formationCoroutine;
     /// <summary>0 = objetivo actual es "todas fuera/invisibles", 1 = objetivo actual es "techo formado del todo". Solo indica hacia dónde se dirige la ola en curso, no el estado real de cada nube (ver CloudUnit.formationT para eso).</summary>
     private float _targetFormation;
+    /// <summary>Igual que _targetFormation, pero lo lee ApplyUnitVisual para decidir si aplica la curva de alfa adelantado de la partida (ver departureAlphaFraction). Se necesitan los dos: _targetFormation también lo consultan Update()/HandleInteriorExited()/DebugToggleCover() con otro propósito (saber si hay algo que mostrar), y aquí interesa específicamente "¿la ola EN CURSO va hacia 0 o hacia 1?".</summary>
+    private float _currentWaveTarget = 1f;
     private float _safetyHeightBonus;
     private bool _built;
     // FIX (16 ago 2026): "las nubes se ven en un interior" + "sigue lloviendo pero no hay nubes
@@ -506,6 +510,7 @@ public class CloudCoverSpawner : MonoBehaviour
     /// </summary>
     IEnumerator FormationWaveRoutine(float target)
     {
+        _currentWaveTarget = target;
         float perCloudBase = perCloudTravelDuration;
         if (target <= 0f)
             perCloudBase *= Mathf.Max(1f, departureDurationMultiplier);
@@ -560,23 +565,43 @@ public class CloudCoverSpawner : MonoBehaviour
     /// Aplica la posición (Lerp suavizado lejos↔hueco) y el fundido de material de UNA nube según
     /// su formationT actual. Sustituye al antiguo ApplyAlpha(float) global: cada nube ahora anima
     /// su propio recorrido en vez de compartir un único valor de alfa con todas las demás.
+    ///
+    /// La posición SIEMPRE usa el progreso "puro" (easedPos, smoothstep de formationT): la nube
+    /// recorre su trayecto completo lejos↔hueco pase lo que pase. El ALFA usa un progreso propio
+    /// (easedAlpha) que en la PARTIDA (ver departureAlphaFraction) llega a 0 antes de que la
+    /// posición termine su recorrido — fix 20 ago 2026 para que la desaparición se vea igual de
+    /// gradual en la cámara de juego (FOV limitado) que en la cámara libre del Editor: ver tooltip
+    /// de departureAlphaFraction para el porqué.
     /// </summary>
     void ApplyUnitVisual(CloudUnit unit)
     {
         float t = Mathf.Clamp01(unit.formationT);
-        float eased = t * t * (3f - 2f * t); // smoothstep: acelera al salir, se asienta al llegar
+        float easedPos = t * t * (3f - 2f * t); // smoothstep: acelera al salir, se asienta al llegar
 
-        unit.transform.localPosition = Vector3.Lerp(unit.farLocalPos, unit.targetLocalPos, eased);
+        float alphaT = t;
+        if (_currentWaveTarget <= 0f)
+        {
+            // Partida (formationT baja de 1 a 0): el alfa debe llegar a 0 en cuanto formationT cae
+            // por debajo de (1 - departureAlphaFraction), bastante antes de que la posición termine
+            // de alejarse. Con departureAlphaFraction=0.55, ese umbral es 0.45: de t=1 a t=0.45 el
+            // alfa baja de 1 a 0; de t=0.45 a t=0 la nube sigue moviéndose pero ya es invisible.
+            float threshold = 1f - Mathf.Clamp01(departureAlphaFraction);
+            float span = Mathf.Max(0.001f, departureAlphaFraction);
+            alphaT = Mathf.Clamp01((t - threshold) / span);
+        }
+        float easedAlpha = alphaT * alphaT * (3f - 2f * alphaT);
+
+        unit.transform.localPosition = Vector3.Lerp(unit.farLocalPos, unit.targetLocalPos, easedPos);
 
         Color legacyColor = stormCloudColor;
-        legacyColor.a = eased;
+        legacyColor.a = easedAlpha;
 
-        float shadowAmount = stormShadowAmount * eased;
+        float shadowAmount = stormShadowAmount * easedAlpha;
         float billboardValue = billboard ? 1f : 0f;
         // Con Cloud3D, bajar el umbral desde >1 hasta el valor visible hace que la nube se
         // 'materialice' pixel a pixel (y se erosione al disiparse) — reforzando el efecto de
         // "llegar/irse" que ya aporta el movimiento de posición.
-        float alphaThreshold = Mathf.Lerp(1.01f, visibleAlphaThreshold, eased);
+        float alphaThreshold = Mathf.Lerp(1.01f, visibleAlphaThreshold, easedAlpha);
 
         var renderers = unit.renderers;
         for (int i = 0; i < renderers.Length; i++)
@@ -591,7 +616,7 @@ public class CloudCoverSpawner : MonoBehaviour
                     _mpb.SetFloat(AlphaThresholdId, alphaThreshold);
                     break;
                 case CloudShaderMode.QuibliCloud2D:
-                    _mpb.SetFloat(OpacityId, eased);
+                    _mpb.SetFloat(OpacityId, easedAlpha);
                     _mpb.SetColor(ShadowColorId, stormCloudColor);
                     _mpb.SetFloat(ShadowAmountId, shadowAmount);
                     _mpb.SetFloat(BillboardId, billboardValue);

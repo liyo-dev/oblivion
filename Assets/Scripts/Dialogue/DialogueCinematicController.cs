@@ -552,11 +552,30 @@ public class DialogueCinematicController : MonoBehaviour
                 {
                     if (showDebugInfo)
                         Debug.Log("[DialogueCinematicController] Reutilizando cinematográfica activa para diálogo encadenado");
-                    
+
                     // Resetear índice de línea para el nuevo diálogo
                     currentLineIndex = 0;
                     nextCutAtLine = CalculateNextCutLine();
-                    
+
+                    // FIX (20 ago 2026) — "la cámara está en otro sitio" en diálogos grupales tras
+                    // un teletransporte. Esta rama solo actualizaba el plano (shot) del diálogo
+                    // encadenado, pero nunca recalculaba el montaje grupal (_groupCamBaseDir,
+                    // _cachedGroupCenter/_groupLookAtTarget, ni el semicírculo de
+                    // PositionMembersForGroupDialogue). 'npc' aquí es siempre el transform del
+                    // propio NPCInteractiveNarrativeExecutor que dispara la cadena, y 'player' es
+                    // el rig único (PlayerService.Player) — así que esta rama se activa SIEMPRE
+                    // que dos diálogos del mismo executor se encadenan dentro del grace period de
+                    // arriba, exactamente el patrón [Diálogo] → TeleportPlayer → [Diálogo grupal]:
+                    // el diálogo grupal heredaba el encuadre calculado para la posición/sala
+                    // ANTERIOR al teletransporte (o, si el diálogo anterior era individual, ni
+                    // siquiera llegaba a montarse el modo grupal). Recalcular aquí igual que en el
+                    // montaje completo (ver SetupGroupConversationStaging) resuelve el encuadre sin
+                    // perder la ventaja de reutilizar la cinematográfica activa (evita el parpadeo
+                    // de apagar/reencender la cámara dedicada).
+                    _isGroupConversation = isGroupConversation;
+                    if (_isGroupConversation && currentNPC != null)
+                        SetupGroupConversationStaging();
+
                     // Aplicar shot inicial del nuevo diálogo
                     var newProfile = profile ?? defaultProfile;
                     if (newProfile != null)
@@ -564,7 +583,7 @@ public class DialogueCinematicController : MonoBehaviour
                         activeProfile = newProfile;
                         ApplyShotWithContext(activeProfile.openingShot, isOpening: true);
                     }
-                    
+
                     return;
                 }
             }
@@ -591,6 +610,97 @@ public class DialogueCinematicController : MonoBehaviour
 
         // Calcular dirección base de cámara grupal una sola vez (evita saltos al cambiar de speaker)
         if (isGroupConversation && currentNPC != null)
+        {
+            SetupGroupConversationStaging();
+        }
+
+        // ✅ Reiniciar sistema de tracking de speakers
+        currentSpeakerId = null;
+        currentSpeaker = null;
+        speakerCache.Clear();
+        
+        // Pre-cachear speakers conocidos
+        speakerCache["Player"] = currentPlayer;
+        speakerCache["MainNPC"] = currentNPC;
+        if (!string.IsNullOrEmpty(npc.name))
+        {
+            speakerCache[npc.name] = currentNPC;
+        }
+
+        if (showDebugInfo)
+            Debug.Log($"[DialogueCinematicController] Iniciando cinematográfica con {npc.name}");
+
+        // PASO 0: Ocultar el HUD con fade suave
+        HideHUD();
+
+        // PASO 1: Capturar referencia a la cámara principal de Unity ANTES de cualquier cambio
+        // CRÍTICO: Debe hacerse antes de cambiar tags o activar otras cámaras
+        mainUnityCamera = Camera.main;
+        
+        // PASO 2: Desactivar la cámara principal de Unity PRIMERO (antes de activar la nuestra)
+        // Esto evita conflictos de rendering en URP
+        if (mainUnityCamera != null)
+        {
+            mainUnityCameraWasEnabled = mainUnityCamera.enabled;
+            mainUnityCamera.enabled = false;
+            // Debug.Log($"[DialogueCinematicController] Cámara principal de Unity ({mainUnityCamera.name}) DESACTIVADA temporalmente para evitar conflictos URP");
+        }
+
+        // PASO 3: Desactivar la cámara virtual de gameplay de Cinemachine
+        if (mainGameplayCamera != null)
+        {
+            if (showDebugInfo)
+                Debug.Log($"[DialogueCinematicController] Desactivando cámara de gameplay Cinemachine (Priority: {mainGameplayCamera.Priority.Value} → 0)");
+            
+            mainGameplayCamera.Priority.Value = 0;
+        }
+
+        // PASO 4: Ahora activar la cámara de diálogo dedicada
+        if (dialogueCamera != null)
+        {
+            bool wasEnabled = dialogueCamera.enabled;
+            dialogueCamera.enabled = true;
+
+            // Sincronizar clearFlags con el entorno actual (interior → solid color/skybox interior, exterior → skybox)
+            SyncClearFlagsToEnvironment();
+
+            // Activar rendering forzado
+            forceRenderingActive = true;
+
+            // Debug.Log($"[DialogueCinematicController] Componente Camera activado (era: {wasEnabled}, ahora: {dialogueCamera.enabled}, isActiveAndEnabled: {dialogueCamera.isActiveAndEnabled})");
+            // Debug.Log($"[DialogueCinematicController] Camera details - Depth: {dialogueCamera.depth}, ClearFlags: {dialogueCamera.clearFlags}, CullingMask: {dialogueCamera.cullingMask}, TargetTexture: {(dialogueCamera.targetTexture == null ? "NULL (pantalla)" : dialogueCamera.targetTexture.name)}, Tag: {dialogueCameraObject.tag}");
+        }
+        else
+        {
+            Debug.LogError("[DialogueCinematicController] ❌ dialogueCamera es NULL - no se puede activar!");
+        }
+
+        // PASO 4.5: Congelar de inmediato a los NPCs ambientales cercanos que no participan
+        // en el diálogo, para que el plano de apertura no arranque con alguien cruzando el encuadre.
+        _bystanderRescanTimer = bystanderRescanInterval;
+        _intruderCheckTimer = intruderCheckInterval;
+        RescanAndFreezeBystanders();
+
+        // PASO 5: Activar el plano de apertura
+        ApplyShotWithContext(activeProfile.openingShot, true);
+    }
+
+        /// <summary>
+        /// Monta la puesta en escena de un diálogo GRUPAL: elige el lado de la cámara
+        /// (<see cref="_groupCamBaseDir"/>), recoloca a los compañeros en semicírculo opuesto
+        /// (<see cref="Game.NPC.PlayerParty.PositionMembersForGroupDialogue"/>), recalcula el
+        /// centro del grupo (<see cref="_cachedGroupCenter"/>/<see cref="_groupLookAtTarget"/>) y
+        /// orienta a NPC/player/compañeros hacia ese centro. Requiere <see cref="currentPlayer"/>
+        /// y <see cref="currentNPC"/> ya asignados.
+        ///
+        /// Extraído del cuerpo de <see cref="StartCinematic"/> (antes solo se ejecutaba ahí) para
+        /// poder reutilizarlo también desde la rama de "diálogo encadenado" de StartCinematic —
+        /// ver el FIX (20 ago 2026) documentado junto a esa rama: sin volver a llamar a este
+        /// método ahí, un diálogo grupal encadenado (p.ej. tras un TeleportPlayer del mismo
+        /// NPCInteractiveNarrativeExecutor) heredaba el encuadre/posiciones calculados para la
+        /// ubicación del diálogo ANTERIOR en vez de la actual.
+        /// </summary>
+        private void SetupGroupConversationStaging()
         {
             // Vista 3/4: perpendicular al eje player-NPC combinada con profundidad.
             // Evaluamos ambos lados (perpendicular y -perpendicular) con raycast para elegir
@@ -669,77 +779,6 @@ public class DialogueCinematicController : MonoBehaviour
                 }
             }
         }
-
-        // ✅ Reiniciar sistema de tracking de speakers
-        currentSpeakerId = null;
-        currentSpeaker = null;
-        speakerCache.Clear();
-        
-        // Pre-cachear speakers conocidos
-        speakerCache["Player"] = currentPlayer;
-        speakerCache["MainNPC"] = currentNPC;
-        if (!string.IsNullOrEmpty(npc.name))
-        {
-            speakerCache[npc.name] = currentNPC;
-        }
-
-        if (showDebugInfo)
-            Debug.Log($"[DialogueCinematicController] Iniciando cinematográfica con {npc.name}");
-
-        // PASO 0: Ocultar el HUD con fade suave
-        HideHUD();
-
-        // PASO 1: Capturar referencia a la cámara principal de Unity ANTES de cualquier cambio
-        // CRÍTICO: Debe hacerse antes de cambiar tags o activar otras cámaras
-        mainUnityCamera = Camera.main;
-        
-        // PASO 2: Desactivar la cámara principal de Unity PRIMERO (antes de activar la nuestra)
-        // Esto evita conflictos de rendering en URP
-        if (mainUnityCamera != null)
-        {
-            mainUnityCameraWasEnabled = mainUnityCamera.enabled;
-            mainUnityCamera.enabled = false;
-            // Debug.Log($"[DialogueCinematicController] Cámara principal de Unity ({mainUnityCamera.name}) DESACTIVADA temporalmente para evitar conflictos URP");
-        }
-
-        // PASO 3: Desactivar la cámara virtual de gameplay de Cinemachine
-        if (mainGameplayCamera != null)
-        {
-            if (showDebugInfo)
-                Debug.Log($"[DialogueCinematicController] Desactivando cámara de gameplay Cinemachine (Priority: {mainGameplayCamera.Priority.Value} → 0)");
-            
-            mainGameplayCamera.Priority.Value = 0;
-        }
-
-        // PASO 4: Ahora activar la cámara de diálogo dedicada
-        if (dialogueCamera != null)
-        {
-            bool wasEnabled = dialogueCamera.enabled;
-            dialogueCamera.enabled = true;
-
-            // Sincronizar clearFlags con el entorno actual (interior → solid color/skybox interior, exterior → skybox)
-            SyncClearFlagsToEnvironment();
-
-            // Activar rendering forzado
-            forceRenderingActive = true;
-
-            // Debug.Log($"[DialogueCinematicController] Componente Camera activado (era: {wasEnabled}, ahora: {dialogueCamera.enabled}, isActiveAndEnabled: {dialogueCamera.isActiveAndEnabled})");
-            // Debug.Log($"[DialogueCinematicController] Camera details - Depth: {dialogueCamera.depth}, ClearFlags: {dialogueCamera.clearFlags}, CullingMask: {dialogueCamera.cullingMask}, TargetTexture: {(dialogueCamera.targetTexture == null ? "NULL (pantalla)" : dialogueCamera.targetTexture.name)}, Tag: {dialogueCameraObject.tag}");
-        }
-        else
-        {
-            Debug.LogError("[DialogueCinematicController] ❌ dialogueCamera es NULL - no se puede activar!");
-        }
-
-        // PASO 4.5: Congelar de inmediato a los NPCs ambientales cercanos que no participan
-        // en el diálogo, para que el plano de apertura no arranque con alguien cruzando el encuadre.
-        _bystanderRescanTimer = bystanderRescanInterval;
-        _intruderCheckTimer = intruderCheckInterval;
-        RescanAndFreezeBystanders();
-
-        // PASO 5: Activar el plano de apertura
-        ApplyShotWithContext(activeProfile.openingShot, true);
-    }
 
         /// <summary>
         /// Finaliza el modo cinematográfico con delay para permitir encadenamiento

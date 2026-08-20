@@ -66,7 +66,7 @@ MonoBehaviour:
   _bubbleRect: {fileID: 1876604298512144809}
   _label: {fileID: 7052358525453824132}
   _parentCanvasRect: {fileID: 0}
-  _defaultSprite: {fileID: 21300000, guid: 46ca8fc653c1b9d42ae3eb416ce6d52c, type: 3}
+  _defaultSprite: {fileID: 21300000, guid: 7c099b7ea0db77f4db04f4cb0e3c14ae, type: 3}
   _emphasisSprite: {fileID: 21300000, guid: f1c746f567204bd41874d9941946e1f5, type: 3}
   _fadeInDuration: 0.15
   _fadeOutDuration: 0.15
@@ -299,7 +299,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 46ca8fc653c1b9d42ae3eb416ce6d52c, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 7c099b7ea0db77f4db04f4cb0e3c14ae, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -324,8 +324,8 @@ MonoBehaviour:
   m_Padding:
     m_Left: 22
     m_Right: 22
-    m_Top: 18
-    m_Bottom: 58
+    m_Top: 110
+    m_Bottom: 140
   m_ChildAlignment: 4
   m_Spacing: 0
   m_ChildForceExpandWidth: 1
