@@ -54,6 +54,13 @@ public class LoadingScreenController : MonoBehaviour, ILoadingUI
         if (!characterStage)
             characterStage = FindAnyObjectByType<LoadingCharacterStage>();
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // DIAGNÓSTICO TEMPORAL (20 ago 2026): ver comentario en LoadingCharacterStage.Awake().
+        Debug.Log(characterStage
+            ? $"[LoadingScreen] characterStage resuelto: '{characterStage.name}' (entityId {characterStage.GetEntityId()}) en escena '{characterStage.gameObject.scene.name}'"
+            : "[LoadingScreen] characterStage NO encontrado (ni asignado ni por FindAnyObjectByType).");
+#endif
+
         if (panel != null)
         {
             panel.alpha = 0f;

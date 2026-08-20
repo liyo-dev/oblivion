@@ -20,6 +20,22 @@ public class LoadingCharacterStage : MonoBehaviour
 
     bool _revealed;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    // DIAGNÓSTICO TEMPORAL (20 ago 2026): investigando el bug "solo aparece Will en la pantalla
+    // de carga al abortar el minijuego de Estela". Todo el cableado estático de la escena
+    // (array 'characters', capas, Avatar/Controller, materiales) se revisó y está correcto, así
+    // que el fallo tiene que ser en tiempo de ejecución. Estos logs confirman, la próxima vez que
+    // se reproduzca, si el problema está en (a) cuántos elementos trae el array en ese momento,
+    // (b) si ResetToRunning()/PlayReveal() realmente llegan a Estela/Liam, o (c) si su Animator no
+    // aparece en su jerarquía. Quitar en cuanto se identifique la causa real.
+    void Awake()
+    {
+        Debug.Log($"[LoadingCharacterStage] Awake en '{name}' — characters.Length={(characters != null ? characters.Length : -1)}: " +
+                   string.Join(", ", System.Array.ConvertAll(characters ?? new LoadingShowcaseCharacter[0],
+                       c => c ? c.name : "NULL")));
+    }
+#endif
+
     /// <summary>Vuelve a la pose de "corriendo en el sitio". Llamado al mostrar la pantalla de carga.</summary>
     public void ResetToRunning()
     {
@@ -27,6 +43,14 @@ public class LoadingCharacterStage : MonoBehaviour
         if (characters == null) return;
         for (int i = 0; i < characters.Length; i++)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (!characters[i])
+            {
+                Debug.LogWarning($"[LoadingCharacterStage] ResetToRunning: characters[{i}] es null.");
+                continue;
+            }
+            Debug.Log($"[LoadingCharacterStage] ResetToRunning -> {characters[i].name}");
+#endif
             if (characters[i]) characters[i].ResetToRunning();
         }
     }
@@ -39,6 +63,14 @@ public class LoadingCharacterStage : MonoBehaviour
         if (characters == null) return;
         for (int i = 0; i < characters.Length; i++)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (!characters[i])
+            {
+                Debug.LogWarning($"[LoadingCharacterStage] PlayReveal: characters[{i}] es null.");
+                continue;
+            }
+            Debug.Log($"[LoadingCharacterStage] PlayReveal -> {characters[i].name}");
+#endif
             if (characters[i]) characters[i].PlayReveal();
         }
     }

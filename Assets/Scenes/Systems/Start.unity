@@ -10238,15 +10238,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 508027443721821596, guid: f3249b88b53994a47b3319b81a048931, type: 3}
       propertyPath: m_LocalScale.x
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 508027443721821596, guid: f3249b88b53994a47b3319b81a048931, type: 3}
       propertyPath: m_LocalScale.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 508027443721821596, guid: f3249b88b53994a47b3319b81a048931, type: 3}
       propertyPath: m_LocalScale.z
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 508027443721821596, guid: f3249b88b53994a47b3319b81a048931, type: 3}
       propertyPath: m_LocalPosition.x
@@ -22796,9 +22796,7 @@ MonoBehaviour:
   _popOutDuration: 0.18
   _bubbleMinWidth: 560
   _bubbleMaxWidth: 900
-  _bubbleMinHeight: 160
   _labelHorizontalMargin: 44
-  _labelVerticalMargin: 28
   _worldOffset: {x: 0, y: 1.2, z: 0}
 --- !u!114 &3313406703180634780
 MonoBehaviour:

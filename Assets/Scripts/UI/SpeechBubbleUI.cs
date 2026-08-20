@@ -38,9 +38,9 @@ public class SpeechBubbleUI : MonoBehaviour
 
     [Header("Tamaño")]
     [Tooltip("Ancho mínimo del bocadillo en píxeles de canvas. Aumenta si el texto se corta por los lados.")]
-    [SerializeField] float _bubbleMinWidth = 560f;
-    [Tooltip("Ancho máximo del bocadillo en píxeles de canvas antes de partir el texto en varias líneas. BUGFIX (Agosto 2026): antes el bocadillo solo tenía un ancho MÍNIMO y nunca crecía con el texto real, así que cualquier línea más larga que ese mínimo se salía por los lados en todas las secuencias (ver captura del bug). Ahora el ancho se calcula a partir del texto real en Show(), entre este máximo y _bubbleMinWidth. El ALTO no se toca aquí — lo calcula solo el ContentSizeFitter/VerticalLayoutGroup del hijo \"Bubble\" en el prefab (ver Show()).")]
-    [SerializeField] float _bubbleMaxWidth = 900f;
+    [SerializeField] float _bubbleMinWidth = 420f;
+    [Tooltip("Ancho máximo del bocadillo en píxeles de canvas antes de partir el texto en varias líneas. BUGFIX (Agosto 2026): antes el bocadillo solo tenía un ancho MÍNIMO y nunca crecía con el texto real, así que cualquier línea más larga que ese mínimo se salía por los lados en todas las secuencias (ver captura del bug). Ahora el ancho se calcula a partir del texto real en Show(), entre este máximo y _bubbleMinWidth. El ALTO no se toca aquí — lo calcula solo el ContentSizeFitter/VerticalLayoutGroup del hijo \"Bubble\" en el prefab (ver Show()).\nAJUSTE (Agosto 2026, 2ª pasada): min/max bajados de 560/900 a 420/620. Con los valores viejos, cualquier frase de longitud media cabía en una sola línea muy ancha y el bocadillo salía como un óvalo aplastado y alargado; y las frases cortas se estiraban igual hasta el mínimo de 560, con el mismo efecto. Con el ancho máximo más bajo, el texto envuelve antes en 2-3 líneas más cortas y el bocadillo crece en vertical en su lugar — se ve más redondo y las líneas quedan más parejas entre sí (ayuda también a que el bloque de texto centrado se perciba realmente centrado, en vez de una única línea larga pegada a los bordes).")]
+    [SerializeField] float _bubbleMaxWidth = 620f;
     [Tooltip("Margen interno horizontal del texto (izquierda y derecha).")]
     [SerializeField] float _labelHorizontalMargin = 44f;
 
@@ -149,6 +149,11 @@ public class SpeechBubbleUI : MonoBehaviour
         _isShowing = true;
         _label.text = text;
 
+        // Centrado forzado siempre (horizontal Y vertical): no depender solo del valor por
+        // defecto del prefab, que podría cambiar sin querer en una variante o en una edición
+        // futura del prefab. El bocadillo de cómic siempre debe leerse centrado.
+        _label.alignment = TextAlignmentOptions.Center;
+
         // Margen horizontal para que el texto no roque los bordes del bocadillo
         _label.margin = new Vector4(_labelHorizontalMargin, _label.margin.y,
                                     _labelHorizontalMargin, _label.margin.w);
@@ -173,7 +178,7 @@ public class SpeechBubbleUI : MonoBehaviour
         // con el alto del texto anterior mientras el ancho ya ha cambiado.
         if (_bubbleRect != null && _label != null)
         {
-            _label.enableWordWrapping = true;
+            _label.textWrappingMode = TextWrappingModes.Normal;
 
             Vector2 singleLineSize = _label.GetPreferredValues(text, 0f, 0f);
             float desiredWidth = singleLineSize.x + _labelHorizontalMargin * 2f;

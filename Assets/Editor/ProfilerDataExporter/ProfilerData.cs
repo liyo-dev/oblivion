@@ -19,6 +19,11 @@ namespace ProfilerDataExporter
         }
 
         private static IAllocator<ProfilerData> profilerDataAllocator = new ObjectPool<ProfilerData>(new BaseFactory<ProfilerData>(), 1);
+        // CS0618: ProfilerProperty está obsoleto en favor de RawFrameDataView/HierarchyFrameDataView,
+        // pero migrar este exportador a esa API es una reescritura no trivial (recorrido de
+        // jerarquía y columnas distinto). Se silencia el warning en vez de reescribirlo a ciegas;
+        // si hace falta modernizarlo de verdad, tratarlo como tarea aparte.
+#pragma warning disable 0618
         private static ProfilerProperty profilerProperty = new ProfilerProperty();
 
         public static ProfilerData GetProfilerData(int firstFrameIndex, int lastFrameIndex, string selectedPropertyPath = "")
@@ -196,4 +201,5 @@ namespace ProfilerDataExporter
             value = string.Empty;
         }
     }
+#pragma warning restore 0618
 }

@@ -1123,6 +1123,24 @@ namespace Game.NPC
         /// </summary>
         private void OnSceneLoadedHandler(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
         {
+            // FIX (19/08/2026): al volver al MainMenu, PlayerParty (DontDestroyOnLoad) conservaba
+            // o repoblaba _pendingMemberIds desde el preset activo (ver bloque de abajo en
+            // OnSceneLoaded) y Update() los reintentaba cada 2s para siempre, porque el MainMenu
+            // no tiene NPCs de party que registrar — solo generaba spam de logs ("RETRY
+            // PENDIENTES" con 0 NPCs encontrados en escena) sin ningún efecto útil. El menú
+            // principal no debe intentar restaurar el equipo, así que se corta aquí antes de
+            // tocar _pendingMemberIds.
+            if (scene.name == "MainMenu")
+            {
+                if (_pendingMemberIds.Count > 0)
+                {
+                    Log($"🧹 MainMenu cargado — descartando {_pendingMemberIds.Count} miembro(s) pendiente(s) ([{string.Join(", ", _pendingMemberIds)}]); no hay NPCs de party que restaurar aquí.");
+                    _pendingMemberIds.Clear();
+                }
+                _retryPendingTimer = 0;
+                return;
+            }
+
             OnSceneLoaded();
         }
         

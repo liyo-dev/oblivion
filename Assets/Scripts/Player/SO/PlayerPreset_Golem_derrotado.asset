@@ -105,7 +105,7 @@ MonoBehaviour:
       value: __DONE__
     - key: __fork_10559b15-8995-40fa-bb17-eb2f5dd42b6d_2_node
       type: string
-      value: c102ae27-75e4-4be7-8d7b-fc8cd51d7f28
+      value: 7805ae8b-67ae-4dbb-8de2-c4dc8a2fa368
     - key: __event_4eed0901-c1cb-4e89-9d72-9ab6a6c57307_ADD_CLOAK_received
       type: bool
       value: 1
@@ -124,15 +124,6 @@ MonoBehaviour:
     - key: __event_d2c6cf0b-557c-41ae-9ccc-069ca97bade9_ESTELA_FOUND_received
       type: bool
       value: 1
-    - key: __forked_c102ae27-75e4-4be7-8d7b-fc8cd51d7f28
-      type: bool
-      value: 1
-    - key: __fork_c102ae27-75e4-4be7-8d7b-fc8cd51d7f28_0_node
-      type: string
-      value: 7805ae8b-67ae-4dbb-8de2-c4dc8a2fa368
-    - key: __fork_c102ae27-75e4-4be7-8d7b-fc8cd51d7f28_1_node
-      type: string
-      value: __DONE__
     - key: __event_1db8d4ab-1b78-48f8-961e-9e0668aacf6e_EXIT_FROM_WOODS_ESTELA_received
       type: bool
       value: 1

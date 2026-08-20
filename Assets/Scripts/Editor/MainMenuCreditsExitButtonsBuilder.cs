@@ -156,7 +156,7 @@ public static class MainMenuCreditsExitButtonsBuilder
 
     static Button FindButtonByNameIncludingInactive(string name)
     {
-        var all = Object.FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var all = Object.FindObjectsByType<Button>(FindObjectsInactive.Include);
         foreach (var b in all)
             if (b.gameObject.name == name)
                 return b;

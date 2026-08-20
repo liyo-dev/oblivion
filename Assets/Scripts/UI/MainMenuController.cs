@@ -599,8 +599,9 @@ public class MainMenuController : MonoBehaviour
 
                 RestartArmAfterSettingsClose();
 
-                // Restaurar la selección en el siguiente frame
-                StartCoroutine(RestoreSelectionNextFrame(null));
+                // Restaurar la selección en el siguiente frame: debe volver al botón que abrió
+                // Ajustes, no al primero de la lista.
+                StartCoroutine(RestoreSelectionNextFrame(settingsButton ? settingsButton.gameObject : null));
             });
 
             if (initial != null)
@@ -654,8 +655,9 @@ public class MainMenuController : MonoBehaviour
 
                 RestartArmAfterSettingsClose();
 
-                // Restaurar la selección en el siguiente frame
-                StartCoroutine(RestoreSelectionNextFrame(null));
+                // Restaurar la selección en el siguiente frame: debe volver al botón que abrió
+                // Controles, no al primero de la lista.
+                StartCoroutine(RestoreSelectionNextFrame(controlsButton ? controlsButton.gameObject : null));
             });
         }
         else

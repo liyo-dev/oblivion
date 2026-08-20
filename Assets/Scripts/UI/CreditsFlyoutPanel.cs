@@ -259,7 +259,7 @@ public class CreditsFlyoutPanel : MonoBehaviour
         // FIX (16 ago 2026, ver comentario en Start()): FindObjectsInactive.Include en vez del
         // valor por defecto (Exclude) — el botón puede estar temporalmente inactivo (panel de
         // menú aún no revelado por su animación de entrada) en el frame en que se busca.
-        var all = FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var all = FindObjectsByType<Button>(FindObjectsInactive.Include);
         foreach (var b in all)
         {
             if (Matches(b.gameObject.name)) return b;

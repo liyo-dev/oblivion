@@ -19,6 +19,24 @@ using UnityEngine;
 /// que ya usa CloudCoverSpawner con CloudsBuildingUp/RainStopped. También se oculta mientras el
 /// cielo está cubierto de nubes de tormenta (no tiene sentido ver estrellas a través de un techo
 /// de nubes) y mientras el jugador está en un interior.
+///
+/// 20 ago 2026 — FIX "las estrellas no brillan y el color es muy apagado": antes de este fix cada
+/// estrella tenía un brillo FIJO sorteado una vez (brightnessVariance) y no había animación de
+/// parpadeo por diseño (el comentario original de brightnessVariance explicaba que sustituía a
+/// "una animación de parpadeo por frame" para ahorrar coste) — el domo se veía como un cielo
+/// estrellado estático, sin vida. Ahora cada estrella SÍ parpadea de verdad (ver
+/// <see cref="twinkleIntensity"/>/<see cref="twinkleSpeedRange"/>, cada una con su propia fase y
+/// velocidad para que no parpadeen a la vez), recalculado cada <see cref="twinkleUpdateInterval"/>
+/// segundos (no cada frame) para repartir el coste de escribir hasta <see cref="starCount"/>
+/// MaterialPropertyBlock. Además, <see cref="starColor"/> ha subido de un dorado plano
+/// (1, 0.85, 0.55) a un dorado más saturado y por encima de 1 en sus canales — con el pipeline de
+/// este proyecto en HDR y Bloom activo (ver Assets/Settings/PC_RPAsset.asset /
+/// Assets/Settings/DefaultVolumeProfile.asset) un color por encima de 1 puede aportar brillo extra
+/// vía Bloom sin tocar el shader (que se deja en Sprites/Default, built-in y ya probado en URP);
+/// si el Volume de la escena en juego tiene el Bloom con intensidad muy baja, el color simplemente
+/// se ve más saturado, sin regresión frente al valor anterior. Se añade también
+/// <see cref="starColorAlt"/> (unas pocas estrellas plateadas/azuladas sueltas, ver
+/// <see cref="altStarChance"/>) para romper la monotonía del domo completamente dorado.
 /// </summary>
 public class NightSkyStarSpawner : MonoBehaviour
 {
@@ -35,12 +53,24 @@ public class NightSkyStarSpawner : MonoBehaviour
     [SerializeField, Range(0f, 40f)] private float minElevationDegrees = 8f;
     [Tooltip("Tamaño mínimo/máximo (unidades de mundo) de cada estrella.")]
     [SerializeField] private Vector2 sizeRange = new Vector2(0.6f, 1.8f);
-    [Tooltip("Color base de las estrellas — dorado cálido por defecto, coherente con 'El Sendero de las Estrellas'. Cada estrella varía ligeramente su brillo (ver brightnessVariance) para que el domo no se vea uniforme.")]
-    [SerializeField] private Color starColor = new Color(1f, 0.85f, 0.55f);
-    [Tooltip("Cuánto varía el brillo de estrella a estrella (0 = todas iguales, 1 = algunas casi blancas y otras muy tenues). Sustituye a una animación de parpadeo por frame (más cara y más difícil de ajustar a ciegas): con posiciones y brillos fijos pero variados, el domo ya lee como un cielo estrellado real sin coste de Update por estrella.")]
+    [Tooltip("Color base de las estrellas — dorado cálido por defecto, coherente con 'El Sendero de las Estrellas'. Canales por encima de 1 a propósito (ver comentario de clase, fix 20 ago 2026): con Bloom activo en el Volume de la escena da un brillo extra; sin Bloom, se ve como un dorado saturado normal. Cada estrella varía ligeramente su brillo (ver brightnessVariance) para que el domo no se vea uniforme.")]
+    [SerializeField] private Color starColor = new Color(1.6f, 1.2f, 0.55f);
+    [Tooltip("Color alternativo 'frío' (plateado/azulado) que adoptan algunas estrellas sueltas — ver altStarChance. Rompe la monotonía de un domo enteramente dorado, como en un cielo real con estrellas de distinto tono.")]
+    [SerializeField] private Color starColorAlt = new Color(1.3f, 1.4f, 1.8f);
+    [Tooltip("Probabilidad (0-1) de que una estrella dada use starColorAlt en vez de starColor. Bajo a propósito (por defecto ~1 de cada 8) para que el domo siga leyéndose como 'dorado' con solo unos pocos acentos fríos.")]
+    [SerializeField, Range(0f, 1f)] private float altStarChance = 0.12f;
+    [Tooltip("Cuánto varía el brillo BASE de estrella a estrella (0 = todas iguales, 1 = algunas casi blancas y otras muy tenues). Se combina multiplicando con el parpadeo animado (ver twinkleIntensity) — esto solo fija el 'techo' de brillo de cada estrella, ya no sustituye a una animación por frame como antes del fix del 20 ago 2026.")]
     [SerializeField, Range(0f, 1f)] private float brightnessVariance = 0.6f;
     [Tooltip("Resolución (en píxeles) de la textura de estrella generada en memoria. No hace falta subirla mucho: son puntos pequeños en pantalla.")]
     [SerializeField] private int starTextureSize = 32;
+
+    [Header("Parpadeo (fix 20 ago 2026 — antes las estrellas no brillaban, brillo fijo)")]
+    [Tooltip("Cuánto varía el brillo de cada estrella con el tiempo. 0 = sin parpadeo (comportamiento antiguo, brillo fijo). 1 = en el valle de su ciclo casi se apaga del todo. Cada estrella tiene su propia fase y velocidad (ver twinkleSpeedRange) para que no parpadeen todas a la vez ni en fase.")]
+    [SerializeField, Range(0f, 1f)] private float twinkleIntensity = 0.55f;
+    [Tooltip("Rango de velocidad de parpadeo (ciclos por segundo, aprox.) — cada estrella sortea su propia velocidad dentro de este rango UNA vez, en Awake/BuildDomeIfNeeded.")]
+    [SerializeField] private Vector2 twinkleSpeedRange = new Vector2(0.4f, 1.6f);
+    [Tooltip("Cada cuántos segundos se recalcula el parpadeo de todas las estrellas. El parpadeo es lento (menos de 2 ciclos/seg como mucho), así que no hace falta todos los frames: con este intervalo se reparte mejor el coste de escribir hasta starCount MaterialPropertyBlock por Update.")]
+    [SerializeField] private float twinkleUpdateInterval = 0.05f;
 
     [Header("Cobertura total del mundo")]
     [Tooltip("Igual que CloudCoverSpawner: cada 'recenterCheckInterval' segundos se comprueba la distancia del jugador al centro actual del domo y, si supera la mitad de domeRadius, se recoloca (solo se mueve _root, sin volver a instanciar nada).")]
@@ -56,12 +86,16 @@ public class NightSkyStarSpawner : MonoBehaviour
     private Transform _followTransform;
     private readonly List<Renderer> _renderers = new List<Renderer>();
     private readonly List<float> _rendererBrightness = new List<float>();
+    private readonly List<float> _twinklePhase = new List<float>();
+    private readonly List<float> _twinkleSpeed = new List<float>();
+    private readonly List<Color> _starTint = new List<Color>();
     private MaterialPropertyBlock _mpb;
     private Material _starMaterial;
     private Texture2D _starTexture;
     private Coroutine _fadeCoroutine;
     private float _currentAlpha;
     private float _recenterTimer;
+    private float _twinkleTimer;
     private bool _built;
     private bool _suppressedIndoors;
 
@@ -159,10 +193,22 @@ public class NightSkyStarSpawner : MonoBehaviour
         if (!_built || _currentAlpha <= 0f || _root == null) return;
 
         _recenterTimer += Time.deltaTime;
-        if (_recenterTimer < recenterCheckInterval) return;
-        _recenterTimer = 0f;
+        if (_recenterTimer >= recenterCheckInterval)
+        {
+            _recenterTimer = 0f;
+            CheckRecenter();
+        }
 
-        CheckRecenter();
+        // Parpadeo: no hace falta todos los frames (ver tooltip de twinkleUpdateInterval). Durante
+        // un fundido en curso, FadeRoutine ya llama a ApplyAlpha cada frame (el parpadeo se anima
+        // ahí también, de propina); esto es lo que lo mantiene vivo en estado estable (alfa=1, sin
+        // ningún fundido en marcha).
+        _twinkleTimer += Time.deltaTime;
+        if (_twinkleTimer >= twinkleUpdateInterval)
+        {
+            _twinkleTimer = 0f;
+            ApplyAlpha(_currentAlpha);
+        }
     }
 
     /// <summary>Mismo mecanismo que CloudCoverSpawner.CheckRecenter (ver ese script): recoloca el
@@ -248,6 +294,9 @@ public class NightSkyStarSpawner : MonoBehaviour
 
         _renderers.Add(renderer);
         _rendererBrightness.Add(1f - UnityEngine.Random.value * brightnessVariance);
+        _twinklePhase.Add(UnityEngine.Random.Range(0f, Mathf.PI * 2f));
+        _twinkleSpeed.Add(UnityEngine.Random.Range(twinkleSpeedRange.x, twinkleSpeedRange.y));
+        _starTint.Add(UnityEngine.Random.value < altStarChance ? starColorAlt : starColor);
     }
 
     /// <summary>
@@ -322,16 +371,30 @@ public class NightSkyStarSpawner : MonoBehaviour
             _root.gameObject.SetActive(false);
     }
 
+    /// <summary>
+    /// Recalcula el color+alfa de TODAS las estrellas para el alfa global dado. Se llama tanto
+    /// desde FadeRoutine (cada frame, mientras el domo aparece/desaparece) como desde Update() cada
+    /// twinkleUpdateInterval segundos en estado estable — así el parpadeo (fix 20 ago 2026, ver
+    /// comentario de clase) sigue vivo aunque no haya ningún fundido en curso.
+    /// </summary>
     void ApplyAlpha(float alpha)
     {
+        float time = Time.time;
         for (int i = 0; i < _renderers.Count; i++)
         {
             var r = _renderers[i];
             if (r == null) continue;
 
             float brightness = i < _rendererBrightness.Count ? _rendererBrightness[i] : 1f;
-            Color c = starColor;
-            c.a = alpha * brightness;
+            float phase = i < _twinklePhase.Count ? _twinklePhase[i] : 0f;
+            float speed = i < _twinkleSpeed.Count ? _twinkleSpeed[i] : 1f;
+            // Oscila entre (1 - twinkleIntensity) y 1: nunca más brillante que el "techo" fijado
+            // por brightnessVariance, solo se atenúa periódicamente — así twinkleIntensity=0 da
+            // exactamente el comportamiento anterior (brillo fijo) sin ramas especiales.
+            float twinkle = Mathf.Lerp(1f - twinkleIntensity, 1f, Mathf.Sin(time * speed + phase) * 0.5f + 0.5f);
+
+            Color c = i < _starTint.Count ? _starTint[i] : starColor;
+            c.a = alpha * brightness * twinkle;
 
             r.GetPropertyBlock(_mpb);
             _mpb.SetColor(ColorId, c);
@@ -347,6 +410,9 @@ public class NightSkyStarSpawner : MonoBehaviour
         _root = null;
         _renderers.Clear();
         _rendererBrightness.Clear();
+        _twinklePhase.Clear();
+        _twinkleSpeed.Clear();
+        _starTint.Clear();
         _built = false;
         _currentAlpha = 0f;
     }
