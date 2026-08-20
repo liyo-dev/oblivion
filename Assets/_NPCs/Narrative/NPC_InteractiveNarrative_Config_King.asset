@@ -38,6 +38,7 @@ MonoBehaviour:
       turnAroundOnArrival: 0
       nearPlayerRadius: 0
       lookAtPlayerOnArrival: 0
+      teleportNearPlayerRadius: 1.8
       waitForPlayer: 0
       maxPlayerDistance: 0
       resumePlayerDistance: 0
@@ -62,6 +63,10 @@ MonoBehaviour:
       escortNpcSpeed: 0
       escortPlayerSpeedMultiplier: 0.1
       teleportTransition: {fileID: 0}
+      screenFadeTransition: {fileID: 0}
+      fadeIn: 1
+      fadeColor: {r: 0, g: 0, b: 0, a: 1}
+      fadeDuration: 0.5
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
@@ -79,6 +84,7 @@ MonoBehaviour:
       turnAroundOnArrival: 0
       nearPlayerRadius: 0
       lookAtPlayerOnArrival: 0
+      teleportNearPlayerRadius: 1.8
       waitForPlayer: 0
       maxPlayerDistance: 0
       resumePlayerDistance: 0
@@ -103,6 +109,10 @@ MonoBehaviour:
       escortNpcSpeed: 0
       escortPlayerSpeedMultiplier: 0.1
       teleportTransition: {fileID: 11400000, guid: 2eec88d4ca6df24419aab2fd6b04c543, type: 2}
+      screenFadeTransition: {fileID: 0}
+      fadeIn: 1
+      fadeColor: {r: 0, g: 0, b: 0, a: 1}
+      fadeDuration: 0.5
       sendNarrativeEvent: 1
       narrativeEventKey: TALK_KING
       sendEventOnStart: 0
@@ -110,6 +120,8 @@ MonoBehaviour:
     autoStartOnDetection: 1
     autoExecuteOnQuestConditionMet: 0
     freezePlayerOnDetection: 1
+    lockPlayerAfterChain: 0
+    lockPlayerMaxDuration: 8
     postNarrativeState: 0
     postNarrativeAmbientConfig: {fileID: 0}
     showPersistentIcon: 1
@@ -117,6 +129,8 @@ MonoBehaviour:
     sendNarrativeEvent: 0
     narrativeEventKey: 
     debugMode: 0
+    loopWhileConditionMet: 0
+    loopPauseDuration: 1
   - description: 
     priority: 0
     condition:
@@ -140,6 +154,7 @@ MonoBehaviour:
       turnAroundOnArrival: 0
       nearPlayerRadius: 0
       lookAtPlayerOnArrival: 0
+      teleportNearPlayerRadius: 1.8
       waitForPlayer: 0
       maxPlayerDistance: 0
       resumePlayerDistance: 0
@@ -164,6 +179,10 @@ MonoBehaviour:
       escortNpcSpeed: 0
       escortPlayerSpeedMultiplier: 0.1
       teleportTransition: {fileID: 0}
+      screenFadeTransition: {fileID: 0}
+      fadeIn: 1
+      fadeColor: {r: 0, g: 0, b: 0, a: 1}
+      fadeDuration: 0.5
       sendNarrativeEvent: 1
       narrativeEventKey: Battle_Demon_2
       sendEventOnStart: 0
@@ -171,6 +190,8 @@ MonoBehaviour:
     autoStartOnDetection: 1
     autoExecuteOnQuestConditionMet: 0
     freezePlayerOnDetection: 1
+    lockPlayerAfterChain: 0
+    lockPlayerMaxDuration: 8
     postNarrativeState: 0
     postNarrativeAmbientConfig: {fileID: 0}
     showPersistentIcon: 0
@@ -178,6 +199,8 @@ MonoBehaviour:
     sendNarrativeEvent: 0
     narrativeEventKey: 
     debugMode: 0
+    loopWhileConditionMet: 0
+    loopPauseDuration: 1
   - description: 
     priority: 0
     condition:
@@ -201,6 +224,7 @@ MonoBehaviour:
       turnAroundOnArrival: 0
       nearPlayerRadius: 0
       lookAtPlayerOnArrival: 0
+      teleportNearPlayerRadius: 1.8
       waitForPlayer: 0
       maxPlayerDistance: 0
       resumePlayerDistance: 0
@@ -225,13 +249,19 @@ MonoBehaviour:
       escortNpcSpeed: 0
       escortPlayerSpeedMultiplier: 0.1
       teleportTransition: {fileID: 0}
+      screenFadeTransition: {fileID: 0}
+      fadeIn: 1
+      fadeColor: {r: 0, g: 0, b: 0, a: 1}
+      fadeDuration: 0.5
       sendNarrativeEvent: 1
       narrativeEventKey: CORAZON_ESTELAR
       sendEventOnStart: 0
     singleUse: 1
     autoStartOnDetection: 1
     autoExecuteOnQuestConditionMet: 0
-    freezePlayerOnDetection: 0
+    freezePlayerOnDetection: 1
+    lockPlayerAfterChain: 0
+    lockPlayerMaxDuration: 8
     postNarrativeState: 0
     postNarrativeAmbientConfig: {fileID: 0}
     showPersistentIcon: 0
@@ -239,6 +269,8 @@ MonoBehaviour:
     sendNarrativeEvent: 0
     narrativeEventKey: 
     debugMode: 0
+    loopWhileConditionMet: 0
+    loopPauseDuration: 1
   persistState: 1
   enableDetailedLogs: 0
   persistenceId: NPC_InteractiveNarrative_Config_King_aebe753a

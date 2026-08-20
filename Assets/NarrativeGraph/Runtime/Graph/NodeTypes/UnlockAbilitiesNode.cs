@@ -19,6 +19,16 @@ public sealed class UnlockAbilitiesNode : NarrativeNode
     [Tooltip("Si se asignan hechizos, intentar ponerlos en ranuras vacías")]
     public bool assignSpellsToEmptySlot = true;
 
+    [Tooltip("Los hechizos dinámicos (aprendidos en runtime, vía UnlockService) solo existen en el " +
+             "preset de Will: UnlockService siempre escribe en runtimePreset, que ES el preset de Will. " +
+             "Liam y Estela no tienen progresión propia — usan un loadout fijo desde su NPCPartyConfig " +
+             "(ver ActiveCharacterSwapper.ApplySpells). Con esta opción activa, si hay hechizos que " +
+             "desbloquear el nodo cambia el personaje activo a Will ANTES de aplicarlos, para que quien " +
+             "se ve en pantalla coincida siempre con quien realmente aprende el hechizo. Cambiar esto de " +
+             "raíz (que lo aprenda quien esté seleccionado) requiere dar progresión propia a Liam/Estela " +
+             "— eso sí es un cambio de arquitectura, no lo toques aquí.")]
+    public bool forceWillBeforeSpellUnlock = true;
+
     [Header("One-shot / Flags")]
     [Tooltip("Si se establece, añadirá este flag al preset (one-shot).")]
     public string oneShotFlag = "";
@@ -115,8 +125,15 @@ public sealed class UnlockAbilitiesNode : NarrativeNode
                 }
 #pragma warning restore 618
 
-                if (spellsToUnlock != null)
+                if (spellsToUnlock != null && spellsToUnlock.Count > 0)
                 {
+                    // Ver comentario de forceWillBeforeSpellUnlock: los hechizos aprendidos en runtime
+                    // solo se guardan en el preset de Will (arquitectura actual). Forzamos el swap ANTES
+                    // de desbloquear para que no se dé el caso de "aprendes X con Liam/Estela seleccionado
+                    // pero el hechizo en realidad se lo queda Will sin que se note en pantalla".
+                    if (forceWillBeforeSpellUnlock)
+                        PartyControlManager.Instance?.ForceSwitch(PartyControlManager.CharacterSlot.Will);
+
                     for (int i = 0; i < spellsToUnlock.Count; i++)
                         changed |= UnlockService.UnlockSpell(spellsToUnlock[i], assignSpellsToEmptySlot);
                 }

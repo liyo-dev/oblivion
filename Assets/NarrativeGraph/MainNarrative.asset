@@ -905,7 +905,7 @@ MonoBehaviour:
         - 0decf071-45b8-40e6-8d60-d1fcce1643e4
         targetTag: Player
         text: Otra vez esa pesadilla.
-        textId: 
+        textId: NIGHTMARE_AGAIN
         duration: 2
         waitForCompletion: 1
         animTrigger: HeadShake01

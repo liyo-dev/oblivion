@@ -99,6 +99,10 @@
         {
             "key": "TUTORIAL_WAKE_UP",
             "value": "Pulsa {BOTON} para despertar a Will"
+        },
+        {
+            "key": "NIGHTMARE_AGAIN",
+            "value": "Otra vez esa pesadilla."
         }
     ]
 }

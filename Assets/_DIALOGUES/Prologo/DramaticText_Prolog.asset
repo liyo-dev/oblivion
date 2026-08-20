@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DramaticPhraseConfig
   phrases:
   - text: "Will, \xA1DESPIERTA!"
-    textId: 
+    textId: PRLG_WILL_WAKE_UP
     style: 2
     background: 2
     entryAnim: 6

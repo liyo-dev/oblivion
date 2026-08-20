@@ -15,6 +15,10 @@
         {
             "id": "PRLG_04",
             "text": "Centuries later, the world had forgotten the legend..."
+        },
+        {
+            "id": "PRLG_WILL_WAKE_UP",
+            "text": "Will, WAKE UP!"
         }
     ]
 }

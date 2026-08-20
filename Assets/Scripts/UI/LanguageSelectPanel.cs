@@ -52,8 +52,16 @@ public class LanguageSelectPanel : MonoBehaviour
         if (!root)
             root = gameObject;
 
-        if (!canvasGroup)
-            canvasGroup = root.GetComponent<CanvasGroup>() ?? root.AddComponent<CanvasGroup>();
+        // Deliberadamente NO nos fiamos de "!canvasGroup" para decidir si hace falta reasignar:
+        // este panel arranca inactivo (SetActive(false)), así que Awake() no corre al cargar la
+        // escena sino más tarde, la primera vez que Show() activa el GameObject — y para
+        // entonces el campo serializado puede apuntar a un CanvasGroup que ya no es el que vive
+        // en este GameObject (p.ej. tras reconstruir el panel con la herramienta de Editor).
+        // Repreguntar siempre con GetComponent() evita un MissingComponentException al tocar
+        // ignoreParentGroups más abajo.
+        canvasGroup = root.GetComponent<CanvasGroup>();
+        if (canvasGroup == null)
+            canvasGroup = root.AddComponent<CanvasGroup>();
         canvasGroup.ignoreParentGroups = true;
 
         _eventSystem = EventSystem.current;

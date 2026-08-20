@@ -99,6 +99,10 @@
         {
             "key": "TUTORIAL_WAKE_UP",
             "value": "Press {BOTON} to wake up Will"
+        },
+        {
+            "key": "NIGHTMARE_AGAIN",
+            "value": "That nightmare again."
         }
     ]
 }
