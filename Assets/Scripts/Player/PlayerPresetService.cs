@@ -27,6 +27,11 @@ public class PlayerPresetService : MonoBehaviour
     bool _initialized;
     bool _warnedMissingAppearanceBuilder;
 
+    // Cacheado una sola vez: Enum.GetValues usa reflexión y aloca un array nuevo en cada llamada,
+    // y este enum se recorre en cada cambio de personaje/apariencia (ApplyAppearanceFromPreset,
+    // SnapshotAppearanceToPreset), así que evitamos repetir esa alocación cada vez.
+    static readonly PartCategory[] _allPartCategories = (PartCategory[])Enum.GetValues(typeof(PartCategory));
+
     public static bool HasAppliedPreset { get; private set; }
 
     void Awake()
@@ -204,7 +209,7 @@ public class PlayerPresetService : MonoBehaviour
         }
 
         var selection = new Dictionary<PartCategory, string>();
-        foreach (PartCategory cat in (PartCategory[])Enum.GetValues(typeof(PartCategory)))
+        foreach (PartCategory cat in _allPartCategories)
         {
             selection[cat] = null;
         }
@@ -215,7 +220,12 @@ public class PlayerPresetService : MonoBehaviour
 
         var activeSlot = PartyControlManager.Instance?.ActiveSlot ?? PartyControlManager.CharacterSlot.Will;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // Guardado tras el mismo patrón que otros logs del proyecto (p.ej. CloudCoverSpawner):
+        // el ConvertAll+string.Join alocaba en cada cambio de personaje/apariencia incluso en build
+        // final, donde nadie lee la consola. Ahora solo se construye el string en Editor/dev builds.
         Debug.Log($"[PlayerPresetService] 🎨 ApplyAppearanceFromPreset — preset='{preset.name}' activeSlot={activeSlot} entries=[{string.Join(", ", entries.ConvertAll(e => $"{e.category}:{e.partName}"))}] builder={_appearanceBuilder.gameObject.name}");
+#endif
 
         if (activeSlot != PartyControlManager.CharacterSlot.Will)
         {
@@ -263,7 +273,9 @@ public class PlayerPresetService : MonoBehaviour
             _appearanceBuilder.ApplySelection(selection);
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"[PlayerPresetService] ✅ Apariencia de Will aplicada al builder. Partes activas: [{string.Join(", ", _appearanceBuilder.GetSelection().Select(kv => $"{kv.Key}:{kv.Value}"))}]");
+#endif
     }
 
     /// <summary>
@@ -393,7 +405,7 @@ public class PlayerPresetService : MonoBehaviour
             preset.appearance.Clear();
 
         var processed = new HashSet<PartCategory>();
-        foreach (PartCategory cat in (PartCategory[])System.Enum.GetValues(typeof(PartCategory)))
+        foreach (PartCategory cat in _allPartCategories)
         {
             if (!processed.Add(cat)) continue;
 

@@ -137,7 +137,7 @@ public static class CharacterCreatorPersistence
         
         foreach (var part in _savedSelection)
         {
-            Debug.Log($"  ✓ {part.Key}: {part.Value}");
+            Debug.Log($"[Persistence]   ✓ {part.Key}: {part.Value}");
         }
 
         // Restaurar flag

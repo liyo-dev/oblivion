@@ -34,7 +34,7 @@ MonoBehaviour:
   shieldPrefab: {fileID: 1289543790355709915, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
   shieldMinDuration: 2
   shieldMaxDuration: 4
-  spellLeft: {fileID: 11400000, guid: d19ce172139aa96458ee0113fcd2a775, type: 2}
+  spellLeft: {fileID: 11400000, guid: 5e2557db11732694182c948ffac0eab8, type: 2}
   spellRight: {fileID: 11400000, guid: 0686630f8f80a5c4291f775845a499d7, type: 2}
   spellSpecial: {fileID: 0}
   distanciaMinimaAtaque: 2
@@ -48,3 +48,5 @@ MonoBehaviour:
   tiempoMaximoMovimientoDialogo: 2
   footVfxPrefab: {fileID: 4033412786151888123, guid: 9861333859a526c4fb6c99da1752e3d4, type: 3}
   flightFormationSpread: 1.5
+  flightBobAmplitude: 0.18
+  flightBobFrequency: 1.2

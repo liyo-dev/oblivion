@@ -48,7 +48,13 @@ public enum SpellId
     CorazonEstelar,
     Levitation,
     AuraEstelar,
-    Cycloneburst
+    Cycloneburst,
+    // NUEVO (23/08/2026): hechizo de Liam — ver Assets/_SPELLS/GarraDelPacto.asset,
+    // creado por el menú "El Sendero/Magia/Crear Hechizo de Liam (Garra del Pacto)".
+    GarraDelPacto,
+    // NUEVO (23/08/2026): hechizo de retaguardia creado por Raúl — ver Assets/_SPELLS/Huracan.asset.
+    // Antes de este ID, Huracan.asset tenía spellId:6 (Cycloneburst) duplicado con Tornado.asset.
+    Huracan
 }
 
 /// <summary>Ranuras de magia (mano izquierda, derecha, o especial).</summary>
