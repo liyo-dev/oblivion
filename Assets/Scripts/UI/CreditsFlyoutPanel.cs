@@ -254,14 +254,29 @@ public class CreditsFlyoutPanel : MonoBehaviour
         return true;
     }
 
-    static Button FindCreditsButton()
+    Button FindCreditsButton()
     {
         // FIX (16 ago 2026, ver comentario en Start()): FindObjectsInactive.Include en vez del
         // valor por defecto (Exclude) — el botón puede estar temporalmente inactivo (panel de
         // menú aún no revelado por su animación de entrada) en el frame en que se busca.
+        //
+        // FIX (20 ago 2026): "el botón CRÉDITOS del MainMenu ya no abre nada". El footer de
+        // ESTE MISMO panel (BuildFooter(), más abajo) tiene el texto "Ver créditos completos >>",
+        // que también contiene "credit" — así que la búsqueda por texto podía encontrar y
+        // engancharse a nuestro propio botón de footer en vez del botón CRÉDITOS real del
+        // MainMenu (el footer y el CloseButton nunca se desactivan con SetActive; solo se
+        // ocultan moviendo el panel fuera de pantalla, así que FindObjectsInactive.Include los
+        // ve igual que a cualquier otro botón activo). Si FindObjectsByType los devolvía antes
+        // que el botón real, _openButton quedaba apuntando al footer: el botón CRÉDITOS del
+        // menú se quedaba con su listener original (sin abrir el panel) y el footer, con su
+        // listener de "ir a créditos completos" sustituido por el toggle del panel. Excluimos
+        // aquí cualquier botón que cuelgue de nuestra propia jerarquía para que la búsqueda solo
+        // pueda encontrar el botón real de MainMenu.unity.
         var all = FindObjectsByType<Button>(FindObjectsInactive.Include);
         foreach (var b in all)
         {
+            if (b.transform.IsChildOf(transform)) continue;
+
             if (Matches(b.gameObject.name)) return b;
 
             var label = b.GetComponentInChildren<TextMeshProUGUI>(true);

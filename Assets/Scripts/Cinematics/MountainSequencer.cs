@@ -223,7 +223,7 @@ public class MountainSequencer : CinematicSequencerBase
         SpeechBubbleUI.Instance.Show(_estelaTransform, Loc(_keyLine),
             duration: _lineDuration,
             onComplete: () => done = true,
-            animTrigger: _animLine);
+            animTrigger: _animLine, speakerName: "Estela");
         yield return new WaitUntil(() => done);
     }
 
@@ -337,7 +337,7 @@ public class MountainSequencer : CinematicSequencerBase
         SpeechBubbleUI.Instance.Show(_eldranTransform, Loc(_keyLineEldranRun),
             duration: _lineDurationEldranRun,
             animTrigger: _animLineEldranRun,
-            emphasis: true);
+            emphasis: true, speakerName: "Eldran");
     }
 
     // ══════════════════════════════════════════════════════════════════════════

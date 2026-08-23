@@ -495,6 +495,22 @@ public class DialogueManager : MonoBehaviour
         else
             _currentNpcDialogueCharacterId = null;
 
+        // FIX (20 ago 2026): igual que en DialogueCinematicController.StartCinematic (mismo
+        // incidente, ver comentario allí) — si 'npc' resulta ser el propio personaje activo
+        // oculto (ActiveCharacterSwapper.HiddenNpc, p.ej. un NPCInteractiveNarrativeExecutor
+        // colgado de _ESTELA disparando su propia línea mientras el jugador la controla), su
+        // transform real está oculto y congelado en la posición de otro cambio de personaje.
+        // Solo afecta al TRANSFORM usado para posicionar al equipo aquí abajo — _currentNpc y
+        // _currentNpcDialogueCharacterId (arriba) se quedan como estaban, siguen identificando
+        // al personaje correcto para nombre/portrait y para quien escuche OnDialogueStarted.
+        Transform npcForPositioning = npc;
+        var activeSwapper = ActiveCharacterSwapper.Instance;
+        if (activeSwapper != null && activeSwapper.HiddenNpc != null && npc == activeSwapper.HiddenNpc.transform
+            && PlayerService.TryGetPlayer(out var activeCharacterGo) && activeCharacterGo != null)
+        {
+            npcForPositioning = activeCharacterGo.transform;
+        }
+
         // Posicionar party members ANTES de iniciar la cámara cinematográfica
         // para que estén en su sitio cuando la cámara capture las posiciones iniciales.
         // EXCEPCIÓN: en diálogos GRUPALES con cámara cinematográfica, el posicionamiento lo hace
@@ -505,10 +521,10 @@ public class DialogueManager : MonoBehaviour
         // NPC real y controller vivo — si no se cumple, se mantiene el posicionamiento genérico)
         bool groupStagingHandledByCinematic = asset != null && asset.isGroupConversation
             && useCinematicCamera && DialogueCinematicController.Instance != null
-            && npc != null && IsActualNPC(npc);
+            && npcForPositioning != null && IsActualNPC(npcForPositioning);
         if (!groupStagingHandledByCinematic && Game.NPC.PlayerParty.HasInstance)
         {
-            Game.NPC.PlayerParty.Instance.PositionMembersForDialogue(npc);
+            Game.NPC.PlayerParty.Instance.PositionMembersForDialogue(npcForPositioning);
         }
         
         // Iniciar el diálogo (activa cámara cinematográfica y muestra primera línea)

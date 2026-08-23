@@ -537,6 +537,35 @@ public class DialogueCinematicController : MonoBehaviour
         /// </summary>
         public void StartCinematic(Transform player, Transform npc, DialogueCinematicProfile profile = null, bool isGroupConversation = false)
         {
+            // FIX (20 ago 2026) — "dos Estelas" + cámara en otro sitio cuando el NPC que dispara
+            // ESTE diálogo es, literalmente, el propio personaje activo (p.ej. un
+            // NPCInteractiveNarrativeExecutor colgado de _ESTELA que narra su propia línea
+            // — "Hay que escapar de la prisión" — mientras el jugador la está controlando).
+            // 'npc' llega aquí como el transform REAL de ese GameObject (_ESTELA), que
+            // ActiveCharacterSwapper tiene oculto (renderers apagados) y con el NavMeshAgent
+            // congelado en la posición donde estaba la ÚLTIMA VEZ que se cambió de personaje —
+            // puede ser cualquier sala del mapa, sin relación con la escena actual (mismo
+            // "decoy" ya filtrado en CalculateCameraPosition/UpdateGroupFacing/LateUpdate, pero
+            // ninguno de esos filtros cubre el propio parámetro 'npc' de entrada). Sin este
+            // redirect: todo el montaje (PositionMembersForGroupDialogue, _groupCamBaseDir,
+            // centro del grupo) se calculaba en torno a esa posición fantasma —de ahí la cámara
+            // "en otro sitio"— y además el sistema intentaba mostrar los renderers de "el NPC
+            // con quien se habla" (currentNPC), reactivando brevemente a la Estela oculta (ver
+            // el log de ActiveCharacterSwapper.EnsureHiddenNpcSuppressed: "renderers reactivados
+            // fuera de la ventana... vuelto a ocultar por la red de seguridad periódica" —
+            // exactamente el síntoma "dos Estelas" que esa red de seguridad ya nombraba).
+            // Repro real: funciona con Liam activo (su propio NPCInteractiveNarrativeExecutor no
+            // dispara diálogos con Liam como NPC en este tramo) y falla con Estela activa (si lo
+            // hace) — no es una rama de código específica de Will/Liam, es que 'npc' resulta ser
+            // el propio decoy oculto solo en este caso.
+            var activeSwapper = ActiveCharacterSwapper.Instance;
+            if (activeSwapper != null && activeSwapper.HiddenNpc != null && npc == activeSwapper.HiddenNpc.transform)
+            {
+                if (showDebugInfo)
+                    Debug.Log($"[DialogueCinematicController] NPC '{npc.name}' es el personaje activo oculto - redirigiendo a '{player.name}' para el montaje/cámara");
+                npc = player;
+            }
+
             // Si hay un apagado pendiente, cancelarlo (diálogo encadenado)
             if (isPendingEnd && pendingEndCinematicCoroutine != null)
             {

@@ -442,7 +442,7 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
         bool attackOrderDone = false;
         SpeechBubbleUI.Instance.Show(_warrior1Transform, Loc(_attackOrderKey),
             duration: _attackOrderDuration, onComplete: () => attackOrderDone = true,
-            animTrigger: _attackOrderAnim);
+            animTrigger: _attackOrderAnim, speakerName: "Guerrero 1");
         yield return new WaitUntil(() => attackOrderDone);
 
         // ── Fase 1: Estela mata las arañas ────────────────────────────────────
@@ -459,7 +459,8 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
         _estelaEmotion?.SetEmotion(NPCEmotion.Happy);
         bool pancomiDone = false;
         SpeechBubbleUI.Instance.Show(_estelaTransform, Loc("EVT_ESTELA_PANCOMI"),
-            duration: 2.5f, onComplete: () => pancomiDone = true, animTrigger: _victoryAnim);
+            duration: 2.5f, onComplete: () => pancomiDone = true, animTrigger: _victoryAnim,
+            speakerName: "Estela");
         yield return new WaitUntil(() => pancomiDone);
 
         yield return new WaitForSeconds(_pauseBeforeWarriors);
@@ -503,7 +504,7 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
         bool done1 = false;
         SpeechBubbleUI.Instance.Show(_warrior1Transform, Loc(_w1TauntKey),
             duration: _w1TauntDuration, onComplete: () => done1 = true,
-            animTrigger: _w1TauntAnim);
+            animTrigger: _w1TauntAnim, speakerName: "Guerrero 1");
         yield return new WaitUntil(() => done1);
 
         // Guerrero 2 habla
@@ -511,7 +512,7 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
         bool done2 = false;
         SpeechBubbleUI.Instance.Show(_warrior2Transform, Loc(_w2TauntKey),
             duration: _w2TauntDuration, onComplete: () => done2 = true,
-            animTrigger: _w2TauntAnim);
+            animTrigger: _w2TauntAnim, speakerName: "Guerrero 2");
         yield return new WaitUntil(() => done2);
     }
 
@@ -528,7 +529,7 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
         FaceTarget(_warrior1Transform, _estelaTransform);
         FaceTarget(_warrior2Transform, _estelaTransform);
 
-        yield return ShowBubblePaged(_estelaTransform, Loc(_dramaticLineKey), _dramaticLineDuration, _dramaticAnim, loopAnim: true);
+        yield return ShowBubblePaged(_estelaTransform, Loc(_dramaticLineKey), _dramaticLineDuration, _dramaticAnim, loopAnim: true, speakerName: "Estela");
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -549,7 +550,7 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
         bool insultDone = false;
         SpeechBubbleUI.Instance.Show(_warrior1Transform, Loc(_insultLineKey),
             duration: _insultLineDuration, onComplete: () => insultDone = true,
-            animTrigger: _insultAnim);
+            animTrigger: _insultAnim, speakerName: "Guerrero 1");
         yield return new WaitUntil(() => insultDone);
 
         yield return new WaitForSeconds(_laughPause);
@@ -781,7 +782,7 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
             bool willDone = false;
             SpeechBubbleUI.Instance.Show(willTransform, Loc(_willLineKey),
                 duration: _willLineDuration, onComplete: () => willDone = true,
-                animTrigger: _willAnim);
+                animTrigger: _willAnim, speakerName: "Will");
 
             float elapsed = 0f;
             while (!willDone && elapsed < _willLineDuration + 1f)
@@ -819,7 +820,7 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
         bool done = false;
         SpeechBubbleUI.Instance.Show(_estelaTransform, Loc(_victoryLineKey),
             duration: _victoryLineDuration, onComplete: () => done = true,
-            animTrigger: _victoryAnim);
+            animTrigger: _victoryAnim, speakerName: "Estela");
         yield return new WaitUntil(() => done);
     }
 
@@ -865,7 +866,7 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
             SpeechBubbleUI.Instance.Show(_estelaTransform, Loc(lineKey),
                 duration: _killLineDuration,
                 onComplete: () => lineDone = true,
-                animTrigger: anim);
+                animTrigger: anim, speakerName: "Estela");
 
             while (!lineDone)
             {

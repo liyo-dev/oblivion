@@ -849,7 +849,45 @@ namespace Sendero.UI
         /// Verifica si el HUD está visible
         /// </summary>
         public bool IsVisible => _isVisible;
-        
+
+        /// <summary>
+        /// Reinicia por completo el estado de "ocultado" del HUD (contador de referencias, tween
+        /// de fade y visibilidad), forzándolo a visible.
+        ///
+        /// FIX: HideHUD()/ShowHUD() usan un contador de referencias (_hideRequestCount) para
+        /// coordinar los ~8 sistemas independientes que ocultan el HUD (diálogos, cinemáticas,
+        /// menú de inventario...). Como este componente vive en Start.unity (DontDestroyOnLoad),
+        /// su Awake() —que es lo único que reinicia el contador a 0— solo se ejecuta UNA VEZ por
+        /// sesión de la aplicación, nunca al "cargar partida" ni al "salir al menú principal". Si
+        /// cualquiera de esos sistemas queda interrumpido antes de poder emparejar su HideHUD()
+        /// con el ShowHUD() correspondiente (p.ej. la escena cambia a mitad de un diálogo o justo
+        /// al confirmar "Salir al menú principal" desde el inventario), el contador se queda
+        /// colgado para siempre y el HUD no vuelve a aparecer en lo que dure la sesión, aunque se
+        /// cargue una partida nueva (repro: cargar partida → abrir inventario → salir al menú
+        /// principal → cargar partida de nuevo → el HUD ya no aparece).
+        ///
+        /// Se llama desde GameBootService.ResetTransientSessionState(), el mismo punto de entrada
+        /// seguro de sesión que ya limpia GameState/CameraDirectorService/SimpleCinematicDirector/
+        /// TeleportService por el mismo motivo — ver el comentario de ese método.
+        /// </summary>
+        public static void ForceResetHideState()
+        {
+            var hud = Instance;
+            if (hud == null) return;
+
+            hud._currentFadeTween?.Kill();
+            hud._hideRequestCount = 0;
+            hud._isVisible = true;
+
+            if (hud._canvasGroup == null) hud._canvasGroup = hud.GetComponent<CanvasGroup>();
+            if (hud._canvasGroup != null)
+            {
+                hud._canvasGroup.alpha = 1f;
+                hud._canvasGroup.interactable = true;
+                hud._canvasGroup.blocksRaycasts = true;
+            }
+        }
+
         #endregion
         
         #region Editor Helpers

@@ -657,8 +657,8 @@ MonoBehaviour:
   clusterChance: 0.3
   clusterExtraMax: 2
   clusterDelayRange: {x: 4, y: 10}
-  idleSpawnIntervalRange: {x: 90, y: 160}
-  busySpawnIntervalRange: {x: 20, y: 40}
+  idleSpawnIntervalRange: {x: 30, y: 55}
+  busySpawnIntervalRange: {x: 10, y: 20}
   lightCloudThreshold: 0.4
   stormThreshold: 0.8
   stormRollChance: 0.35

@@ -324,7 +324,7 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
         SpeechBubbleUI.Instance.Show(_liamTransform, Loc(_keyLine1),
             duration: _line1Duration,
             onComplete: () => line1Done = true,
-            animTrigger: _animLine1);
+            animTrigger: _animLine1, speakerName: "Liam");
         yield return new WaitUntil(() => line1Done);
 
         // Apagar la visión antes de cortar al plano de la conjuración
@@ -349,7 +349,7 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
         SpeechBubbleUI.Instance.Show(_liamTransform, Loc(_keyLine2),
             duration: _line2Duration,
             onComplete: () => line2Done = true,
-            animTrigger: _animLine2);
+            animTrigger: _animLine2, speakerName: "Liam");
         yield return new WaitUntil(() => line2Done);
 
         // ── Fase 3: Primer plano — amenaza personal de Liam ──────────────────
@@ -360,7 +360,7 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
         SpeechBubbleUI.Instance.Show(_liamTransform, Loc(_keyLine3),
             duration: _line3Duration,
             onComplete: () => line3Done = true,
-            animTrigger: _animLine3);
+            animTrigger: _animLine3, speakerName: "Liam");
         yield return new WaitUntil(() => line3Done);
 
         yield return new WaitForSeconds(_holdAfterEnd);

@@ -26,6 +26,17 @@ public class EnemyProjectile : MonoBehaviour
     private Vector3 direction;
     private float damage;
     private bool initialized = false;
+    // FIX INC-082: velocidad real usada en vuelo. Antes Initialize()/FixedUpdate() usaban siempre el
+    // campo serializado `speed` (fijo en el prefab, ej. 15), ignorando por completo el rockSpeed/
+    // rockRainSpeed que configura GolemBossAI por Inspector — SetupRockProjectile/RockThrowAttack
+    // asignaban rb.linearVelocity con la velocidad correcta, pero Initialize() la pisaba un instante
+    // después con `direction * speed` (el campo del prefab), y FixedUpdate() la seguía reafirmando
+    // así en cada physics tick. El resultado: todas las rocas del Golem viajaban siempre a la
+    // velocidad fija del prefab, nunca a la que se veía en el Inspector — la predicción de impacto
+    // (PredictThrowTargetPosition) se calculaba para una velocidad que el proyectil real nunca tenía.
+    // SetSpeed() permite que quien lanza el proyectil fuerce la velocidad real antes de Initialize().
+    private float _speedOverride = -1f;
+    private float EffectiveSpeed => _speedOverride > 0f ? _speedOverride : speed;
 
     /// <summary>Daño configurado de este proyectil (usado p. ej. por ProjectileCollisionHandler al sumar daños en un choque de hechizos).</summary>
     public float Damage => damage;
@@ -62,6 +73,13 @@ public class EnemyProjectile : MonoBehaviour
     private int _playerLayer;
     private int _projectileLayer;
     private int _defaultLayer;
+    // FIX INC-082: la sala del Golem (BossArenaController.floorLayer) usa el layer dedicado "Floor"
+    // (índice 10 en TagManager.asset), no "Default", para su suelo. Antes este script no lo conocía
+    // por nombre — el suelo de esa sala solo caía en el fallback genérico `if (!other.isTrigger)` del
+    // final de OnTriggerEnter, que SÍ funciona pero no deja rastro claro en el flujo de código de que
+    // el suelo del Golem se maneja aquí. Se cachea explícitamente para que quede documentado y para
+    // poder tratarlo igual que "Default" sin depender del fallback silencioso.
+    private int _floorLayer;
 
     // AoE al impactar (configurado en tiempo de ejecución para lluvia de rocas)
     private bool _dealAoEOnImpact;
@@ -97,6 +115,7 @@ public class EnemyProjectile : MonoBehaviour
         _playerLayer         = LayerMask.NameToLayer("Player");
         _projectileLayer     = LayerMask.NameToLayer("Projectile");
         _defaultLayer        = LayerMask.NameToLayer("Default");
+        _floorLayer          = LayerMask.NameToLayer("Floor");
 
         rb = GetComponent<Rigidbody>();
         if (rb)
@@ -124,25 +143,38 @@ public class EnemyProjectile : MonoBehaviour
         _hasLastCheckedPosition = false; // reinicia el sweep de proximidad (INC-027)
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        Debug.Log($"[EnemyProjectile] Inicializado — daño: {damage}, velocidad: {speed}");
+        Debug.Log($"[EnemyProjectile] Inicializado — daño: {damage}, velocidad: {EffectiveSpeed}");
 #endif
-        
+
         // 🔊 Reproducir SFX de spawn
         if (!string.IsNullOrEmpty(spawnSFXKey))
         {
             AudioService.Instance?.PlaySFX(spawnSFXKey, worldPosition: transform.position);
         }
-        
+
         // ✅ Aplicar velocidad inicial usando física
+        // FIX INC-082: usar EffectiveSpeed (respeta SetSpeed(), si se llamó antes) en vez de `speed`
+        // a secas — ver comentario en la declaración de _speedOverride.
         if (rb)
         {
-            rb.linearVelocity = direction * speed;
+            rb.linearVelocity = direction * EffectiveSpeed;
         }
         
         // Destruir después del tiempo de vida
         Destroy(gameObject, lifetime);
     }
-    
+
+    /// <summary>
+    /// FIX INC-082: permite que quien lanza el proyectil (GolemBossAI: rockSpeed/rockRainSpeed)
+    /// fuerce una velocidad real distinta a la serializada en el prefab (`speed`). Debe llamarse
+    /// ANTES de Initialize() — Initialize()/FixedUpdate() usan EffectiveSpeed, que prioriza este
+    /// valor sobre el campo del prefab si se ha configurado uno (> 0).
+    /// </summary>
+    public void SetSpeed(float newSpeed)
+    {
+        if (newSpeed > 0f) _speedOverride = newSpeed;
+    }
+
     /// <summary>
     /// Activa el daño de área al aterrizar. Usado para rocas de lluvia del Golem.
     /// El AoE ignora iframes pero respeta el escudo del jugador.
@@ -235,9 +267,10 @@ public class EnemyProjectile : MonoBehaviour
         if (!initialized || hasHit) return;
 
         // Mantener la velocidad constante
+        // FIX INC-082: EffectiveSpeed (ver _speedOverride) en vez de `speed` a secas.
         if (rb)
         {
-            rb.linearVelocity = direction * speed;
+            rb.linearVelocity = direction * EffectiveSpeed;
         }
 
         // ✅ Detección activa del player throttleada a 20/seg para reducir OverlapSphere por proyectil.
@@ -366,10 +399,17 @@ public class EnemyProjectile : MonoBehaviour
         if (hasHit) return;
         // Grace period: ignorar colisiones inmediatas al spawnear (evita explotar dentro del lanzador)
         if (Time.time - _spawnTime < 0.15f) return;
-        
+
         // Ignorar enemigos y el boss (proyectil de enemy no debe dañar a otros enemies)
         // Nota: "Boss" es un Tag, no un Layer → usar CompareTag, no LayerMask
         int otherLayer = other.gameObject.layer;
+
+        // FIX INC-082 (diagnóstico): log de cada impacto real para poder ver en Console, sin abrir el
+        // profiler ni instrumentar nada, contra qué layer/trigger está chocando cada roca — pensado
+        // para confirmar de una vez si el suelo de la sala del Golem tiene un layer/trigger inesperado.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[EnemyProjectile] OnTriggerEnter '{other.name}' layer={LayerMask.LayerToName(otherLayer)} isTrigger={other.isTrigger}");
+#endif
         if (other.CompareTag("Enemy") || other.CompareTag("Boss") || otherLayer == _enemyLayer)
             return;
 
@@ -441,9 +481,15 @@ public class EnemyProjectile : MonoBehaviour
             return;
         }
 
-        if (otherLayer == _defaultLayer)
+        if (otherLayer == _defaultLayer || otherLayer == _floorLayer)
         {
-            if (other.isTrigger) return;
+            if (other.isTrigger)
+            {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.Log($"[EnemyProjectile] '{other.name}' es suelo (layer {LayerMask.LayerToName(otherLayer)}) pero SU collider es trigger — impacto de suelo ignorado, sin VFX ni AoE.");
+#endif
+                return;
+            }
             hasHit = true;
             PlayGroundImpactVfx();
             if (_dealAoEOnImpact) ApplyAoEImpact();
@@ -458,6 +504,16 @@ public class EnemyProjectile : MonoBehaviour
             if (_dealAoEOnImpact) ApplyAoEImpact();
             DestroyProjectile();
         }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        else
+        {
+            // Ni jugador, ni Default, ni ningún layer ignorado explícitamente, y el collider de
+            // destino SÍ es trigger — la roca lo atraviesa sin más: nunca hay VFX de suelo ni AoE.
+            // Si esto aparece para el suelo de la sala del Golem, ese es el bug: hay que quitarle
+            // el Is Trigger al collider del suelo, o añadir su layer al chequeo de arriba.
+            Debug.Log($"[EnemyProjectile] '{other.name}' (layer={LayerMask.LayerToName(otherLayer)}) ignorado por completo — collider trigger sin manejar. La roca lo atraviesa sin impacto.");
+        }
+#endif
     }
     
     // OnCollisionEnter: Fallback para colisiones físicas (si el collider NO es trigger)

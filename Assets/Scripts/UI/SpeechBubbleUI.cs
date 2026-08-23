@@ -140,8 +140,18 @@ public class SpeechBubbleUI : MonoBehaviour
     /// </summary>
     /// <param name="animTrigger">Trigger del Animator del personaje a disparar mientras habla.</param>
     /// <param name="emphasis">Si true, usa el sprite de énfasis (ej: burbuja explosiva).</param>
+    /// <param name="speakerName">
+    /// Nombre del personaje que habla (ej: "Will", "Estela"). AÑADIDO (Agosto 2026) para
+    /// desambiguar quién habla con varios NPCs juntos (taberna), probado como texto dentro del
+    /// propio bocadillo. REVERTIDO (Agosto 2026, mismo mes): un bocadillo de cómic no lleva
+    /// nombres escritos — la desambiguación correcta es que el PICO señale a quien habla (ver
+    /// fix del pico más abajo). Se mantiene el parámetro sin usarlo en el texto (todas las
+    /// llamadas ya lo pasan) por si en el futuro sirve para otra cosa, pero ya no se antepone al
+    /// texto — no tocar esto de nuevo sin que el usuario lo pida explícitamente.
+    /// </param>
     public void Show(Transform target, string text, float duration = 0f,
-                     Action onComplete = null, string animTrigger = null, bool emphasis = false)
+                     Action onComplete = null, string animTrigger = null, bool emphasis = false,
+                     string speakerName = null)
     {
         if (_autoHideRoutine != null) { StopCoroutine(_autoHideRoutine); _autoHideRoutine = null; }
 

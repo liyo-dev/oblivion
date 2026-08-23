@@ -97494,7 +97494,7 @@ MonoBehaviour:
   - {fileID: 115772, guid: 98c20755924aa5d499600058295661ee, type: 3}
   - {fileID: 160454, guid: 8ec774c4def159e4dba49882bd591326, type: 3}
   - {fileID: 115846, guid: bef19769e972d0741aec3902288fcc2e, type: 3}
-  cloudHeight: 45
+  cloudHeight: 70
   coverRadius: 150
   cellSize: 18
   jitter: 0.5

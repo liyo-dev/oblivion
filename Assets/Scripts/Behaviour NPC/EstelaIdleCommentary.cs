@@ -299,7 +299,7 @@ namespace Game.NPC
                 context.Animator?.PlayAmbientActivity(NPCAmbientActivity.SitGround);
 
                 if (!string.IsNullOrEmpty(_line) && SpeechBubbleUI.Instance != null)
-                    SpeechBubbleUI.Instance.Show(context.Transform, _line, _bubbleDuration);
+                    SpeechBubbleUI.Instance.Show(context.Transform, _line, _bubbleDuration, speakerName: "Estela");
             }
 
             _timer += Time.deltaTime;
@@ -415,7 +415,7 @@ namespace Game.NPC
             }
 
             if (!string.IsNullOrEmpty(_line) && SpeechBubbleUI.Instance != null)
-                SpeechBubbleUI.Instance.Show(context.Transform, _line, _bubbleDuration);
+                SpeechBubbleUI.Instance.Show(context.Transform, _line, _bubbleDuration, speakerName: "Estela");
         }
 
         public override void Cleanup(NPCStateContext context)

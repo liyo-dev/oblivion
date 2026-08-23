@@ -519,7 +519,7 @@ public abstract class CinematicSequencerBase : MonoBehaviour
     /// Muestra un texto con saltos de línea como páginas sucesivas de bocadillo.
     /// loopAnim: si true, re-dispara el animTrigger en cada página.
     protected IEnumerator ShowBubblePaged(Transform target, string text, float durationPerPage,
-        string animTrigger = null, bool loopAnim = false)
+        string animTrigger = null, bool loopAnim = false, string speakerName = null)
     {
         string[] pages = text.Split('\n');
         for (int i = 0; i < pages.Length; i++)
@@ -528,7 +528,8 @@ public abstract class CinematicSequencerBase : MonoBehaviour
             if (string.IsNullOrEmpty(page)) continue;
             bool done = false;
             string triggerThisPage = (i == 0 || loopAnim) ? animTrigger : null;
-            SpeechBubbleUI.Instance.Show(target, page, durationPerPage, () => done = true, triggerThisPage);
+            SpeechBubbleUI.Instance.Show(target, page, durationPerPage, () => done = true, triggerThisPage,
+                speakerName: speakerName);
             yield return new WaitUntil(() => done);
         }
     }

@@ -265,7 +265,8 @@ public class StarAwakeningSequencer : CinematicSequencerBase
             _willEmotion?.SetEmotion(faceWillSurprise);
 
         SpeechBubbleUI.Instance.Show(willTransform, Loc(keyWillSurprise),
-            duration: willSurpriseDuration, emphasis: true, animTrigger: animWillSurprise);
+            duration: willSurpriseDuration, emphasis: true, animTrigger: animWillSurprise,
+            speakerName: "Will");
 
         yield return new WaitForSecondsRealtime(willReactionDuration);
 
@@ -325,7 +326,7 @@ public class StarAwakeningSequencer : CinematicSequencerBase
         SpeechBubbleUI.Instance.Show(willTransform, Loc(keyWillAfter),
             duration: willAfterDuration,
             onComplete: () => willAfterDone = true,
-            animTrigger: animWillAfter);
+            animTrigger: animWillAfter, speakerName: "Will");
 
         yield return new WaitUntil(() => willAfterDone);
 
@@ -375,7 +376,7 @@ public class StarAwakeningSequencer : CinematicSequencerBase
         SpeechBubbleUI.Instance.Show(companionTransform, Loc(keyCompanionAlert),
             duration: preDialogueDuration,
             onComplete: () => done = true,
-            animTrigger: animCompanionAlert);
+            animTrigger: animCompanionAlert, speakerName: "Eldran");
 
         yield return new WaitUntil(() => done);
     }
@@ -394,7 +395,7 @@ public class StarAwakeningSequencer : CinematicSequencerBase
 
         SpeechBubbleUI.Instance.Show(companionTransform, Loc(keyEldranHint),
             duration: Mathf.Max(1.5f, hintDuration),
-            animTrigger: animEldranHint);
+            animTrigger: animEldranHint, speakerName: "Eldran");
     }
 
     private IEnumerator Co_WillFiresBack()
@@ -408,7 +409,8 @@ public class StarAwakeningSequencer : CinematicSequencerBase
             _willEmotion?.SetEmotion(faceWillSuccess);
 
         SpeechBubbleUI.Instance.Show(willTransform, Loc(keyWillSuccess),
-            duration: willSuccessDuration, emphasis: true, animTrigger: animWillSuccess);
+            duration: willSuccessDuration, emphasis: true, animTrigger: animWillSuccess,
+            speakerName: "Will");
 
         if (_activeProjectile != null)
             FaceTarget(willTransform, _activeProjectile.transform.position);

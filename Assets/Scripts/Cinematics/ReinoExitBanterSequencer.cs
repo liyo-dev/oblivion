@@ -605,7 +605,7 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
     {
         if (_shotLiamClose != null) _cinematicCamera.Cut(_shotLiamClose);
         yield return ShowBubblePaged(_liamTransform, Loc(_keyLiamPregunta),
-            _liamPreguntaDuration, _animLiamPregunta, loopAnim: true);
+            _liamPreguntaDuration, _animLiamPregunta, loopAnim: true, speakerName: "Liam");
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -616,7 +616,7 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
     {
         if (_shotWillClose != null) _cinematicCamera.Cut(_shotWillClose);
         yield return ShowBubblePaged(_willTransform, Loc(_keyWillMiedo),
-            _willMiedoDurationPerPage, _animWillMiedo, loopAnim: true);
+            _willMiedoDurationPerPage, _animWillMiedo, loopAnim: true, speakerName: "Will");
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -627,7 +627,7 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
     {
         if (_shotEstelaClose != null) _cinematicCamera.Cut(_shotEstelaClose);
         yield return ShowBubblePaged(_estelaTransform, Loc(_keyEstelaAnimo),
-            _estelaAnimoDurationPerPage, _animEstelaAnimo, loopAnim: true);
+            _estelaAnimoDurationPerPage, _animEstelaAnimo, loopAnim: true, speakerName: "Estela");
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -638,7 +638,7 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
     {
         if (_shotLiamClose != null) _cinematicCamera.Cut(_shotLiamClose);
         yield return ShowBubblePaged(_liamTransform, Loc(_keyLiamApoyo),
-            _liamApoyoDurationPerPage, _animLiamApoyo, loopAnim: true);
+            _liamApoyoDurationPerPage, _animLiamApoyo, loopAnim: true, speakerName: "Liam");
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -649,6 +649,6 @@ public class ReinoExitBanterSequencer : CinematicSequencerBase
     {
         if (_shotWillClose != null) _cinematicCamera.Cut(_shotWillClose);
         yield return ShowBubblePaged(_willTransform, Loc(_keyWillGracias),
-            _willGraciasDuration, _animWillGracias, loopAnim: true);
+            _willGraciasDuration, _animWillGracias, loopAnim: true, speakerName: "Will");
     }
 }

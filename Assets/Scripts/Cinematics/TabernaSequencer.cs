@@ -445,14 +445,15 @@ public class TabernaSequencer : CinematicSequencerBase
         // igual que ya se hace con EVT_TAB_LIAM_01. Sin animTrigger: Eldran está sentado y los
         // gestos sociales son a cuerpo completo de pie (PlaySocialGesture en layer 0), lo
         // levantarían de la silla
-        yield return ShowBubblePaged(_eldranTransform, Loc(_keyEldran01), _eldran01Duration);
+        yield return ShowBubblePaged(_eldranTransform, Loc(_keyEldran01), _eldran01Duration,
+            speakerName: "Eldran");
 
         _cinematicCamera.Cut(_shotWillEldran);
         _willEmotion?.SetEmotion(_emotionWill01);
         done = false;
         SpeechBubbleUI.Instance.Show(_willTransform, Loc(_keyWill01),
             duration: _will01Duration, onComplete: () => done = true,
-            animTrigger: _animWill01);
+            animTrigger: _animWill01, speakerName: "Will");
         yield return new WaitUntil(() => done);
 
         _cinematicCamera.Cut(_shotEstela);
@@ -460,7 +461,7 @@ public class TabernaSequencer : CinematicSequencerBase
         done = false;
         SpeechBubbleUI.Instance.Show(_estelaTransform, Loc(_keyEstela01),
             duration: _estela01Duration, onComplete: () => done = true,
-            animTrigger: _animEstela01);
+            animTrigger: _animEstela01, speakerName: "Estela");
         yield return new WaitUntil(() => done);
     }
 
@@ -478,7 +479,7 @@ public class TabernaSequencer : CinematicSequencerBase
         _estelaEmotion?.SetEmotion(_emotionEstela02);
         bool done = false;
         SpeechBubbleUI.Instance.Show(_estelaTransform, Loc(_keyEstela02),
-            duration: _estela02Duration, onComplete: () => done = true);
+            duration: _estela02Duration, onComplete: () => done = true, speakerName: "Estela");
         yield return new WaitUntil(() => done);
     }
 
@@ -504,7 +505,7 @@ public class TabernaSequencer : CinematicSequencerBase
         bool done = false;
         SpeechBubbleUI.Instance.Show(_estelaTransform, Loc(_keyEstela03),
             duration: _estela03Duration, onComplete: () => done = true,
-            animTrigger: _animEstela03);
+            animTrigger: _animEstela03, speakerName: "Estela");
         yield return new WaitUntil(() => done);
 
         yield return new WaitForSeconds(_foodHold);
@@ -563,13 +564,13 @@ public class TabernaSequencer : CinematicSequencerBase
         bool done = false;
         SpeechBubbleUI.Instance.Show(_willTransform, Loc(_keyWill02),
             duration: _will02Duration, onComplete: () => done = true,
-            animTrigger: _animWill02);
+            animTrigger: _animWill02, speakerName: "Will");
         yield return new WaitUntil(() => done);
 
         done = false;
         SpeechBubbleUI.Instance.Show(_eldranTransform, Loc(_keyEldran02),
             duration: _eldran02Duration, onComplete: () => done = true,
-            animTrigger: _animEldran02);
+            animTrigger: _animEldran02, speakerName: "Eldran");
         yield return new WaitUntil(() => done);
     }
 
@@ -627,7 +628,7 @@ public class TabernaSequencer : CinematicSequencerBase
         bool done = false;
         SpeechBubbleUI.Instance.Show(_liamTransform, pages[0].Trim(),
             duration: _liam01Duration, onComplete: () => done = true,
-            animTrigger: _animLiam01);
+            animTrigger: _animLiam01, speakerName: "Liam");
         yield return new WaitUntil(() => done);
 
         // Resto de frases: la misma cámara se acerca a primer plano mientras habla
@@ -643,7 +644,7 @@ public class TabernaSequencer : CinematicSequencerBase
                 if (string.IsNullOrEmpty(page)) continue;
                 done = false;
                 SpeechBubbleUI.Instance.Show(_liamTransform, page,
-                    duration: _liam01Duration, onComplete: () => done = true);
+                    duration: _liam01Duration, onComplete: () => done = true, speakerName: "Liam");
                 yield return new WaitUntil(() => done);
             }
         }
@@ -695,7 +696,7 @@ public class TabernaSequencer : CinematicSequencerBase
         // Sin animTrigger: el bucle de comer sigue activo mientras dice la frase
         bool done = false;
         SpeechBubbleUI.Instance.Show(_estelaTransform, Loc(_keyEstelaRage),
-            duration: _rageDuration, onComplete: () => done = true);
+            duration: _rageDuration, onComplete: () => done = true, speakerName: "Estela");
         yield return new WaitUntil(() => done);
 
         // Para de comer y libera el lock antes del primer plano
@@ -715,7 +716,7 @@ public class TabernaSequencer : CinematicSequencerBase
 
         done = false;
         SpeechBubbleUI.Instance.Show(_estelaTransform, Loc(_keyEstelaSeVaEnterar),
-            duration: _seVaEnterarDuration, onComplete: () => done = true);
+            duration: _seVaEnterarDuration, onComplete: () => done = true, speakerName: "Estela");
         yield return new WaitUntil(() => done);
 
         Time.timeScale      = 1f;
@@ -747,7 +748,7 @@ public class TabernaSequencer : CinematicSequencerBase
         bool done = false;
         SpeechBubbleUI.Instance.Show(_willTransform, Loc(_keyWill03),
             duration: _will03Duration, onComplete: () => done = true,
-            animTrigger: _animWill03);
+            animTrigger: _animWill03, speakerName: "Will");
         yield return new WaitUntil(() => done);
     }
 
@@ -764,7 +765,7 @@ public class TabernaSequencer : CinematicSequencerBase
         bool done = false;
         SpeechBubbleUI.Instance.Show(_eldranTransform, Loc(_keyEldranFlee),
             duration: _fleeDuration, onComplete: () => done = true,
-            animTrigger: _animEldranFlee);
+            animTrigger: _animEldranFlee, speakerName: "Eldran");
         yield return new WaitUntil(() => done);
     }
 

@@ -231,6 +231,14 @@ public class GameBootService : MonoBehaviour
         CameraDirectorService.ForceResetState();
         Game.Cinematics.SimpleCinematicDirector.ForceResetStaticState();
         TeleportService.ForceResetTransitionLock();
+        // FIX: mismo motivo que los de arriba — PlayerHUDV2.HideHUD()/ShowHUD() usan un contador
+        // de referencias que solo se reinicia en Awake() (una vez por sesión de app, porque el HUD
+        // vive en Start.unity/DontDestroyOnLoad). Si algún sistema (diálogo, cinemática, el propio
+        // menú de inventario al salir al menú principal) queda interrumpido a mitad de un
+        // HideHUD() sin su ShowHUD() emparejado, el contador se queda colgado y el HUD no vuelve a
+        // aparecer nunca más en la sesión, ni cargando partida de nuevo. Ver comentario de
+        // PlayerHUDV2.ForceResetHideState().
+        Sendero.UI.PlayerHUDV2.ForceResetHideState();
     }
     #endregion
 

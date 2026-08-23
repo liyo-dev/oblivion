@@ -150,22 +150,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CreditsSceneController
   _logoSprite: {fileID: 21300000, guid: 632f3b8924a09324db96fa90f3bb47c5, type: 3}
   _logoSize: {x: 1300, y: 560}
-  _creditsText: "Un juego de\n\nRa\xFAl B\xE1ez\n\n\n\nProgramaci\xF3n y dise\xF1o\n\nRa\xFAl
-    B\xE1ez\n\n\n\nCr\xE9ditos de assets\n\n\n\nVFX\n\nMatthew Guz - Spell Area of
-    Effect, Orbs Effects\n\nHovl Studio - Magic Effects Pack, Procedural Fire\n\nGabrielAguiarProductions
-    - Free Quick Effects Vol.1\n\nLana Studio - Hyper Casual FX\n\nG-Spot Lab - Magic
-    Energy Seamless Textures\n\nAhmed Houidi - Plasma Shader\n\nLushkinR - Vertical
-    Fog Shader\n\nRoman Chacornac - Realistic Rain VFX\n\nTravis Game Assets - Hit
-    Impact Effects\n\nEric Wang - Free Game VFX\n\n\n\nESCENARIOS Y MUNDO\n\npolySoft3D
-    (Alexander Zaytsev) - Modular Castle\n\nithappy - Sweet Land\n\nUnvik 3D - Cross
-    Plains\n\nQuantum Mana Studio - Cartoon Skybox Pack\n\nDungeon Mason - RPG Tiny
-    Fantasy World, RPG Tiny Hero World Bundle\n\n\n\nPERSONAJES\n\nKevin Iglesias
-    - Human Animations\n\nDungeon Mason - RPG Tiny Hero Duo\n\n\n\nINTERFAZ (UI)\n\nPixel
-    Play - Off Screen Target Indicator\n\n\n\nAUDIO Y M\xDASICA\n\nithappy - efectos
-    de sonido\n\nYoshiki Ara - \"Mycologist of the Windy Valley\"\n\n\n\nHERRAMIENTAS
-    Y PLUGINS\n\nDemigiant - DOTween\n\nInvector - 3rd Person Controller\n\nCiro
-    Continisio - Toon Shader\n\nUnity Technologies - TextMesh Pro\n\n\n\nTIPOGRAF\xCDA\n\nNunito
-    - Vernon Adams (Google Fonts)"
+  _creditsText: "Un juego de\n\nRa\xFAl B\xE1ez\n\n\n\nCr\xE9ditos de assets\n\n\n\nVFX\n\nMatthew
+    Guz\n\nHovl Studio\n\nGabrielAguiarProductions \n\nLana Studio \n\nG-Spot Lab
+    \n\nAhmed Houidi \n\nLushkinR \n\nRoman Chacornac \n\nTravis Game Assets\n\nEric
+    Wang \n\n\n\nESCENARIOS Y MUNDO\n\npolySoft3D (Alexander Zaytsev)\n\nithappy
+    \n\nUnvik 3D \n\nQuantum Mana Studio\n\n\n\nPERSONAJES\n\nKevin Iglesias\n\nDungeon
+    Mason \n\n\n\nINTERFAZ (UI)\n\nPixel Play \n\n\n\nAUDIO Y M\xDASICA\n\nYoshiki
+    Ara \n\n\n\nHERRAMIENTAS Y PLUGINS\n\nDemigiant\n\nInvector \n\nCiro Continisio\n\nUnity
+    Technologies "
   _thankYouText: Gracias por jugar la demo
   _font: {fileID: 11400000, guid: 812c7b0dc56552d4aaa2319860b0c738, type: 2}
   _fontSize: 34

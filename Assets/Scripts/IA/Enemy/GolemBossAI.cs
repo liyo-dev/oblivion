@@ -842,10 +842,15 @@ public class GolemBossAI : MonoBehaviour
             {
                 proj.enabled = true;
                 ConfigureRockLandingVfx(proj);
+                // FIX INC-082: Initialize() usaba siempre el `speed` serializado en el prefab (fijo),
+                // ignorando rockSpeed — la roca viajaba siempre a la velocidad del prefab, nunca a la
+                // configurada aquí, y PredictThrowTargetPosition calculaba el líder de tiro para una
+                // velocidad que el proyectil real no tenía. SetSpeed() debe llamarse antes de Initialize().
+                proj.SetSpeed(rockSpeed);
                 // El daño se configura en el prefab (baseDamage del EnemyProjectile)
                 // Pasamos -1 para usar el daño configurado en el prefab
                 proj.Initialize(direction, -1f);
-                Debug.Log($"[GolemBossAI] 🎯 Roca lanzada - EnemyProjectile usará su baseDamage del prefab");
+                Debug.Log($"[GolemBossAI] 🎯 Roca lanzada - EnemyProjectile usará su baseDamage del prefab, velocidad {rockSpeed}");
             }
             else
             {
@@ -1104,6 +1109,12 @@ public class GolemBossAI : MonoBehaviour
         {
             proj.enabled = true;
             ConfigureRockLandingVfx(proj);
+            // FIX INC-082: sin este SetSpeed(), Initialize() pisaba rb.linearVelocity con el `speed`
+            // fijo serializado en el prefab (ver EnemyProjectile.cs) e ignoraba por completo el
+            // parámetro `speed` (rockSpeed en Fase 2 / rockRainSpeed en la lluvia) que se acaba de usar
+            // arriba para calcular la dirección — las rocas de la lluvia y las de Fase 2 viajaban
+            // siempre a la velocidad del prefab, nunca a la configurada en el Inspector del Golem.
+            proj.SetSpeed(speed);
             proj.Initialize(direction, -1f); // Usar daño del prefab
         }
     }

@@ -346,7 +346,7 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
         SpeechBubbleUI.Instance.Show(liamTransform, Loc(keyLine1),
             duration: line1Duration,
             onComplete: () => line1Done = true,
-            animTrigger: animLine1);
+            animTrigger: animLine1, speakerName: "Liam");
         yield return new WaitUntil(() => line1Done);
 
         FeedbackService.ScreenFlash(evilFlashColor, evilFlashDuration);
@@ -361,7 +361,7 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
         SpeechBubbleUI.Instance.Show(liamTransform, Loc(keyLine2),
             duration: line2Duration,
             onComplete: () => line2Done = true,
-            animTrigger: animLine2);
+            animTrigger: animLine2, speakerName: "Liam");
         yield return new WaitUntil(() => line2Done);
 
         FeedbackService.ScreenFlash(evilFlashColor, evilFlashDuration);
@@ -378,7 +378,7 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
         SpeechBubbleUI.Instance.Show(liamTransform, Loc(keyLine3),
             duration: line3Duration,
             onComplete: () => line3Done = true,
-            animTrigger: animLine3);
+            animTrigger: animLine3, speakerName: "Liam");
         yield return new WaitUntil(() => line3Done);
 
         // ── Fase 5: Dolly back al wide — revela el interior oscuro ───────────

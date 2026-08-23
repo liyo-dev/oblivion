@@ -132,7 +132,7 @@ public class EldranCombatCheerController : MonoBehaviour
         string text = LocalizationManager.Instance != null
             ? LocalizationManager.Instance.Get(key, key)
             : key;
-        SpeechBubbleUI.Instance.Show(eldranTransform, text, duration: bubbleDuration);
+        SpeechBubbleUI.Instance.Show(eldranTransform, text, duration: bubbleDuration, speakerName: "Eldran");
     }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

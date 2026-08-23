@@ -51,7 +51,7 @@ public class AmbientCloudDirector : MonoBehaviour
     [Tooltip("Radio horizontal en el que puede caer el punto de paso más cercano al jugador (0 = pasa justo por encima, mayor = puede cruzar más de lado).")]
     [SerializeField] private float passOffsetRadius = 90f;
     [Tooltip("Altura sobre el jugador a la que vuelan las nubes sueltas.")]
-    [SerializeField] private float cloudAltitude = 70f;
+    [SerializeField] private float cloudAltitude = 100f;
     [SerializeField] private float altitudeJitter = 15f;
     [SerializeField] private Vector2 speedRange = new Vector2(3f, 6f);
     [SerializeField] private float fadeInDuration = 6f;
@@ -60,10 +60,10 @@ public class AmbientCloudDirector : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float clusterChance = 0.3f;
     [SerializeField] private int clusterExtraMax = 2;
     [SerializeField] private Vector2 clusterDelayRange = new Vector2(4f, 10f);
-    [Tooltip("Rango de espera entre spawns con el cielo despejado (cobertura ~0): así es como se consigue el 'de vez en cuando pasa alguna nube bonita'.")]
-    [SerializeField] private Vector2 idleSpawnIntervalRange = new Vector2(90f, 160f);
-    [Tooltip("Rango de espera entre spawns con cobertura alta (cielo nublado/aclarando tras lluvia): mucho más seguido que en despejado.")]
-    [SerializeField] private Vector2 busySpawnIntervalRange = new Vector2(20f, 40f);
+    [Tooltip("Rango de espera entre spawns con el cielo despejado (cobertura ~0): así es como se consigue el 'de vez en cuando pasa alguna nube bonita'. FIX 20 ago 2026: con 90-160s (1.5-2.7 min) de media, en una sesión de demo corta era fácil no ver NINGUNA — el usuario jugó la demo entera y no vio ni una nube suelta. Bajado a un rango que garantiza varias apariciones incluso en una sesión de pocos minutos, sin que se sienta como spam.")]
+    [SerializeField] private Vector2 idleSpawnIntervalRange = new Vector2(30f, 55f);
+    [Tooltip("Rango de espera entre spawns con cobertura alta (cielo nublado/aclarando tras lluvia): mucho más seguido que en despejado. Ajustado 20 ago 2026 junto con idleSpawnIntervalRange.")]
+    [SerializeField] private Vector2 busySpawnIntervalRange = new Vector2(10f, 20f);
 
     [Header("Paseo aleatorio de cobertura")]
     [Tooltip("Cobertura (0-1) a partir de la cual la frecuencia de nubes sueltas ya está al máximo (busySpawnIntervalRange).")]

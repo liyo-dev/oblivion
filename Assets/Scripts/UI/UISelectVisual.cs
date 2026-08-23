@@ -2,6 +2,7 @@
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using DG.Tweening;
+using Core.InputGlyphs;
 
 [RequireComponent(typeof(Selectable))]
 public class UISelectVisual : MonoBehaviour, ISelectHandler, IDeselectHandler, IPointerEnterHandler, IPointerExitHandler
@@ -67,7 +68,20 @@ public class UISelectVisual : MonoBehaviour, ISelectHandler, IDeselectHandler, I
 
     public void OnSelect(BaseEventData eventData) => PlaySelect(true);
     public void OnDeselect(BaseEventData eventData) => PlaySelect(false);
-    public void OnPointerEnter(PointerEventData eventData) => EventSystem.current?.SetSelectedGameObject(gameObject);
+    // FIX: no basta con comprobar movimiento del ratón — cuando un panel (p.ej. el botón
+    // Ajustes al volver de Cerrar) se reactiva con SetActive(true), Unity considera que el
+    // cursor "entra" en cualquier botón que quede debajo de su posición aunque no se haya
+    // movido ni un píxel, disparando este evento y robándole la selección al botón que
+    // RestoreSelectionNextFrame (MainMenuController) acababa de restaurar por mando/teclado.
+    // Al filtrar por familia de input activa (mismo patrón que CreditsFlyoutPanel.RefreshGlyphs)
+    // el ratón parado durante una partida con mando deja de poder secuestrar la selección.
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (InputGlyphService.CurrentFamily != InputGlyphDeviceFamily.KeyboardMouse)
+            return;
+
+        EventSystem.current?.SetSelectedGameObject(gameObject);
+    }
     public void OnPointerExit(PointerEventData eventData) { }
 
     void PlaySelect(bool selected)

@@ -46,6 +46,28 @@ using UnityEngine.Rendering;
 /// a una en vez de desvanecerse todas en el sitio a la vez. <see cref="syncWithRainDarken"/> y
 /// <see cref="fadeDuration"/> quedan SIN USO por esta corrutina (se dejan serializados sin más para
 /// no perder el valor ya ajustado en las escenas existentes, ver comentario en esos campos).
+///
+/// 20 ago 2026 (segunda pasada, misma tarde) — el intento anterior de arreglar "en Game view se
+/// corta de golpe" fue adelantar el fundido de alfa para que llegara a 0 antes de que la nube
+/// terminara su trayecto (<see cref="departureAlphaFraction"/>). Probado en build real, el corte
+/// seguía notándose: por un lado, para nubes que la cámara SÍ sigue viendo todo el trayecto (mirando
+/// al cielo fijamente) el alfa se apagaba "porque sí" mientras la nube aún se veía perfectamente en
+/// pantalla, lejos de cualquier borde — un fundido raro en vez de un corte, pero igual de artificial;
+/// por otro, para nubes que salen de encuadre ANTES de llegar a ese 45% del trayecto (frecuente: el
+/// umbral es un porcentaje FIJO del recorrido, no depende de por dónde mire realmente la cámara en
+/// cada caso concreto) el corte original seguía intacto. En resumen: adivinar CUÁNDO sale una nube
+/// de cámara con un temporizador fijo no puede funcionar para todos los ángulos de cámara y todas
+/// las posiciones de nube a la vez. Sustituido por la solución correcta: comprobar de verdad, cada
+/// pocos frames, si el Bounds de cada nube en PARTIDA sigue dentro del frustum de la cámara de
+/// JUEGO (<see cref="GeometryUtility.TestPlanesAABB"/> contra <c>Camera.main</c>, nunca contra la
+/// cámara libre del Editor) — en cuanto deja de estarlo, se completa su <c>formationT</c> al
+/// instante porque, por definición, nadie puede estar viendo ese salto. Mientras siga dentro de
+/// encuadre, sigue viajando a su ritmo normal con el alfa ligado 1:1 a la posición (sin adelantarlo
+/// como antes): si el jugador se queda mirando cómo se aleja una nube hasta perderla de vista de
+/// verdad, la ve alejarse y encogerse de forma continua, nunca desvanecerse de golpe a media
+/// distancia. <see cref="departureAlphaFraction"/> queda SIN USO por el mismo motivo que
+/// <see cref="syncWithRainDarken"/>/<see cref="fadeDuration"/> (se deja serializado para no perder
+/// el valor ya ajustado en las escenas existentes). Ver <see cref="cutDepartingCloudsOutsideCamera"/>.
 /// </summary>
 public class CloudCoverSpawner : MonoBehaviour
 {
@@ -79,7 +101,7 @@ public class CloudCoverSpawner : MonoBehaviour
     [Tooltip("Prefabs de nube a repartir por el techo. Recomendado: QuibliRainCloud3D_1..4 (Assets/Prefabs/VFX/), mallas Cloud3D de Quibli como las del [Demo] SampleSceneWithQuibli. Se elige uno al azar por instancia.")]
     [SerializeField] private GameObject[] cloudPrefabs;
     [Tooltip("Altura sobre el jugador a la que se coloca el CENTRO del techo de nubes la PRIMERA vez que se construye (después el techo queda fijo en el mundo, no vuelve a recalcularse aunque el jugador se mueva). Las nubes NO tienen collider, así que si el jugador puede volar (PlayerFlyingController) las atraviesa sin más: por debajo se ve el cielo cubierto, por encima el cielo/skybox normal (el skybox nunca se toca, así que el sol sigue ahí arriba). Si minClearanceAboveFollowTarget detecta que esta altura no basta para las mallas ya escaladas, se sube automáticamente.")]
-    [SerializeField] private float cloudHeight = 60f;
+    [SerializeField] private float cloudHeight = 90f;
     [Tooltip("Radio horizontal alrededor del jugador que cubre el techo de nubes. Cuanto más grande, menos se nota el borde del área cubierta, pero más instancias hacen falta.")]
     [SerializeField] private float coverRadius = 150f;
     [Tooltip("Separación aproximada entre nubes de la rejilla. Más bajo = más denso = tapa mejor el cielo, pero más nubes instanciadas (y más overdraw con quads transparentes).")]
@@ -94,12 +116,17 @@ public class CloudCoverSpawner : MonoBehaviour
     [SerializeField] private float heightJitter = 12f;
     [Tooltip("Margen mínimo, en unidades de mundo, entre el punto más bajo de la malla de nubes ya instanciada/escalada y el jugador. Tras construir el techo se mide su altura REAL (no solo cloudHeight) y si no deja este margen, se sube el techo entero lo que haga falta. Es la protección contra 'la cámara se queda dentro de la nube' si cloudHeight/scaleRange quedan mal calibrados para el prefab que uses.")]
     [SerializeField] private float minClearanceAboveFollowTarget = 25f;
+    [Tooltip("FIX 20 ago 2026 — 'las nubes se ven demasiado bajas / no se ven al pasar'. Investigado: la cámara en tercera persona (Invector) solo puede inclinarse hasta 40° hacia arriba, y con el FOV de 60° eso da un máximo de 70° de elevación — nunca justo encima de la cabeza (90°). Con cloudHeight como techo PLANO (comportamiento antiguo), una nube justo encima del jugador (radio≈0) exige 90° de elevación (siempre invisible) y hace falta alejarse mucho del centro para que se vea sin mirar hacia arriba. Ahora la altura de cada nube YA NO es plana: cerca del centro se queda en cloudHeight (como antes, siempre habrá un pequeño punto ciego justo encima, inevitable con cualquier altura), pero a partir de cierto radio la altura SUBE con la distancia para mantener más o menos esta elevación (grados) vista desde el centro del techo — así las nubes lejanas se ven altas y grandes de verdad (como una pared de tormenta en el horizonte) sin dejar de estar dentro del ángulo que la cámara alcanza sin forzar la vista hacia arriba. Bajar este valor agranda la zona 'sin mirar arriba'; subirlo hace que las nubes lejanas suban más rápido (más dramático, pero necesita más inclinación de cámara para verlas).")]
+    [SerializeField, Range(5f, 45f)] private float horizonElevationDegrees = 30f;
 
     [Header("Cobertura total del mundo (FIX INC-074)")]
     [Tooltip("El techo se construye UNA vez y queda fijo (ver comentario de clase), así que solo cubre 'coverRadius' unidades alrededor del punto donde se activó por primera vez. Si el jugador se aleja lo bastante, sale por el borde y ve el skybox despejado en vez de nubes. Cada 'recenterCheckInterval' segundos se comprueba la distancia del jugador al centro actual y, si supera la mitad de coverRadius, se recoloca el techo YA CONSTRUIDO (solo se mueve _root, sin volver a instanciar nada) centrado en la nueva posición — así las nubes acaban cubriendo todo el mundo según se explora, sin volver a seguir al jugador cada frame (que era lo que causaba el temblor que motivó fijarlo originalmente).")]
     [SerializeField] private float recenterCheckInterval = 2f;
+    [Tooltip("FIX 20 ago 2026 — otra causa de 'las nubes desaparecen de golpe': el recentrado de arriba movía _root de golpe, en un solo frame (sin interpolar). Si el jugador cruzaba el umbral de recentrado MIENTRAS el techo ya era visible (p.ej. a mitad de una tormenta larga), todo el techo se TELETRANSPORTABA de una posición del mundo a otra en el mismo frame — desde la cámara de juego eso se ve exactamente como 'las nubes de aquí desaparecen y aparecen allí', aunque el fundido en sí ya fuera gradual. Ahora el recentrado se anima suavemente durante este tiempo (segundos) en vez de saltar de golpe.")]
+    [SerializeField] private float recenterPanDuration = 4f;
 
     private float _recenterTimer;
+    private Coroutine _recenterCoroutine;
 
     [Header("Aspecto de tormenta")]
     [Tooltip("Color de sombreado de tormenta. Solo se usa en modo QuibliCloud2D (_ShadowColor) y LegacyBaseColor (_BaseColor). En QuibliCloud3D no hace falta: el tono tormentoso lo pone la propia luz de la escena al oscurecerse con la lluvia.")]
@@ -126,19 +153,20 @@ public class CloudCoverSpawner : MonoBehaviour
     [SerializeField, Range(0f, 0.9f)] private float durationJitter = 0.35f;
     [Tooltip("Multiplicador de perCloudTravelDuration SOLO al irse (tras RainStopped), para que la despedida se sienta un poco más pausada que la llegada ('se van yendo poco a poco'). 1 = misma duración que al llegar.")]
     [SerializeField, Range(1f, 3f)] private float departureDurationMultiplier = 1.3f;
-    [Tooltip("FIX 20 ago 2026 — 'en Scene view se ve perfecto pero en Game view desaparece de golpe': la nube sigue viajando en línea recta hacia su posición lejana/alta durante TODA la partida, pero eso puede sacarla del encuadre de la cámara de juego (FOV limitado, no mira hacia arriba como la cámara libre del Editor) antes de que el alfa termine de bajar — con la cámara del Editor, que sí puede seguirla, se ve el fundido completo; con la cámara de juego, en cuanto sale de plano deja de dibujarse y el jugador solo ve la parte ya-invisible-hecha-golpe. Con esta fracción (0-1), el ALFA/disolución termina de llegar a 0 mucho ANTES de que la posición termine su recorrido: p.ej. 0.55 = el alfa ya es 0 cuando a la nube le queda el 45% final de su viaje por recorrer. Así, tanto si la cámara la sigue viendo lejos/arriba (Scene view) como si no (Game view), el resultado es el mismo: ya es invisible antes de la parte del trayecto que puede quedar fuera de cámara. Solo afecta a la PARTIDA (al llegar, alfa y posición avanzan juntos, sin cambios, porque ahí no había queja).")]
-    [SerializeField, Range(0.1f, 0.95f)] private float departureAlphaFraction = 0.55f;
+
+    [Header("Corte por cámara (fix real de 'las nubes desaparecen de golpe', 2ª pasada)")]
+    [Tooltip("Sustituye a departureAlphaFraction (ver comentario de clase): en vez de adivinar con un porcentaje fijo cuándo una nube en PARTIDA va a salir del encuadre, se comprueba de verdad cada 'cameraCullCheckEveryNFrames' frames si su Bounds sigue dentro del frustum de la cámara de juego (Camera.main). En cuanto deja de estarlo, esa nube completa su formationT al instante (nadie puede ver el salto). Si se desactiva, las nubes en partida vuelven a animar alfa y posición 1:1 hasta el final de su trayecto SIN corte alguno — solo apto si algún día se resuelve lo del FOV limitado por otra vía (p.ej. una cámara de juego que sí mire hacia arriba sin límite).")]
+    [SerializeField] private bool cutDepartingCloudsOutsideCamera = true;
+    [Tooltip("Cada cuántos frames se recalcula el frustum de la cámara y se comprueba qué nubes en partida han salido de plano. TestPlanesAABB es barato incluso con maxCloudInstances alto, pero no hace falta comprobarlo en TODOS los frames: 1 = cada frame (más preciso, el corte se nota como muchísimo 2-3 frames tarde, imperceptible), 3-5 = casi igual de preciso y bastante más barato con rejillas grandes.")]
+    [SerializeField, Range(1, 10)] private int cameraCullCheckEveryNFrames = 3;
 
     [Header("Transición (heredado, ya no lo usa la ola de llegada/partida)")]
-    // CS0414: estos dos campos se asignan (vía Inspector/serialización) pero nunca se leen — a
-    // propósito, ver tooltips. Se mantienen sin usar para no perder el valor ya ajustado en las
-    // escenas existentes, así que se silencia el warning en vez de borrarlos.
-#pragma warning disable 0414
     [Tooltip("OBSOLETO desde el fix del 20 ago 2026 (ver comentario de clase): la ola de llegada/partida ahora usa siempre waveSpreadDuration/perCloudTravelDuration, nube a nube. Se deja este campo serializado tal cual para no perder el valor ya ajustado en las escenas existentes, pero ya no se lee en ningún sitio.")]
     [SerializeField] private bool syncWithRainDarken = true;
     [Tooltip("OBSOLETO — ver tooltip de syncWithRainDarken. Ya no se lee en ningún sitio.")]
     [SerializeField] private float fadeDuration = 6f;
-#pragma warning restore 0414
+    [Tooltip("OBSOLETO desde la 2ª pasada del fix del 20 ago 2026 (ver comentario de clase): adelantar el alfa un porcentaje fijo del trayecto no funcionaba para todos los ángulos de cámara. Sustituido por cutDepartingCloudsOutsideCamera, que comprueba el frustum de verdad en vez de adivinar. Se deja serializado para no perder el valor ya ajustado en las escenas existentes, pero ya no se lee en ningún sitio.")]
+    [SerializeField, Range(0.1f, 0.95f)] private float departureAlphaFraction = 0.55f;
 
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
     // Propiedades del shader Quibli/Cloud2D (ver Assets/Plugins/Quibli/Shaders/Cloud2D.shadergraph).
@@ -157,9 +185,13 @@ public class CloudCoverSpawner : MonoBehaviour
     private Coroutine _formationCoroutine;
     /// <summary>0 = objetivo actual es "todas fuera/invisibles", 1 = objetivo actual es "techo formado del todo". Solo indica hacia dónde se dirige la ola en curso, no el estado real de cada nube (ver CloudUnit.formationT para eso).</summary>
     private float _targetFormation;
-    /// <summary>Igual que _targetFormation, pero lo lee ApplyUnitVisual para decidir si aplica la curva de alfa adelantado de la partida (ver departureAlphaFraction). Se necesitan los dos: _targetFormation también lo consultan Update()/HandleInteriorExited()/DebugToggleCover() con otro propósito (saber si hay algo que mostrar), y aquí interesa específicamente "¿la ola EN CURSO va hacia 0 o hacia 1?".</summary>
-    private float _currentWaveTarget = 1f;
     private float _safetyHeightBonus;
+    // Corte por cámara (ver cutDepartingCloudsOutsideCamera): cámara de JUEGO cacheada (nunca la
+    // del Editor) y buffer de planos de frustum reutilizado cada comprobación para no generar
+    // basura de GC en cada ola de partida.
+    private Camera _gameCamera;
+    private readonly Plane[] _frustumPlanes = new Plane[6];
+    private int _cullFrameCounter;
     private bool _built;
     // FIX (16 ago 2026): "las nubes se ven en un interior" + "sigue lloviendo pero no hay nubes
     // tras teletransportarse fuera". Este componente estaba "totalmente desacoplado de
@@ -231,6 +263,12 @@ public class CloudCoverSpawner : MonoBehaviour
         {
             StopCoroutine(_formationCoroutine);
             _formationCoroutine = null;
+        }
+
+        if (_recenterCoroutine != null)
+        {
+            StopCoroutine(_recenterCoroutine);
+            _recenterCoroutine = null;
         }
 
         DestroyCover();
@@ -314,6 +352,10 @@ public class CloudCoverSpawner : MonoBehaviour
     /// punto donde empezó a llover la primera vez. Mover _root no afecta a las posiciones LOCALES
     /// (targetLocalPos/farLocalPos) que usa la ola de llegada/partida, así que no interfiere con
     /// una animación en curso.
+    ///
+    /// 20 ago 2026: antes esto movía _root en el sitio, de golpe, en un solo frame — ver tooltip de
+    /// recenterPanDuration para por qué eso se veía como "las nubes desaparecen de golpe" desde la
+    /// cámara de juego. Ahora solo arranca (o redirige) una animación suave hacia la nueva posición.
     /// </summary>
     void CheckRecenter()
     {
@@ -330,8 +372,30 @@ public class CloudCoverSpawner : MonoBehaviour
 
         Vector3 newPos = playerT.position;
         newPos.y = rootPos.y; // mantiene la altura ya calculada (incluye _safetyHeightBonus)
-        _root.position = newPos;
         _followTransform = playerT;
+
+        if (_recenterCoroutine != null)
+            StopCoroutine(_recenterCoroutine);
+        _recenterCoroutine = StartCoroutine(SmoothRecenterRoutine(newPos));
+    }
+
+    IEnumerator SmoothRecenterRoutine(Vector3 targetPos)
+    {
+        Vector3 start = _root.position;
+        float duration = Mathf.Max(0.05f, recenterPanDuration);
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            float eased = t * t * (3f - 2f * t);
+            _root.position = Vector3.Lerp(start, targetPos, eased);
+            yield return null;
+        }
+
+        _root.position = targetPos;
+        _recenterCoroutine = null;
     }
 
     void BuildCoverIfNeeded()
@@ -355,6 +419,12 @@ public class CloudCoverSpawner : MonoBehaviour
         int half = Mathf.Max(1, Mathf.CeilToInt(coverRadius / Mathf.Max(1f, cellSize)));
         float radiusSqr = coverRadius * coverRadius;
         float jitterRange = cellSize * jitter * 0.5f;
+        // Fix 20 ago 2026 (ver tooltip de horizonElevationDegrees): tan del ángulo al que queremos
+        // que se vean las nubes lejanas desde el centro del techo. Más allá del radio en el que
+        // radial*tanElev supera cloudHeight, la altura de cada nube SUBE con la distancia para
+        // mantener ese ángulo — en vez del techo plano de antes, que era invisible salvo mirando
+        // casi verticalmente hacia arriba en cuanto te acercabas al centro.
+        float tanElev = Mathf.Tan(horizonElevationDegrees * Mathf.Deg2Rad);
         int spawned = 0;
 
         for (int gx = -half; gx <= half && spawned < maxCloudInstances; gx++)
@@ -370,7 +440,9 @@ public class CloudCoverSpawner : MonoBehaviour
 
                 float x = baseX + UnityEngine.Random.Range(-jitterRange, jitterRange);
                 float z = baseZ + UnityEngine.Random.Range(-jitterRange, jitterRange);
-                float y = UnityEngine.Random.Range(-heightJitter, heightJitter);
+                float radial = Mathf.Sqrt(baseX * baseX + baseZ * baseZ);
+                float extraHeight = Mathf.Max(0f, radial * tanElev - cloudHeight);
+                float y = extraHeight + UnityEngine.Random.Range(-heightJitter, heightJitter);
                 var targetLocalPos = new Vector3(x, y, z);
 
                 // Se instancia YA en su posición final (targetLocalPos): así ApplySafetyClearance()
@@ -499,6 +571,34 @@ public class CloudCoverSpawner : MonoBehaviour
     }
 
     /// <summary>
+    /// Cámara de JUEGO (nunca la del Editor) contra la que se comprueba si una nube en partida
+    /// sigue dentro de plano — ver cutDepartingCloudsOutsideCamera. Se cachea pero se vuelve a
+    /// resolver si deja de estar activa (cambio de escena, cámara desactivada, etc.).
+    /// </summary>
+    Camera ResolveGameCamera()
+    {
+        if (_gameCamera != null && _gameCamera.isActiveAndEnabled) return _gameCamera;
+        _gameCamera = Camera.main;
+        return _gameCamera;
+    }
+
+    /// <summary>Bounds de mundo combinados de todos los renderers de UNA nube, para el test de frustum.</summary>
+    static Bounds GetUnitWorldBounds(CloudUnit unit)
+    {
+        var renderers = unit.renderers;
+        Bounds combined = default;
+        bool has = false;
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            var r = renderers[i];
+            if (r == null) continue;
+            if (!has) { combined = r.bounds; has = true; }
+            else combined.Encapsulate(r.bounds);
+        }
+        return combined;
+    }
+
+    /// <summary>
     /// Anima TODAS las nubes hacia <paramref name="target"/> (1 = formarse en su hueco, 0 =
     /// alejarse e invisibilizarse) en una ola escalonada: cada nube tiene su propio retraso de
     /// inicio (CloudUnit.delayOffset01 * waveSpreadDuration) y su propia duración de trayecto
@@ -506,13 +606,16 @@ public class CloudCoverSpawner : MonoBehaviour
     /// target es 0). Usa Mathf.MoveTowards sobre formationT en vez de un Lerp con tiempo de inicio
     /// fijo: así, si esta ola interrumpe a la ANTERIOR a medio camino (p.ej. vuelve a llover justo
     /// cuando las nubes aún se estaban yendo), cada nube continúa suavemente desde su formationT
-    /// actual hacia el nuevo objetivo en vez de saltar a la posición lejana de golpe.
+    /// actual hacia el nuevo objetivo en vez de saltar a la posición lejana de golpe. Mientras
+    /// target es 0 (partida), también comprueba cada cameraCullCheckEveryNFrames frames si cada
+    /// nube ya salió del frustum de la cámara de juego para completarla al instante (ver
+    /// cutDepartingCloudsOutsideCamera y el comentario de clase, 2ª pasada del 20 ago 2026).
     /// </summary>
     IEnumerator FormationWaveRoutine(float target)
     {
-        _currentWaveTarget = target;
+        bool departing = target <= 0f;
         float perCloudBase = perCloudTravelDuration;
-        if (target <= 0f)
+        if (departing)
             perCloudBase *= Mathf.Max(1f, departureDurationMultiplier);
 
         // Cota de seguridad por si algo deja alguna nube sin converger (p.ej. Time.deltaTime en un
@@ -520,11 +623,30 @@ public class CloudCoverSpawner : MonoBehaviour
         float maxTime = waveSpreadDuration + perCloudBase * (1f + durationJitter) + 1f;
         float elapsed = 0f;
         bool allDone = false;
+        _cullFrameCounter = 0;
 
         while (!allDone && elapsed < maxTime)
         {
             elapsed += Time.deltaTime;
             allDone = true;
+
+            // Ver cutDepartingCloudsOutsideCamera: solo comprobamos el frustum mientras las nubes se
+            // están YENDO — al llegar sí queremos que se vean materializarse, eso nunca fue la queja.
+            bool doCullCheck = false;
+            if (departing && cutDepartingCloudsOutsideCamera)
+            {
+                var gameCam = ResolveGameCamera();
+                if (gameCam != null)
+                {
+                    _cullFrameCounter++;
+                    if (_cullFrameCounter >= Mathf.Max(1, cameraCullCheckEveryNFrames))
+                    {
+                        _cullFrameCounter = 0;
+                        GeometryUtility.CalculateFrustumPlanes(gameCam, _frustumPlanes);
+                        doCullCheck = true;
+                    }
+                }
+            }
 
             for (int i = 0; i < _units.Count; i++)
             {
@@ -539,6 +661,16 @@ public class CloudCoverSpawner : MonoBehaviour
                 float duration = Mathf.Max(0.05f, perCloudBase * unit.durationMultiplier);
                 float maxDelta = Time.deltaTime / duration;
                 unit.formationT = Mathf.MoveTowards(unit.formationT, target, maxDelta);
+
+                // La nube ya no está en pantalla: completarla al instante. El salto es invisible por
+                // definición (nadie la está mirando), y así dejamos de depender de un porcentaje fijo
+                // de trayecto que nunca podía acertar para todas las cámaras/posiciones a la vez.
+                if (doCullCheck && unit.formationT > 0f
+                    && !GeometryUtility.TestPlanesAABB(_frustumPlanes, GetUnitWorldBounds(unit)))
+                {
+                    unit.formationT = 0f;
+                }
+
                 ApplyUnitVisual(unit);
 
                 if (Mathf.Abs(unit.formationT - target) > 0.001f)
@@ -566,42 +698,31 @@ public class CloudCoverSpawner : MonoBehaviour
     /// su formationT actual. Sustituye al antiguo ApplyAlpha(float) global: cada nube ahora anima
     /// su propio recorrido en vez de compartir un único valor de alfa con todas las demás.
     ///
-    /// La posición SIEMPRE usa el progreso "puro" (easedPos, smoothstep de formationT): la nube
-    /// recorre su trayecto completo lejos↔hueco pase lo que pase. El ALFA usa un progreso propio
-    /// (easedAlpha) que en la PARTIDA (ver departureAlphaFraction) llega a 0 antes de que la
-    /// posición termine su recorrido — fix 20 ago 2026 para que la desaparición se vea igual de
-    /// gradual en la cámara de juego (FOV limitado) que en la cámara libre del Editor: ver tooltip
-    /// de departureAlphaFraction para el porqué.
+    /// Posición y alfa usan SIEMPRE el mismo progreso (eased, smoothstep de formationT) — a
+    /// diferencia del intento anterior (departureAlphaFraction, ahora sin uso), aquí ya no se
+    /// adelanta el alfa respecto a la posición: si una nube en partida sigue dentro de cámara todo
+    /// su trayecto, se ve alejarse y desvanecerse de forma continua hasta el final. El corte real
+    /// para cuando sale de plano antes de terminar lo hace FormationWaveRoutine, completando su
+    /// formationT al instante en cuanto detecta que ya no está en el frustum de la cámara de juego
+    /// (ver cutDepartingCloudsOutsideCamera) — momento en el que esta función ya ni se llama con un
+    /// t intermedio para esa nube.
     /// </summary>
     void ApplyUnitVisual(CloudUnit unit)
     {
         float t = Mathf.Clamp01(unit.formationT);
-        float easedPos = t * t * (3f - 2f * t); // smoothstep: acelera al salir, se asienta al llegar
+        float eased = t * t * (3f - 2f * t); // smoothstep: acelera al salir, se asienta al llegar
 
-        float alphaT = t;
-        if (_currentWaveTarget <= 0f)
-        {
-            // Partida (formationT baja de 1 a 0): el alfa debe llegar a 0 en cuanto formationT cae
-            // por debajo de (1 - departureAlphaFraction), bastante antes de que la posición termine
-            // de alejarse. Con departureAlphaFraction=0.55, ese umbral es 0.45: de t=1 a t=0.45 el
-            // alfa baja de 1 a 0; de t=0.45 a t=0 la nube sigue moviéndose pero ya es invisible.
-            float threshold = 1f - Mathf.Clamp01(departureAlphaFraction);
-            float span = Mathf.Max(0.001f, departureAlphaFraction);
-            alphaT = Mathf.Clamp01((t - threshold) / span);
-        }
-        float easedAlpha = alphaT * alphaT * (3f - 2f * alphaT);
-
-        unit.transform.localPosition = Vector3.Lerp(unit.farLocalPos, unit.targetLocalPos, easedPos);
+        unit.transform.localPosition = Vector3.Lerp(unit.farLocalPos, unit.targetLocalPos, eased);
 
         Color legacyColor = stormCloudColor;
-        legacyColor.a = easedAlpha;
+        legacyColor.a = eased;
 
-        float shadowAmount = stormShadowAmount * easedAlpha;
+        float shadowAmount = stormShadowAmount * eased;
         float billboardValue = billboard ? 1f : 0f;
         // Con Cloud3D, bajar el umbral desde >1 hasta el valor visible hace que la nube se
         // 'materialice' pixel a pixel (y se erosione al disiparse) — reforzando el efecto de
         // "llegar/irse" que ya aporta el movimiento de posición.
-        float alphaThreshold = Mathf.Lerp(1.01f, visibleAlphaThreshold, easedAlpha);
+        float alphaThreshold = Mathf.Lerp(1.01f, visibleAlphaThreshold, eased);
 
         var renderers = unit.renderers;
         for (int i = 0; i < renderers.Length; i++)
@@ -616,7 +737,7 @@ public class CloudCoverSpawner : MonoBehaviour
                     _mpb.SetFloat(AlphaThresholdId, alphaThreshold);
                     break;
                 case CloudShaderMode.QuibliCloud2D:
-                    _mpb.SetFloat(OpacityId, easedAlpha);
+                    _mpb.SetFloat(OpacityId, eased);
                     _mpb.SetColor(ShadowColorId, stormCloudColor);
                     _mpb.SetFloat(ShadowAmountId, shadowAmount);
                     _mpb.SetFloat(BillboardId, billboardValue);

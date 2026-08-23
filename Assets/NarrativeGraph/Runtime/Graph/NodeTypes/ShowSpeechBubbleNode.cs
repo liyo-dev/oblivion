@@ -31,6 +31,9 @@ public sealed class ShowSpeechBubbleNode : NarrativeNode
     [Tooltip("Si true, usa el sprite de énfasis (burbuja explosiva) en lugar del normal.")]
     public bool emphasis;
 
+    [Tooltip("Nombre del personaje que habla (ej: 'Will', 'Estela'). Opcional — si se rellena, aparece como primera línea dentro del bocadillo para dejar claro quién habla cuando hay varios NPCs juntos. Vacío = comportamiento de siempre, sin nombre.")]
+    public string speakerName;
+
     // Runtime-only: handler activo registrado en NarrativeSkipHub mientras este nodo espera su
     // bocadillo (ver Enter/Exit). No es dato de diseño del grafo — Action no es serializable por
     // Unity de todas formas, pero se documenta como tal para que quede claro que no debe tratarse
@@ -102,7 +105,7 @@ public sealed class ShowSpeechBubbleNode : NarrativeNode
             callback = wrappedCallback;
         }
 
-        ui.Show(target.transform, resolved, duration, callback, animTrigger, emphasis);
+        ui.Show(target.transform, resolved, duration, callback, animTrigger, emphasis, speakerName);
 
         if (!willWait)
             onReadyToAdvance?.Invoke();
