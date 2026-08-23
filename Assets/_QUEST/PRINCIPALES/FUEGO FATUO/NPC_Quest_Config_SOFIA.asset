@@ -27,6 +27,11 @@ MonoBehaviour:
     requiredPartyMembers: []
     requiredCharacter: -1
     dlgWrongCharacter: {fileID: 0}
+    unlockRequirement:
+      mode: 1
+      quest: {fileID: 11400000, guid: 30160d52506ee7c46b1dcdafe9667f87, type: 2}
+      questId: 
+    dlgLocked: {fileID: 0}
     dlgBefore: {fileID: 11400000, guid: f67070d425dcfa347a4200db4902261f, type: 2}
     dlgInProgress: {fileID: 11400000, guid: f67070d425dcfa347a4200db4902261f, type: 2}
     dlgTurnIn: {fileID: 0}

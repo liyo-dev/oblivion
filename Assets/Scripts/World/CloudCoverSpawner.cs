@@ -161,12 +161,18 @@ public class CloudCoverSpawner : MonoBehaviour
     [SerializeField, Range(1, 10)] private int cameraCullCheckEveryNFrames = 3;
 
     [Header("Transición (heredado, ya no lo usa la ola de llegada/partida)")]
+    // CS0414 silenciado a propósito: estos 3 campos quedan sin uso desde el fix del 20 ago 2026
+    // (ver comentario de clase y tooltips de cada uno) pero se mantienen serializados para no
+    // perder el valor ya ajustado en las escenas existentes. Si algún día se decide borrarlos de
+    // verdad, quitar también este pragma.
+#pragma warning disable 0414
     [Tooltip("OBSOLETO desde el fix del 20 ago 2026 (ver comentario de clase): la ola de llegada/partida ahora usa siempre waveSpreadDuration/perCloudTravelDuration, nube a nube. Se deja este campo serializado tal cual para no perder el valor ya ajustado en las escenas existentes, pero ya no se lee en ningún sitio.")]
     [SerializeField] private bool syncWithRainDarken = true;
     [Tooltip("OBSOLETO — ver tooltip de syncWithRainDarken. Ya no se lee en ningún sitio.")]
     [SerializeField] private float fadeDuration = 6f;
     [Tooltip("OBSOLETO desde la 2ª pasada del fix del 20 ago 2026 (ver comentario de clase): adelantar el alfa un porcentaje fijo del trayecto no funcionaba para todos los ángulos de cámara. Sustituido por cutDepartingCloudsOutsideCamera, que comprueba el frustum de verdad en vez de adivinar. Se deja serializado para no perder el valor ya ajustado en las escenas existentes, pero ya no se lee en ningún sitio.")]
     [SerializeField, Range(0.1f, 0.95f)] private float departureAlphaFraction = 0.55f;
+#pragma warning restore 0414
 
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
     // Propiedades del shader Quibli/Cloud2D (ver Assets/Plugins/Quibli/Shaders/Cloud2D.shadergraph).

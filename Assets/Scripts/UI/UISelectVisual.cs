@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 using DG.Tweening;
 using Core.InputGlyphs;
 
@@ -66,18 +67,31 @@ public class UISelectVisual : MonoBehaviour, ISelectHandler, IDeselectHandler, I
         _punchTween?.Kill();
     }
 
+    // Mismo umbral que InputGlyphService.MouseMoveThresholdSqr: px² de movimiento de ratón
+    // por frame para contar como actividad real (no como ruido/jitter del sensor).
+    const float MouseMoveThresholdSqr = 4f;
+
     public void OnSelect(BaseEventData eventData) => PlaySelect(true);
     public void OnDeselect(BaseEventData eventData) => PlaySelect(false);
-    // FIX: no basta con comprobar movimiento del ratón — cuando un panel (p.ej. el botón
-    // Ajustes al volver de Cerrar) se reactiva con SetActive(true), Unity considera que el
-    // cursor "entra" en cualquier botón que quede debajo de su posición aunque no se haya
-    // movido ni un píxel, disparando este evento y robándole la selección al botón que
-    // RestoreSelectionNextFrame (MainMenuController) acababa de restaurar por mando/teclado.
-    // Al filtrar por familia de input activa (mismo patrón que CreditsFlyoutPanel.RefreshGlyphs)
-    // el ratón parado durante una partida con mando deja de poder secuestrar la selección.
+    // FIX (20/08, insuficiente): filtrar solo por familia de input activa no basta. Cuando un
+    // panel (Ajustes/Controles) se cierra con Cancelar/Esc/mando y buttonPanel se reactiva con
+    // SetActive(true), Unity reevalúa el raycast de hover ESE MISMO FRAME (o el siguiente) y
+    // dispara OnPointerEnter sobre lo que quede bajo el cursor aunque el ratón lleve rato
+    // parado — robándole la selección visual al botón que RestoreSelectionNextFrame
+    // (MainMenuController) acaba de restaurar. Esto seguía ocurriendo incluso cerrando con
+    // teclado/mando porque cerrar con Esc (acción "Cancel", ligada también a <Keyboard>/escape,
+    // ver PlayerControls.inputactions) no cambia la familia activa: seguimos "en" KeyboardMouse,
+    // así que el filtro de familia de abajo no bloqueaba nada. Solución: tratar esto como hover
+    // real solo si el ratón se ha movido de verdad este frame (mismo criterio que usa
+    // InputGlyphService para decidir si hay "actividad" de ratón) — un hover fantasma disparado
+    // por la reactivación del panel siempre trae delta ≈ 0 porque el cursor no se ha movido.
     public void OnPointerEnter(PointerEventData eventData)
     {
         if (InputGlyphService.CurrentFamily != InputGlyphDeviceFamily.KeyboardMouse)
+            return;
+
+        var mouse = Mouse.current;
+        if (mouse != null && mouse.delta.ReadValue().sqrMagnitude <= MouseMoveThresholdSqr)
             return;
 
         EventSystem.current?.SetSelectedGameObject(gameObject);

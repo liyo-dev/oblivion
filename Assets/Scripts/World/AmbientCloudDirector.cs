@@ -48,11 +48,15 @@ public class AmbientCloudDirector : MonoBehaviour
     [SerializeField] private int poolSize = 6;
     [Tooltip("Distancia desde el jugador a la que nace/muere cada nube. La ruta completa mide el doble (nace a un lado, muere al otro).")]
     [SerializeField] private float spawnDistance = 180f;
-    [Tooltip("Radio horizontal en el que puede caer el punto de paso más cercano al jugador (0 = pasa justo por encima, mayor = puede cruzar más de lado).")]
+    [Tooltip("Radio horizontal en el que puede caer el punto de paso más cercano al jugador (0 = pasa justo por encima, mayor = puede cruzar más de lado). Desde el FIX del 23 ago 2026 (ver horizonElevationDegrees) la altura real de cada nube depende de este offset, así que agrandar este radio también permite nubes más altas antes de tocar el techo de cloudAltitude.")]
     [SerializeField] private float passOffsetRadius = 90f;
-    [Tooltip("Altura sobre el jugador a la que vuelan las nubes sueltas.")]
+    [Tooltip("FIX 23 ago 2026, 2ª pasada — techo MÁXIMO de altura de las nubes sueltas (ya no es la altura fija de antes). La 1ª pasada de este mismo día forzaba un offset mínimo para que el punto de paso no quedara nunca a más de maxViewableElevationDegrees (65°) del jugador — técnicamente dentro de lo que la cámara PUEDE alcanzar, pero Raúl probó en el juego y seguía sin ver ninguna: con cloudAltitude=100 fijo, incluso al offset máximo (90) la elevación mínima posible ya rondaba 48-53°, y en la práctica nadie inclina tanto la cámara jugando normal. La referencia correcta era otra: CloudCoverSpawner (el techo de tormenta, que sí se ve bien en juego) no apunta al límite máximo de la cámara sino a horizonElevationDegrees = 30° por defecto, un ángulo que se ve con solo alzar un poco la vista. Ahora cloudAltitude es el techo de seguridad (por si algún día se sube mucho passOffsetRadius o horizonElevationDegrees), pero la altura real que se usa en cada pasada es la que mantiene ese ángulo cómodo — ver SpawnPassingCloud.")]
     [SerializeField] private float cloudAltitude = 100f;
-    [SerializeField] private float altitudeJitter = 15f;
+    [Tooltip("Altura mínima de una pasada (para offsets muy cercanos a 0, donde horizonElevationDegrees pediría una altura casi nula): evita que una nube 'de paso cercano' vuele pegada al suelo o atraviese al jugador.")]
+    [SerializeField] private float minCloudAltitude = 20f;
+    [SerializeField] private float altitudeJitter = 8f;
+    [Tooltip("FIX 23 ago 2026, 2ª pasada — mismo parámetro (nombre y valor por defecto) que ya usa CloudCoverSpawner para el techo de tormenta: el ángulo de elevación, visto desde el jugador, al que deben verse las nubes sin necesidad de inclinar mucho la cámara. La altura real de cada pasada se calcula como offset horizontal × tan(este ángulo), acotada entre minCloudAltitude y cloudAltitude — así una pasada muy cercana al jugador (offset pequeño) vuela baja y una pasada lejana (offset grande, hasta passOffsetRadius) vuela más alta, pero SIEMPRE dentro de un ángulo cómodo de ver, nunca cerca de los ~70° que ya sabemos que la cámara en tercera persona (Invector, 40° de inclinación + FOV 60°) no alcanza en juego normal.")]
+    [SerializeField, Range(5f, 45f)] private float horizonElevationDegrees = 30f;
     [SerializeField] private Vector2 speedRange = new Vector2(3f, 6f);
     [SerializeField] private float fadeInDuration = 6f;
     [SerializeField] private float fadeOutDuration = 6f;
@@ -222,7 +226,15 @@ public class AmbientCloudDirector : MonoBehaviour
 
         Vector2 offset2D = UnityEngine.Random.insideUnitCircle * passOffsetRadius;
         Vector3 passPoint = followT.position + new Vector3(offset2D.x, 0f, offset2D.y);
-        passPoint.y = followT.position.y + cloudAltitude + UnityEngine.Random.Range(-altitudeJitter, altitudeJitter);
+
+        // Ver tooltip de horizonElevationDegrees: la altura de esta pasada en concreto se deriva de
+        // lo lejos que queda horizontalmente del jugador (offset2D), no es un valor fijo — así el
+        // ángulo de elevación desde el jugador se queda siempre en una zona cómoda de ver, igual que
+        // ya hace CloudCoverSpawner con su techo de tormenta.
+        float offsetMagnitude = offset2D.magnitude;
+        float elevationHeight = offsetMagnitude * Mathf.Tan(horizonElevationDegrees * Mathf.Deg2Rad);
+        float baseHeight = Mathf.Clamp(elevationHeight, minCloudAltitude, cloudAltitude);
+        passPoint.y = followT.position.y + baseHeight + UnityEngine.Random.Range(-altitudeJitter, altitudeJitter);
 
         float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
         Vector3 dir = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
