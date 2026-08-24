@@ -18,8 +18,10 @@ public class SprintVFXController : MonoBehaviour
     [Tooltip("Retardo antes de activar el VFX para evitar parpadeos en sprints muy cortos")]
     [SerializeField] private float activationDelay = 0.15f;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     [Header("Debug")]
     [SerializeField] private bool debugLog = false;
+#endif
 
     private Animator _animator;
     private Camera _cam;

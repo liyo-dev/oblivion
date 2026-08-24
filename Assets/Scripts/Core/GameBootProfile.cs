@@ -800,7 +800,11 @@ public class GameBootProfile : ScriptableObject
                     if (Vector3.Distance(existing.position, position) > 0.01f)
                     {
                         existing.position = position;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                        // PERF (revisión rendimiento 24/08): este log corre una vez por NPC persistido
+                        // en cada guardado — en build final no aporta nada y solo genera basura de Gen0.
                         Debug.Log($"[GameBootProfile] Actualizada posición de NPC '{npcId}' desde lastPosition/transform: {position}");
+#endif
                     }
                     // Siempre actualizar la rotación para capturar turnAroundOnArrival y otros giros
                     existing.rotation = npc.transform.rotation;
@@ -835,6 +839,18 @@ public class GameBootProfile : ScriptableObject
         }
 
         // Eliminar entradas de NPCs que ya no existen en la escena (fueron destruidos)
+        //
+        // PERF (revisión rendimiento 24/08): antes esto hacía npcs.FirstOrDefault(...) por cada
+        // entrada del preset — coste O(entradas × NPCs en escena), con asignación de un enumerador
+        // LINQ en cada llamada. Con un diccionario por nombre, construido una sola vez, la búsqueda
+        // pasa a ser O(1) por entrada.
+        var npcsByName = new Dictionary<string, NPCBehaviourManagerV2>(npcs.Count);
+        foreach (var n in npcs)
+        {
+            if (n != null && !string.IsNullOrEmpty(n.gameObject.name))
+                npcsByName[n.gameObject.name] = n;
+        }
+
         for (int i = preset.npcPositions.Count - 1; i >= 0; i--)
         {
             var entry = preset.npcPositions[i];
@@ -846,8 +862,7 @@ public class GameBootProfile : ScriptableObject
 
             // Mantener entradas aunque el NPC no esté en escena (puede estar en otra escena)
             // Solo remover si el NPC existe en escena pero ya no tiene persistLastPosition
-            var npcInScene = npcs.FirstOrDefault(n => n != null && n.gameObject.name == entry.npcId);
-            if (npcInScene != null && !npcInScene.persistLastPosition)
+            if (npcsByName.TryGetValue(entry.npcId, out var npcInScene) && npcInScene != null && !npcInScene.persistLastPosition)
             {
                 preset.npcPositions.RemoveAt(i);
             }
@@ -975,7 +990,12 @@ public class GameBootProfile : ScriptableObject
                 // Actualizar el lastPosition del NPC para futuras capturas
                 npc.lastPosition = pos;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                // PERF (revisión rendimiento 24/08): este log corre una vez por NPC reposicionado en
+                // cada carga de escena/partida — en build final no aporta nada y solo genera basura
+                // de Gen0 justo en el momento en que ya hay más carga por la propia activación de escena.
                 Debug.Log($"[GameBootProfile] NPC '{id}' reposicionado a {pos} desde preset runtime.");
+#endif
             }
             catch (Exception ex)
             {

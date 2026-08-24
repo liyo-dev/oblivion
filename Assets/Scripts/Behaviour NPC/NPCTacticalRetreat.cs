@@ -37,9 +37,11 @@ namespace Game.NPC
         [Tooltip("Distancia mínima detrás del objeto para considerar que está a cubierto")]
         private float coverDistanceBehind = 1.5f;
 
+#if UNITY_EDITOR
         [Header("Debug")]
-        [SerializeField] 
+        [SerializeField]
         private bool showDebugGizmos = true;
+#endif
 
         [SerializeField, Min(1)] 
         [Tooltip("Número máximo de objetos a evaluar como cobertura")]

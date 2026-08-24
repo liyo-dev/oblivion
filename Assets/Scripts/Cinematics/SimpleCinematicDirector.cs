@@ -734,7 +734,13 @@ namespace Game.Cinematics
                     if (step.dialogue != null && !dialogueShown && elapsedTime >= showDialogueAt)
                     {
                         dialogueShown = true;
-                        DialogueManager.Instance.StartDialogue(step.dialogue, transform, () => dialogueFinished = true);
+                        // FIX (24/08/2026): isSequenceDialogue=true — este diálogo forma parte de una
+                        // secuencia real (SimpleCinematicDirector), así que sí debe poder saltarse con
+                        // el botón de "mantener pulsado" (ver NarrativeSkipHub y el nuevo parámetro en
+                        // DialogueManager.StartDialogue). El resto de diálogos del juego (conversaciones
+                        // normales con NPCs, diálogo de quest, etc.) se quedan en el valor por defecto
+                        // (false) y no lo ofrecen.
+                        DialogueManager.Instance.StartDialogue(step.dialogue, transform, () => dialogueFinished = true, isSequenceDialogue: true);
                     }
                     
                     // Lanzar Blackout Final si toca

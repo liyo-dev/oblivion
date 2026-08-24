@@ -34,8 +34,10 @@ namespace Game.Player
         [SerializeField] private string victoryStateName = "Victory_NoWeapon";
         
         [Header("Detección de Combate")]
+#if UNITY_EDITOR
         [Tooltip("Radio de detección de enemigos para activar Battle Mode")]
         [SerializeField] private float enemyDetectionRadius = 15f;
+#endif
         
         [Tooltip("Layer de enemigos (Enemy)")]
         [SerializeField] private LayerMask enemyLayer = ~0;
@@ -320,6 +322,7 @@ namespace Game.Player
             
             _isInBattleMode = true;
             _targetLayerWeight = 1f;
+            GameplayEventLog.Log("BatallaInicio");
 
             if (actionManager != null)
                 actionManager.PushMode(ActionMode.Combat);
@@ -351,6 +354,7 @@ namespace Game.Player
             
             _isInBattleMode = false;
             _targetLayerWeight = 0f;
+            GameplayEventLog.Log("BatallaFin");
 
             if (actionManager != null)
                 actionManager.PopMode(ActionMode.Combat);
@@ -473,6 +477,7 @@ namespace Game.Player
         IEnumerator PlayVictorySequence()
         {
             _isPlayingVictory = true;
+            GameplayEventLog.Log("Victoria", _currentBattleId);
 
             Debug.Log($"[PlayerBattleMode] 🎉 ✅ INICIANDO ANIMACIÓN DE VICTORIA");
 

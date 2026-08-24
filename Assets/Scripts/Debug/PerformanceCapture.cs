@@ -16,6 +16,13 @@ using UnityEngine.SceneManagement;
 /// resultante para analizarlo — no requiere tener el Profiler abierto ni hacer nada manual aparte
 /// de F9/F9.
 ///
+/// Además de los números de rendimiento, la misma grabación incluye un registro de "qué estaba
+/// pasando en el juego" (batalla, teletransporte, cinemática, clima, menús, diálogo...) vía
+/// GameplayEventLog — ver ese archivo y GameplayEventLogWirer.cs. Cada evento lleva el mismo reloj
+/// (segundos desde que empezó la grabación) que las muestras por segundo, así que un evento y un
+/// pico de rendimiento con el mismo "segundo" corresponden al mismo instante de juego: no hace falta
+/// jugar, parar y explicar aparte qué se estaba haciendo en cada captura.
+///
 /// No incluye número de draw calls/batches: esa métrica solo está expuesta por el Frame Debugger
 /// del Editor (UnityStats es una API interna de UnityEditor, no existe en builds). Todo lo demás
 /// (frame time, CPU/GPU, memoria) sí funciona tanto en Play Mode del Editor como en una build de
@@ -38,8 +45,10 @@ public class PerformanceCapture : MonoBehaviour
     [SerializeField] private Key toggleKey = Key.F9;
 
     [Tooltip("Duración máxima de una grabación, por si se te olvida pararla con F9 — protección " +
-             "para no dejar el juego grabando horas y generar un archivo enorme.")]
-    [SerializeField] private float maxDurationSeconds = 300f;
+             "para no dejar el juego grabando horas y generar un archivo enorme. Subido a 45 min " +
+             "(24/08) para poder grabar una demo entera (~30 min) de una sola pasada sin que la " +
+             "grabación se corte sola a mitad — antes eran solo 5 min.")]
+    [SerializeField] private float maxDurationSeconds = 2700f;
 
     [Tooltip("Un frame por encima de este umbral (en ms) se registra como posible \"hitch\" en la " +
              "lista de picos del informe. 50ms ≈ por debajo de 20 fps en ese frame.")]
@@ -74,6 +83,10 @@ public class PerformanceCapture : MonoBehaviour
     float _memStartMB, _memPeakMB;
 
     static readonly FrameTiming[] _frameTimingBuffer = new FrameTiming[1];
+    // Límite superior razonable para una lectura de gpuFrameTime/cpuFrameTime de un único frame
+    // (ver comentario en SampleFrame): ningún frame real dura 1000ms; cualquier valor por encima es
+    // una lectura corrupta de FrameTimingManager, no un dato de rendimiento real.
+    const double PlausibleFrameTimingMs = 1000d;
 
     string _lastSavedPath = "";
     bool _lastSaveFailed;
@@ -135,6 +148,8 @@ public class PerformanceCapture : MonoBehaviour
         _memStartMB = _bucketAllocStart / (1024f * 1024f);
         _memPeakMB = _memStartMB;
 
+        GameplayEventLog.BeginSession(_recordingStartRealtime);
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log("[PerformanceCapture] ▶ Grabación de rendimiento iniciada.");
 #endif
@@ -151,8 +166,13 @@ public class PerformanceCapture : MonoBehaviour
         if (FrameTimingManager.GetLatestTimings(1, _frameTimingBuffer) > 0)
         {
             var ft = _frameTimingBuffer[0];
-            if (ft.gpuFrameTime > 0) { _bucketGpuMsSum += (float)ft.gpuFrameTime; _bucketGpuSamples++; }
-            if (ft.cpuFrameTime > 0) { _bucketCpuMsSum += (float)ft.cpuFrameTime; _bucketCpuSamples++; }
+            // FIX (revisión rendimiento 24/08, Parte 17): FrameTimingManager a veces devuelve un
+            // valor absurdamente grande en vez de un centinela limpio de "sin datos" (visto en una
+            // captura real: 439.208.083.456 ms en un único frame), lo que contamina el promedio de
+            // todo el bucket. "> 0" ya filtraba el -1/0 de "sin datos", pero no un valor imposible
+            // por arriba — se añade PlausibleFrameTimingMs como límite superior razonable.
+            if (ft.gpuFrameTime > 0 && ft.gpuFrameTime < PlausibleFrameTimingMs) { _bucketGpuMsSum += (float)ft.gpuFrameTime; _bucketGpuSamples++; }
+            if (ft.cpuFrameTime > 0 && ft.cpuFrameTime < PlausibleFrameTimingMs) { _bucketCpuMsSum += (float)ft.cpuFrameTime; _bucketCpuSamples++; }
         }
 
         long allocNow = Profiler.GetTotalAllocatedMemoryLong();
@@ -208,7 +228,8 @@ public class PerformanceCapture : MonoBehaviour
         _recording = false;
         FlushBucket(Profiler.GetTotalAllocatedMemoryLong());
 
-        var data = BuildData();
+        var eventos = GameplayEventLog.EndSession();
+        var data = BuildData(eventos);
         string json = JsonUtility.ToJson(data, prettyPrint: true);
 
         try
@@ -229,7 +250,7 @@ public class PerformanceCapture : MonoBehaviour
         _lastSaveMessageUntil = Time.unscaledTime + 8f;
     }
 
-    PerformanceCaptureData BuildData()
+    PerformanceCaptureData BuildData(List<GameplayEventLog.EventEntry> eventos)
     {
         var sortedMs = new List<float>(_allFrameMsSamples);
         sortedMs.Sort();
@@ -276,11 +297,15 @@ public class PerformanceCapture : MonoBehaviour
             gpuTimingDisponible = gpuN > 0,
             unityVersion = Application.unityVersion,
             picosRecortados = _spikesCapped,
+            eventosRecortados = GameplayEventLog.EventsCapped,
             notas = "No incluye draw calls/batches (solo disponibles vía el Frame Debugger del Editor). " +
                     "bytesAsignados/coleccionesGC son deltas por segundo de memoria managed total " +
                     "(Profiler.GetTotalAllocatedMemoryLong / GC.CollectionCount(0)), no solo de este componente. " +
                     "gpuMsPromedio/cpuMsPromedio salen a -1 en los segundos en que FrameTimingManager no devolvió datos " +
-                    "(frecuente en Play Mode del Editor en algunas plataformas; más fiable en una build).",
+                    "(frecuente en Play Mode del Editor en algunas plataformas; más fiable en una build). " +
+                    "eventos: registro de qué estaba pasando en el juego (ver GameplayEventLog.cs), con 'segundo' en " +
+                    "el mismo reloj que 'segundo' en muestrasPorSegundo — cruzar ambos para saber qué ocurría en un " +
+                    "momento dado. No es exhaustivo: solo cubre los sistemas ya conectados (ver GameplayEventLogWirer.cs).",
         };
 
         var resumen = new PerfResumen
@@ -307,6 +332,7 @@ public class PerformanceCapture : MonoBehaviour
             resumen = resumen,
             muestrasPorSegundo = _buckets,
             picosDetectados = _spikes,
+            eventos = eventos,
         };
     }
 
@@ -348,7 +374,7 @@ public class PerformanceCapture : MonoBehaviour
         if (_recording)
         {
             float t = Time.unscaledTime - _recordingStartRealtime;
-            DrawWithShadow($"🔴 Grabando rendimiento... {t:0}s — F9 para parar", 16, 16, style);
+            DrawWithShadow($"🔴 Grabando rendimiento... {t:0}s · {GameplayEventLog.EventCount} eventos — F9 para parar", 16, 16, style);
         }
         else if (Time.unscaledTime < _lastSaveMessageUntil)
         {
@@ -414,6 +440,7 @@ public class PerformanceCapture : MonoBehaviour
         public bool gpuTimingDisponible;
         public string unityVersion;
         public bool picosRecortados;
+        public bool eventosRecortados;
         public string notas;
     }
 
@@ -424,5 +451,6 @@ public class PerformanceCapture : MonoBehaviour
         public PerfResumen resumen;
         public List<PerfBucket> muestrasPorSegundo;
         public List<string> picosDetectados;
+        public List<GameplayEventLog.EventEntry> eventos;
     }
 }

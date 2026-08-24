@@ -1,0 +1,8 @@
+• Nuevo: indicador de fase de desarrollo (Pre-Alpha) bajo el logo del menú principal.
+• Nuevo: paneles de Notas del Parche y de Reportar un Fallo, accesibles desde el menú principal sin salir del juego.
+• Nuevo: botón Volver en la pantalla de Ajustes.
+• Arreglado: la selección del menú ya no salta al botón equivocado al cerrar Ajustes o Controles.
+• Arreglado: el icono de "mantener pulsado para saltar" vuelve a aparecer correctamente en las builds compiladas (antes solo funcionaba dentro del Editor).
+• Arreglado: el aviso de tutorial inicial ya no se queda visible por encima del menú de pausa.
+• Mejorado: las estrellas del cielo nocturno son más doradas, brillan y ya no se dibujan por encima de las montañas.
+• Varias optimizaciones internas de rendimiento.

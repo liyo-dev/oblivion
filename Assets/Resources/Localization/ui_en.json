@@ -217,6 +217,10 @@
             "value": "Talk"
         },
         {
+            "key": "MainMenu_BugReport",
+            "value": "Bug Report"
+        },
+        {
             "key": "MainMenu_Continue",
             "value": "Continue"
         },
@@ -237,8 +241,96 @@
             "value": "New Game"
         },
         {
+            "key": "MainMenu_PatchNotes",
+            "value": "Patch Notes"
+        },
+        {
             "key": "MainMenu_Settings",
             "value": "Settings"
+        },
+        {
+            "key": "BugReport_Title",
+            "value": "REPORT A BUG"
+        },
+        {
+            "key": "BugReport_LabelSeveridad",
+            "value": "Bug Severity *"
+        },
+        {
+            "key": "BugReport_SeverityGameBreaking",
+            "value": "Game Breaking"
+        },
+        {
+            "key": "BugReport_SeverityMayor",
+            "value": "Major Bug"
+        },
+        {
+            "key": "BugReport_SeverityMenor",
+            "value": "Minor Bug"
+        },
+        {
+            "key": "BugReport_SeverityPuntual",
+            "value": "One-off Bug"
+        },
+        {
+            "key": "BugReport_LabelBuild",
+            "value": "Build Number *"
+        },
+        {
+            "key": "BugReport_PlaceholderBuild",
+            "value": "0.0.0"
+        },
+        {
+            "key": "BugReport_HelpBuild",
+            "value": "You can find it in the bottom-left corner of the screen"
+        },
+        {
+            "key": "BugReport_LabelDescripcion",
+            "value": "Bug Description *"
+        },
+        {
+            "key": "BugReport_PlaceholderDescripcion",
+            "value": "Try to be as specific as possible."
+        },
+        {
+            "key": "BugReport_LabelPasos",
+            "value": "Steps to Reproduce (optional)"
+        },
+        {
+            "key": "BugReport_PlaceholderPasos",
+            "value": "How can I reproduce the bug?"
+        },
+        {
+            "key": "BugReport_Submit",
+            "value": "SUBMIT"
+        },
+        {
+            "key": "BugReport_ErrorSeveridad",
+            "value": "Choose the bug's severity."
+        },
+        {
+            "key": "BugReport_ErrorBuild",
+            "value": "Enter the build number."
+        },
+        {
+            "key": "BugReport_ErrorDescripcion",
+            "value": "Describe the bug before submitting."
+        },
+        {
+            "key": "BugReport_Sending",
+            "value": "Sending…"
+        },
+        {
+            "key": "BugReport_Success",
+            "value": "Thanks! Report sent."
+        },
+        {
+            "key": "BugReport_Error",
+            "value": "Couldn't send it. Check your connection and try again."
+        },
+        {
+            "key": "PatchNotes_Title",
+            "value": "PATCH NOTES"
         },
         {
             "key": "NPC_REQUIRES_WILL",

@@ -159,6 +159,8 @@ public class SpeechBubbleUI : MonoBehaviour
         _isShowing = true;
         _label.text = text;
 
+        GameplayEventLog.Log("Dialogo", !string.IsNullOrEmpty(speakerName) ? speakerName : target != null ? target.name : null);
+
         // Centrado forzado siempre (horizontal Y vertical): no depender solo del valor por
         // defecto del prefab, que podría cambiar sin querer en una variante o en una edición
         // futura del prefab. El bocadillo de cómic siempre debe leerse centrado.

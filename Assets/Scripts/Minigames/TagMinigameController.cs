@@ -1429,6 +1429,13 @@ public class TagMinigameController : MonoBehaviour
         _playerCastRoutine = null;
     }
 
+    // PERF (revisión rendimiento 24/08): antes se llamaba a string.Format() en CADA frame mientras
+    // el objetivo de protección estaba activo, generando basura de forma constante aunque el valor
+    // no cambiara — a diferencia de UpdateTimerUI(), que ya solo actualiza el texto cuando cambia.
+    // Se añade el mismo tipo de guard aquí.
+    private int _lastDisplayedProtectedCount = -1;
+    private int _lastDisplayedRequiredCount = -1;
+
     private void UpdateObjectiveUI()
     {
         EnsureObjectiveTextReference();
@@ -1438,12 +1445,23 @@ public class TagMinigameController : MonoBehaviour
 
         if (!HasProtectionObjectiveConfigured)
         {
-            objectiveText.text = string.Empty;
+            if (_lastDisplayedProtectedCount != -1 || _lastDisplayedRequiredCount != -1)
+            {
+                objectiveText.text = string.Empty;
+                _lastDisplayedProtectedCount = -1;
+                _lastDisplayedRequiredCount = -1;
+            }
             return;
         }
 
         int required = RequiredProtectCount;
-        objectiveText.text = string.Format(Loc(objectiveFormat), Mathf.Min(protectedCount, required), required);
+        int protectedClamped = Mathf.Min(protectedCount, required);
+        if (protectedClamped == _lastDisplayedProtectedCount && required == _lastDisplayedRequiredCount)
+            return;
+
+        _lastDisplayedProtectedCount = protectedClamped;
+        _lastDisplayedRequiredCount = required;
+        objectiveText.text = string.Format(Loc(objectiveFormat), protectedClamped, required);
     }
     
     /// <summary>

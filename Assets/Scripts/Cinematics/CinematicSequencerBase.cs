@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 using EasyTransition;
 using Sendero.Core.Feedback;
@@ -564,6 +565,60 @@ public abstract class CinematicSequencerBase : MonoBehaviour
     }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+    [Header("Debug")]
+    [Tooltip("Tecla que dispara 'Simular secuencia' en Play Mode — mismo efecto que el menú contextual " +
+        "del componente (click derecho en la cabecera → 'Simular secuencia'), sin tener que entrar en el " +
+        "Inspector cada vez. Key.None la desactiva (valor por defecto: no interfiere con ningún " +
+        "sequencer existente salvo que se asigne una tecla a mano o desde un builder de escena).")]
+    [SerializeField] private Key _simulateHotkey = Key.None;
+
+    // Si alguna subclase necesita su propio Update(), debe declararlo como "protected override void
+    // Update()" y llamar a "base.Update();" para no perder el atajo — de lo contrario el suyo oculta
+    // (no sobrescribe) este por ausencia de "new"/"override", y el warning del compilador (CS0114) lo
+    // avisaría en cuanto se intente.
+    //
+    // FIX (24 ago 2026): la primera versión usaba UnityEngine.Input.GetKeyDown(KeyCode) — el proyecto
+    // tiene "Active Input Handling" puesto a "Input System Package" en Player Settings (todo el resto
+    // del juego ya usa UnityEngine.InputSystem, ver PlayerInputManager/HoldToSkipUI), así que la clase
+    // Input legacy está desactivada y cualquier lectura suya lanza InvalidOperationException en
+    // tiempo real. Corregido leyendo el teclado del nuevo Input System directamente.
+    //
+    // FIX (24 ago 2026, mismo día): el campo pasó de KeyCode a Key JUSTO DESPUÉS de que el builder de
+    // la escena de estudio ya lo hubiera rellenado con el KeyCode.F6 antiguo (entero 287) — Unity no
+    // valida un enum al deserializarlo, así que ese 287 se quedó grabado en la escena tal cual, y no
+    // es un miembro real de Key. Keyboard.current[key] con un Key fuera de rango lanza
+    // ArgumentOutOfRangeException en vez de simplemente "tecla no encontrada", así que sin este guard
+    // el atajo rompía Update() en cada frame. _simulateHotkeyValid cachea el resultado de
+    // Enum.IsDefined la primera vez (evita repetir esa comprobación, que usa reflection, en cada
+    // Update() — ver regla de no-Reflection-en-runtime-frecuente de CLAUDE.md); si el valor no es
+    // válido, el atajo queda desactivado con un aviso en consola en vez de reventar. El builder
+    // también se autocorrige en el próximo re-run (ver SetInputKeyIfNoneOrInvalid en
+    // PromoStudioSceneBuilder.cs).
+    private bool? _simulateHotkeyValid;
+    private bool _invalidHotkeyWarned;
+
+    protected virtual void Update()
+    {
+        if (_simulateHotkey == Key.None) return;
+
+        _simulateHotkeyValid ??= System.Enum.IsDefined(typeof(Key), _simulateHotkey);
+        if (_simulateHotkeyValid != true)
+        {
+            if (!_invalidHotkeyWarned)
+            {
+                _invalidHotkeyWarned = true;
+                Debug.LogWarning($"[CinematicSequencerBase] {GetType().Name}: _simulateHotkey ({(int)_simulateHotkey}) " +
+                    "no es un valor válido del enum Key — probablemente arrastrado de una versión antigua del campo " +
+                    "(era KeyCode). Selecciona la tecla de nuevo a mano en el Inspector, o vuelve a ejecutar el " +
+                    "builder de la escena si tiene uno. Atajo desactivado mientras tanto (aviso único, no se repite).");
+            }
+            return;
+        }
+
+        if (Keyboard.current != null && Keyboard.current[_simulateHotkey].wasPressedThisFrame)
+            SimulateSequence();
+    }
+
     [ContextMenu("Simular secuencia")]
     protected void SimulateSequence() =>
         DefaultNarrativeSignals.EnsureInstance().RaiseCustom(_signalIn);

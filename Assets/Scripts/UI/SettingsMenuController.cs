@@ -10,6 +10,8 @@ public class SettingsMenuController : MonoBehaviour
     [Header("Root")]
     [SerializeField] private GameObject root;
     [SerializeField] private Selectable firstSelection;
+    [Tooltip("Botón visible \"Volver\" — además del mapeo compartido de Cancelar (Esc/mando), para que jugar con ratón no dependa solo del atajo de teclado.")]
+    [SerializeField] private Button backButton;
 
     [Header("Language")]
     [SerializeField] private Button spanishButton;
@@ -67,7 +69,10 @@ public class SettingsMenuController : MonoBehaviour
 
         _eventSystem = EventSystem.current;
 
-        // In this menu we use the shared cancel/input mapping (B) instead of a dedicated back button.
+        // Además del mapeo compartido de Cancelar (Esc en teclado, botón B/East en mando), hay un
+        // botón "Volver" visible en el panel: con ratón no había ninguna forma cómoda de cerrar el
+        // menú sin depender del atajo de teclado.
+        WireBinaryButton(backButton, () => Close());
 
         if (spanishButton)
             spanishButton.onClick.AddListener(() => SetLanguage("es"));
@@ -236,7 +241,7 @@ public class SettingsMenuController : MonoBehaviour
 
     void OnDestroy()
     {
-        // no dedicated backButton listener to remove (uses shared cancel mapping)
+        RemoveBinaryListener(backButton);
         if (spanishButton)
             spanishButton.onClick.RemoveAllListeners();
         if (englishButton)

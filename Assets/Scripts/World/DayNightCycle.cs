@@ -924,6 +924,10 @@ public class DayNightCycle : MonoBehaviour
     IEnumerator CloudBuildUpRoutine()
     {
         _isCloudBuildingUp = true;
+        // Momento señalado en la revisión de rendimiento del 24/08 como el más caro del clima
+        // (formación del techo de nubes + DynamicGI.UpdateEnvironment) — se anota aparte de
+        // "LluviaInicio" para poder distinguir en el .json la transición de la lluvia ya establecida.
+        GameplayEventLog.Log("TormentaFormandoseInicio");
 
         ApplyStormSkybox();
         RaiseCloudsBuildingUp();
@@ -1026,6 +1030,7 @@ public class DayNightCycle : MonoBehaviour
         IsRaining = true;
         onRainStarted?.Invoke();
         RainStarted?.Invoke();
+        GameplayEventLog.Log("LluviaInicio");
         // El SFX de lluvia (rain-sfx.mp3 en el profile) es una pista de ambiente, no un one-shot
         // corto: si se reproduce con PlaySFX normal, el AudioSource se autodevuelve al pool cuando
         // el CLIP termina, no cuando deja de llover. Con lluvias cortas o interrumpidas por
@@ -1045,6 +1050,7 @@ public class DayNightCycle : MonoBehaviour
         IsRaining = false;
         onRainStopped?.Invoke();
         RainStopped?.Invoke();
+        GameplayEventLog.Log("LluviaFin");
         // Corta el loop de ambiente arrancado en ActivateRain (ver comentario allí). Fundido con
         // la misma duración que el fade-out visual de las partículas para que no se note el corte.
         AudioService.Instance?.StopLoopingSFX(RainWeatherSfxLoopId, rainFadeOutTime);

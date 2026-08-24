@@ -537,16 +537,20 @@ public class CreditsFlyoutPanel : MonoBehaviour
         var closeLabel = closeLabelGo.AddComponent<TextMeshProUGUI>();
         ConfigureLabel(closeLabel, "X", fontSize);
         closeLabel.fontStyle = FontStyles.Bold;
-        // FIX: TextAlignmentOptions.Center centra verticalmente usando la línea completa
-        // (ascender-descender) de la fuente, no la altura real del glifo — para un carácter sin
-        // descendentes como "X" eso deja el trazo visualmente pegado hacia arriba dentro del botón
-        // 48x48. Capline centra respecto a la altura de mayúscula (cap height), que sí coincide con
-        // los píxeles que realmente se ven, así que la "X" queda centrada de verdad en el botón.
-        closeLabel.horizontalAlignment = HorizontalAlignmentOptions.Center;
-        closeLabel.verticalAlignment = VerticalAlignmentOptions.Capline;
+        closeLabel.alignment = TextAlignmentOptions.Center;
         closeLabel.margin = Vector4.zero;
         closeLabel.raycastTarget = false;
         _closeLabel = closeLabel;
+        // FIX (24 ago 2026, tras varias rondas a ojo que no cuadraban del todo — ver historial: primero
+        // se cambió a VerticalAlignmentOptions.Capline porque Center vertical se basa en el
+        // ascender/descender completo de la fuente y no en la altura real del glifo; luego, en
+        // BugReportFlyoutPanel, se añadió además un desplazamiento horizontal fijo de -6 calibrado a
+        // ojo contra una captura — pero con otra captura posterior la "X" seguía sin verse centrada).
+        // En vez de seguir afinando constantes a mano, se mide la tinta renderizada de verdad: se fuerza
+        // el mesh de TMP y se centra el RectTransform según el bounds real del glifo, no según sus
+        // métricas de fuente (avance de carácter / cap height, que no coinciden exactamente con los
+        // píxeles pintados). Válido para cualquier fuente o carácter sin tener que recalibrar a mano.
+        CenterGlyphOnRenderedInk(closeLabel);
 
         var closeIconGo = new GameObject("Icon", typeof(RectTransform), typeof(Image));
         closeIconGo.transform.SetParent(closeRt, false);
@@ -670,6 +674,27 @@ public class CreditsFlyoutPanel : MonoBehaviour
         label.textWrappingMode = TextWrappingModes.Normal;
         label.raycastTarget = false;
         if (font != null) label.font = font;
+    }
+
+    // Centra un TMP_Text por la tinta que realmente pinta (bounds del mesh generado), no por las
+    // métricas de la fuente (avance de carácter, cap height, ascender/descender) que usa
+    // TextAlignmentOptions y que no siempre coinciden con los píxeles visibles de un glifo concreto
+    // — evita tener que recalibrar constantes a mano cada vez que cambia la fuente o el carácter.
+    // FIX (24 ago 2026, ver BugReportFlyoutPanel.cs — mismo bug, "la X primero sale mal y al hacer
+    // click se pone bien"): esto se llama en el mismo Awake() en el que se acaba de añadir el
+    // CanvasScaler del panel, que todavía no ha calculado su escala real en ese instante (Unity lo
+    // hace en su propio paso de actualización de Canvas, no de forma síncrona al añadir el
+    // componente) — medir aquí sin más se hacía contra un canvas a medio asentar, y cualquier
+    // interacción posterior forzaba de paso una actualización de canvas que dejaba ver la posición
+    // "real", pero el desplazamiento ya aplicado una vez con datos viejos se quedaba mal para
+    // siempre. `Canvas.ForceUpdateCanvases()` fuerza esa actualización pendiente de forma síncrona
+    // ANTES de medir.
+    static void CenterGlyphOnRenderedInk(TextMeshProUGUI label)
+    {
+        Canvas.ForceUpdateCanvases();
+        label.ForceMeshUpdate(true, true);
+        Vector3 inkCenter = label.textBounds.center;
+        label.rectTransform.anchoredPosition -= new Vector2(inkCenter.x, inkCenter.y);
     }
 
     static void StretchToParent(RectTransform rt)

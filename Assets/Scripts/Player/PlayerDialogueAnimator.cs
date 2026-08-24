@@ -20,8 +20,10 @@ public class PlayerDialogueAnimator : MonoBehaviour
     [Tooltip("Tiempo de blend al entrar en un gesto")]
     [SerializeField, Range(0f, 0.3f)] private float blendTime = 0.1f;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     [Header("Debug")]
     [SerializeField] private bool debugMode = false;
+#endif
 
     // Estado
     private Coroutine _gestureCoroutine;

@@ -390,11 +390,11 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_03",
-            "value": "Desde hace mucho tiempo nuestro reino está protegido con magia de amenazas."
+            "value": "Hacía eones que no vivíamos una amenaza así en el Reino."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_04",
-            "value": "Por alguna razón ese demonio ha conseguido atravesar la barrera."
+            "value": "No entiendo qué ha cambiado para que ese demonio haya aparecido ahora."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_05",
@@ -402,7 +402,7 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_06",
-            "value": "Pero necesito que vayas al bosque prohibido y busques a Estela. Una maga y amiga que siempre anda por ahí."
+            "value": "Pero necesito que vayas al bosque prohibido y busques a Estela, una maga de la que he oído hablar."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_07",
@@ -958,7 +958,7 @@
         },
         {
             "key": "DLG_PIRATE_02",
-            "value": "Me lo quitó un caridas..."
+            "value": "Me lo quitó un lobo..."
         },
         {
             "key": "DLG_PIRATE_03",
@@ -1038,7 +1038,7 @@
         },
         {
             "key": "DLG_VICTORIA_03",
-            "value": "¿Una capa de mago? Claro que sí, lo que mi Eldran necesite..."
+            "value": "¿Una capa de mago? Claro que sí, ahora mismo te la traigo."
         },
         {
             "key": "DLG_VICTORIA_04",

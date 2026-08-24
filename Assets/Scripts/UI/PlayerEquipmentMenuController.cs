@@ -1894,9 +1894,32 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                                                 b.item ? b.item.displayName : string.Empty,
                                                 StringComparison.OrdinalIgnoreCase));
 
+            // PERF (revisión rendimiento 24/08): antes esto era ClearList() (Destroy de TODAS las
+            // filas) + un Instantiate por objeto, en CADA apertura del inventario con la pestaña por
+            // defecto — no solo la primera vez. El coste crecía con el número de objetos acumulados,
+            // que es justo el patrón "se nota cuando llevas jugando un rato" reportado. Ahora se
+            // reutilizan como pool los GameObjects ya hijos de rowsParent (mismo patrón que
+            // ShopUI.RebuildItemList) y solo se Instancia cuando el pool se queda corto.
+            int usedChildren = 0;
+
             foreach (var entry in items)
             {
-                var widget = UnityEngine.Object.Instantiate(_ui.rowPrefab, _ui.rowsParent);
+                InventoryRowWidget widget;
+                if (usedChildren < _ui.rowsParent.childCount)
+                {
+                    var child = _ui.rowsParent.GetChild(usedChildren);
+                    widget = child.GetComponent<InventoryRowWidget>();
+                    if (widget == null)
+                        widget = UnityEngine.Object.Instantiate(_ui.rowPrefab, _ui.rowsParent);
+                    else
+                        child.gameObject.SetActive(true);
+                }
+                else
+                {
+                    widget = UnityEngine.Object.Instantiate(_ui.rowPrefab, _ui.rowsParent);
+                }
+                usedChildren++;
+
                 widget.Configure(entry.item);
                 widget.RefreshLabel(_inventory);
 
@@ -1909,13 +1932,15 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                         relay = widget.gameObject.AddComponent<ScrollOnSelectRelay>();
                     relay.scrollRect = _scrollRect;
                     relay.target = rect;
-                    Debug.Log($"[InventoryView] ScrollOnSelectRelay configurado para item '{entry.item?.displayName ?? "null"}'");
                 }
                 else if (_scrollRect == null)
                 {
-                    Debug.LogWarning($"[InventoryView] ⚠️ No se puede añadir ScrollOnSelectRelay: ScrollRect es null");
+                    Debug.LogWarning("[InventoryView] ⚠️ No se puede añadir ScrollOnSelectRelay: ScrollRect es null");
                 }
 
+                // RegisterClickHandler/RegisterSelectedHandler reasignan el delegate (y hacen
+                // RemoveListener antes de AddListener sobre el mismo método estático) en vez de
+                // acumular con +=, así que reutilizar una fila del pool con handlers nuevos es seguro.
                 var capturedWidget = widget;
                 var capturedItem = entry.item;
                 widget.RegisterClickHandler(() => HandleRowActivated(capturedWidget, capturedItem, true));
@@ -1923,6 +1948,11 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
                 _rows.Add(widget);
             }
+
+            // Ocultar (no destruir) las filas sobrantes de una construcción anterior con más objetos
+            // — quedan listas para reutilizarse la próxima vez que el inventario tenga más items.
+            for (int i = usedChildren; i < _ui.rowsParent.childCount; i++)
+                _ui.rowsParent.GetChild(i).gameObject.SetActive(false);
 
             UpdateRowNavigation();
             
@@ -2006,10 +2036,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         void ClearList()
         {
+            // PERF (revisión rendimiento 24/08): antes se hacía Destroy() de cada fila; ahora se
+            // desactivan para reutilizarlas como pool en la próxima BuildList() (ver comentario allí).
             foreach (var widget in _rows)
             {
                 if (widget != null)
-                    UnityEngine.Object.Destroy(widget.gameObject);
+                    widget.gameObject.SetActive(false);
             }
             _rows.Clear();
             _selectedItem = null;
@@ -2726,6 +2758,11 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 }
             }
 
+            // Ocultar (no destruir) las filas del pool sobrantes de una construcción anterior con
+            // más hechizos desbloqueados — ver AddSpellRow().
+            for (int i = _rows.Count; i < _ui.rowsParent.childCount; i++)
+                _ui.rowsParent.GetChild(i).gameObject.SetActive(false);
+
             // No seleccionar ninguna fila al abrir
             _highlightedRow = null;
             _highlightedSpell = SpellId.None;
@@ -2736,10 +2773,31 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         void AddSpellRow(SpellId spellId)
         {
-            var widget = UnityEngine.Object.Instantiate(_ui.rowPrefab, _ui.rowsParent);
+            // PERF (revisión rendimiento 24/08): mismo pool que InventoryView.BuildList() — se
+            // reutilizan los GameObjects ya hijos de rowsParent en vez de Destroy+Instantiate en
+            // cada apertura de la pestaña de hechizos (Refresh() la llama siempre, sin condición).
+            SpellRowWidget widget;
+            int poolIndex = _rows.Count;
+            if (poolIndex < _ui.rowsParent.childCount)
+            {
+                var child = _ui.rowsParent.GetChild(poolIndex);
+                widget = child.GetComponent<SpellRowWidget>();
+                if (widget == null)
+                    widget = UnityEngine.Object.Instantiate(_ui.rowPrefab, _ui.rowsParent);
+                else
+                    child.gameObject.SetActive(true);
+            }
+            else
+            {
+                widget = UnityEngine.Object.Instantiate(_ui.rowPrefab, _ui.rowsParent);
+            }
+
             widget.SetLabel(ResolveName(spellId));
             widget.SetIcon(GetSpellAsset(spellId)?.attackIcon);
             var rowEntry = new RowEntry { spellId = spellId, widget = widget };
+            // RegisterClickHandler/RegisterSelectedHandler reasignan el delegate (RemoveListener +
+            // AddListener sobre el mismo método estático) en vez de acumular con +=, así que
+            // reutilizar una fila del pool con handlers nuevos es seguro.
             widget.RegisterClickHandler(() => HandleRowClicked(rowEntry));
             widget.RegisterSelectedHandler(() => HandleRowSelected(rowEntry, true));
 
@@ -2752,11 +2810,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                     relay = widget.gameObject.AddComponent<ScrollOnSelectRelay>();
                 relay.scrollRect = _scrollRect;
                 relay.target = rect;
-                Debug.Log($"[SpellView] ScrollOnSelectRelay configurado para hechizo '{ResolveName(spellId)}'");
             }
             else if (_scrollRect == null)
             {
-                Debug.LogWarning($"[SpellView] ⚠️ No se puede añadir ScrollOnSelectRelay: ScrollRect es null");
+                Debug.LogWarning("[SpellView] ⚠️ No se puede añadir ScrollOnSelectRelay: ScrollRect es null");
             }
 
             _rows.Add(rowEntry);
@@ -2968,10 +3025,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         void ClearList()
         {
+            // PERF (revisión rendimiento 24/08): se desactivan en vez de destruirse, para
+            // reutilizarlas como pool en el próximo BuildSpellList() (ver AddSpellRow()).
             foreach (var entry in _rows)
             {
                 if (entry?.widget != null)
-                    UnityEngine.Object.Destroy(entry.widget.gameObject);
+                    entry.widget.gameObject.SetActive(false);
             }
             _rows.Clear();
             _highlightedRow = null;

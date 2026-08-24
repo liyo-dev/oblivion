@@ -42,6 +42,16 @@ using UnityEngine.UI;
 /// la clave de localización in-place. Así basta con volver a ejecutar el menú tras actualizar este
 /// script para arreglar filas que ya se hubieran creado mal.
 ///
+/// FIX (24 ago 2026 — texto en mayúsculas en Play): el placeholder de este array estaba tecleado en
+/// mayúsculas ("CRÉDITOS"/"SALIR") asumiendo que LocalizedText.Refresh() lo pisaría enseguida con la
+/// traducción real ("Créditos"/"Salir", caso título, igual que en ui_es.json) — pero `LocalizedText`
+/// tenía un bug de raíz (`_key` sin [SerializeField], ver el fix en LocalizedText.cs) por el que la
+/// clave asignada aquí con `loc.key = ...` nunca sobrevivía al guardado de la escena, así que
+/// Refresh() nunca llegaba a ejecutarse en Play y el placeholder en mayúsculas se quedaba fijo para
+/// siempre. Con esa clave ya persistiendo, el placeholder ya no debería importar — pero se deja
+/// también en el caso correcto aquí, por si acaso, en vez de depender solo de la localización en
+/// tiempo de ejecución.
+///
 /// Uso: menú "El Sendero → Controles → Añadir Botones Créditos + Salir al Main Menu".
 /// </summary>
 public static class MainMenuCreditsExitButtonsBuilder
@@ -53,8 +63,8 @@ public static class MainMenuCreditsExitButtonsBuilder
 
     static readonly (string goName, string label, string locKey)[] Rows =
     {
-        ("BotonCreditos", "CRÉDITOS", "MainMenu_Credits"),
-        ("BotonSalir", "SALIR", "MainMenu_Exit"),
+        ("BotonCreditos", "Créditos", "MainMenu_Credits"),
+        ("BotonSalir", "Salir", "MainMenu_Exit"),
     };
 
     [MenuItem("El Sendero/Controles/Añadir Botones Créditos + Salir al Main Menu")]

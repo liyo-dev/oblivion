@@ -217,6 +217,10 @@
             "value": "Hablar"
         },
         {
+            "key": "MainMenu_BugReport",
+            "value": "Reportar un Fallo"
+        },
+        {
             "key": "MainMenu_Continue",
             "value": "Continuar"
         },
@@ -237,8 +241,96 @@
             "value": "Nueva Partida"
         },
         {
+            "key": "MainMenu_PatchNotes",
+            "value": "Notas del Parche"
+        },
+        {
             "key": "MainMenu_Settings",
             "value": "Configuración"
+        },
+        {
+            "key": "BugReport_Title",
+            "value": "REPORTAR UN FALLO"
+        },
+        {
+            "key": "BugReport_LabelSeveridad",
+            "value": "Severidad del Fallo *"
+        },
+        {
+            "key": "BugReport_SeverityGameBreaking",
+            "value": "Game Breaking"
+        },
+        {
+            "key": "BugReport_SeverityMayor",
+            "value": "Fallo Mayor"
+        },
+        {
+            "key": "BugReport_SeverityMenor",
+            "value": "Fallo Menor"
+        },
+        {
+            "key": "BugReport_SeverityPuntual",
+            "value": "Fallo Puntual"
+        },
+        {
+            "key": "BugReport_LabelBuild",
+            "value": "Número de Build *"
+        },
+        {
+            "key": "BugReport_PlaceholderBuild",
+            "value": "0.0.0"
+        },
+        {
+            "key": "BugReport_HelpBuild",
+            "value": "Puedes encontrarlo en la esquina inferior izquierda de la pantalla"
+        },
+        {
+            "key": "BugReport_LabelDescripcion",
+            "value": "Descripción del Fallo *"
+        },
+        {
+            "key": "BugReport_PlaceholderDescripcion",
+            "value": "Intenta ser lo más específico posible."
+        },
+        {
+            "key": "BugReport_LabelPasos",
+            "value": "Pasos para Reproducirlo (opcional)"
+        },
+        {
+            "key": "BugReport_PlaceholderPasos",
+            "value": "¿Cómo puedo reproducir el fallo?"
+        },
+        {
+            "key": "BugReport_Submit",
+            "value": "ENVIAR"
+        },
+        {
+            "key": "BugReport_ErrorSeveridad",
+            "value": "Elige la severidad del fallo."
+        },
+        {
+            "key": "BugReport_ErrorBuild",
+            "value": "Escribe el número de build."
+        },
+        {
+            "key": "BugReport_ErrorDescripcion",
+            "value": "Describe el fallo antes de enviar."
+        },
+        {
+            "key": "BugReport_Sending",
+            "value": "Enviando…"
+        },
+        {
+            "key": "BugReport_Success",
+            "value": "¡Gracias! Reporte enviado."
+        },
+        {
+            "key": "BugReport_Error",
+            "value": "No se pudo enviar. Comprueba tu conexión e inténtalo de nuevo."
+        },
+        {
+            "key": "PatchNotes_Title",
+            "value": "NOTAS DEL PARCHE"
         },
         {
             "key": "NPC_REQUIRES_WILL",

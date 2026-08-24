@@ -377,7 +377,18 @@ public class CloudCoverSpawner : MonoBehaviour
         if (distSqr <= recenterThreshold * recenterThreshold) return;
 
         Vector3 newPos = playerT.position;
-        newPos.y = rootPos.y; // mantiene la altura ya calculada (incluye _safetyHeightBonus)
+        // FIX 24 ago 2026 — "las nubes se ponen demasiado bajo cuando llueve". Antes esta línea
+        // conservaba tal cual la altura Y ya calculada la PRIMERA vez que se construyó el techo
+        // (rootPos.y), pensada solo para no perder el _safetyHeightBonus al recentrar en
+        // horizontal. Pero eso deja el techo anclado a la altura absoluta de DONDE estaba el
+        // jugador cuando empezó a llover: si luego sube de cota real (una cuesta, una montaña —
+        // el mundo de este juego tiene desnivel, ver captura de Raúl), el techo se queda fijo en
+        // el mundo mientras el jugador sigue subiendo, y las nubes pasan a verse cada vez más
+        // bajas (incluso por debajo de él) según se aleja en altura del punto original. Ahora se
+        // recalcula igual que en BuildCoverIfNeeded() — cloudHeight sobre la posición ACTUAL del
+        // jugador —, conservando _safetyHeightBonus para no perder el margen de seguridad ya
+        // aplicado (evita que la cámara vuelva a quedar dentro de una nube).
+        newPos.y = playerT.position.y + cloudHeight + _safetyHeightBonus;
         _followTransform = playerT;
 
         if (_recenterCoroutine != null)

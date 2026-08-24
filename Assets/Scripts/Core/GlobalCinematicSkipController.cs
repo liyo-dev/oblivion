@@ -46,19 +46,61 @@ using UnityEngine;
 /// VISIBILIDAD del botón). En vez de revertir el fix de NarrativeSkipHub (que sí soluciona el
 /// caso real de bocadillos sin LockPlayerNode), este controlador ahora escucha AMBAS fuentes y
 /// muestra el botón si cualquiera de las dos tiene algo activo.
+///
+/// FIX (24/08/2026): el comentario de "Colocación" de arriba dice que este componente vive
+/// "siempre activo... junto al resto de managers persistentes" — pero en la escena real vive en
+/// su propio GameObject raíz, hermano de CoreSystems (el único objeto de Start.unity que de
+/// verdad llama a DontDestroyOnLoad), sin heredar esa persistencia. BootLoader.Start() hace
+/// SceneManager.LoadScene(sceneToLoad) en modo Single (descarga Start.unity entero) en cuanto la
+/// escena activa es literalmente "Start" — es decir, en el flujo real de juego (build, o dando
+/// Play desde la propia escena Start). Sin persistencia propia, este GameObject (y el
+/// HoldToSkipUI que cuelga de él como hijo) se destruía justo al entrar a MainWorld: a partir de
+/// ahí nadie quedaba escuchando NarrativeSkipHub/CinematicSequencerBase y el icono de "mantener
+/// para saltar" no podía aparecer NUNCA en una partida real, sin importar cómo se disparara la
+/// secuencia. Solo sobrevivía cuando Start.unity se quedaba cargado sin llegar a descargarse —
+/// p.ej. abriendo una escena de secuencia (Prólogo, Taberna...) directamente en el Editor desde
+/// MainWorld: AutoBootstrapOnPlay carga Start.unity de forma aditiva, pero BootLoader.Start()
+/// nunca dispara el LoadScene porque la escena activa no es "Start", así que este objeto se
+/// queda vivo todo el rato y el botón funciona con normalidad — de ahí la diferencia observada
+/// entre "abrir la secuencia directo" (funciona) y "build/desde Start" (nunca sale). Arreglado
+/// con el mismo patrón que ya usa CoreSystems: guarda propia de instancia única +
+/// DontDestroyOnLoad en Awake(), en vez de depender de la jerarquía de la escena.
 [DisallowMultipleComponent]
 public class GlobalCinematicSkipController : MonoBehaviour
 {
     [Tooltip("GameObject raíz de la instancia de HoldToSkipUI.prefab que este controlador muestra/oculta. Debe empezar desactivado en la escena.")]
     [SerializeField] private GameObject skipButtonRoot;
 
+    private static GlobalCinematicSkipController _instance;
+
     private void Awake()
     {
+        // Mismo patrón que CoreSystems.cs: instancia única persistente. Necesario porque este
+        // objeto (y el HoldToSkipUI que cuelga de él) debe sobrevivir a la transición Start →
+        // MainWorld (ver FIX 24/08/2026 más arriba) — sin esto, BootLoader lo destruye al cargar
+        // MainWorld en modo Single y el botón de skip deja de funcionar en el flujo real de juego.
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        _instance = this;
+        DontDestroyOnLoad(gameObject);
+
         // Estado inicial defensivo: por si se ha dejado activo por error en el Editor, forzar
         // desactivado hasta que una secuencia lo active de verdad.
         if (skipButtonRoot != null && skipButtonRoot.activeSelf)
             skipButtonRoot.SetActive(false);
     }
+
+    // FIX (24 ago 2026): supresión a nivel de escena para PromoEstudio.unity (ver
+    // PromoStudioUISuppressor, Assets/Scripts/Cinematics/) — un "plató" de grabación donde
+    // PromoVideo01Sequencer (un CinematicSequencerBase normal) pone AnySequenceActive a true igual
+    // que cualquier cinemática real, pero el botón de skip no tiene ningún sentido ahí y arruinaría
+    // la grabación si apareciera en pantalla. Mientras _suppressed es true, Refresh() no reacciona a
+    // ningún evento — el botón se queda oculto pase lo que pase en NarrativeSkipHub/
+    // CinematicSequencerBase — sin afectar a su funcionamiento normal en el resto del juego.
+    private bool _suppressed;
 
     private void OnEnable()
     {
@@ -66,8 +108,7 @@ public class GlobalCinematicSkipController : MonoBehaviour
         CinematicSequencerBase.OnAnySequenceActiveChanged += HandleAnySequenceActiveChanged;
         // Por si este controlador se activa/recarga mientras ya hay algo saltable en curso
         // (recarga de dominio en el Editor, por ejemplo) — sincroniza el estado inicial.
-        if (skipButtonRoot != null)
-            skipButtonRoot.SetActive(NarrativeSkipHub.AnySkippable || CinematicSequencerBase.AnySequenceActive);
+        Refresh();
     }
 
     private void OnDisable()
@@ -82,7 +123,27 @@ public class GlobalCinematicSkipController : MonoBehaviour
 
     private void Refresh()
     {
+        if (_suppressed) return;
         if (skipButtonRoot != null)
             skipButtonRoot.SetActive(NarrativeSkipHub.AnySkippable || CinematicSequencerBase.AnySequenceActive);
+    }
+
+    /// Oculta el botón y deja de reaccionar a NarrativeSkipHub/CinematicSequencerBase mientras dure
+    /// la supresión. Pensado para escenas que no son gameplay real (ver PromoStudioUISuppressor) —
+    /// no toca el comportamiento del botón en ninguna otra escena.
+    public void Suppress()
+    {
+        if (_suppressed) return;
+        _suppressed = true;
+        if (skipButtonRoot != null) skipButtonRoot.SetActive(false);
+    }
+
+    /// Deshace Suppress() y vuelve a sincronizar la visibilidad real (por si algo se activó en el
+    /// resto del juego persistente mientras tanto).
+    public void Unsuppress()
+    {
+        if (!_suppressed) return;
+        _suppressed = false;
+        Refresh();
     }
 }

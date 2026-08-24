@@ -447,7 +447,11 @@ public class ShopUI : MonoBehaviour
             return;
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // PERF (revisión rendimiento 24/08): RebuildItemList() se llama tras cada compra/venta, no
+        // solo al abrir la tienda — este log no aporta nada en build final.
         Debug.Log($"[ShopUI] RebuildItemList: Stock tiene {shopController.Stock.Count} items");
+#endif
 
         _itemCards.Clear();
         int usedChildren = 0;
@@ -500,7 +504,9 @@ public class ShopUI : MonoBehaviour
         for (int i = usedChildren; i < itemListContainer.childCount; i++)
             itemListContainer.GetChild(i).gameObject.SetActive(false);
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"[ShopUI] {_itemCards.Count} cards activas (pool total: {itemListContainer.childCount})");
+#endif
     }
 
     void SelectItem(int index)

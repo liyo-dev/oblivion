@@ -248,3 +248,7 @@ MonoBehaviour:
     music: {fileID: 8300000, guid: 781689e46248308499a3914697668573, type: 3}
     fadeIn: 0.5
     fadeOut: 0.5
+  - sequenceId: PROMO_1
+    music: {fileID: 8300000, guid: 6904c00d6a7aa0848aa3348ca1abb7b4, type: 3}
+    fadeIn: 0.5
+    fadeOut: 0.5

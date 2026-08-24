@@ -20,9 +20,11 @@ public class VersionLabelUI : MonoBehaviour
     [Tooltip("Prefijo delante del número de versión.")]
     [SerializeField] private string prefix = "v";
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     [Tooltip("Sufijo añadido solo en el Editor o en builds de desarrollo, para no confundir una " +
              "build de prueba con la build final que llega a jugadores.")]
     [SerializeField] private string devSuffix = " (dev)";
+#endif
 
     [Tooltip("Si se deja vacío, se busca un TMP_Text en este mismo GameObject.")]
     [SerializeField] private TMP_Text label;

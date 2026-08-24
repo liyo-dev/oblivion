@@ -1,0 +1,468 @@
+{
+    "meta": {
+        "fechaHoraLocal": "2026-08-24 09:25:00",
+        "escena": "MainWorld",
+        "modo": "Editor (Play Mode)",
+        "duracionSegundos": 42.63446044921875,
+        "resolucionAncho": 1920,
+        "resolucionAlto": 1080,
+        "calidad": "PC",
+        "targetFrameRate": -1,
+        "vSyncCount": 0,
+        "gpuTimingDisponible": true,
+        "unityVersion": "6000.5.4f1",
+        "picosRecortados": false,
+        "notas": "No incluye draw calls/batches (solo disponibles vía el Frame Debugger del Editor). bytesAsignados/coleccionesGC son deltas por segundo de memoria managed total (Profiler.GetTotalAllocatedMemoryLong / GC.CollectionCount(0)), no solo de este componente. gpuMsPromedio/cpuMsPromedio salen a -1 en los segundos en que FrameTimingManager no devolvió datos (frecuente en Play Mode del Editor en algunas plataformas; más fiable en una build)."
+    },
+    "resumen": {
+        "fpsPromedio": 33.30442810058594,
+        "fpsMinimoInstantaneo": 5.209978103637695,
+        "fpsPeorUnoPorCiento": 25.8212833404541,
+        "frameMsPromedio": 30.026037216186525,
+        "frameMsMax": 191.93939208984376,
+        "frameMsP95": 34.135772705078128,
+        "frameMsP99": 38.72774124145508,
+        "gpuMsPromedio": 27.09351348876953,
+        "cpuMsPromedio": 30.071657180786134,
+        "bytesAsignadosTotal": 508008922,
+        "coleccionesGCTotal": 0,
+        "memoriaInicioMB": 4387.34033203125,
+        "memoriaFinMB": 4871.8154296875,
+        "memoriaPicoMB": 4871.1787109375
+    },
+    "muestrasPorSegundo": [
+        {
+            "segundo": 1.0,
+            "fpsPromedio": 35.96926498413086,
+            "frameMsPromedio": 29.089759826660158,
+            "frameMsMax": 46.3916015625,
+            "gpuMsPromedio": 26.522348403930665,
+            "cpuMsPromedio": 29.07512092590332,
+            "bytesAsignados": 2857933,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 2.0,
+            "fpsPromedio": 32.540218353271487,
+            "frameMsPromedio": 30.7320499420166,
+            "frameMsMax": 36.60890197753906,
+            "gpuMsPromedio": 28.67531394958496,
+            "cpuMsPromedio": 30.776002883911134,
+            "bytesAsignados": 2885600,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 3.0,
+            "fpsPromedio": 27.495698928833009,
+            "frameMsPromedio": 36.36909866333008,
+            "frameMsMax": 191.93939208984376,
+            "gpuMsPromedio": 28.768205642700197,
+            "cpuMsPromedio": 30.040719985961915,
+            "bytesAsignados": 21414522,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 4.0,
+            "fpsPromedio": 32.838653564453128,
+            "frameMsPromedio": 30.45192527770996,
+            "frameMsMax": 35.12779998779297,
+            "gpuMsPromedio": 25.847930908203126,
+            "cpuMsPromedio": 35.55879592895508,
+            "bytesAsignados": 4739960,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 5.0,
+            "fpsPromedio": 31.794300079345704,
+            "frameMsPromedio": 31.45233917236328,
+            "frameMsMax": 38.75530242919922,
+            "gpuMsPromedio": 29.63968849182129,
+            "cpuMsPromedio": 31.386024475097658,
+            "bytesAsignados": 5631664,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 6.0,
+            "fpsPromedio": 30.902862548828126,
+            "frameMsPromedio": 32.359458923339847,
+            "frameMsMax": 39.28559875488281,
+            "gpuMsPromedio": 29.3778076171875,
+            "cpuMsPromedio": 32.33826446533203,
+            "bytesAsignados": 6011847,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 7.0,
+            "fpsPromedio": 31.794300079345704,
+            "frameMsPromedio": 31.451452255249025,
+            "frameMsMax": 40.086402893066409,
+            "gpuMsPromedio": 29.818004608154298,
+            "cpuMsPromedio": 31.682695388793947,
+            "bytesAsignados": 6468912,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 8.0,
+            "fpsPromedio": 33.97511672973633,
+            "frameMsPromedio": 29.4334774017334,
+            "frameMsMax": 34.129302978515628,
+            "gpuMsPromedio": 28.731170654296876,
+            "cpuMsPromedio": 29.446264266967775,
+            "bytesAsignados": 3706136,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 9.0,
+            "fpsPromedio": 33.20454025268555,
+            "frameMsPromedio": 30.11638069152832,
+            "frameMsMax": 32.848697662353519,
+            "gpuMsPromedio": 29.25663185119629,
+            "cpuMsPromedio": 30.025835037231447,
+            "bytesAsignados": 5078289,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 10.0,
+            "fpsPromedio": 32.54511642456055,
+            "frameMsPromedio": 30.726346969604493,
+            "frameMsMax": 33.9048957824707,
+            "gpuMsPromedio": 30.002227783203126,
+            "cpuMsPromedio": 30.701431274414064,
+            "bytesAsignados": 4731936,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 11.0,
+            "fpsPromedio": 33.05381774902344,
+            "frameMsPromedio": 30.253877639770509,
+            "frameMsMax": 37.00120544433594,
+            "gpuMsPromedio": 29.71439552307129,
+            "cpuMsPromedio": 30.20304298400879,
+            "bytesAsignados": 4457388,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 12.0,
+            "fpsPromedio": 30.620607376098634,
+            "frameMsPromedio": 32.65815353393555,
+            "frameMsMax": 35.47209548950195,
+            "gpuMsPromedio": 28.492881774902345,
+            "cpuMsPromedio": 32.5769157409668,
+            "bytesAsignados": 7924880,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 13.0,
+            "fpsPromedio": 31.773103713989259,
+            "frameMsPromedio": 31.473350524902345,
+            "frameMsMax": 34.09749984741211,
+            "gpuMsPromedio": 27.15435028076172,
+            "cpuMsPromedio": 31.4705810546875,
+            "bytesAsignados": 10938702,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 14.0,
+            "fpsPromedio": 30.859678268432618,
+            "frameMsPromedio": 32.4041862487793,
+            "frameMsMax": 33.958595275878909,
+            "gpuMsPromedio": 27.557411193847658,
+            "cpuMsPromedio": 32.3850212097168,
+            "bytesAsignados": 8262148,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 15.0,
+            "fpsPromedio": 32.06642532348633,
+            "frameMsPromedio": 31.185420989990236,
+            "frameMsMax": 34.506099700927737,
+            "gpuMsPromedio": 28.973155975341798,
+            "cpuMsPromedio": 31.37122344970703,
+            "bytesAsignados": 6929008,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 16.0,
+            "fpsPromedio": 32.21449661254883,
+            "frameMsPromedio": 31.041637420654298,
+            "frameMsMax": 35.067298889160159,
+            "gpuMsPromedio": 29.456260681152345,
+            "cpuMsPromedio": 30.945159912109376,
+            "bytesAsignados": 6676192,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 17.0,
+            "fpsPromedio": 32.2885627746582,
+            "frameMsPromedio": 30.9708309173584,
+            "frameMsMax": 33.107200622558597,
+            "gpuMsPromedio": 29.927518844604493,
+            "cpuMsPromedio": 31.004358291625978,
+            "bytesAsignados": 5750036,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 18.0,
+            "fpsPromedio": 31.994142532348634,
+            "frameMsPromedio": 31.255966186523439,
+            "frameMsMax": 34.31550598144531,
+            "gpuMsPromedio": 29.648059844970704,
+            "cpuMsPromedio": 31.0610408782959,
+            "bytesAsignados": 6804588,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 19.0,
+            "fpsPromedio": 29.667722702026368,
+            "frameMsPromedio": 33.70701599121094,
+            "frameMsMax": 37.58220672607422,
+            "gpuMsPromedio": 26.50814437866211,
+            "cpuMsPromedio": 33.91950607299805,
+            "bytesAsignados": 6233296,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 20.0,
+            "fpsPromedio": 31.774066925048829,
+            "frameMsPromedio": 31.471622467041017,
+            "frameMsMax": 35.356903076171878,
+            "gpuMsPromedio": 25.916973114013673,
+            "cpuMsPromedio": 31.59328842163086,
+            "bytesAsignados": 6856286,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 21.0,
+            "fpsPromedio": 33.97615051269531,
+            "frameMsPromedio": 29.432266235351564,
+            "frameMsMax": 32.306705474853519,
+            "gpuMsPromedio": 26.238174438476564,
+            "cpuMsPromedio": 29.388811111450197,
+            "bytesAsignados": 6238952,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 22.0,
+            "fpsPromedio": 34.017913818359378,
+            "frameMsPromedio": 29.396167755126954,
+            "frameMsMax": 33.211402893066409,
+            "gpuMsPromedio": 28.133888244628908,
+            "cpuMsPromedio": 29.53409194946289,
+            "bytesAsignados": -5175134,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 23.0,
+            "fpsPromedio": 34.58103561401367,
+            "frameMsPromedio": 28.918031692504884,
+            "frameMsMax": 32.99129867553711,
+            "gpuMsPromedio": 27.878259658813478,
+            "cpuMsPromedio": 28.859939575195314,
+            "bytesAsignados": -3501973,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 24.0,
+            "fpsPromedio": 33.95751190185547,
+            "frameMsPromedio": 29.448265075683595,
+            "frameMsMax": 32.661197662353519,
+            "gpuMsPromedio": 28.495222091674806,
+            "cpuMsPromedio": 29.254291534423829,
+            "bytesAsignados": -4742992,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 25.0,
+            "fpsPromedio": 31.442502975463868,
+            "frameMsPromedio": 31.804235458374025,
+            "frameMsMax": 41.8600959777832,
+            "gpuMsPromedio": 28.730791091918947,
+            "cpuMsPromedio": 31.484920501708986,
+            "bytesAsignados": -2037579,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 26.0,
+            "fpsPromedio": 31.693395614624025,
+            "frameMsPromedio": 31.55268669128418,
+            "frameMsMax": 33.68890380859375,
+            "gpuMsPromedio": 29.583003997802736,
+            "cpuMsPromedio": 31.90144157409668,
+            "bytesAsignados": -1042417,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 27.0,
+            "fpsPromedio": 30.432546615600587,
+            "frameMsPromedio": 32.8597297668457,
+            "frameMsMax": 46.8551025390625,
+            "gpuMsPromedio": 30.886119842529298,
+            "cpuMsPromedio": 32.35369110107422,
+            "bytesAsignados": -572526,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 28.0,
+            "fpsPromedio": 33.183773040771487,
+            "frameMsPromedio": 30.13496971130371,
+            "frameMsMax": 39.49360275268555,
+            "gpuMsPromedio": 29.232955932617189,
+            "cpuMsPromedio": 30.77923583984375,
+            "bytesAsignados": 18365563,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 29.0,
+            "fpsPromedio": 32.89759826660156,
+            "frameMsPromedio": 30.397491455078126,
+            "frameMsMax": 39.551700592041019,
+            "gpuMsPromedio": 29.29039764404297,
+            "cpuMsPromedio": 30.375457763671876,
+            "bytesAsignados": 26635245,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 30.0,
+            "fpsPromedio": 34.93815994262695,
+            "frameMsPromedio": 28.621347427368165,
+            "frameMsMax": 31.00930404663086,
+            "gpuMsPromedio": 27.959978103637697,
+            "cpuMsPromedio": 28.726884841918947,
+            "bytesAsignados": 27685282,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 31.0,
+            "fpsPromedio": 36.348854064941409,
+            "frameMsPromedio": 27.511682510375978,
+            "frameMsMax": 29.805301666259767,
+            "gpuMsPromedio": 26.097726821899415,
+            "cpuMsPromedio": 27.638437271118165,
+            "bytesAsignados": 28590242,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 32.0,
+            "fpsPromedio": 37.836036682128909,
+            "frameMsPromedio": 26.42977523803711,
+            "frameMsMax": 28.985898971557618,
+            "gpuMsPromedio": 23.408693313598634,
+            "cpuMsPromedio": 26.46973419189453,
+            "bytesAsignados": 27166892,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 33.0,
+            "fpsPromedio": 38.758705139160159,
+            "frameMsPromedio": 25.80072021484375,
+            "frameMsMax": 34.57100296020508,
+            "gpuMsPromedio": 22.659231185913087,
+            "cpuMsPromedio": 25.621845245361329,
+            "bytesAsignados": 26290177,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 34.0,
+            "fpsPromedio": 36.942501068115237,
+            "frameMsPromedio": 27.068756103515626,
+            "frameMsMax": 41.17020034790039,
+            "gpuMsPromedio": 23.590822219848634,
+            "cpuMsPromedio": 27.112720489501954,
+            "bytesAsignados": 26579817,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 35.0,
+            "fpsPromedio": 30.634458541870118,
+            "frameMsPromedio": 32.64329147338867,
+            "frameMsMax": 39.5056037902832,
+            "gpuMsPromedio": 23.91939353942871,
+            "cpuMsPromedio": 32.11613082885742,
+            "bytesAsignados": 21388153,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 36.0,
+            "fpsPromedio": 32.4923095703125,
+            "frameMsPromedio": 30.776777267456056,
+            "frameMsMax": 34.27570343017578,
+            "gpuMsPromedio": 24.053861618041993,
+            "cpuMsPromedio": 30.919095993041993,
+            "bytesAsignados": 22952016,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 37.0,
+            "fpsPromedio": 33.4006462097168,
+            "frameMsPromedio": 29.938798904418947,
+            "frameMsMax": 39.11520004272461,
+            "gpuMsPromedio": 24.18564224243164,
+            "cpuMsPromedio": 30.199682235717775,
+            "bytesAsignados": 23856684,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 38.0,
+            "fpsPromedio": 31.25692367553711,
+            "frameMsPromedio": 31.9935245513916,
+            "frameMsMax": 35.94479751586914,
+            "gpuMsPromedio": 23.751182556152345,
+            "cpuMsPromedio": 31.816699981689454,
+            "bytesAsignados": 25321288,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 39.0,
+            "fpsPromedio": 34.49055862426758,
+            "frameMsPromedio": 28.99289894104004,
+            "frameMsMax": 33.97420120239258,
+            "gpuMsPromedio": 24.431926727294923,
+            "cpuMsPromedio": 29.165945053100587,
+            "bytesAsignados": 25064281,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 40.0,
+            "fpsPromedio": 38.51921463012695,
+            "frameMsPromedio": 25.961042404174806,
+            "frameMsMax": 31.313705444335939,
+            "gpuMsPromedio": 25.023340225219728,
+            "cpuMsPromedio": 26.20998191833496,
+            "bytesAsignados": 27338736,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 42.0,
+            "fpsPromedio": 39.21845626831055,
+            "frameMsPromedio": 25.49838638305664,
+            "frameMsMax": 31.174701690673829,
+            "gpuMsPromedio": 23.03565216064453,
+            "cpuMsPromedio": 25.49813461303711,
+            "bytesAsignados": 27591272,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 43.0,
+            "fpsPromedio": 39.929325103759769,
+            "frameMsPromedio": 25.044490814208986,
+            "frameMsMax": 27.667198181152345,
+            "gpuMsPromedio": 22.187780380249025,
+            "cpuMsPromedio": 25.06325912475586,
+            "bytesAsignados": 27118024,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 43.0,
+            "fpsPromedio": 23.433610916137697,
+            "frameMsPromedio": 28.05033302307129,
+            "frameMsMax": 30.281795501708986,
+            "gpuMsPromedio": 22.2587833404541,
+            "cpuMsPromedio": 25.02989959716797,
+            "bytesAsignados": 2539596,
+            "coleccionesGC": 0
+        }
+    ],
+    "picosDetectados": [
+        "3,0s → frame de 192ms"
+    ]
+}

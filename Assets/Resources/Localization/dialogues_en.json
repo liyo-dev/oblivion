@@ -390,11 +390,11 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_03",
-            "value": "For a long time, our kingdom has been protected from threats with magic."
+            "value": "It's been ages since our kingdom faced a threat like this."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_04",
-            "value": "For some reason, that demon managed to break through the barrier."
+            "value": "I don't understand what's changed for that demon to appear now."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_05",
@@ -402,7 +402,7 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_06",
-            "value": "But I need you to go to the forbidden forest and look for Estela. She's a magician and a friend who's always around there."
+            "value": "But I need you to go to the forbidden forest and look for Estela, a magician I've heard about."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_07",
@@ -462,7 +462,7 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_07",
-            "value": "Be very careful and use the techniques that Erika taught you."
+            "value": "I don't know much about her, but she's famous throughout the Kingdom as the most powerful mage in the region."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_08",
@@ -958,7 +958,7 @@
         },
         {
             "key": "DLG_PIRATE_02",
-            "value": "A sharktopus took it from me..."
+            "value": "A wolf took it from me..."
         },
         {
             "key": "DLG_PIRATE_03",
@@ -1038,11 +1038,11 @@
         },
         {
             "key": "DLG_VICTORIA_03",
-            "value": "A wizard cloak? Of course, whatever my Eldran needs..."
+            "value": "A wizard cloak? Of course, I'll bring it right to you."
         },
         {
             "key": "DLG_VICTORIA_04",
-            "value": "A wizard cloak? Of course, whatever my Eldran needs..."
+            "value": "Though I have a feeling this cloak is for a promising future wizard, isn't it?"
         },
         {
             "key": "DLG_VICTORIA_05",

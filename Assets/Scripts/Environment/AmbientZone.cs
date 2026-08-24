@@ -37,8 +37,10 @@ public class AmbientZone : MonoBehaviour
     [Header("Prioridad")]
     [SerializeField] private int priority = 0;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = false;
+#endif
 
     // --- Defaults globales ---
     private static bool _defaultFogEnabled;

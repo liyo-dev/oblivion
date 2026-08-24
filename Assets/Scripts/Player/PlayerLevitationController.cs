@@ -34,7 +34,9 @@ public class PlayerLevitationController : MonoBehaviour
 
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = false;
+#if UNITY_EDITOR
     [SerializeField] private bool showDebugGizmos = false;
+#endif
 
     // ── Estado ──────────────────────────────────────────────────────────────
     private enum LevitationPhase { Idle, Levitating }

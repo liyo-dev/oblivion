@@ -329,6 +329,24 @@ public class SleepTrigger : MonoBehaviour
         bool isWakeInput = input.Type == GamepadInputReader.InputEventType.Interact
                         || input.Type == GamepadInputReader.InputEventType.Submit;
         if (!isWakeInput) return;
+
+        // FIX (24 ago 2026, INC-084): "Will se levanta de la cama al saltar una secuencia del
+        // Prólogo" — Submit se diseñó a propósito para llegar siempre aquí, incluso en modo
+        // Cinematic (ver comentario de arriba), precisamente para poder despertar a Will con un
+        // botón. Pero HoldToSkipUI (el botón global de "mantener para saltar") usa ese MISMO
+        // InputAction (Controls.UI.Submit) como hold — y GamepadInputReader emite el evento Submit
+        // ya en el primer frame de pulsación (performed), no al completar el hold. Resultado: en
+        // cuanto el jugador empieza a mantener pulsado para saltar cualquier secuencia que ocurra
+        // mientras Will sigue dormido (p. ej. el sueño del Prólogo, PrologueDreamSequencer, que se
+        // reproduce con Will ya en la cama), este listener recibía ese mismo Submit como "orden de
+        // despertar" y sacaba a Will de la cama al instante — sin esperar a que la propia secuencia
+        // terminase ni a que empezara de verdad la escena de despertar. Ignorar el input de
+        // despertar mientras haya cualquier cinemática/secuencia narrativa activa o saltable evita
+        // el falso positivo sin afectar al resto de usos de SleepTrigger: fuera de una secuencia
+        // activa (p. ej. una cama normal explorando el mundo) despertar por input sigue funcionando
+        // exactamente igual que antes.
+        if (CinematicSequencerBase.AnySequenceActive || NarrativeSkipHub.AnySkippable) return;
+
         // Grace period: ignorar input del primer segundo para evitar despertar inmediato al cargar escena
         if (Time.time - _sleepStartTime < 1f) return;
 

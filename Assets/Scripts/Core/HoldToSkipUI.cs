@@ -3,12 +3,13 @@ using UnityEngine.Events;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using UnityEngine.Playables;
+using Core.InputGlyphs;
 
 [DisallowMultipleComponent]
 public class HoldToSkipUI : MonoBehaviour
 {
     [Header("Referencias UI")]
-    [SerializeField] private Image buttonIcon;      // tu sprite del botón (opcional)
+    [SerializeField] private Image buttonIcon;      // tu sprite del botón (opcional) — usado como fallback si InputGlyphService no tiene sprite para la familia activa (ver RefreshIcon)
     [SerializeField] private Image progressCircle;  // Image con Type=Filled (Radial)
     [SerializeField] private CanvasGroup group;     // opcional
 
@@ -41,6 +42,15 @@ public class HoldToSkipUI : MonoBehaviour
     private InputAction fallback;   // por si no asignas nada
     private bool _pushedUIMode;     // rastrea si nosotros activamos el modo UI
 
+    // FIX (24/08/2026): antes buttonIcon era un sprite fijo asignado a mano en el Inspector — salía
+    // siempre el icono de "A" aunque se jugara con teclado/ratón (donde el botón real es
+    // Espacio/Enter, ver holdActionRef/TryConfigureInput más abajo, que usa Controls.UI.Submit) o con
+    // mando de PlayStation/Switch (donde el dibujo de "A" tampoco es el botón físico correcto).
+    // Se cachea aquí el sprite ya asignado a mano en el Inspector para seguir usándolo como fallback
+    // si InputGlyphService no tiene sprite para la familia activa (mismo patrón de "fallbackIcon" que
+    // ya usa TutorialPromptUI.Show(textTemplate, buttonName, fallbackIcon)).
+    private Sprite _fallbackButtonIcon;
+
     public enum SkipAction
     {
         UnityEventOnly,        // Solo dispara el UnityEvent
@@ -51,6 +61,8 @@ public class HoldToSkipUI : MonoBehaviour
     void Awake()
     {
         if (!group) group = GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
+
+        if (buttonIcon) _fallbackButtonIcon = buttonIcon.sprite;
 
         if (!progressCircle)
         {
@@ -88,6 +100,28 @@ public class HoldToSkipUI : MonoBehaviour
         }
         StartCoroutine(InitializeInputWithRetry());
         ResetHold();
+
+        // FIX (24/08/2026): ver comentario de _fallbackButtonIcon arriba — refrescar ya con la
+        // familia actual (por si cambió mientras el objeto estaba desactivado) y suscribirse para
+        // que, si el jugador cambia de mando/teclado con el icono ya visible, se actualice solo.
+        InputGlyphService.FamilyChanged += HandleFamilyChanged;
+        RefreshIcon();
+    }
+
+    private void HandleFamilyChanged(InputGlyphDeviceFamily _) => RefreshIcon();
+
+    /// <summary>
+    /// Resuelve el sprite correcto para el botón que de verdad mantiene HoldToSkipUI: es literalmente
+    /// UI/Submit (ver TryConfigureInput más abajo, Prioridad 1), el mismo botón que usa
+    /// TutorialPromptUI para "Pulsa {BOTON} para despertar" — por eso reutiliza el mismo nombre de
+    /// glifo, InputGlyphNames.Confirm (Espacio/Enter en teclado; en mando es físicamente el mismo
+    /// botón South que Interactuar, así que InputGlyphService ya lo resuelve solo a A/Cross/B).
+    /// </summary>
+    private void RefreshIcon()
+    {
+        if (!buttonIcon) return;
+        var dynamicIcon = InputGlyphService.GetSprite(InputGlyphNames.Confirm);
+        buttonIcon.sprite = dynamicIcon != null ? dynamicIcon : _fallbackButtonIcon;
     }
 
     private System.Collections.IEnumerator InitializeInputWithRetry()
@@ -179,6 +213,8 @@ public class HoldToSkipUI : MonoBehaviour
     void OnDisable()
     {
         StopAllCoroutines();
+
+        InputGlyphService.FamilyChanged -= HandleFamilyChanged;
 
         if (holdAction != null)
         {

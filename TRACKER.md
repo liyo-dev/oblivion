@@ -1,0 +1,140 @@
+# TRACKER — El Sendero de las Estrellas
+
+**Fuente de verdad única para incidencias (bugs, mejoras, funciones) — desde el 24 ago 2026.**
+
+Sustituye a dos sistemas que hasta hoy vivían separados y por casualidad compartían el mismo formato de ID (`INC-XXX`), lo que ya había provocado colisiones reales:
+
+1. El **Tracker de Incidencias en Google Sheets** (`INC-001` a `INC-082`), editado a mano por Raúl. El conector de Google Drive disponible en las sesiones de IA solo puede leer esa hoja, no escribir filas nuevas — así que las incidencias encontradas durante una sesión se quedaban pendientes de pegar a mano, y a veces no llegaban a pegarse nunca.
+2. El catálogo de bugs técnicos de **`TDD.md` § 13**, que llevaba su propia numeración interna (también `INC-075` a `INC-084`) para los bugs encontrados y arreglados durante las sesiones de trabajo con IA — sin saber que esos números ya estaban en uso en la Sheet para incidencias completamente distintas.
+
+**Este archivo fusiona ambos.** Las 82 filas de la Sheet se mantienen con su ID original, intacto (son las que Raúl conoce y ha ido usando en conversación). Los 10 bugs de `TDD.md` § 13 se han **renumerado** a `INC-083`–`INC-092` (su numeración antigua, 075–084, queda retirada — ver tabla de correspondencia al final). Dos incidencias más, encontradas el 23–24 de agosto y que estaban a la espera de pegarse a mano en la Sheet, entran como `INC-093` e `INC-094`. El detalle técnico completo (causa raíz, código, diagnóstico) de `INC-083` a `INC-092` sigue viviendo en `TDD.md` § 13, que ahora enlaza aquí en vez de numerar por su cuenta.
+
+La Google Sheet original queda como referencia histórica, sin más ediciones previstas — mismo criterio que se aplicó el mismo día con el GDD (Google Doc → `GDD.md`).
+
+| Total de incidencias | Bugs críticos | Completadas |
+|---|---|---|
+| 94 | 7 | 80 |
+
+---
+
+| ID | Tipo | Categoría | Descripción | Prioridad | Estado | Validación |
+|---|---|---|---|---|---|---|
+| INC-001 | Bug | Colisiones | Los NPCs en el bosque se meten en los árboles. En la ciudad en los edificios y todos tienen puesto el obstacle | Media | Resuelto | Ok |
+| INC-002 | Bug | Minijuego | El mini juego no tiene la opción de ir a la salida. | Media | Resuelto | Ok |
+| INC-003 | Mejora | UI | Al proteger a todos (5/5), el mensaje debe decir 'Sal del Reino' y estar parpadeando. | Media | Resuelto | Ok |
+| INC-004 | Bug | IA | Al usar a Liam o Estela, Will (como NPC) no hace acciones de salto y vuelo como el resto de compañeros. | Alta | Resuelto | Ok |
+| INC-005 | Mejora | UI / Minimapa | El minimapa debe señalar los objetos requeridos en las misiones, no el NPC que te da la misión. | Alta | Resuelto | Ok |
+| INC-006 | Bug | Cinemáticas | No funciona pasar escena en las cinemáticas que no son aditivas. | Alta | Resuelto | Ok |
+| INC-007 | Mejora | UI / Arte | Mejorar la calidad de las imágenes de Will en el menú. Las que salen en lado derecho | Baja | Implica Cambio Funcional | |
+| INC-008 | Mejora | UI / Arte | Mejorar el logo del sendero, los bordes se ven pixelados. | Baja | Implica Cambio Funcional | |
+| INC-009 | Bug | Lógica | Al disolver el equipo y teletransportar a un personaje, el resto se queda donde está. | Alta | Resuelto | Ok |
+| INC-010 | Bug | Lógica | Al cambiar de personaje y teletransportarse, funcionan de manera independiente. | Alta | Resuelto | Ok |
+| INC-011 | Bug | Lógica | Con el equipo disuelto, si un NPC te sigue y te teletransportas, solo se teletransportan esos dos. | Alta | Resuelto | Ok |
+| INC-012 | Función | Gameplay | Permitir disparar mientras se vuela. | Media | Resuelto | Ok |
+| INC-013 | Bug | Animación | Al ir a acostarse, el personaje pasa enseguida al estado de animación 'falling'. | Media | Resuelto | Ok |
+| INC-014 | Bug | Cámara | La cámara se mueve o cambia al hacer acciones como sentarse o dormir (no debería hacerlo). | Alta | Resuelto | Ok |
+| INC-015 | Mejora | Gameplay | Reducir el tiempo de espera cuando Oliver termina de decir el tutorial. | Baja | Resuelto | Ok |
+| INC-016 | Bug | Animación | Los NPCs sentados se posicionan mal (muy hacia afuera) en comparación con el jugador. | Media | Resuelto | Ok |
+| INC-017 | Función | IA | Hacer que los NPCs interactúen entre ellos. | Baja | Implica Cambio Funcional | |
+| INC-018 | Función | Gameplay | Hacer que el personaje aprenda 'bola prisma' al terminar la conversación con Erika. | Media | Resuelto | Ok |
+| INC-019 | Mejora | UI | El icono sobre la cabeza de Eldran al acercarse debería aplicar a todos los NPCs. | Media | Resuelto | Ok |
+| INC-020 | Bug | Inventario | Una poción comprada desaparece del inventario de pronto cuando se completa la mision. Este punto ya se ha corregido varias veces | Crítica | Resuelto | Ok |
+| INC-021 | Bug | Animación | Un NPC de lucha dispara sin hacer la animación correspondiente. | Media | Resuelto | Ok |
+| INC-022 | Bug | UI | Al salir al menú principal desde el gameplay dejan de funcionar los controles y no se puede retomar la partida. Por ejemplo cuando hay un game over. | Crítica | Resuelto | Ok |
+| INC-023 | Bug | Localización | Al usar teletransporte por primera vez, el nombre aparece en inglés. Al recargar funciona bien. | Media | Resuelto | Ok |
+| INC-024 | Bug | Combate | El golem se sale del área de batalla. | Alta | Resuelto | Ok |
+| INC-025 | Bug | Combate | Los hechizos chocan contra las señales de ataque enemigo instanciadas en el suelo. | Alta | Resuelto | Ok |
+| INC-026 | Bug | IA | Al cambiar a Estela o Liam, Will deja de combatir (teniendo solo a Will y Estela en el equipo). | Alta | Resuelto | Ok |
+| INC-027 | Bug | Combate | Las rocas que lanza el golem no hacen daño porque cuando van hacia el player le pasan por encima | Alta | Resuelto | Ok |
+| INC-028 | Bug | Guardado | Hay una posicion que al cargar partida y solo con ELDRAN no funciona y es la de la taberna (RestaurantEldran). Le coloca de espaldas al cargar la partida. De primeras sin cargar nada cuando va del punto A al punto taberna se coloca bien, es solo al cargar los datos y con ELDRAN con el resto de NPCS o PLAYER funciona | Crítica | En Progreso | KO |
+| INC-029 | Mejora | UI | Eliminar icono de alerta que sale sobre NPCs. Ojo el de alerta no el de las misiones. El de las misiones lo dejamos. Al ver al player en una narrativa interactiva o en batalla solian salir en algunos pero queda feo. Borrar referencias en ficheros. NPC detecta al player con animación pero sin icono. | Media | Resuelto | Ok |
+| INC-030 | Bug | UI | Al disolver el equipo, el texto 'Sígueme' de los NPCs se queda estático en el mundo al mover al personaje, en lugar de seguirlo o desaparecer. | Media | Resuelto | Ok |
+| INC-031 | Bug | Animación | Cuando vuelo con el player y caigo al suelo los miembros del party se quedan en estado falling | Media | Resuelto | Ok |
+| INC-032 | Bug | Gameplay | DayOnlyInspectionTrigger debe detener el movimiento del player igual que lo hacen otros bloqueadores. | Media | Resuelto | Ok |
+| INC-033 | Mejora | Lógica | Borrar el módulo narrativo obsoleto, ya que es redundante con el nuevo interactiveNarrative. | Media | Resuelto | Ok |
+| INC-034 | Bug | Lógica | Si disuelvo el equipo y voy por libre pero intento entrar al agua y no puedo porque aun esta bloqueada el equipo se junta. | Media | Resuelto | Ok |
+| INC-035 | Bug | Lógica | EVT_WILL_LIAM se pone en cola y no se está lanzando. | Media | Resuelto | Ok |
+| INC-036 | Bug | Animación | Si entro corriendo a un punto de guardado el player se detiene pero la animacion no | Media | Resuelto | Ok |
+| INC-037 | Bug | Guardado | cargamos una partida con datos avanzados. Decidimos empezar de nuevo y salimos al menu principal y le damos a nueva partida. Se carga partida sin datos reseteados. | Crítica | Resuelto | Ok |
+| INC-038 | Bug | Cámara | El vfx de velocidad tiene que ir del player a la camara | Media | Resuelto | Ok |
+| INC-039 | Bug | Lógica | tras el cambio del menu, al darle nueva partida no se estan lanzando las quest y no se puede empezar el juego | Crítica | Resuelto | Ok |
+| INC-040 | Bug | Guardado | he cargado una partida que tiene el spawnAnchorId con RestaurantEldran y se ha ido a Bedroom. Ademas el skybox tiene que cambiar al modo interior tal y como se configura | Media | Resuelto | Ok |
+| INC-041 | Mejora | UI | para cuando tenemos un presset de testeo en el menu principal solo deberia aparecer la opcion de continuar. Con presset de testeo no se pueden crear nuevas partidas | Media | Resuelto | Ok |
+| INC-042 | Bug | UI | Cuando entramos al menú principal cuando aparece el logo y los botones suena un SFX que no debería de sonar. Es como si el sfx se reprodujera en su awake. | Media | Resuelto | Ok |
+| INC-043 | Mejora | Cinemáticas | la escena del primer atake de will, le meteria mas efectios pa q se quedara todo mas impactante | Baja | Implica Cambio Funcional | |
+| INC-044 | Mejora | UI / Minimapa | las exclamaciones las cambiaria xq parecen monedas en el minimapa | Baja | Implica Cambio Funcional | |
+| INC-045 | Bug | Lógica | he lanzado un hechizo y posteriormente he muerto pero cuando el hechizo ha llegado al npc el npc tambien murio por lo que hay game over pero suena la musica de victoria. Creo que si un game over ocurre los sistemas se deberian de parar | Alta | Resuelto | Ok |
+| INC-046 | Bug | Animación | los npcs cuando se levantan de haber estado sentados se estan quedando en el aire. Ademas es algo que creo que pasa de forma generalizada a veces los npcs parecen que no caen al suelo como si no tuvieran rigidbody | Media | Resuelto | Ok |
+| INC-047 | Bug | UI | despues de darle a nueva partida sale el pop up de confirmacion lo cual es correcto pero al seleccionar si o no y volver al main menu ya no funcionan los controles | Crítica | Resuelto | Ok |
+| INC-048 | Mejora | UI | cuando guardamos partida estamos usando actualmente el cuadro de dialogo y por unificar visualmente toda la ui vamos a usar el pop up de confirmacion | Media | Resuelto | Ok |
+| INC-049 | Mejora | Gameplay | cuando volamos los hechizos deben ir mas rapido que el player. Cuando sprintamos los hehcizos deben ir tambien mas rapido | Media | Resuelto | Ok |
+| INC-050 | Bug | Lógica | al cambiar de personaje will desaparece. No ocurre siempre pero en momentos criticos para resolver un puzle por ejemplo si desaparece y no vemos donde esta pues es complicado. Ademas que no deberia de desaparecer. | Media | Resuelto | Ok |
+| INC-051 | Bug | Animación | las bolitas se siguen quedando en el aire | Media | Resuelto | Ok |
+| INC-052 | Bug | UI | el hud sigue desapareciendo en el golem | Alta | Resuelto | Ok |
+| INC-053 | Mejora | Animación | el golem debe dar saltitos para cuando cae la lluvia de rocas en lugar de la animacion que tiene actual | Media | Resuelto | Ok |
+| INC-054 | Bug | Lógica | el bocadillo que sale tras el golem lo dice will. Si jugamos con estela le aparece a estela. Aunque juguemos con estela le debe aparecer a will | Media | Resuelto | Ok |
+| INC-055 | Bug | Lógica | Si cruzamos el trigger que activa la secuencia de liam del golem con estela no salta, deberia de saltar con will o estela | Alta | Resuelto | Ok |
+| INC-056 | Bug | Audio | cuando sale un game over, no se quita la musica principal y se deberia de quitar para que solo suene la de game over | Media | Resuelto | Ok |
+| INC-057 | Mejora | Arte | Hay que añadir algo para que no se note el corte de la niebla de pies | Baja | Implica Cambio Funcional | |
+| INC-058 | Mejora | UI | hay que quitar el HUD, el icono del tiempo y el minimapa durante las secuencias | Media | Resuelto | Ok |
+| INC-059 | Mejora | UI | durante las secuencias si hay un npc que tiene un icono sobre la cabeza pq es el destino de una quest hay que esconderlo. Solo durante la secuencia | Media | Resuelto | Ok |
+| INC-060 | Bug | Animación | durante la secuencia de estela los guerreros se van y no hacen la animacion de andar | Media | Resuelto | Ok |
+| INC-061 | Mejora | Animación | cuando el golem hace los saltitos que no haga niguna animacion y que lo haga caminando en alguna direccion. Los saltitos deben ser mas pronunciadoos. Es como si las rocas que caen fueran por los saltos que esta dando. Ademas actualmente cuando hace lo de los saltitos se tumba | Media | Resuelto | Ok |
+| INC-062 | Mejora | Cámara | la camara debe enfocar a will cuando dice el mensaje en el bocadillo tras derrotar al golem. Tambien debe hacer una animacion. | Media | Implica Cambio Funcional | |
+| INC-063 | Bug | Animación | cuando hablamos con un npc que tiene wonder durante el dialogo se va moviendo y deberia de estar quieto | Media | Resuelto | Ok |
+| INC-064 | Bug | Lógica | en los interiores podemos ver objetos de otros interiores. Hay que ocultarlos | Media | Resuelto | Ok |
+| INC-065 | Bug | Cámara | cuando estamos en un ambient zone que controla la camara por ejemplo top down al darle al start para abrir el menu inventario y cerrarlo la camara se vuelve loca | Media | Resuelto | Ok |
+| INC-066 | Bug | Combate | revisar si los hechizos que lanzan los boss y los npcs estan dañando al player. Me da la sensacion de que no afecta a veces | Media | Resuelto | Ok |
+| INC-067 | Bug | Combate | el golem de pronto ha dejado de atacar | Alta | Resuelto | Ok |
+| INC-068 | Bug | Combate | las rocas que lanza el golem no estan dañando al player. Pasa por encima de la cabeza y el triger no le esta dando | Alta | Resuelto | Ok |
+| INC-069 | Bug | Cinemáticas | liam vuelve a estar mal colocado en las secuencias. Yo le pongo en el sitio donde quiero que este y el se mueve quedando la cara ocultya y en una posicion que no quiero. Esto ya lo hemos arreglado y vuelve a estar roto | Media | Resuelto | Ok |
+| INC-070 | Bug | Lógica | he bakeado el navmesh y los npcs siguen andando por el aire. No tineen gravedad o que? | Media | Resuelto | Ok |
+| INC-071 | Mejora | IA | mejorar el point al cual van los npcs cuando llueven | Media | Resuelto | Ok |
+| INC-072 | Bug | Gameplay | arreglar el collider del item caracola y añadirle sfx | Media | Resuelto | Ok |
+| INC-073 | Bug | Combate | Me he acercado a lety y vicky que son npcs de lucha pero son un duo. Este sistema no esta funcionando bien porque me he acercado y no me detectaba. He tenido que disapararle para que comience el combate | Media | Resuelto | Ok |
+| INC-074 | Mejora | Arte | las nubes tienen que ocupar todo el mundo | Media | Resuelto | Ok |
+| INC-075 | Bug | Gameplay | los trigers deben detener al player | Media | Resuelto | Ok |
+| INC-076 | Bug | UI | Si en la habitacion al principio del juego le damos a la pausa con las instrucciones de Usa el joystick para mover a will se queda visible y deberia de ocultarse. Cuando abrimos el menu de pausa TODO SE OCULTA y luego se restaura a como estuviese. Debe haber un servicio para esto | Media | Resuelto | Ok |
+| INC-077 | Mejora | Gameplay | bloquear el sprintar hasta que se desbloquea en el mini jeugo de estela | Media | Abierto | |
+| INC-078 | Mejora | Gameplay | no deje usar el proteccion de magia enemiga hasta que no luchemos con erika | Media | Abierto | |
+| INC-079 | Bug | Lógica | si jugamos con liam y luego el dice alguna frase sale invisible durante los dialogos | Media | Resuelto | Ok |
+| INC-080 | Bug | Cámara | cuando hablan liam o estela y hay algo entre la camara y ellos desaparece todo el mundo, me refiero a todos los escenarios cuando solo deberia desaparecer el objeto que impide que veamos al npc | Media | Resuelto | Ok |
+| INC-081 | Mejora | UI | poder cambiarle la cara a will y al personaje que estemos controlando mediante un nuevo menu de la ui. Pulsaremos R3 por ejemplo y apareceran las opciones. Contento, triste, enfadado... y la cara se le cambiara | Media | Abierto | |
+| INC-082 | Bug | Lógica | Una de las misiones del principio es conseguir una poción, una capa y luchar con Erika. Pero te puedes quedar sin dinero y la misión no se puede completar. | Alta | Abierto | |
+| INC-083 | Bug | Cinemáticas | La clave de "cinemática ya vista" de la secuencia en la que aparece Estela no seguía la convención real del proyecto (`CINEMATIC_SEEN:ESTELA_APPEARS` en vez de `CINEMATIC_SEEN:Cinematic_EstelaAppears`), así que arañas y guerreros volvían a aparecer al activar un preset de test ya avanzado. Detalle técnico completo: `TDD.md` § 13 (antes numerado allí como INC-075). | Media | Resuelto | Ok |
+| INC-084 | Bug | Narrativa | Tras fallar el Despertar de la Estrella (evento `AWAKEN_FAILED`), el reintento de la cinemática podía dejar al jugador "pillado" sin control — un flag de blackboard que no se limpiaba y dos `PushMode(Cinematic)` solapados sin su `Pop` correspondiente. Detalle técnico completo: `TDD.md` § 13 (antes numerado allí como INC-076). | Alta | Resuelto | Ok |
+| INC-085 | Bug | UI | El popup de desbloqueo de habilidad/hechizo (p. ej. "Bola Prisma" al terminar el Despertar de la Estrella) dejaba de verse: la intro del jefe siguiente ocultaba toda la UI persistente sin respetar el guard de visibilidad del propio popup. Detalle técnico completo: `TDD.md` § 13 (antes numerado allí como INC-077). | Alta | Resuelto | Ok |
+| INC-086 | Bug | Combate | En combate de dúo/grupo, la música y animación de victoria sonaban al derrotar al primer enemigo del equipo enemigo, no al último — `NPCTeamMember` se cacheaba en `Awake()` antes de que `NPCCombatTeam.Start()` lo añadiera al prefab. Detalle técnico completo: `TDD.md` § 13 (antes numerado allí como INC-078). | Alta | Resuelto | Ok |
+| INC-087 | Bug | Animación | Cierre definitivo de "Will invisible": con el rig en `AnimatorCullingMode.CullUpdateTransforms`, el Animator dejaba de mover huesos en cuanto el renderer se consideraba no-visible, y sin huesos moviéndose el AABB de culling nunca se recalculaba — punto muerto permanente. Detalle técnico completo: `TDD.md` § 13 (antes numerado allí como INC-079). Confirmado por Raúl en juego. | Alta | Resuelto | Ok |
+| INC-088 | Bug | Lógica | Bug "dos Estelas" al cargar partida: un pre-snapshot corrupto de la apariencia de Will (tomado en el boot, antes de aplicar nada) hacía que el sistema de detección de corrupción descartara la apariencia real y aplicara al controller la apariencia de Estela, mientras la Estela real del equipo seguía en pantalla. Detalle técnico completo: `TDD.md` § 13 (antes numerado allí como INC-080). | Crítica | Resuelto | Pendiente de confirmar en juego |
+| INC-089 | Bug | Cámara | Cámara "en otro sitio" en diálogos grupales tras un teletransporte, jugando con Liam o Estela: el montaje de cámara no se recalculaba en diálogos encadenados, y con Estela activa el propio personaje controlado se pasaba como "NPC" oculto (decoy congelado) al sistema de diálogo. Detalle técnico completo: `TDD.md` § 13 (antes numerado allí como INC-081). | Alta | Resuelto | Pendiente de confirmar en juego |
+| INC-090 | Bug | Combate | Las rocas del Golem (lanzadas y de la lluvia) no hacían daño de área ni mostraban VFX de impacto en el suelo: la velocidad real del proyectil (fija en el prefab de la roca) quedaba desacoplada de la velocidad usada por el Golem para calcular la predicción de tiro. Detalle técnico completo: `TDD.md` § 13 (antes numerado allí como INC-082). | Alta | Resuelto | Pendiente de confirmar en juego |
+| INC-091 | Bug | UI | Menú principal: al cerrar Ajustes/Controles con mando, el resaltado visual saltaba al botón de arriba en vez de quedarse en el botón que abrió el panel — un hover "fantasma" del ratón (delta ≈ 0) disparado por la reactivación del panel, no filtrado porque cerrar con Esc no cambia la familia de input activa. Detalle técnico completo: `TDD.md` § 13 (antes numerado allí como INC-083). | Media | Resuelto | Pendiente de confirmar en juego |
+| INC-092 | Bug | UI | El hint de "Teletransporte" del HUD (esquina superior derecha) seguía con el marco dorado antiguo tras el rediseño de interfaz del 13 de agosto — sprite de fondo huérfano que nadie actualizó al estilo "glass" nuevo. Detalle técnico completo: `TDD.md` § 13 (antes numerado allí como INC-084). | Baja | Resuelto | Pendiente de confirmar en juego |
+| INC-093 | Mejora | UI | Mostrar el número de versión/build del juego en la pantalla de título, para facilitar el testeo interno, el soporte a jugadores tras el lanzamiento y confirmar que las actualizaciones se han instalado correctamente. | Baja | En Progreso (código listo, pendiente de aplicar en el Editor y verificar en el juego) | |
+| INC-094 | Bug | Lógica | Al mantener pulsado el botón de saltar secuencia durante el Prólogo (mientras Will está dormido), Will se levanta de la cama de inmediato aunque la escena de despertar todavía no ha empezado. Se debe bloquear para que solo pueda levantarse cuando esa escena empieza de verdad. | Alta | En Progreso (código listo, pendiente de aplicar/verificar en el Editor) | |
+
+---
+
+## Correspondencia con la numeración antigua de `TDD.md` § 13
+
+`TDD.md` § 13 numeraba estos mismos 10 bugs de forma independiente, coincidiendo por casualidad de formato con IDs ya usados en la Sheet (`INC-075` a `INC-084`). Desde hoy esa numeración queda retirada — `TDD.md` § 13 conserva el detalle técnico completo pero ya no numera por su cuenta, enlaza aquí.
+
+| ID antiguo en TDD.md § 13 | ID nuevo (este archivo) |
+|---|---|
+| INC-075 | INC-083 |
+| INC-076 | INC-084 |
+| INC-077 | INC-085 |
+| INC-078 | INC-086 |
+| INC-079 | INC-087 |
+| INC-080 | INC-088 |
+| INC-081 | INC-089 |
+| INC-082 | INC-090 |
+| INC-083 | INC-091 |
+| INC-084 | INC-092 |
+
+## Notas
+
+- **Sin columna de fecha** (heredado de la Sheet original): para saber cuándo se resolvió algo concreto, cruzar con el historial de git o con los documentos de sesión del proyecto. Se puede añadir una columna `Fecha` en el futuro si compensa el coste de rellenarla en las 82 filas antiguas que no la tienen.
+- **Pendiente de revisión, fuera del alcance de esta migración:** varias sesiones recientes (20–24 ago 2026) documentaron otros fixes y hallazgos en los docs de proyecto (`fix-menu-foco`, `mejora-estrellas-nocturnas`, `fix-boton-volver-ajustes`, etc.) que podrían merecer fila propia aquí y no la tienen todavía. No se ha hecho una auditoría completa de los 23 documentos de sesión para no disparar el alcance de este cambio — revisar y añadir bajo demanda.
+- Al añadir una incidencia nueva desde una sesión de IA: escribirla directamente aquí (commit junto con el fix, mismo patrón que `GDD.md`/`TDD.md`), no dejarla pendiente de pegar a mano.

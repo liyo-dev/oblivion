@@ -36,6 +36,11 @@ public class TutorialPromptUI : MonoBehaviour
     string _buttonName;
     Sprite _fallbackIcon;
 
+    // Si hay un Show() activo (independiente del alpha real, que puede estar en 0 mientras
+    // _hiddenByMenu lo tiene tapado) y si lo ocultamos temporalmente por un menú abierto encima.
+    bool _isShowing;
+    bool _hiddenByMenu;
+
     // ── Lifecycle ─────────────────────────────────────────────────────────
 
     void Awake()
@@ -51,11 +56,21 @@ public class TutorialPromptUI : MonoBehaviour
     void OnEnable()
     {
         InputGlyphService.FamilyChanged += HandleFamilyChanged;
+
+        // INC-076: el prompt de tutorial ("Usa {BOTON} para mover a Will...") no se ocultaba al
+        // abrir el menú de pausa, a diferencia del resto de la UI in-world (bocadillos, barra de
+        // vida de jefe, minimapa...), que ya usa este mismo sistema. Mismo patrón que
+        // SpeechBubbleUI/BossHealthBar/MinimapController: ocultarse mientras haya un menú abierto
+        // (pausa incluida) y restaurarse al cerrar el último.
+        MenuManager.MenuOpened += OnMenuOpened;
+        MenuManager.MenuClosed += OnMenuClosed;
     }
 
     void OnDisable()
     {
         InputGlyphService.FamilyChanged -= HandleFamilyChanged;
+        MenuManager.MenuOpened -= OnMenuOpened;
+        MenuManager.MenuClosed -= OnMenuClosed;
     }
 
     void OnDestroy()
@@ -94,6 +109,7 @@ public class TutorialPromptUI : MonoBehaviour
         _textTemplate = null;
         _buttonName = null;
         _fallbackIcon = null;
+        _isShowing = true;
 
         _label.text = text;
         SetIcon(icon);
@@ -115,6 +131,7 @@ public class TutorialPromptUI : MonoBehaviour
         _textTemplate = textTemplate;
         _buttonName = buttonName;
         _fallbackIcon = fallbackIcon;
+        _isShowing = true;
 
         RefreshContent();
         FadeIn();
@@ -122,8 +139,34 @@ public class TutorialPromptUI : MonoBehaviour
 
     public void Hide()
     {
+        _isShowing = false;
         _rootGroup.DOKill();
         _rootGroup.DOFade(0f, _fadeOutDuration).SetUpdate(true);
+    }
+
+    // ── MenuManager (pausa / cualquier menú) ────────────────────────────────
+
+    /// <summary>Oculta el prompt de tutorial mientras haya un menú (pausa incluida) abierto encima.</summary>
+    void OnMenuOpened(MenuKind kind)
+    {
+        if (!_isShowing || _hiddenByMenu || _rootGroup == null) return;
+        _hiddenByMenu = true;
+        _rootGroup.DOKill();
+        _rootGroup.DOFade(0f, _fadeOutDuration).SetUpdate(true);
+        _rootGroup.blocksRaycasts = false;
+    }
+
+    /// <summary>Restaura el prompt al cerrarse el último menú abierto, si seguía activo.</summary>
+    void OnMenuClosed(MenuKind kind)
+    {
+        if (!_hiddenByMenu) return;
+        if (MenuManager.AnyOpen()) return; // todavía queda otro menú abierto
+        _hiddenByMenu = false;
+
+        if (!_isShowing || _rootGroup == null) return; // se ocultó por otro motivo (Hide()) mientras tanto
+        _rootGroup.DOKill();
+        _rootGroup.DOFade(1f, _fadeInDuration).SetUpdate(true);
+        _rootGroup.blocksRaycasts = false;
     }
 
     // ── Interno ───────────────────────────────────────────────────────────

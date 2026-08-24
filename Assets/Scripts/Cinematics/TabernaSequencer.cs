@@ -805,7 +805,11 @@ public class TabernaSequencer : CinematicSequencerBase
         {
             SeatNPC(npc, seat, simAnim, agent, behaviour);
         }
-        catch (System.Exception e)
+        catch (System.Exception
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            e
+#endif
+        )
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             string npcName = npc != null ? npc.name : "NULL";

@@ -35,9 +35,11 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
 
     [Header("Debug")]
     [SerializeField] private bool verboseLogging = false;
+#if UNITY_EDITOR
     [SerializeField] private bool drawRadius = true;
     [SerializeField] private bool drawFOV = true;
     [SerializeField] private bool drawTargetLine = true;
+#endif
     
     public Transform CurrentTarget { get; private set; }
     public bool IsManualTargetActive => _isManualTargetActive;

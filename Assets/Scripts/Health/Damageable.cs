@@ -20,8 +20,10 @@ public class Damageable : MonoBehaviour, IDamageable
     [SerializeField] private float invulnerabilitySeconds = 0f;
     float _invulnerableUntil = -999f;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     [Header("Debug")]
     [SerializeField] private bool debugLogs = false;
+#endif
 
     public event Action<float>            OnDamaged;   // amount aplicado
     public event Action<float, GameObject> OnDamagedBy; // amount + instigador (puede ser null)

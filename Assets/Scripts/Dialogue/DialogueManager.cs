@@ -97,6 +97,16 @@ public class DialogueManager : MonoBehaviour
     private bool _hudHiddenForNonCinematicDialogue;
     public bool IsOpen => _current != null;
 
+    // FIX (24/08/2026): el botón global "mantener para saltar" (HoldToSkipUI, vía NarrativeSkipHub)
+    // se registraba en TODO diálogo que pasara por StartDialogue — conversaciones normales con un
+    // NPC (Interactable.cs), diálogo de quest (NPCQuestConfig/NPCQuestActionExecutor/
+    // NPCInteractiveNarrativeExecutor), líneas de pre-combate (NPCCombatLifecycleHandler) y
+    // mensajes de bloqueo (RoomExitBlocker) incluidos. Raúl pidió que el botón de skip solo
+    // aparezca en secuencias reales, no en cualquier diálogo con un NPC — ver el nuevo parámetro
+    // isSequenceDialogue en StartDialogue(asset, onFinished, isSequenceDialogue) más abajo, que
+    // condiciona el registro en NarrativeSkipHub. No hace falta recordar el valor como campo:
+    // HandleSkipRequested/Close ya se comportan igual estén o no suscritos.
+
     // Expose a few internal state values to allow external callers
     // to react to line progress (e.g. open shop when last line finishes).
     public int CurrentIndex => _index;
@@ -370,7 +380,18 @@ public class DialogueManager : MonoBehaviour
         _nextDpadTime = Time.unscaledTime + dpadRepeatDelay;
     }
 
-    public void StartDialogue(DialogueAsset asset, Action onFinished = null)
+    /// <param name="isSequenceDialogue">
+    /// FIX (24/08/2026): true SOLO cuando este diálogo forma parte de una secuencia/cinemática real
+    /// (hoy en día, únicamente SimpleCinematicDirector lo pasa así) — es lo único que habilita el
+    /// registro en NarrativeSkipHub y por tanto que HoldToSkipUI pueda aparecer. Las secuencias que
+    /// derivan de CinematicSequencerBase (Prólogo, Taberna, etc.) no pasan por aquí en absoluto:
+    /// ya muestran el botón por su cuenta vía CinematicSequencerBase.OnAnySequenceActiveChanged
+    /// (ver GlobalCinematicSkipController), así que no necesitan este flag. Por defecto false, para
+    /// que una conversación normal con un NPC (Interactable, diálogo de quest, líneas de
+    /// pre-combate, mensajes de RoomExitBlocker...) NUNCA ofrezca la opción de saltar con mantener
+    /// pulsado — solo se puede avanzar línea a línea, como cualquier diálogo normal del juego.
+    /// </param>
+    public void StartDialogue(DialogueAsset asset, Action onFinished = null, bool isSequenceDialogue = false)
     {
         if (asset == null || asset.lines == null || asset.lines.Length == 0) return;
 
@@ -394,8 +415,13 @@ public class DialogueManager : MonoBehaviour
         // StartDialogue se llama de nuevo mientras ya había un diálogo abierto (rama FIX C1 justo
         // arriba, que NO pasa por Close()), ya estaríamos suscritos desde la apertura anterior —
         // sin este desregistro previo quedaríamos suscritos dos veces al mismo handler.
+        // FIX (24/08/2026): solo nos suscribimos si isSequenceDialogue es true — ver comentario del
+        // parámetro arriba. Si el diálogo anterior sí era de secuencia y este nuevo no lo es (o
+        // viceversa), el Unregister incondicional de abajo limpia cualquier suscripción previa
+        // antes de decidir si hace falta una nueva.
         NarrativeSkipHub.UnregisterSkipHandler(HandleSkipRequested);
-        NarrativeSkipHub.RegisterSkipHandler(HandleSkipRequested);
+        if (isSequenceDialogue)
+            NarrativeSkipHub.RegisterSkipHandler(HandleSkipRequested);
 
         ClearActiveSpeakerAnimations();
         _current = asset;
@@ -482,7 +508,8 @@ public class DialogueManager : MonoBehaviour
     /// <summary>
     /// Inicia un diálogo con un NPC específico (para usar la cámara de diálogo)
     /// </summary>
-    public void StartDialogue(DialogueAsset asset, Transform npc, Action onFinished = null)
+    /// <param name="isSequenceDialogue">Ver documentación en StartDialogue(asset, onFinished, isSequenceDialogue) — se reenvía tal cual.</param>
+    public void StartDialogue(DialogueAsset asset, Transform npc, Action onFinished = null, bool isSequenceDialogue = false)
     {
         _currentNpc = npc;
         if (npc != null)
@@ -528,7 +555,7 @@ public class DialogueManager : MonoBehaviour
         }
         
         // Iniciar el diálogo (activa cámara cinematográfica y muestra primera línea)
-        StartDialogue(asset, onFinished);
+        StartDialogue(asset, onFinished, isSequenceDialogue);
         
         // Emitir evento - los NPCs que lo necesiten se suscriben
         OnDialogueStarted?.Invoke(_currentNpc);

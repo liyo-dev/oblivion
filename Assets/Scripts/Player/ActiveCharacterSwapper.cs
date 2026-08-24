@@ -171,13 +171,17 @@ public class ActiveCharacterSwapper : MonoBehaviour
     {
         if (_willNpcInstance == null) return;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         bool hadDisabled = false;
+#endif
         foreach (var r in _willNpcInstance.GetComponentsInChildren<Renderer>(true))
         {
             if (r != null && !r.enabled)
             {
                 r.enabled = true;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 hadDisabled = true;
+#endif
             }
 
             // Ver comentario en SpawnWillNpc(): partes activadas más tarde por ModularAutoBuilder
@@ -214,13 +218,17 @@ public class ActiveCharacterSwapper : MonoBehaviour
     {
         if (_hiddenNpc == null) return;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         bool hadEnabled = false;
+#endif
         foreach (var r in _hiddenNpc.GetComponentsInChildren<Renderer>(true))
         {
             if (r != null && r.enabled)
             {
                 r.enabled = false;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 hadEnabled = true;
+#endif
             }
         }
 
