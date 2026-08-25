@@ -2,7 +2,19 @@
 • Nuevo: paneles de Notas del Parche y de Reportar un Fallo, accesibles desde el menú principal sin salir del juego.
 • Nuevo: botón Volver en la pantalla de Ajustes.
 • Arreglado: la selección del menú ya no salta al botón equivocado al cerrar Ajustes o Controles.
-• Arreglado: el icono de "mantener pulsado para saltar" vuelve a aparecer correctamente en las builds compiladas (antes solo funcionaba dentro del Editor).
+• Arreglado: los textos de los botones del menú (Créditos, Notas del Parche, Reportar un Fallo, Salir) ya no salen en mayúsculas, y el cambio de idioma español/inglés se aplica correctamente en todos los textos de las escenas.
+• Arreglado: el indicador "PRE-ALPHA" ahora se ve con claridad bajo el logo.
+• Arreglado: el icono de "mantener pulsado para saltar" vuelve a aparecer correctamente en las builds compiladas, muestra el botón correcto según el mando o teclado que uses, y ya no aparece en diálogos normales (solo en secuencias reales).
+• Arreglado: ya no es posible despertar a Will antes de tiempo durante el Prólogo manteniendo pulsado el botón de saltar.
 • Arreglado: el aviso de tutorial inicial ya no se queda visible por encima del menú de pausa.
-• Mejorado: las estrellas del cielo nocturno son más doradas, brillan y ya no se dibujan por encima de las montañas.
+• Arreglado: el campo de número de build en "Reportar un Fallo" ya no se corta y se rellena solo con tu versión.
+• Arreglado: las nubes del cielo ya son visibles mientras exploras, y el techo de nubes durante una tormenta ya no se queda "bajo" al subir de altura.
+• Arreglado: los compañeros de equipo (incluido Will, cuando no es tu personaje activo) ya caminan y animan con normalidad mientras te siguen, en vez de quedarse quietos y "teletransportarse" en saltos cerca de ti.
+• Arreglado: al esprintar, tus compañeros se quedan atrás con mucha menos frecuencia.
+• Arreglado: los compañeros ya no caminan a trompicones ni tiemblan cuando reduces la velocidad (nadando, o siguiendo a un NPC durante un pop-up de lore).
+• Arreglado: las nubes sueltas del cielo se mantienen por encima de la cámara durante los diálogos (con más margen y en mayor número).
+• Arreglado: las nubes sueltas del cielo ya no se ven flotando dentro de interiores, incluidas escenas especiales como la de la taberna.
+• Mejorado: las estrellas del cielo nocturno ahora son esferas 3D con más brillo, y ya no aparecen delante de las montañas.
+• Nuevo: constelaciones propias del juego en el cielo nocturno — la Espada, la Corona y la Estrella Guía del Sendero.
+• Arreglado: las estrellas del cielo nocturno volvían a aparecer delante de las montañas en algunas partidas nuevas; corregido de raíz, y ahora quedan más altas en el cielo.
 • Varias optimizaciones internas de rendimiento.

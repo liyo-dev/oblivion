@@ -26,22 +26,22 @@ using DG.Tweening;
 /// 3. (Opcional) Si el autodetect del botón no lo encuentra, arrastrarlo a
 ///    <see cref="patchNotesButtonOverride"/>.
 ///
-/// Contenido de las notas (24 ago 2026 — reemplaza el campo de texto fijo que había antes): el texto
-/// ya NO se edita en el Inspector ni va hardcodeado aquí. Se compone en runtime, en
-/// <see cref="BuildPatchNotesText"/>, a partir de:
+/// Contenido de las notas (24 ago 2026 — reemplaza el campo de texto fijo que había antes; 25 ago
+/// 2026 — a petición de Raúl, se quitó el histórico de versiones anteriores, ver nota en
+/// PatchNotesBuildGuard.cs): el texto ya NO se edita en el Inspector ni va hardcodeado aquí. Se
+/// compone en runtime, en <see cref="BuildPatchNotesText"/>, a partir de:
 /// - La versión real del build (<see cref="Application.version"/>) y la fecha real del build
-///   (Resources/PatchNotes/BuildDate.txt) — así la cabecera de la entrada actual SIEMPRE coincide
-///   con lo que muestra <c>VersionLabelUI</c> en pantalla, nunca puede quedarse desfasada.
+///   (Resources/PatchNotes/BuildDate.txt) — así la cabecera SIEMPRE coincide con lo que muestra
+///   <c>VersionLabelUI</c> en pantalla, nunca puede quedarse desfasada.
 /// - Assets/Resources/PatchNotes/CurrentEntryBullets.txt — los cambios de la build en curso (solo
 ///   los bullets, sin cabecera). Esto SÍ se sigue editando a mano durante el desarrollo, igual que
 ///   antes, solo que ahora es un archivo de texto plano en vez de un campo del Inspector.
-/// - Assets/Resources/PatchNotes/HistoryEntries.txt — el histórico de builds ya publicadas, con sus
-///   cabeceras ya fijadas. No se edita a mano: <c>PatchNotesBuildGuard</c> (Editor) archiva ahí la
-///   entrada actual automáticamente después de cada build real y resetea CurrentEntryBullets.txt
-///   para la siguiente — igual que <c>BuildVersionIncrementer</c> sube la versión sola en cada build.
-///   Ese mismo script CANCELA el build si CurrentEntryBullets.txt está vacío o sin rellenar, para que
-///   nunca vuelva a salir una build con notas de parche en blanco o con texto de marcador de
-///   posición visible para los jugadores.
+/// El panel muestra únicamente esta entrada (la de la versión que se acaba de subir) — ya no hay
+/// histórico de versiones anteriores. <c>PatchNotesBuildGuard</c> (Editor) resetea
+/// CurrentEntryBullets.txt automáticamente después de cada build real, para la siguiente. Ese mismo
+/// script CANCELA el build si CurrentEntryBullets.txt está vacío o sin rellenar, para que nunca
+/// vuelva a salir una build con notas de parche en blanco o con texto de marcador de posición
+/// visible para los jugadores.
 ///
 /// Localización (24 ago 2026): el título ("NOTAS DEL PARCHE") sí usa <see cref="LocalizedText"/>
 /// (clave PatchNotes_Title, ui_es.json/ui_en.json) y se traduce solo. El CONTENIDO (los archivos de
@@ -458,7 +458,6 @@ public class PatchNotesFlyoutPanel : MonoBehaviour
     string BuildPatchNotesText()
     {
         string bullets = LoadResourceText("PatchNotes/CurrentEntryBullets").Trim();
-        string history = LoadResourceText("PatchNotes/HistoryEntries").TrimStart();
         string dateText = LoadResourceText("PatchNotes/BuildDate").Trim();
 
         // Respaldo solo para probar en el Editor sin haber hecho nunca un build de Player todavía
@@ -476,9 +475,7 @@ public class PatchNotesFlyoutPanel : MonoBehaviour
         }
 
         string header = $"v{Application.version} — Pre-Alpha ({dateText})";
-        string currentBlock = string.IsNullOrEmpty(bullets) ? header : $"{header}\n\n{bullets}";
-
-        return string.IsNullOrEmpty(history) ? currentBlock : $"{currentBlock}\n\n{history}";
+        return string.IsNullOrEmpty(bullets) ? header : $"{header}\n\n{bullets}";
     }
 
     static string LoadResourceText(string resourcePath)

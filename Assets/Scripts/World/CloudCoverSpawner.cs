@@ -100,8 +100,8 @@ public class CloudCoverSpawner : MonoBehaviour
     [Header("Nubes")]
     [Tooltip("Prefabs de nube a repartir por el techo. Recomendado: QuibliRainCloud3D_1..4 (Assets/Prefabs/VFX/), mallas Cloud3D de Quibli como las del [Demo] SampleSceneWithQuibli. Se elige uno al azar por instancia.")]
     [SerializeField] private GameObject[] cloudPrefabs;
-    [Tooltip("Altura sobre el jugador a la que se coloca el CENTRO del techo de nubes la PRIMERA vez que se construye (después el techo queda fijo en el mundo, no vuelve a recalcularse aunque el jugador se mueva). Las nubes NO tienen collider, así que si el jugador puede volar (PlayerFlyingController) las atraviesa sin más: por debajo se ve el cielo cubierto, por encima el cielo/skybox normal (el skybox nunca se toca, así que el sol sigue ahí arriba). Si minClearanceAboveFollowTarget detecta que esta altura no basta para las mallas ya escaladas, se sube automáticamente.")]
-    [SerializeField] private float cloudHeight = 90f;
+    [Tooltip("Altura sobre el jugador a la que se coloca el CENTRO del techo de nubes la PRIMERA vez que se construye (después el techo queda fijo en el mundo, no vuelve a recalcularse aunque el jugador se mueva). Las nubes NO tienen collider, así que si el jugador puede volar (PlayerFlyingController) las atraviesa sin más: por debajo se ve el cielo cubierto, por encima el cielo/skybox normal (el skybox nunca se toca, así que el sol sigue ahí arriba). Si minClearanceAboveFollowTarget detecta que esta altura no basta para las mallas ya escaladas, se sube automáticamente. 25 ago 2026: subido de 90 a 130 (con heightJitter 12→16 y arrivalExtraHeight 50→65 en la misma proporción) — Raúl reportó que las nubes de tormenta se seguían viendo demasiado bajas/raras al llover incluso tras el fix del 24 ago (INC-098, que era otro sistema, el de nubes ambientales sueltas). Puramente estético: si sigue sin verse bien, seguir subiendo este valor (y los otros dos en proporción) es directo, no hace falta tocar más código.")]
+    [SerializeField] private float cloudHeight = 130f;
     [Tooltip("Radio horizontal alrededor del jugador que cubre el techo de nubes. Cuanto más grande, menos se nota el borde del área cubierta, pero más instancias hacen falta.")]
     [SerializeField] private float coverRadius = 150f;
     [Tooltip("Separación aproximada entre nubes de la rejilla. Más bajo = más denso = tapa mejor el cielo, pero más nubes instanciadas (y más overdraw con quads transparentes).")]
@@ -113,7 +113,7 @@ public class CloudCoverSpawner : MonoBehaviour
     [Tooltip("Límite de seguridad de instancias, por si coverRadius/cellSize generan una rejilla enorme.")]
     [SerializeField] private int maxCloudInstances = 300;
     [Tooltip("Variación aleatoria de altura (±) de cada nube respecto al plano del techo. Rompe el plano perfecto (más natural) y evita que todos los quads transparentes queden coplanares, lo que provoca artefactos de ordenación al mirarlos desde abajo.")]
-    [SerializeField] private float heightJitter = 12f;
+    [SerializeField] private float heightJitter = 16f;
     [Tooltip("Margen mínimo, en unidades de mundo, entre el punto más bajo de la malla de nubes ya instanciada/escalada y el jugador. Tras construir el techo se mide su altura REAL (no solo cloudHeight) y si no deja este margen, se sube el techo entero lo que haga falta. Es la protección contra 'la cámara se queda dentro de la nube' si cloudHeight/scaleRange quedan mal calibrados para el prefab que uses.")]
     [SerializeField] private float minClearanceAboveFollowTarget = 25f;
     [Tooltip("FIX 20 ago 2026 — 'las nubes se ven demasiado bajas / no se ven al pasar'. Investigado: la cámara en tercera persona (Invector) solo puede inclinarse hasta 40° hacia arriba, y con el FOV de 60° eso da un máximo de 70° de elevación — nunca justo encima de la cabeza (90°). Con cloudHeight como techo PLANO (comportamiento antiguo), una nube justo encima del jugador (radio≈0) exige 90° de elevación (siempre invisible) y hace falta alejarse mucho del centro para que se vea sin mirar hacia arriba. Ahora la altura de cada nube YA NO es plana: cerca del centro se queda en cloudHeight (como antes, siempre habrá un pequeño punto ciego justo encima, inevitable con cualquier altura), pero a partir de cierto radio la altura SUBE con la distancia para mantener más o menos esta elevación (grados) vista desde el centro del techo — así las nubes lejanas se ven altas y grandes de verdad (como una pared de tormenta en el horizonte) sin dejar de estar dentro del ángulo que la cámara alcanza sin forzar la vista hacia arriba. Bajar este valor agranda la zona 'sin mirar arriba'; subirlo hace que las nubes lejanas suban más rápido (más dramático, pero necesita más inclinación de cámara para verlas).")]
@@ -144,7 +144,7 @@ public class CloudCoverSpawner : MonoBehaviour
     [Tooltip("Distancia EXTRA (más allá de su hueco en la rejilla, medida en horizontal desde el centro del techo) a la que espera cada nube antes de que le toque formarse, y hasta la que se aleja al irse. Así las nubes 'vienen de lejos' hacia su sitio en vez de aparecer ya puestas.")]
     [SerializeField] private float arrivalExtraDistance = 220f;
     [Tooltip("Altura EXTRA sobre su posición final desde la que desciende cada nube al llegar (y a la que vuelve a subir al irse), para reforzar la sensación de que vienen 'de lo alto y lejos' en vez de solo cruzar en horizontal.")]
-    [SerializeField] private float arrivalExtraHeight = 50f;
+    [SerializeField] private float arrivalExtraHeight = 65f;
     [Tooltip("Cuánto tarda en completarse la OLA de llegada/partida a lo largo de TODA la rejilla: la primera nube empieza a moverse en el instante 0, la última 'waveSpreadDuration' segundos después. Cuanto más alto, más se nota que las nubes se van acumulando una a una en vez de aparecer todas a la vez. Campo nuevo — no lo pisa ninguna escena existente, así que este valor por defecto ya se aplica tal cual.")]
     [SerializeField] private float waveSpreadDuration = 14f;
     [Tooltip("Cuánto tarda CADA nube, individualmente, en recorrer su propio trayecto lejos→hueco (o hueco→lejos al irse) una vez le toca el turno dentro de la ola. Se multiplica por un factor aleatorio por nube (ver durationJitter) para que no todas tarden exactamente lo mismo. Campo nuevo, mismo motivo que el anterior.")]
@@ -339,6 +339,21 @@ public class CloudCoverSpawner : MonoBehaviour
 
     void Update()
     {
+        // FIX (25 ago 2026): mismo hueco encontrado y confirmado KO en AmbientCloudDirector (ver
+        // su Update()) — OnInteriorEntered/OnInteriorExited (ver OnEnable) solo cubren el flujo
+        // "andando", nunca el cinemático (CinematicSequencerBase → BeginCinematicOverride +
+        // ApplyInteriorForCinematic, p.ej. TabernaSequencer). No confirmado visualmente para este
+        // componente en concreto (el techo de tormenta es menos visible que las nubes sueltas
+        // durante una cinemática corta), pero comparte la misma causa raíz — se corrige aquí de
+        // forma preventiva con el mismo patrón ya establecido en DayNightCycle.Update().
+        var ec = EnvironmentController.Instance;
+        bool effectivelyInteriorNow = ec != null && ec.IsEffectivelyInterior;
+        if (effectivelyInteriorNow != _hiddenByInterior)
+        {
+            if (effectivelyInteriorNow) HandleInteriorEntered();
+            else HandleInteriorExited();
+        }
+
         // Solo merece la pena comprobar el recentrado mientras el techo existe y hay algo visible
         // o en marcha (formándose o disipándose).
         if (!_built || _root == null) return;

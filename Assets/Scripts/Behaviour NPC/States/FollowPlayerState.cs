@@ -28,6 +28,41 @@ namespace Game.NPC.States
         private bool _isWanderingNearPlayer;
         private Vector3 _wanderTarget;
 
+        // FIX (25 ago 2026) — "el party va a trompicones/tembloroso cuando el jugador va lento"
+        // (nadando, o siguiendo a un guardia con la velocidad reducida por un lore pop-up).
+        // _isFollowingSticky reemplaza la decisión "moverse si playerIsMoving || distance >
+        // stopDist*1.2" por una histéresis persistente (igual que ya usa _isMovingSpecial más
+        // abajo para el seguimiento especial): playerIsMoving solo es true el frame exacto en que
+        // el jugador acumula 0.1m de movimiento, así que a velocidades bajas se queda "false" la
+        // mayoría de los frames y parpadea a "true" de forma intermitente — con la condición OR
+        // original eso hacía que el Agent se detuviera (isStopped=true + ResetPath()) y se
+        // reactivara en cada parpadeo mientras la distancia se quedaba en la zona gris entre
+        // stopDist y stopDist*1.2, visible como el compañero caminando a trompicones. Con
+        // histéresis: una vez en marcha, sigue hasta volver a stopDist (ya cubierto por la rama de
+        // parada de más abajo); una vez parado, no arranca hasta superar stopDist*1.2 de verdad.
+        private bool _isFollowingSticky;
+
+        // FIX (25 ago 2026) — "el party se queda atrás al esprintar y se teletransporta cerca,
+        // viéndose feo" + el mismo trompiqueo de arriba pero visto desde el otro lado (el
+        // compañero corriendo a una velocidad fija muy por encima del jugador cuando este va
+        // despacio, así que adelanta y frena en seco una y otra vez). Causa raíz común: la
+        // velocidad de seguimiento (walkSpeed/runSpeed del NPCPartyConfig, o SPECIAL_FOLLOW_SPEED
+        // en el seguimiento especial) era una CONSTANTE fija sin relación con la velocidad real del
+        // jugador — que va de ~5 caminando a 15 esprintando en _WILL.prefab, y baja mucho durante
+        // secciones controladas (nado, seguir a un NPC despacio, lore pop-ups). Se estima la
+        // velocidad real del jugador por posición (delta/deltaTime, suavizado) y se usa como suelo
+        // dinámico para la velocidad de seguimiento en ambos caminos (NavMesh normal y seguimiento
+        // especial), en vez de una constante pensada solo para el paso normal.
+        private Vector3 _prevPlayerPosForSpeed;
+        private float _smoothedPlayerSpeed;
+        private bool _speedSampleInitialized;
+        private const float PLAYER_SPEED_SMOOTH_RATE = 6f;   // /s, más alto = se adapta más rápido
+        // Deltas de posición del jugador por encima de esta velocidad implícita se consideran un
+        // teletransporte/warp (no locomoción real) y se ignoran para no disparar la media hacia un
+        // pico de un solo frame — el sprint real más alto del proyecto es 15 (_WILL.prefab), así
+        // que 30 deja margen de sobra sin colar teletransportes.
+        private const float PLAYER_SPEED_TELEPORT_CUTOFF = 30f;
+
         // Constantes NavMesh
         private const float PLAYER_STATIC_BEFORE_WANDER = 3f;
         private const float PATH_UPDATE_INTERVAL = 0.1f;
@@ -141,6 +176,14 @@ namespace Game.NPC.States
             _footVfxPs           = null;
             _isMovingSpecial     = false;
             _swimInputMag        = 0f;
+            _isFollowingSticky   = false;
+            _speedSampleInitialized = false;
+            _smoothedPlayerSpeed = 0f;
+
+            // Ver NPCStateContext.IsActivelyFollowingPlayer: cubre también a compañeros
+            // temporales (p.ej. el NPC de Will) que nunca pasan por PlayerParty.AddMember, para
+            // que NPCBehaviourManagerV2 no los "duerma" por LOD de distancia mientras siguen.
+            context.IsActivelyFollowingPlayer = true;
 
             if (context.Player != null)
             {
@@ -176,6 +219,8 @@ namespace Game.NPC.States
             base.OnUpdate(context);
 
             if (context.Player == null) return;
+
+            UpdatePlayerSpeedEstimate(context);
 
             _stateTimer += Time.deltaTime;
 
@@ -252,6 +297,7 @@ namespace Game.NPC.States
 
             if (distance <= stopDist)
             {
+                _isFollowingSticky = false; // alcanzado al jugador: rearma la histéresis de arranque
                 if (!context.Agent.isStopped || context.Agent.updatePosition)
                 {
                     context.Agent.isStopped = true;
@@ -273,7 +319,15 @@ namespace Game.NPC.States
                 return;
             }
 
-            if (playerIsMoving || distance > stopDist * 1.2f)
+            // FIX (25 ago 2026): decisión de moverse con histéresis persistente en vez de
+            // "playerIsMoving || distance > stopDist*1.2" evaluado fresco cada frame — ver
+            // comentario de _isFollowingSticky en la cabecera de la clase.
+            _isFollowingSticky = _isFollowingSticky
+                ? true // seguimos moviéndonos: la rama "distance <= stopDist" de más arriba ya
+                       // corta el movimiento en cuanto realmente se alcanza al jugador
+                : (playerIsMoving || distance > stopDist * 1.2f);
+
+            if (_isFollowingSticky)
             {
                 if (!context.Agent.updatePosition)
                 {
@@ -284,7 +338,26 @@ namespace Game.NPC.States
                 }
 
                 context.Agent.isStopped = false;
-                context.Agent.speed = distance > runDist ? runSpeed : walkSpeed;
+                // Suelo dinámico: nunca más lento que el ritmo real del jugador. El margen sobre
+                // esa velocidad ya NO es un 15% fijo (FIX 25 ago 2026 anterior, KO en juego): con
+                // un margen fijo, el NPC como mucho EMPATABA con el jugador en la práctica (el
+                // suavizado de _smoothedPlayerSpeed tarda en converger tras cada arranque de
+                // sprint, y el camino por NavMesh casi siempre rodea más que la línea recta que
+                // usa PlayerParty para medir distancia), así que el hueco no se cerraba de verdad:
+                // oscilaba justo alrededor del umbral de teletransporte de emergencia y disparaba
+                // el warp una y otra vez en vez de evitarlo (visto en juego: "Liam/Estela demasiado
+                // lejos" repetido cada pocos segundos durante un sprint sostenido). Ahora el margen
+                // crece con la propia distancia — igual que ya hacía HandleSpecialFollow más abajo
+                // (baseSpecialSpeed*1.5 cuando dist > STOP_DIST*3) para nado/vuelo, pero aquí nunca
+                // se había traído al seguimiento normal por NavMesh: cerca de distanciaParaCorrer
+                // el margen sigue siendo un 15% discreto, y crece hasta un 60% al acercarse al
+                // umbral de teletransporte de este NPC — así el NPC gana terreno de verdad cuanto
+                // más atrás se queda, en vez de solo no perder más.
+                float catchUpDistance = _config?.distanciaParaTeletransporte ?? 25f;
+                float catchUpT = Mathf.Clamp01((distance - runDist) / Mathf.Max(1f, catchUpDistance - runDist));
+                float speedMargin = Mathf.Lerp(1.15f, 1.6f, catchUpT);
+                float dynamicRunSpeed = Mathf.Clamp(_smoothedPlayerSpeed * speedMargin, runSpeed, runSpeed * 2.5f);
+                context.Agent.speed = distance > runDist ? dynamicRunSpeed : walkSpeed;
 
                 _pathUpdateTimer += Time.deltaTime;
                 if (_pathUpdateTimer >= PATH_UPDATE_INTERVAL)
@@ -399,8 +472,12 @@ namespace Game.NPC.States
 
             if (isMoving)
             {
+                // FIX (25 ago 2026): igual que en el seguimiento normal, la velocidad base sigue el
+                // ritmo real del jugador (nado lento, vuelo, plataformas) en vez de una constante
+                // fija — evita que el compañero adelante y frene en seco quien va despacio.
+                float baseSpecialSpeed = Mathf.Max(_smoothedPlayerSpeed * 1.15f, SPECIAL_FOLLOW_SPEED * 0.5f);
                 float speed = dist > SPECIAL_FOLLOW_STOP_DIST * 3f
-                    ? SPECIAL_FOLLOW_SPEED * 1.5f : SPECIAL_FOLLOW_SPEED;
+                    ? baseSpecialSpeed * 1.5f : baseSpecialSpeed;
 
                 _specialFollowPosition = currentPos + delta.normalized * Mathf.Min(speed * Time.deltaTime, dist);
 
@@ -764,6 +841,33 @@ namespace Game.NPC.States
         // HELPERS ORIGINALES
         // =========================================================================
 
+        /// <summary>
+        /// Estima la velocidad real actual del jugador por delta de posición (suavizada), para usar
+        /// como suelo dinámico de la velocidad de seguimiento en vez de constantes fijas — ver
+        /// comentario de _smoothedPlayerSpeed en la cabecera. Ignora saltos de posición enormes en un
+        /// solo frame (teletransportes) para que no disparen la media hacia un pico irreal.
+        /// </summary>
+        private void UpdatePlayerSpeedEstimate(NPCStateContext context)
+        {
+            if (!_speedSampleInitialized)
+            {
+                _prevPlayerPosForSpeed = context.Player.position;
+                _speedSampleInitialized = true;
+                return;
+            }
+
+            float dt = Mathf.Max(Time.deltaTime, 0.0001f);
+            Vector3 delta = context.Player.position - _prevPlayerPosForSpeed;
+            _prevPlayerPosForSpeed = context.Player.position;
+
+            float instantaneousSpeed = delta.magnitude / dt;
+            if (instantaneousSpeed > PLAYER_SPEED_TELEPORT_CUTOFF)
+                return; // teletransporte/warp: no es locomoción real, no contaminar la media
+
+            _smoothedPlayerSpeed = Mathf.Lerp(_smoothedPlayerSpeed, instantaneousSpeed,
+                Mathf.Clamp01(PLAYER_SPEED_SMOOTH_RATE * dt));
+        }
+
         private void RotateTowardsPlayer(NPCStateContext context)
         {
             if (context.Player == null) return;
@@ -831,6 +935,8 @@ namespace Game.NPC.States
 
         public override void OnExit(NPCStateContext context)
         {
+            context.IsActivelyFollowingPlayer = false;
+
             if (_inSpecialFollow)
             {
                 _inSpecialFollow = false;

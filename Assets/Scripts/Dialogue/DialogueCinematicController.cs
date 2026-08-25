@@ -414,6 +414,12 @@ public class DialogueCinematicController : MonoBehaviour
         
 
 
+        // Red de seguridad: si este controlador se destruye (p.ej. descarga de escena) a mitad
+        // de un diálogo, no dejar las nubes ambientales ocultas para siempre — ver comentario en
+        // StartCinematic/EndCinematicImmediate.
+        if (isInCinematicMode)
+            AmbientCloudDirector.Instance?.SetAmbientCloudsVisible(true);
+
         // Limpiar la instancia del Singleton si es esta instancia
         if (Instance == this)
         {
@@ -635,6 +641,16 @@ public class DialogueCinematicController : MonoBehaviour
         isInCinematicMode = true;
         currentLineIndex = 0;
         nextCutAtLine = CalculateNextCutLine();
+
+        // FIX (25 ago 2026) — "hay nubes tan bajas que tapan la cámara en los diálogos": la
+        // cámara de diálogo suele mirar desde más cerca/arriba que la cámara de exploración
+        // normal, así que una nube ambiental (AmbientCloudDrifter) que en ese instante esté
+        // cruzando cerca puede cortar el plano. AmbientCloudDirector.SetAmbientCloudsVisible ya
+        // existía para esto (pensado originalmente para FocusCameraNode) pero nada lo llamaba
+        // todavía. Se oculta aquí, al arrancar de verdad el modo cinematográfico, y se reactiva en
+        // EndCinematicImmediate — no toca las corrutinas de vuelo (SetRenderersVisible), así que
+        // la nube sigue su ruta y se ve con normalidad en cuanto termina el diálogo.
+        AmbientCloudDirector.Instance?.SetAmbientCloudsVisible(false);
         _isGroupConversation = isGroupConversation;
 
         // Calcular dirección base de cámara grupal una sola vez (evita saltos al cambiar de speaker)
@@ -858,6 +874,11 @@ public class DialogueCinematicController : MonoBehaviour
 
             if (showDebugInfo)
                 Debug.Log("[DialogueCinematicController] Apagando cinematográfica inmediatamente");
+
+        // Ver comentario en StartCinematic: revierte la ocultación de nubes ambientales que
+        // hicimos al entrar en modo cinematográfico, para que vuelvan a verse con normalidad
+        // fuera de diálogo.
+        AmbientCloudDirector.Instance?.SetAmbientCloudsVisible(true);
 
         // Desactivar todas las cámaras virtuales del pool
         DisableAllDialogueCameras();

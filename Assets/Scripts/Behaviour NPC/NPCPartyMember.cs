@@ -693,7 +693,26 @@ namespace Game.NPC
         /// </summary>
         public Vector3 GetFormationPosition()
         {
-            return _party?.GetFormationPosition(PartyIndex) ?? transform.position;
+            if (_party != null) return _party.GetFormationPosition(PartyIndex);
+
+            // FIX (25 ago 2026, INC-095) — cuando este NPC sigue al jugador SIN estar registrado
+            // en PlayerParty (p.ej. el NPC de Will, ver NPCStateContext.IsActivelyFollowingPlayer
+            // / ActiveCharacterSwapper), _party es siempre null y PartyIndex siempre -1. El
+            // fallback anterior devolvía transform.position — la propia posición ACTUAL de este
+            // mismo NPC — como "posición de formación": FollowPlayerState.UpdateDestination() la
+            // usaba tal cual como destino del NavMeshAgent, así que el agente pathfindeaba hacia
+            // sí mismo y no se movía ni un metro, aunque el resto de la FSM (Agent.speed,
+            // isStopped=false, animación) funcionara con normalidad — de ahí que Will se quedara
+            // quieto sin caminar ni animar pese a estar activamente en FollowPlayerState. En su
+            // lugar, sin registro de party, se calcula un punto justo detrás del jugador (mismo
+            // criterio que el seguimiento especial en FollowPlayerState.GetFormationTarget3D, sin
+            // spread lateral por índice porque aquí no hay un PartyIndex válido) — nunca la propia
+            // posición del NPC, que nunca es un destino de seguimiento válido.
+            Transform player = _npcManager != null ? _npcManager.Context?.Player : null;
+            if (player == null) return transform.position; // sin jugador todavía: no hay nada mejor
+
+            float followDist = partyConfig != null ? partyConfig.distanciaParaPararse : 1.2f;
+            return player.position - player.forward * (followDist * 0.8f);
         }
 
         private void Log(string message)

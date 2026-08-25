@@ -250,6 +250,18 @@ public class PerformanceCapture : MonoBehaviour
         _lastSaveMessageUntil = Time.unscaledTime + 8f;
     }
 
+    /// <summary>
+    /// Red de seguridad: si el juego se cierra con una grabación en curso sin haber pulsado F9 para
+    /// pararla (botón de cerrar ventana, Application.Quit(), volver al escritorio), esto la guarda
+    /// igualmente en vez de perder los datos acumulados hasta ese momento. No cubre un cierre forzado
+    /// del proceso (matar la tarea, corte de luz, crash) -- ahí no hay ninguna oportunidad de ejecutar
+    /// código gestionado antes de que el proceso desaparezca.
+    /// </summary>
+    void OnApplicationQuit()
+    {
+        if (_recording) StopAndSave("auto-guardado al cerrar la aplicación (sin F9)");
+    }
+
     PerformanceCaptureData BuildData(List<GameplayEventLog.EventEntry> eventos)
     {
         var sortedMs = new List<float>(_allFrameMsSamples);

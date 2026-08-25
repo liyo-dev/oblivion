@@ -557,9 +557,28 @@ public class ActiveCharacterSwapper : MonoBehaviour
         if (_willNpcInstance.NPCManager?.Context?.IsPinnedByParty == true) return;
         if (!PlayerService.TryGetPlayer(out var playerGO)) return;
 
-        Vector3 behind = playerGO.transform.position - playerGO.transform.forward * 1.5f;
-        if (NavMesh.SamplePosition(behind, out NavMeshHit hit, 3f, NavMesh.AllAreas))
-            behind = hit.position;
+        // FIX (25 ago 2026) — "el party se queda atrás al esprintar y se le ve reaparecer feo,
+        // cabezas asomando por abajo de la pantalla": el punto fijo "1.5m detrás del jugador,
+        // mirando hacia delante" cae casi siempre DENTRO del encuadre de la cámara en tercera
+        // persona (que ya mira hacia esa misma dirección), así que el warp se veía como un pop-in
+        // brusco justo delante de la cámara. Los miembros reales del party (Liam/Estela) ya usan
+        // PlayerParty.GetFormationPosition — un slot en semicírculo detrás del jugador, pensado
+        // para el mismo propósito — así que el NPC de Will usa ahora el mismo cálculo (en el
+        // siguiente slot libre, después de los miembros reales) en vez de reimplementar uno propio
+        // peor. GetFormationPosition ya valida NavMesh con su propio fallback, así que solo se cae
+        // al cálculo manual de antes si PlayerParty no existe todavía.
+        Vector3 behind;
+        if (PlayerParty.HasInstance)
+        {
+            int slotIndex = PlayerParty.Instance.Members.Count;
+            behind = PlayerParty.Instance.GetFormationPosition(slotIndex);
+        }
+        else
+        {
+            behind = playerGO.transform.position - playerGO.transform.forward * 1.5f;
+            if (NavMesh.SamplePosition(behind, out NavMeshHit hit, 3f, NavMesh.AllAreas))
+                behind = hit.position;
+        }
 
         var agent = _willNpcInstance.GetComponent<NavMeshAgent>();
         if (agent != null && agent.isOnNavMesh)

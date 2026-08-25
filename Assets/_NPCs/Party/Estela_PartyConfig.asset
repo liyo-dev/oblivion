@@ -19,7 +19,7 @@ MonoBehaviour:
   distanciaParaCorrer: 3
   distanciaParaTeletransporte: 25
   velocidadCaminando: 5
-  velocidadCorriendo: 8
+  velocidadCorriendo: 10
   quedarseDetras: 1
   offsetLateral: {x: -2, y: 1}
   tiempoIdleMinimo: 1

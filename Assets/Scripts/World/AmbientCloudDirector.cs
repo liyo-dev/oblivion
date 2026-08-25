@@ -34,9 +34,32 @@ using UnityEngine;
 /// Mientras dura una tormenta real (entre CloudsBuildingUp y RainStopped) ambos bucles se pausan:
 /// el techo de nubes de tormenta lo sigue llevando CloudCoverSpawner, este script no compite con
 /// él. Las nubes sueltas que ya estuvieran en vuelo no se cortan — terminan su ruta con normalidad.
+///
+/// FIX (25 ago 2026): lo mismo aplica mientras el jugador está dentro de un interior
+/// (<see cref="EnvironmentController.IsEffectivelyInterior"/>) — no se generan nubes nuevas y las
+/// que ya estuvieran en vuelo se ocultan (no se cortan) hasta salir. Antes de este fix este script
+/// era el único de la familia (CloudCoverSpawner/DayNightCycle/NightSkyStarSpawner/
+/// NightSkyConstellationSpawner ya lo hacían) que no se enteraba de los interiores, reproduciendo
+/// el mismo bug "las nubes se ven en un interior" que ya se había arreglado en CloudCoverSpawner
+/// el 16 ago. Ver HandleInteriorEntered/HandleInteriorExited.
 /// </summary>
 public class AmbientCloudDirector : MonoBehaviour
 {
+    #region Singleton
+    // FIX (25 ago 2026): expone una Instance para que sistemas de cámara puntuales (diálogos,
+    // cinemáticas) puedan pedir SetAmbientCloudsVisible(false) sin tener que buscar/cachear este
+    // componente por su cuenta. SetAmbientCloudsVisible ya existía (pensado para FocusCameraNode)
+    // pero nada lo llamaba todavía — quedaba sin efecto real. Patrón de reseteo obligatorio para
+    // singletons con estado estático (CLAUDE.md §3), evita contaminación entre sesiones de
+    // PlayMode en el Editor.
+    public static AmbientCloudDirector Instance { get; private set; }
+
+#if UNITY_EDITOR
+    [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics() => Instance = null;
+#endif
+    #endregion
+
     [Header("Referencias")]
     [Tooltip("DayNightCycle a escuchar. Si es null, se busca uno en la escena en Awake (una sola vez).")]
     [SerializeField] private DayNightCycle dayNightCycle;
@@ -52,8 +75,8 @@ public class AmbientCloudDirector : MonoBehaviour
     [SerializeField] private float passOffsetRadius = 90f;
     [Tooltip("FIX 23 ago 2026, 2ª pasada — techo MÁXIMO de altura de las nubes sueltas (ya no es la altura fija de antes). La 1ª pasada de este mismo día forzaba un offset mínimo para que el punto de paso no quedara nunca a más de maxViewableElevationDegrees (65°) del jugador — técnicamente dentro de lo que la cámara PUEDE alcanzar, pero Raúl probó en el juego y seguía sin ver ninguna: con cloudAltitude=100 fijo, incluso al offset máximo (90) la elevación mínima posible ya rondaba 48-53°, y en la práctica nadie inclina tanto la cámara jugando normal. La referencia correcta era otra: CloudCoverSpawner (el techo de tormenta, que sí se ve bien en juego) no apunta al límite máximo de la cámara sino a horizonElevationDegrees = 30° por defecto, un ángulo que se ve con solo alzar un poco la vista. Ahora cloudAltitude es el techo de seguridad (por si algún día se sube mucho passOffsetRadius o horizonElevationDegrees), pero la altura real que se usa en cada pasada es la que mantiene ese ángulo cómodo — ver SpawnPassingCloud.")]
     [SerializeField] private float cloudAltitude = 100f;
-    [Tooltip("Altura mínima de una pasada (para offsets muy cercanos a 0, donde horizonElevationDegrees pediría una altura casi nula): evita que una nube 'de paso cercano' vuele pegada al suelo o atraviese al jugador.")]
-    [SerializeField] private float minCloudAltitude = 20f;
+    [Tooltip("Altura mínima de una pasada (para offsets muy cercanos a 0, donde horizonElevationDegrees pediría una altura casi nula): evita que una nube 'de paso cercano' vuele pegada al suelo o atraviese al jugador. FIX 25 ago 2026 — subido de 20 a 32: con el altitudeJitter de 15 que tenía la escena (por encima incluso del default de este script), una pasada cercana podía bajar hasta 5m sobre el jugador — de sobra para cortar la cámara de diálogo, que suele mirar desde más cerca/arriba que la cámara de exploración normal. 32 (con altitudeJitter también bajado a su default de 8) deja un suelo real de 24m.")]
+    [SerializeField] private float minCloudAltitude = 32f;
     [SerializeField] private float altitudeJitter = 8f;
     [Tooltip("FIX 23 ago 2026, 2ª pasada — mismo parámetro (nombre y valor por defecto) que ya usa CloudCoverSpawner para el techo de tormenta: el ángulo de elevación, visto desde el jugador, al que deben verse las nubes sin necesidad de inclinar mucho la cámara. La altura real de cada pasada se calcula como offset horizontal × tan(este ángulo), acotada entre minCloudAltitude y cloudAltitude — así una pasada muy cercana al jugador (offset pequeño) vuela baja y una pasada lejana (offset grande, hasta passOffsetRadius) vuela más alta, pero SIEMPRE dentro de un ángulo cómodo de ver, nunca cerca de los ~70° que ya sabemos que la cámara en tercera persona (Invector, 40° de inclinación + FOV 60°) no alcanza en juego normal.")]
     [SerializeField, Range(5f, 45f)] private float horizonElevationDegrees = 30f;
@@ -91,13 +114,29 @@ public class AmbientCloudDirector : MonoBehaviour
     private Coroutine _spawnRoutine;
     private float _coverage;
     private bool _stormActive;
+    // FIX (25 ago 2026): "las nubes salen en interiores" — ver nota de clase más arriba.
+    // _hiddenByInterior es el estado real de interior (EnvironmentController); _visibleRequested
+    // es la última petición externa vía SetAmbientCloudsVisible (enfoque de cámara puntual, ver
+    // DialogueCinematicController). La visibilidad real aplicada es la Y lógica de ambas (ver
+    // ApplyCloudVisibility), así que un enfoque de cámara que termine (visible=true) mientras
+    // seguimos dentro de un interior no revela las nubes por encima del techo por error.
+    private bool _hiddenByInterior;
+    private bool _visibleRequested = true;
 
     void Awake()
     {
+        if (Instance != null && Instance != this) { Destroy(this); return; }
+        Instance = this;
+
         if (dayNightCycle == null)
             dayNightCycle = FindAnyObjectByType<DayNightCycle>();
 
         BuildPool();
+    }
+
+    void OnDestroy()
+    {
+        if (Instance == this) Instance = null;
     }
 
     void OnEnable()
@@ -114,6 +153,16 @@ public class AmbientCloudDirector : MonoBehaviour
         }
 #endif
 
+        EnvironmentController.OnInteriorEntered += HandleInteriorEntered;
+        EnvironmentController.OnInteriorExited  += HandleInteriorExited;
+
+        // Si ya estábamos en un interior al activarnos (p.ej. esta escena se cargó directamente
+        // dentro de un interior), arrancar ya ocultos — mismo criterio que usa
+        // CloudCoverSpawner.OnEnable() para _hiddenByInterior.
+        var ec = EnvironmentController.Instance;
+        _hiddenByInterior = ec != null && ec.IsEffectivelyInterior;
+        ApplyCloudVisibility();
+
         if (_walkRoutine == null)
             _walkRoutine = StartCoroutine(CoverageWalkLoop());
         if (_spawnRoutine == null)
@@ -128,6 +177,9 @@ public class AmbientCloudDirector : MonoBehaviour
             dayNightCycle.RainStopped -= HandleRainStopped;
         }
 
+        EnvironmentController.OnInteriorEntered -= HandleInteriorEntered;
+        EnvironmentController.OnInteriorExited  -= HandleInteriorExited;
+
         if (_walkRoutine != null) { StopCoroutine(_walkRoutine); _walkRoutine = null; }
         if (_spawnRoutine != null) { StopCoroutine(_spawnRoutine); _spawnRoutine = null; }
     }
@@ -138,6 +190,41 @@ public class AmbientCloudDirector : MonoBehaviour
     {
         _stormActive = false;
         _coverage = Mathf.Max(_coverage, postRainResidualCoverage);
+    }
+
+    void HandleInteriorEntered()
+    {
+        _hiddenByInterior = true;
+        ApplyCloudVisibility();
+    }
+
+    void HandleInteriorExited()
+    {
+        _hiddenByInterior = false;
+        ApplyCloudVisibility();
+    }
+
+    void Update()
+    {
+        // FIX (25 ago 2026, 2ª pasada): confirmado KO en juego por Raúl — las nubes sueltas seguían
+        // viéndose dentro de la taberna durante su cinemática (TabernaSequencer). Causa: la
+        // suscripción a OnInteriorEntered/OnInteriorExited (ver OnEnable) SOLO cubre el flujo
+        // "andando" (EnvironmentController.ApplyInterior/ApplyExterior, disparado desde
+        // TeleportService/AnchorSetter) — el flujo cinemático (CinematicSequencerBase →
+        // BeginCinematicOverride + ApplyInteriorForCinematic) nunca dispara esos eventos a
+        // propósito (ver comentario de EnvironmentController.ApplyInteriorForCinematic). Mismo
+        // hueco que ya tuvo DayNightCycle con la lluvia/niebla — arreglado ahí sondeando
+        // IsEffectivelyInterior en Update() con patrón edge-triggered (ver DayNightCycle.Update()).
+        // Replicado aquí: IsEffectivelyInterior sí tiene en cuenta el override cinemático, así que
+        // este sondeo cubre tanto el flujo andando (aunque ya lo cubre el evento, sin coste extra
+        // real) como el cinemático (que antes se quedaba sin cubrir).
+        var ec = EnvironmentController.Instance;
+        bool effectivelyInteriorNow = ec != null && ec.IsEffectivelyInterior;
+        if (effectivelyInteriorNow != _hiddenByInterior)
+        {
+            if (effectivelyInteriorNow) HandleInteriorEntered();
+            else HandleInteriorExited();
+        }
     }
 
     void BuildPool()
@@ -197,7 +284,7 @@ public class AmbientCloudDirector : MonoBehaviour
             float hi = Mathf.Lerp(idleSpawnIntervalRange.y, busySpawnIntervalRange.y, coverageFactor);
             yield return new WaitForSeconds(UnityEngine.Random.Range(lo, hi));
 
-            if (_stormActive)
+            if (_stormActive || _hiddenByInterior)
                 continue;
 
             SpawnPassingCloud();
@@ -208,7 +295,7 @@ public class AmbientCloudDirector : MonoBehaviour
                 for (int i = 0; i < extra; i++)
                 {
                     yield return new WaitForSeconds(UnityEngine.Random.Range(clusterDelayRange.x, clusterDelayRange.y));
-                    if (_stormActive) break;
+                    if (_stormActive || _hiddenByInterior) break;
                     SpawnPassingCloud();
                 }
             }
@@ -258,14 +345,27 @@ public class AmbientCloudDirector : MonoBehaviour
     void DebugForceSpawnCloud() => SpawnPassingCloud();
 
     /// <summary>
-    /// Activa/desactiva los renderers de TODAS las nubes del pool (volando o no), sin tocar sus
-    /// corrutinas de vuelo ni el paseo aleatorio de cobertura. Pensado para el mismo uso puntual
-    /// que CloudCoverSpawner.SetRenderersVisible: un enfoque de cámara breve (ver
-    /// FocusCameraNode) que no debe quedar tapado por una nube suelta que en ese instante esté
-    /// cruzando por delante.
+    /// Pide mostrar/ocultar las nubes sueltas del pool por un enfoque de cámara puntual (ver
+    /// FocusCameraNode), sin tocar sus corrutinas de vuelo ni el paseo aleatorio de cobertura —
+    /// mismo uso puntual que CloudCoverSpawner.SetRenderersVisible. No es la última palabra sobre
+    /// la visibilidad real: ver <see cref="ApplyCloudVisibility"/>.
     /// </summary>
     public void SetAmbientCloudsVisible(bool visible)
     {
+        _visibleRequested = visible;
+        ApplyCloudVisibility();
+    }
+
+    /// <summary>
+    /// FIX (25 ago 2026): visibilidad real de TODAS las nubes del pool (volando o no) = lo último
+    /// pedido por <see cref="SetAmbientCloudsVisible"/> Y no estar dentro de un interior
+    /// (<see cref="_hiddenByInterior"/>). Sin este AND, un enfoque de cámara que termine
+    /// (SetAmbientCloudsVisible(true)) mientras el jugador sigue dentro de un interior revelaría
+    /// las nubes por encima del techo del interior.
+    /// </summary>
+    void ApplyCloudVisibility()
+    {
+        bool visible = _visibleRequested && !_hiddenByInterior;
         for (int i = 0; i < _pool.Count; i++)
         {
             var drifter = _pool[i];

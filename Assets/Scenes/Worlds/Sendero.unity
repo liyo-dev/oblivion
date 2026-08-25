@@ -646,16 +646,16 @@ MonoBehaviour:
   - {fileID: 5310000000000000081, guid: 82515535050e42dd97fe8e1f6f9c9eb6, type: 3}
   - {fileID: 5310000000000000121, guid: 6187f2e1fa3b4415aa4c101aa81812d8, type: 3}
   - {fileID: 5310000000000000161, guid: 3d930c68c6aa43b484af06130a4fff3e, type: 3}
-  poolSize: 6
+  poolSize: 10
   spawnDistance: 180
   passOffsetRadius: 90
   cloudAltitude: 100
-  altitudeJitter: 15
+  altitudeJitter: 8
   speedRange: {x: 3, y: 6}
   fadeInDuration: 6
   fadeOutDuration: 6
-  clusterChance: 0.3
-  clusterExtraMax: 2
+  clusterChance: 0.5
+  clusterExtraMax: 4
   clusterDelayRange: {x: 4, y: 10}
   idleSpawnIntervalRange: {x: 30, y: 55}
   busySpawnIntervalRange: {x: 10, y: 20}

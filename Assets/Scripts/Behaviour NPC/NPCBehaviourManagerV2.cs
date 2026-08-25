@@ -364,7 +364,20 @@ namespace Game.NPC
                 || _context.IsInCinematic
                 || _context.IsInteracting
                 || _context.ShouldSeekShelter
-                || IsAlly;
+                || IsAlly
+                // FIX (25 ago 2026) — "Will no camina ni anima, aparece a saltos cerca del
+                // jugador": IsAlly exige NPCPartyMember.IsInParty, pero el NPC instanciado de
+                // Will (ActiveCharacterSwapper.WillNpcInstance) sigue al jugador a propósito SIN
+                // pasar por PlayerParty.AddMember/JoinParty (ver comentario en
+                // NPCPartyMember.OnJoinedParty y en DialogueCinematicController). Sin este OR,
+                // solo Will podía quedarse "dormido" (EnterFarState desactiva el NavMeshAgent y
+                // se salta Brain.Update entero) si se alejaba lo suficiente antes de que el
+                // teletransporte de emergencia de PlayerParty.CheckMemberDistances lo alcanzara,
+                // mientras Liam/Estela (sí IsAlly) nunca dormían y por tanto seguían siempre con
+                // normalidad. IsActivelyFollowingPlayer cubre este caso — y cualquier otro
+                // compañero temporal futuro que use el mismo patrón — sin acoplar este chequeo a
+                // los detalles de PlayerParty.
+                || _context.IsActivelyFollowingPlayer;
         }
 
         private void EnterFarState()

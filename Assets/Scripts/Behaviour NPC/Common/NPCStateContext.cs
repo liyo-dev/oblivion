@@ -22,6 +22,25 @@ namespace Game.NPC.Common
         public bool IsInCinematic { get; set; }
         public bool WasDefeatedInCombat { get; set; } // NPC ha sido derrotado
         public bool IsPinnedByParty { get; set; }    // NPC anclado al salir del party (no debe vagar)
+
+        /// <summary>
+        /// True mientras este NPC esté activamente en FollowPlayerState (siguiendo al jugador
+        /// como compañero), lo ponga o no FollowPlayerState.OnEnter/OnExit. A diferencia de
+        /// NPCBehaviourManagerV2.IsAlly (que depende de NPCPartyMember.IsInParty, es decir, de
+        /// haber pasado por PlayerParty.AddMember), esta bandera cubre también a compañeros
+        /// temporales que siguen al jugador SIN estar registrados en el party — el caso real hoy
+        /// es el NPC instanciado de Will (ActiveCharacterSwapper.WillNpcInstance), que a propósito
+        /// nunca pasa por JoinParty() y usa FollowPlayerState(skipPartyCheck: true) — pero sirve
+        /// igual para cualquier NPC futuro que siga al jugador por el mismo camino. Se usa en
+        /// NPCBehaviourManagerV2.HasActiveAiExemption() para que el LOD de IA por distancia nunca
+        /// "duerma" (EnterFarState desactiva el NavMeshAgent y detiene el Brain.Update) a un NPC
+        /// que está siguiendo activamente, exactamente igual que ya hace con IsAlly para los
+        /// miembros reales del party. Sin esto, un compañero temporal como el Will NPC podía
+        /// quedarse congelado (sin caminar ni animar) mientras estaba lejos y luego reaparecer de
+        /// golpe cerca del jugador vía el teletransporte de emergencia de PlayerParty.
+        /// CheckMemberDistances — el síntoma "da saltos, no anima, aparece más cerca".
+        /// </summary>
+        public bool IsActivelyFollowingPlayer { get; set; }
         public bool DebugMode { get; set; }
 
         // Social

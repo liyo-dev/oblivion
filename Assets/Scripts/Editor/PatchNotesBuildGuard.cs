@@ -19,15 +19,23 @@ using UnityEngine;
 /// PlayerSettings.bundleVersion ya en 0.1.5, y su texto de ejemplo/instrucciones para el propio
 /// desarrollador seguía visible al final).
 ///
-/// Trabaja sobre tres archivos de texto plano en Assets/Resources/PatchNotes/ (cargados en runtime
+/// Trabaja sobre dos archivos de texto plano en Assets/Resources/PatchNotes/ (cargados en runtime
 /// por PatchNotesFlyoutPanel vía Resources.Load&lt;TextAsset&gt;):
 /// - CurrentEntryBullets.txt: los cambios de la build en curso, SIN cabecera ni número de versión —
 ///   se edita a mano durante el desarrollo, el mismo flujo de siempre, solo que ahora es un archivo
 ///   de texto en vez de un campo del Inspector.
-/// - HistoryEntries.txt: el histórico de builds ya publicadas, con su cabecera "vX.Y.Z — Pre-Alpha
-///   (fecha)" ya fijada para siempre. No se edita a mano — lo escribe este script.
-/// - BuildDate.txt: la fecha del build más reciente, mismo formato que las cabeceras ("24 ago
+/// - BuildDate.txt: la fecha del build más reciente, mismo formato que la cabecera ("24 ago
 ///   2026"). Se sobrescribe automáticamente en cada build.
+///
+/// NOTA (25 ago 2026, a petición de Raúl): el panel ya NO mantiene histórico de versiones
+/// anteriores — se quitó HistoryEntries.txt y el archivado que hacía este script. Solo se muestran
+/// las notas de la versión que se acaba de subir. Motivo: el archivado dependía de que
+/// OnPostprocessBuild llegara a ejecutarse (solo ocurre si el build termina en éxito completo),
+/// pero BuildVersionIncrementer (que corre antes, -1000) ya sube y guarda la versión aunque el
+/// build se cancele o falle después — así que cualquier build que no completara el ciclo entero
+/// dejaba la versión avanzada pero el histórico sin archivar. El histórico se quedó así congelado
+/// desde el 24 ago mientras la versión seguía subiendo sola. Mostrar solo la entrada actual elimina
+/// esa clase de bug de raíz.
 ///
 /// Se engancha después de BuildVersionIncrementer (callbackOrder -1000) para ver ya la versión
 /// nueva:
@@ -36,13 +44,12 @@ using UnityEngine;
 ///    build no salga a que salga con notas de parche en blanco o con texto interno visible para los
 ///    jugadores. Si todo está bien, escribe la fecha de hoy en BuildDate.txt.
 /// 2. OnPostprocessBuild: solo si el build terminó en éxito y no se saltó el autoincremento de
-///    versión (mismo flag que consulta BuildVersionIncrementer.WasLastBuildVersionSkipped), archiva
-///    la entrada actual —ya con versión y fecha definitivas— al principio de HistoryEntries.txt, y
-///    resetea CurrentEntryBullets.txt al marcador de "pendiente" para la próxima sesión de trabajo.
+///    versión (mismo flag que consulta BuildVersionIncrementer.WasLastBuildVersionSkipped), resetea
+///    CurrentEntryBullets.txt al marcador de "pendiente" para la próxima sesión de trabajo.
 ///
 /// Para saltarte esto en un build de pruebas que no vas a publicar: usa el mismo menú que para la
 /// versión ("El Sendero → Build → Saltar autoincremento de versión (solo el próximo build)") — al
-/// saltarse el autoincremento, este script tampoco valida ni archiva nada en ese build.
+/// saltarse el autoincremento, este script tampoco valida ni resetea nada en ese build.
 /// </summary>
 public class PatchNotesBuildGuard : IPreprocessBuildWithReport, IPostprocessBuildWithReport
 {
@@ -53,7 +60,6 @@ public class PatchNotesBuildGuard : IPreprocessBuildWithReport, IPostprocessBuil
 
     const string ResourcesRoot = "Assets/Resources/PatchNotes";
     const string CurrentEntryFile = ResourcesRoot + "/CurrentEntryBullets.txt";
-    const string HistoryFile = ResourcesRoot + "/HistoryEntries.txt";
     const string BuildDateFile = ResourcesRoot + "/BuildDate.txt";
 
     public void OnPreprocessBuild(BuildReport report)
@@ -99,38 +105,19 @@ public class PatchNotesBuildGuard : IPreprocessBuildWithReport, IPostprocessBuil
 
         if (report.summary.result != BuildResult.Succeeded)
         {
-            Debug.LogWarning("[PatchNotesBuildGuard] El build no terminó en éxito — no se archivan " +
+            Debug.LogWarning("[PatchNotesBuildGuard] El build no terminó en éxito — no se resetean " +
                               "las Notas del Parche (se dejan tal cual para reintentar).");
             return;
         }
 
         string projectRoot = Directory.GetParent(Application.dataPath).FullName;
         string currentEntryPath = Path.Combine(projectRoot, CurrentEntryFile);
-        string historyPath = Path.Combine(projectRoot, HistoryFile);
-        string dateText = ReadOrEmpty(Path.Combine(projectRoot, BuildDateFile)).Trim();
 
-        if (string.IsNullOrEmpty(dateText))
-            dateText = PatchNotesDateFormatter.FormatSpanishDate(System.DateTime.Now);
-
-        string bullets = ReadOrEmpty(currentEntryPath).Trim();
-        string existingHistory = ReadOrEmpty(historyPath);
-
-        string header = $"v{UnityEditor.PlayerSettings.bundleVersion} — Pre-Alpha ({dateText})";
-        string archivedEntry = $"{header}\n\n{bullets}";
-
-        string newHistory = string.IsNullOrEmpty(existingHistory)
-            ? archivedEntry
-            : $"{archivedEntry}\n\n{existingHistory.TrimStart()}";
-
-        File.WriteAllText(historyPath, newHistory);
         File.WriteAllText(currentEntryPath, PendingPlaceholder);
-
-        AssetDatabase.ImportAsset(HistoryFile);
         AssetDatabase.ImportAsset(CurrentEntryFile);
 
-        Debug.Log("[PatchNotesBuildGuard] Notas del Parche archivadas para " +
-                  $"v{UnityEditor.PlayerSettings.bundleVersion} y CurrentEntryBullets.txt reseteado " +
-                  "para la próxima build.");
+        Debug.Log("[PatchNotesBuildGuard] CurrentEntryBullets.txt reseteado para la próxima build " +
+                  $"(v{UnityEditor.PlayerSettings.bundleVersion} ya publicada).");
     }
 
     static string ReadOrEmpty(string path) => File.Exists(path) ? File.ReadAllText(path) : string.Empty;
