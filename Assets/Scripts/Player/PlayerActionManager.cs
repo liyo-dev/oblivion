@@ -145,6 +145,30 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         _blockedByMode[ActionMode.Carrying].Add(PlayerAbility.Roll);
         _blockedByMode[ActionMode.Carrying].Add(PlayerAbility.Jump);
 
+        // GARANTIZAR bloqueos críticos para modo Casting (independiente del Inspector)
+        // INC-104: NO añadimos PlayerAbility.Move aquí a propósito. Move es la única
+        // habilidad que ShouldLockMovement() mira para activar el hard lock de
+        // PlayerLockService — y ese hard lock empuja PushUIMode() (apaga el mapa de
+        // Input GamePlay entero, cámara incluida) además de desactivar el CharacterController.
+        // Probado en juego: se sentía demasiado pesado para algo que pasa constantemente en
+        // combate (la cámara se congelaba en cada cast) y además dejaba al Animator con el
+        // último InputMagnitude/H/V del frame anterior — el player se quedaba "caminando" sin
+        // moverse mientras duraba el lock, porque ese reseteo de animator solo existe hoy para
+        // el caso ActionMode.Cinematic (ver ApplyTopMode()). El freeze real de movimiento/giro
+        // durante el cast lo hace MagicCaster con PlayerMovementBlocker.BlockMovementKeepCamera()
+        // (resetea el Animator al instante y deja vThirdPersonInput activo → cámara libre).
+        // Casting se queda aquí solo como gate lógico: mientras esté en la pila, CanUse()
+        // sigue bloqueando Sprint/Roll/Jump/Attack/Magic (no se puede saltar/rodar/re-castear
+        // a mitad de la animación), sin tocar el input de cámara.
+        if (!_blockedByMode.ContainsKey(ActionMode.Casting))
+            _blockedByMode[ActionMode.Casting] = new HashSet<PlayerAbility>();
+
+        _blockedByMode[ActionMode.Casting].Add(PlayerAbility.Sprint);
+        _blockedByMode[ActionMode.Casting].Add(PlayerAbility.Roll);
+        _blockedByMode[ActionMode.Casting].Add(PlayerAbility.Jump);
+        _blockedByMode[ActionMode.Casting].Add(PlayerAbility.Attack);
+        _blockedByMode[ActionMode.Casting].Add(PlayerAbility.Magic);
+
         // GARANTIZAR bloqueos críticos para modo Stunned (independiente del Inspector)
         if (!_blockedByMode.ContainsKey(ActionMode.Stunned))
             _blockedByMode[ActionMode.Stunned] = new HashSet<PlayerAbility>();

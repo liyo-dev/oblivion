@@ -449,7 +449,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  key: UI_HP
+  _key: 
 --- !u!114 &52106138
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3734,7 +3734,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  key: UI_MP
+  _key: 
 --- !u!114 &382871667
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5928,7 +5928,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  key: COMMON_NO
+  _key: 
 --- !u!1 &662500989
 GameObject:
   m_ObjectHideFlags: 0
@@ -10296,6 +10296,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1415065594479287361, guid: f3249b88b53994a47b3319b81a048931, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -30.300049
+      objectReference: {fileID: 0}
+    - target: {fileID: 1415065594479287361, guid: f3249b88b53994a47b3319b81a048931, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -30.300049
+      objectReference: {fileID: 0}
     - target: {fileID: 4558239694027600418, guid: f3249b88b53994a47b3319b81a048931, type: 3}
       propertyPath: m_Name
       value: HoldToSkipUI
@@ -11910,7 +11918,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  key: UI_MISIONES_VER_ARCHIVADAS
+  _key: 
 --- !u!114 &1339538737
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12713,7 +12721,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  key: COMMON_YES
+  _key: 
 --- !u!1 &1448144179
 GameObject:
   m_ObjectHideFlags: 0
@@ -13189,7 +13197,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  key: UI_TELETRANSPORTE
+  _key: 
 --- !u!1 &1489040789
 GameObject:
   m_ObjectHideFlags: 0
@@ -15671,7 +15679,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  key: UI_Level
+  _key: 
 --- !u!114 &1736510189
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18552,7 +18560,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  key: UI_MISIONES_VER_ACTIVAS
+  _key: 
 --- !u!1 &2135091059
 GameObject:
   m_ObjectHideFlags: 0
@@ -18855,7 +18863,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  key: UI_USAR
+  _key: 
 --- !u!224 &285346100895545381
 RectTransform:
   m_ObjectHideFlags: 0
@@ -18906,7 +18914,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  key: UI_SALIR_MENU
+  _key: 
 --- !u!1 &314105614315579833
 GameObject:
   m_ObjectHideFlags: 0
@@ -19129,7 +19137,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  key: UI_SELECCION
+  _key: 
 --- !u!114 &419852864739982100
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19472,7 +19480,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  key: UI_CANCELAR_SALIR
+  _key: 
 --- !u!222 &649900894187129440
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -19977,7 +19985,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  key: UI_DESPLAZAMIENTO
+  _key: 
 --- !u!1 &932833281912621790
 GameObject:
   m_ObjectHideFlags: 0
@@ -26483,7 +26491,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  key: UI_INVENTARIO
+  _key: 
 --- !u!114 &6433175524694456913
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -27769,7 +27777,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  key: UI_EQUIPO
+  _key: 
 --- !u!114 &7551740941785761916
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -28818,7 +28826,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  key: UI_MISIONES
+  _key: 
 --- !u!1 &8256249680057997527
 GameObject:
   m_ObjectHideFlags: 0
@@ -29280,7 +29288,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  key: UI_HECHIZOS
+  _key: 
 --- !u!114 &8593458112626776217
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -29770,7 +29778,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  key: UI_MISIONES_ACTIVAS
+  _key: 
 --- !u!224 &8958430169071234852
 RectTransform:
   m_ObjectHideFlags: 0
@@ -29977,7 +29985,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  key: UI_MISIONES_ARCHIVADAS
+  _key: 
 --- !u!222 &9058709759624347900
 CanvasRenderer:
   m_ObjectHideFlags: 0

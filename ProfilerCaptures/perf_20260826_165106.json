@@ -1,0 +1,72 @@
+{
+    "meta": {
+        "fechaHoraLocal": "2026-08-26 16:51:06",
+        "escena": "MainWorld",
+        "modo": "Editor (Play Mode)",
+        "duracionSegundos": 2.7724685668945314,
+        "resolucionAncho": 1920,
+        "resolucionAlto": 1080,
+        "calidad": "PC",
+        "targetFrameRate": -1,
+        "vSyncCount": 0,
+        "gpuTimingDisponible": true,
+        "unityVersion": "6000.5.4f1",
+        "picosRecortados": false,
+        "eventosRecortados": false,
+        "notas": "No incluye draw calls/batches (solo disponibles vía el Frame Debugger del Editor). bytesAsignados/coleccionesGC son deltas por segundo de memoria managed total (Profiler.GetTotalAllocatedMemoryLong / GC.CollectionCount(0)), no solo de este componente. gpuMsPromedio/cpuMsPromedio salen a -1 en los segundos en que FrameTimingManager no devolvió datos (frecuente en Play Mode del Editor en algunas plataformas; más fiable en una build). eventos: registro de qué estaba pasando en el juego (ver GameplayEventLog.cs), con 'segundo' en el mismo reloj que 'segundo' en muestrasPorSegundo — cruzar ambos para saber qué ocurría en un momento dado. No es exhaustivo: solo cubre los sistemas ya conectados (ver GameplayEventLogWirer.cs)."
+    },
+    "resumen": {
+        "fpsPromedio": 26.66121482849121,
+        "fpsMinimoInstantaneo": 3.086272954940796,
+        "fpsPeorUnoPorCiento": 4.572638511657715,
+        "frameMsPromedio": 37.507667541503909,
+        "frameMsMax": 324.0154113769531,
+        "frameMsP95": 46.6338996887207,
+        "frameMsP99": 218.69212341308595,
+        "gpuMsPromedio": 24.889169692993165,
+        "cpuMsPromedio": 37.25020980834961,
+        "bytesAsignadosTotal": 15500308,
+        "coleccionesGCTotal": 0,
+        "memoriaInicioMB": 4701.89208984375,
+        "memoriaFinMB": 4716.69140625,
+        "memoriaPicoMB": 4716.5048828125
+    },
+    "muestrasPorSegundo": [
+        {
+            "segundo": 1.0,
+            "fpsPromedio": 29.512744903564454,
+            "frameMsPromedio": 44.68430709838867,
+            "frameMsMax": 324.0154113769531,
+            "gpuMsPromedio": 23.307453155517579,
+            "cpuMsPromedio": 44.648197174072269,
+            "bytesAsignados": 379676,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 2.0,
+            "fpsPromedio": 29.75617790222168,
+            "frameMsPromedio": 33.60641860961914,
+            "frameMsMax": 55.195796966552737,
+            "gpuMsPromedio": 25.131004333496095,
+            "cpuMsPromedio": 32.19674301147461,
+            "bytesAsignados": 9040464,
+            "coleccionesGC": 0
+        },
+        {
+            "segundo": 3.0,
+            "fpsPromedio": 28.083703994750978,
+            "frameMsPromedio": 32.82857131958008,
+            "frameMsMax": 43.48680114746094,
+            "gpuMsPromedio": 26.22905731201172,
+            "cpuMsPromedio": 34.90568161010742,
+            "bytesAsignados": 6080168,
+            "coleccionesGC": 0
+        }
+    ],
+    "picosDetectados": [
+        "0,0s → frame de 324ms",
+        "0,2s → frame de 192ms",
+        "1,9s → frame de 55ms"
+    ],
+    "eventos": []
+}

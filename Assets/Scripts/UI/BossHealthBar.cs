@@ -12,7 +12,9 @@ public class BossHealthBar : MonoBehaviour
     [Header("Configuración")]
     [SerializeField] private string bossName = "Boss Demonio";
     [SerializeField] private Vector2 barSize     = new Vector2(400f, 40f);
-    [SerializeField] private Vector2 barPosition = new Vector2(-20f, 80f);
+    // INC-107: centro-superior de pantalla (convención habitual del género), antes
+    // esquina inferior derecha. Ver anchorMin/anchorMax/pivot en CreateBossHealthBarUI().
+    [SerializeField] private Vector2 barPosition = new Vector2(0f, -30f);
 
     [Header("Colores")]
     [SerializeField] private Color healthyColor          = new Color(0.8f, 0.2f, 0.2f);
@@ -225,9 +227,10 @@ public class BossHealthBar : MonoBehaviour
         _barContainer.transform.SetParent(_canvas.transform, false);
 
         var containerRect = _barContainer.AddComponent<RectTransform>();
-        containerRect.anchorMin        = new Vector2(1f, 0f);
-        containerRect.anchorMax        = new Vector2(1f, 0f);
-        containerRect.pivot            = new Vector2(1f, 0f);
+        // INC-107: centro-superior en vez de esquina inferior derecha.
+        containerRect.anchorMin        = new Vector2(0.5f, 1f);
+        containerRect.anchorMax        = new Vector2(0.5f, 1f);
+        containerRect.pivot            = new Vector2(0.5f, 1f);
         containerRect.anchoredPosition = barPosition;
         containerRect.sizeDelta        = new Vector2(barSize.x + 20f, barSize.y + 60f);
 
