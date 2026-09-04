@@ -1657,6 +1657,10 @@ public class TagMinigameController : MonoBehaviour
             return;
         }
 
+        // INC-077: desbloquear Sprint justo al empezar el minijuego, ya que las instrucciones
+        // (MINIGAME_TAG_INSTRUCTION / MINIGAME_TASK) le piden al jugador usar Sprint para sobrevivir.
+        UnlockService.UnlockAbility(AbilityKey.Sprint);
+
         if (requiresWill)
             WillOnlyMomentManager.Instance?.EnterMoment(minigameId);
 

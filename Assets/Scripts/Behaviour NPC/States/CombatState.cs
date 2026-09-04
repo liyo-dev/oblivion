@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.Modules;
 using Game.NPC;
@@ -150,10 +150,68 @@ namespace Game.NPC.States
                     if (dist > MAX_COMBAT_DISTANCE)
                     {
                         context.Log($"[CombatState] Jugador fuera de rango ({dist:F1}m). Finalizando combate.");
+                        HandleFleeByDistance(context);
                         context.IsInCombat = false; // Esto disparará la transición en CheckTransitions
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Petición de Raúl (1 sep 2026): "huir" de un combate de equipo (p.ej. Lety+Vicky)
+        /// alejándose lo suficiente. El corte por distancia (MAX_COMBAT_DISTANCE) ya existía y ya
+        /// dejaba al NPC "no derrotado" (WasDefeatedInCombat sigue en false, la vida con la que se
+        /// quedó se conserva para el próximo reenganche — ver InitializeCombatComponents más abajo,
+        /// isFirstCombatEngagement) — pero no avisaba al jugador, no devolvía la música a la
+        /// normalidad, y si el NPC formaba parte de un NPCCombatTeam (como Lety+Vicky) tampoco
+        /// reseteaba el estado DEL EQUIPO (_isTeamInCombat seguía en true para siempre, aunque cada
+        /// miembro hubiera salido de CombatState). Este método añade esas tres cosas, una sola vez,
+        /// justo cuando el ÚLTIMO miembro con combate activo del grupo (el propio NPC si va solo, o
+        /// todo el equipo si es un NPCCombatTeam) se aleja lo bastante. Enemigos menores (arañas,
+        /// ImpDemon, Golem) no pasan por CombatState — tienen su propia IA — así que no les afecta
+        /// este cambio, tal y como se pidió ("de las arañas no hace falta").
+        /// </summary>
+        private void HandleFleeByDistance(NPCStateContext context)
+        {
+            var npcGO = context.Transform.gameObject;
+            var teamMember = npcGO.GetComponent<NPCTeamMember>();
+            var team = teamMember != null ? teamMember.Team : null;
+            string battleMusicId = context.Config?.combatConfig?.battleMusicId;
+
+            if (team != null)
+            {
+                bool anyOtherMemberStillFighting = false;
+                foreach (var member in team.AllMembers)
+                {
+                    if (member == null || member.gameObject == npcGO) continue;
+                    if (ActiveCombatRegistry.IsInCombat(member.gameObject)) { anyOtherMemberStillFighting = true; break; }
+                }
+
+                // Si queda otro miembro del equipo todavía enganchado, no hay nada que resetear
+                // todavía — el aviso/música/reset de equipo se dispara cuando se aleja el ÚLTIMO.
+                if (anyOtherMemberStillFighting) return;
+                if (!team.IsTeamInCombat) return; // ya se había reseteado (defensivo)
+
+                team.ResetTeamState();
+                RestoreMusicAfterFlee(battleMusicId);
+                HudToastService.Instance?.Show("COMBAT_FLED_TEAM", 3f);
+                context.Log("[CombatState] 🏃 Equipo completo fuera de rango — combate de equipo reseteado (no derrotados).");
+            }
+            else
+            {
+                RestoreMusicAfterFlee(battleMusicId);
+                HudToastService.Instance?.Show("COMBAT_FLED_SOLO", 3f);
+            }
+        }
+
+        private void RestoreMusicAfterFlee(string battleMusicId)
+        {
+            // Simétrico con TriggerBattleMusic (arriba): esa función SOLO cambia la música si el
+            // NPC tiene battleMusicId configurado. Si está vacío, esta pelea nunca tocó la música
+            // en primer lugar — no hay nada que restaurar, y llamar a RestoreAfterBattle() a ciegas
+            // aquí podría cortar la música de OTRO combate simultáneo sin relación con este NPC.
+            if (AudioService.Instance == null || string.IsNullOrEmpty(battleMusicId)) return;
+            AudioService.Instance.EndBattleById(battleMusicId);
         }
 
         public override void OnExit(NPCStateContext context)

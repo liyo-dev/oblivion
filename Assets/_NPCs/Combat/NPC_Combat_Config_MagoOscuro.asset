@@ -1,0 +1,95 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fcb82a06aa064e73a10b4db55d05973c, type: 3}
+  m_Name: NPC_Combat_Config_MagoOscuro
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.Modules.NPCCombatConfig
+  moduleName: 
+  description: 
+  health: 500
+  detectionRange: 18
+  fieldOfView: 360
+  minAttackDistance: 4
+  maxAttackDistance: 14
+  isAggressive: 1
+  canChaseOutOfBounds: 0
+  maxChaseDistance: 20
+  alertIconPrefab: {fileID: 6303534759802428624, guid: 8754cf18218ab1b4c8c7c227f1e9ad68, type: 3}
+  questionIconPrefab: {fileID: 6303534759802428624, guid: e3166847a7c81b443bdbe623a681ae52, type: 3}
+  exclamationIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
+  alertIconDuration: 2
+  alertIconHeight: 3
+  healthBarPrefab: {fileID: 662809776453450714, guid: c9ac1bd5123d1544b8b85daac217ad0b, type: 3}
+  manaBarPrefab: {fileID: 662809776453450714, guid: 06a21cf2429ee2d4e879a503cb78faf6, type: 3}
+  showManaBarToPlayer: 0
+  dialogueOnAlert: {fileID: 0}
+  dialogueOnDefeat: {fileID: 0}
+  dialogueAfterDefeat: {fileID: 0}
+  waitForAlertDialogue: 0
+  postDeathBehavior: 1
+  postDefeatAction: 0
+  postDefeatMoveAnchor: 
+  disappearOnArrival: 0
+  disappearOnArrivalVFX: {fileID: 0}
+  moveTeamMembersOnDefeat: 1
+  dialogueOnDizzy: {fileID: 0}
+  disappearVFXPrefab: {fileID: 0}
+  disappearTransition: {fileID: 0}
+  disappearDuration: 2
+  alertMusicEvent: MagoOscuro_Alert
+  battleMusicId: MagoOscuro
+  endMusicEvent: MagoOscuro_Victory
+  sendEventOnDefeat: 1
+  defeatEventKey: MagoOscuro_Defeated
+  sendDefeatEventBeforeDeath: 0
+  spell1Prefab: {fileID: 1835415343817100084, guid: 73a6bb7bc8239d444a6ba5c5c8911706, type: 3}
+  spell2Prefab: {fileID: 1800714943050542859, guid: d8087ea6f3f1a934e8f05e0bcded1494, type: 3}
+  spell3Prefab: {fileID: 0}
+  spell1Cooldown: 2.2
+  spell2Cooldown: 8
+  spell3Cooldown: 5
+  spell1Chance: 0.65
+  spell2Chance: 0.35
+  spell3Chance: 0.2
+  maxMana: 200
+  manaRegenPerSecond: 25
+  manaRegenDelayAfterSpend: 1
+  spell1ManaCost: 20
+  spell2ManaCost: 30
+  spell3ManaCost: 45
+  spell1Damage: 25
+  spell2Damage: 15
+  spell3Damage: 35
+  lowManaRetreatThreshold: 0.2
+  useShield: 0
+  shieldPrefab: {fileID: 0}
+  shieldMinDuration: 2
+  shieldMaxDuration: 5
+  shieldCooldown: 10
+  useTacticalRetreat: 0
+  retreatHealthThreshold: 0.3
+  retreatCooldown: 15
+  coverSearchRadius: 15
+  coverLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  minCoverDistance: 3
+  maxCoverDistance: 15
+  coverStayDuration: 4
+  preferShieldOverCover: 0
+  difficultyLevel: 0.85
+  deceptionChance: 0.1
+  minAttacksToKeepForAmbush: 1
+  activelySearchForPlayer: 1
+  searchDuration: 15
+  passiveSearchDuration: 8
+  searchMovementRadius: 6
+  returnToOriginAfterSearch: 0

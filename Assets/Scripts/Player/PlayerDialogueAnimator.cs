@@ -20,9 +20,20 @@ public class PlayerDialogueAnimator : MonoBehaviour
     [Tooltip("Tiempo de blend al entrar en un gesto")]
     [SerializeField, Range(0f, 0.3f)] private float blendTime = 0.1f;
 
+    // Índice de la layer "UpperBody" (Avatar Mask sin piernas) del Animator del jugador — mismo
+    // índice que NPCSimpleAnimator.upperBodyLayer. La mayoría de los gestos de diálogo (Talk01-03,
+    // Angry01-02, etc.) viven aquí desde la migración fuera del Base Layer (30 ago 2026).
+    private const int CapaUpperBody = 1;
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     [Header("Debug")]
-    [SerializeField] private bool debugMode = false;
+    // FIX (30/08/2026, Raul: "en el pensamiento de will solo hace animaciones el mago, will
+    // ni una"): activado temporalmente para diagnosticar por que PlayGesture() no produce
+    // ningun cambio visible en la vision -- si el problema es que "Question02"/"Talk01" no se
+    // encuentran en el Animator Controller de Will, este flag hara que salga un aviso claro en
+    // consola (antes silencioso salvo que debugMode ya estuviera a true a mano). Volver a false
+    // cuando se confirme la causa real.
+    [SerializeField] private bool debugMode = true;
 #endif
 
     // Estado
@@ -94,7 +105,10 @@ public class PlayerDialogueAnimator : MonoBehaviour
             return;
 
         int stateHash = Animator.StringToHash(stateName);
-        if (!animator.HasState(0, stateHash))
+        // AnimatorLayerUtil resuelve en qué layer vive realmente el estado (misma utilidad
+        // compartida que usan NPCSimpleAnimator.PlaySocialGesture() y PromoVideo01Sequencer).
+        int capa = AnimatorLayerUtil.ResolveLayer(animator, stateHash, CapaUpperBody);
+        if (capa < 0)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (debugMode)
@@ -106,7 +120,7 @@ public class PlayerDialogueAnimator : MonoBehaviour
         if (_gestureCoroutine != null)
             StopCoroutine(_gestureCoroutine);
 
-        _gestureCoroutine = StartCoroutine(PlayGestureCoroutine(stateHash, stateName));
+        _gestureCoroutine = StartCoroutine(PlayGestureCoroutine(stateHash, stateName, capa));
     }
 
     private void PlayBodyEmotion(NPCEmotion emotion)
@@ -119,7 +133,8 @@ public class PlayerDialogueAnimator : MonoBehaviour
             return; // Emoción sin animación corporal asignada: el jugador mantiene el gesto actual
 
         int stateHash = Animator.StringToHash(stateName);
-        if (!animator.HasState(0, stateHash))
+        int capa = AnimatorLayerUtil.ResolveLayer(animator, stateHash, CapaUpperBody);
+        if (capa < 0)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (debugMode)
@@ -131,7 +146,7 @@ public class PlayerDialogueAnimator : MonoBehaviour
         if (_gestureCoroutine != null)
             StopCoroutine(_gestureCoroutine);
 
-        _gestureCoroutine = StartCoroutine(PlayGestureCoroutine(stateHash, stateName));
+        _gestureCoroutine = StartCoroutine(PlayGestureCoroutine(stateHash, stateName, capa));
     }
 
     /// <summary>
@@ -160,9 +175,12 @@ public class PlayerDialogueAnimator : MonoBehaviour
         return neutralAnims[0];
     }
 
-    private IEnumerator PlayGestureCoroutine(int stateHash, string stateName)
+    private IEnumerator PlayGestureCoroutine(int stateHash, string stateName, int capa)
     {
-        animator.CrossFadeInFixedTime(stateHash, blendTime, 0, 0f);
+        if (capa == CapaUpperBody)
+            animator.SetLayerWeight(CapaUpperBody, 1f); // si no, el gesto se reproduce pero no se ve
+
+        animator.CrossFadeInFixedTime(stateHash, blendTime, capa, 0f);
 
         yield return null; // esperar un frame para que comience la transición
 
@@ -172,7 +190,7 @@ public class PlayerDialogueAnimator : MonoBehaviour
 
         while (elapsed < maxWait)
         {
-            var stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+            var stateInfo = animator.GetCurrentAnimatorStateInfo(capa);
             if (stateInfo.shortNameHash == stateHash && stateInfo.normalizedTime >= 0.95f)
                 break;
 

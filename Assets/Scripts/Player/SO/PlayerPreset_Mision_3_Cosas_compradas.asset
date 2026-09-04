@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc82f4ca07df3ef42ac99a6a3f3dd3af, type: 3}
   m_Name: PlayerPreset_Mision_3_Cosas_compradas
   m_EditorClassIdentifier: Assembly-CSharp::PlayerPresetSO
-  spawnAnchorId: Woods_SavePoint
+  spawnAnchorId: Woods_Entrance_SavePoint
   level: 1
   maxHP: 100
   currentHP: 90
@@ -50,6 +50,8 @@ MonoBehaviour:
     climb: 0
     magic: 1
     fly: 0
+    sprint: 0
+    shield: 1
   appearance:
   - category: 0
     partName: Body05
@@ -138,13 +140,16 @@ MonoBehaviour:
   - npcId: Oliver
     position: {x: -31.48, y: 1.224823, z: 26.09}
     rotation: {x: 0, y: 0, z: 0, w: 0}
+    hasRotation: 0
     hasActiveState: 0
     isActive: 1
   - npcId: _ELDRAN
     position: {x: -39.945, y: 1.224823, z: 26.09}
     rotation: {x: 0, y: 0, z: 0, w: 0}
+    hasRotation: 0
     hasActiveState: 0
     isActive: 1
+  npcRelationships: []
   consumedInteractableIds:
   - MainWorld:Carta_1231,6_1000,8_3,4
   completedInteractiveNarratives:

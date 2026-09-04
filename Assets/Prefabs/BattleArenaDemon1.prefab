@@ -110,6 +110,7 @@ MonoBehaviour:
   battleId: Demon_1
   bossIntroPresentation: {fileID: 6982438715175877989}
   bossDisplayName: DEMONIO
+  bossDisplayNameId: BOSS_DEMONIO_NAME
   onBossDefeated:
     m_PersistentCalls:
       m_Calls: []

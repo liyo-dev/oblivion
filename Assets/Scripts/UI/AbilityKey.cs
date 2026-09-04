@@ -10,5 +10,7 @@ public enum AbilityKey
     Jump,
     Climb,
     Magic,
-    Fly
+    Fly,
+    Sprint,
+    Shield
 }

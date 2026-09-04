@@ -54,7 +54,17 @@ public enum SpellId
     GarraDelPacto,
     // NUEVO (23/08/2026): hechizo de retaguardia creado por Raúl — ver Assets/_SPELLS/Huracan.asset.
     // Antes de este ID, Huracan.asset tenía spellId:6 (Cycloneburst) duplicado con Tornado.asset.
-    Huracan
+    Huracan,
+    // NUEVO (30/08/2026): hechizo de zona de Liam — ver Assets/_SPELLS/SelloDelPacto.asset,
+    // creado por el menú "El Sendero/Magia/Crear Hechizo de Liam (Sello del Pacto)". Sale de la
+    // mano (mismo VFX/timing de casteo que un hechizo Projectile normal) pero, en vez de volar,
+    // se materializa al instante como una zona fija en el suelo — ver MagicKind.Zone.
+    SelloDelPacto,
+    // NUEVO (30/08/2026): hechizos del Mago Oscuro para la Batalla Final — ver
+    // Assets/_SPELLS/MagoOscuroGolpe.asset y MagoOscuroGrieta.asset, creados por el menu
+    // "El Sendero/Magia/Crear Hechizos del Mago Oscuro (Batalla Final)".
+    MagoOscuroGolpe,
+    MagoOscuroGrieta
 }
 
 /// <summary>Ranuras de magia (mano izquierda, derecha, o especial).</summary>
@@ -70,7 +80,13 @@ public enum MagicKind
 {
     Projectile,
     Special,
-    Levitation
+    Levitation,
+    // NUEVO (30/08/2026): el hechizo sale de la mano igual que un Projectile (mismo spawnVFX y
+    // castDelaySeconds, para aprovechar la animación de casteo existente), pero en vez de
+    // instanciar algo que viaja, se materializa al instante como una zona fija que aplica daño
+    // periódico a quien esté dentro mientras dura. Ver MagicZoneEffect.cs y
+    // MagicProjectileSpawner.SpawnZoneNow().
+    Zone
 }
 
 /// <summary>Elementos mágicos disponibles.</summary>
@@ -80,7 +96,12 @@ public enum MagicElement
     Ice,
     Storm,
     Light,
-    Mind
+    Mind,
+    // NUEVO (30/08/2026): magia de corrupcion del Mago Oscuro / el Sendero corrompido —
+    // ver guion-tecnico-batalla-final-2026-08-30.md. Antes de este cambio no habia un
+    // elemento propio para la magia oscura del jefe final; reutilizar Mind o Storm habria
+    // sido enganoso (esos elementos ya representan a Liam/Estela).
+    Dark
 }
 
 /// <summary>Tipos de ranuras para asignar hechizos.</summary>

@@ -2723,6 +2723,10 @@ MonoBehaviour:
   _dreamGradientLeft: {r: 0.68, g: 0.88, b: 1, a: 1}
   _dreamGradientRight: {r: 1, g: 0.94, b: 0.62, a: 1}
   _dreamShimmerIntensity: 0.65
+  _dreamBgWhite: {r: 0.98, g: 0.97, b: 0.94, a: 1}
+  _dreamBgWhiteBright: {r: 1, g: 0.99, b: 0.93, a: 1}
+  _dreamGradientLeftOnWhite: {r: 0.04, g: 0.14, b: 0.42, a: 1}
+  _dreamGradientRightOnWhite: {r: 0.55, g: 0.28, b: 0.02, a: 1}
   _khRevealSpeed: 10
   _khOffsetY: 22
   _khCharScaleFrom: 1.35

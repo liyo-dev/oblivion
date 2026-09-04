@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7699996565678447913}
   - component: {fileID: 7287383616676722239}
   - component: {fileID: 3709558348048525434}
-  m_Layer: 0
+  m_Layer: 18
   m_Name: Cloud3D-MeshCarrier_Cloud_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}

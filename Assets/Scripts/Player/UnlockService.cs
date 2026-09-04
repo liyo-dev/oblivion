@@ -142,6 +142,20 @@ public static class UnlockService
                     changed = true;
                 }
                 break;
+            case AbilityKey.Sprint:
+                if (!preset.abilities.sprint)
+                {
+                    preset.abilities.sprint = true;
+                    changed = true;
+                }
+                break;
+            case AbilityKey.Shield:
+                if (!preset.abilities.shield)
+                {
+                    preset.abilities.shield = true;
+                    changed = true;
+                }
+                break;
             default:
                 break;
         }

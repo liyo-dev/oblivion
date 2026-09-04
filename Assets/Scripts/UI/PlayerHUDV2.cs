@@ -231,8 +231,12 @@ namespace Sendero.UI
             PlayerPresetService.OnPresetApplied -= OnPresetApplied;
             PartyControlManager.OnActiveCharacterChanged -= OnCharacterSwitched;
             
-            // Limpiar todos los tweens
-            if (healthFillImage != null) healthFillImage.DOKill();
+            // Limpiar todos los tweens (incluido el punch de escala del daño, que corre sobre el Transform, no sobre la Image)
+            if (healthFillImage != null)
+            {
+                healthFillImage.DOKill();
+                healthFillImage.transform.DOKill(true);
+            }
             if (manaFillImage != null) manaFillImage.DOKill();
             _currentFadeTween?.Kill();
         }
@@ -420,8 +424,13 @@ namespace Sendero.UI
             bool isDamage = targetFillAmount < currentFillAmount;
             bool isHealing = targetFillAmount > currentFillAmount;
             
-            // Cancelar tweens previos
+            // Cancelar tweens previos: el fillAmount (sobre la Image) Y el punch de escala anterior
+            // (sobre el Transform, un target DISTINTO — DOKill() en la Image no lo mataba, así que
+            // si un golpe llegaba antes de que el punch anterior (0.3s) terminase, se apilaban dos
+            // tweens de escala a la vez y la barra se quedaba desajustada/creciendo fuera de su caja).
             healthFillImage.DOKill();
+            healthFillImage.transform.DOKill(true); // true = completa el punch en curso (vuelve a escala 1) antes de matarlo
+            healthFillImage.transform.localScale = Vector3.one; // red de seguridad por si ya venía desajustada de antes de este fix
             
             if (isDamage)
             {

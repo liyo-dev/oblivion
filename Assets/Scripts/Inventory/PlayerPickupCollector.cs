@@ -14,6 +14,8 @@ public class PlayerPickupCollector : MonoBehaviour
 
     [Header("Animation")]
     [SerializeField] private string drinkPotionAnimationName = "DrinkPotion_NoWeapon";
+    [Tooltip("Índice de la capa UpperBody (torso/brazos, sin piernas) donde vive DrinkPotion_NoWeapon.")]
+    [SerializeField] private int upperBodyLayer = 1;
 
     [Header("Settings")]
     [SerializeField] private bool logWarnings;
@@ -239,48 +241,47 @@ public class PlayerPickupCollector : MonoBehaviour
     private System.Collections.IEnumerator PlayDrinkPotionAnimationCoroutine()
     {
         _isPlayingDrinkAnimation = true;
-        
-        // Resetear TODOS los parámetros del animator a valores por defecto
-        foreach (var param in animator.parameters)
-        {
-            switch (param.type)
-            {
-                case AnimatorControllerParameterType.Float:
-                    animator.SetFloat(param.name, 0f);
-                    break;
-                case AnimatorControllerParameterType.Int:
-                    animator.SetInteger(param.name, 0);
-                    break;
-                case AnimatorControllerParameterType.Bool:
-                    animator.SetBool(param.name, false);
-                    break;
-            }
-        }
 
-        // Esperar 1 frame para que el Animator Controller procese los cambios
+        // DrinkPotion_NoWeapon vive en la UpperBody layer (torso/brazos, AvatarMask sin piernas):
+        // a diferencia del viejo enfoque en Base Layer, ya NO hace falta resetear todos los
+        // parámetros del animator a 0 para "limpiar" el idle — eso forzaba también IsGrounded,
+        // IsSprinting, etc. a valores incorrectos y congelaba las piernas si el jugador cogía la
+        // poción en pleno movimiento. Ahora la Base Layer sigue su locomoción normal sin tocarla;
+        // solo se activa el peso de la capa superior para el gesto de beber.
+        bool hasUpperLayer = animator.layerCount > upperBodyLayer && upperBodyLayer > 0;
+        if (hasUpperLayer)
+            animator.SetLayerWeight(upperBodyLayer, 1f);
+
+        int playLayer = hasUpperLayer ? upperBodyLayer : 0;
+        animator.PlayInFixedTime(drinkPotionAnimationName, playLayer, 0f);
+
+        // Esperar 1 frame para que el Animator Controller procese el cambio antes de leer el clip
         yield return null;
 
-        // Ahora reproducir la animación - el animator ya debería estar en idle limpio
-        animator.PlayInFixedTime(drinkPotionAnimationName, 0, 0f);
-        
-        Debug.Log($"[PlayerPickupCollector] Animación reproducida: {drinkPotionAnimationName}");
-        
+        Debug.Log($"[PlayerPickupCollector] Animación reproducida: {drinkPotionAnimationName} (layer {playLayer})");
+
         // Obtener la duración del clip de animación para esperar hasta que termine
-        AnimatorClipInfo[] clipInfo = animator.GetCurrentAnimatorClipInfo(0);
+        AnimatorClipInfo[] clipInfo = animator.GetCurrentAnimatorClipInfo(playLayer);
         float animationDuration = 1f; // Duración por defecto
-        
+
         if (clipInfo != null && clipInfo.Length > 0)
         {
             animationDuration = clipInfo[0].clip.length;
         }
-        
+
         // Esperar a que la animación termine
         yield return new WaitForSeconds(animationDuration);
-        
+
+        // Soltar la UpperBody layer: el propio estado ya vuelve a UpperIdle al terminar el clip
+        // (ver el Animator Controller), pero sin esto el peso de la capa se quedaría en 1 para
+        // siempre, dejando los brazos "congelados" en la pose de UpperIdle sobre la locomoción.
+        if (hasUpperLayer)
+            animator.SetLayerWeight(upperBodyLayer, 0f);
+
         // Limpiar referencias
         _isPlayingDrinkAnimation = false;
         _drinkPotionCoroutine = null;
-        
+
         Debug.Log($"[PlayerPickupCollector] Animación de poción completada - flag limpiado");
     }
 }

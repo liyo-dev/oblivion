@@ -172,7 +172,8 @@ public class PrologueDreamSequencer : CinematicSequencerBase
     [SerializeField] private float shockWeightMin = 0.35f;
     [SerializeField] private float shockWeightMax = 0.85f;
 
-    [Header("Fase E — Flashes de guerra (opcional; si se deja vacío, se salta)")]
+    [Header("Fase E — Flashes de guerra (opcional; si se deja vacío, usa como fallback lightImpactVfx/darkImpactVfx)")]
+    [Tooltip("Si se asigna a mano, estos GameObjects ya colocados en la escena se activan uno a uno (comportamiento original). Si se deja vacío (caso por defecto hoy), Co_WarFlashes() cae en un fallback: reutiliza lightImpactVfx/darkImpactVfx (los mismos VFX que ya dispara Co_Collision) como 2-3 destellos de choque extra, vía VfxPoolService — sin necesidad de colocar nada a mano en el Editor. Decisión 4 sep 2026.")]
     [SerializeField] private GameObject[] warFlashVisuals;
     [SerializeField] private float flashOnDuration      = 0.15f;
     [SerializeField] private float backToActorsDuration = 0.10f;
@@ -1193,17 +1194,49 @@ public class PrologueDreamSequencer : CinematicSequencerBase
 
     private IEnumerator Co_WarFlashes()
     {
-        if (warFlashVisuals == null || warFlashVisuals.Length == 0) yield break;
-
-        for (int i = 0; i < warFlashVisuals.Length; i++)
+        if (warFlashVisuals != null && warFlashVisuals.Length > 0)
         {
-            SetWarFlashVisualsActive(i);
+            for (int i = 0; i < warFlashVisuals.Length; i++)
+            {
+                SetWarFlashVisualsActive(i);
+                FeedbackService.CameraShake(_stageCamera, flashShakeIntensity, flashOnDuration);
+                PlayRandomStinger();
+
+                yield return new WaitForSecondsRealtime(flashOnDuration);
+
+                SetWarFlashVisualsActive(-1);
+                // Vuelta breve a los actores centrales entre cada corte — "memoria interrumpida".
+                yield return new WaitForSecondsRealtime(backToActorsDuration);
+            }
+            yield break;
+        }
+
+        // FALLBACK (4 sep 2026): sin warFlashVisuals asignado a mano en el Editor, reutiliza los
+        // mismos VFX de energía que ya se ven en esta cinemática (lightImpactVfx/darkImpactVfx —
+        // los mismos que dispara Co_Collision) como destellos de "choque" extra durante el plano
+        // cerrado, en vez de dejar el efecto completamente desactivado. Mantiene coherencia
+        // visual con el resto de la secuencia sin requerir colocar nada a mano en el Editor. Si
+        // en el futuro se asigna warFlashVisuals desde el Inspector, el camino de arriba vuelve a
+        // tener prioridad automáticamente.
+        if ((lightImpactVfx == null && darkImpactVfx == null) || VfxPoolService.Instance == null) yield break;
+
+        GameObject[] fallbackFlashPrefabs = { lightImpactVfx, darkImpactVfx, lightImpactVfx };
+        Vector3 flashCenter = stageAnchorPosition + Vector3.up * cameraHeight;
+
+        for (int i = 0; i < fallbackFlashPrefabs.Length; i++)
+        {
+            GameObject prefab = fallbackFlashPrefabs[i];
+            if (prefab == null) continue;
+
+            // VfxPoolService gestiona su propio ciclo de vida — no hace falta SetActive/Destroy
+            // manual ni limpieza en Cleanup() si el skip corta a mitad (se autolimpia a los
+            // flashOnDuration segundos igualmente).
+            VfxPoolService.Instance.Play(prefab, flashCenter, Quaternion.identity, flashOnDuration);
             FeedbackService.CameraShake(_stageCamera, flashShakeIntensity, flashOnDuration);
             PlayRandomStinger();
 
             yield return new WaitForSecondsRealtime(flashOnDuration);
 
-            SetWarFlashVisualsActive(-1);
             // Vuelta breve a los actores centrales entre cada corte — "memoria interrumpida".
             yield return new WaitForSecondsRealtime(backToActorsDuration);
         }
@@ -1449,7 +1482,7 @@ public class PrologueDreamSequencer : CinematicSequencerBase
     void OnValidate()
     {
         if (warFlashVisuals != null && warFlashVisuals.Length == 0)
-            Debug.Log("[PrologueDreamSequencer] Sin warFlashVisuals asignados — los flashes de guerra de la Fase E se saltarán. Es opcional, no bloquea el resto de la secuencia.", this);
+            Debug.Log("[PrologueDreamSequencer] Sin warFlashVisuals asignados — la Fase E usará como fallback lightImpactVfx/darkImpactVfx (vía VfxPoolService) para los destellos de choque. Asigna GameObjects aquí solo si quieres un flash de guerra distinto al de la colisión final. Es opcional, no bloquea el resto de la secuencia.", this);
     }
 #endif
 }

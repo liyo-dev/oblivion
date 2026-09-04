@@ -4,26 +4,9 @@ using DG.Tweening;
 [CreateAssetMenu(fileName = "AmbientPreset_New", menuName = "El Sendero/Entorno/Ambient Preset", order = 1)]
 public class AmbientPreset : ScriptableObject
 {
-    [Header("Fog Settings")]
-    [Tooltip("¿Activar fog con este preset?")]
-    public bool enableFog = true;
-
-    [Tooltip("Color del fog")]
-    public Color fogColor = new Color(0.5f, 0.5f, 0.5f, 1f);
-
-    [Tooltip("Densidad del fog (0-1). Mayor = más denso. Para niebla cercana usa Linear con fogEnd bajo.")]
-    [Range(0f, 1f)]
-    public float fogDensity = 0.02f;
-
-    [Tooltip("Modo del fog")]
-    public FogMode fogMode = FogMode.ExponentialSquared;
-
-    [Header("Linear Fog (solo si fogMode = Linear)")]
-    [Tooltip("Distancia de inicio del fog")]
-    public float fogStartDistance = 0f;
-
-    [Tooltip("Distancia final del fog")]
-    public float fogEndDistance = 100f;
+    [Header("Niebla de Nubes Bajas (sistema de clima — 1 sep 2026)")]
+    [Tooltip("Checkbox de 'nubes bajas': si está activo, mientras el jugador esté dentro de esta zona se fuerza la niebla ocasional de DayNightCycle (la misma que el sorteo global de clima, ver DayNightCycle.SetZoneMistOverride) — y se bloquea que empiece a llover/hacer tormenta/viento nuevos mientras siga activa. Si ya estaba lloviendo al entrar, la lluvia sigue como estaba (no se apila niebla encima) y la niebla de zona toma el relevo en cuanto esa lluvia termine sola. DayNightCycle es la ÚNICA fuente de verdad de RenderSettings.fog* — este checkbox solo la activa/desactiva por zona, no dibuja niebla propia. 1 sep 2026: este mismo checkbox también sube la cadencia de nubes sueltas de AmbientCloudDirector (ver AmbientCloudDirector.SetZoneCloudBoost) mientras se está en la zona, para que se vean nubes reales cruzando el cielo además de la niebla de distancia — no dispara tormenta por sí solo. Distinto de la niebla de pies (footFogObjects en AmbientZone), que es un objeto fijo con material propio, no depende del clima. No afecta a interiores: la visibilidad de la niebla la sigue controlando IsSkyboxLockedByEnvironment igual que siempre.")]
+    public bool forcesMist = false;
 
     [Header("Luz Ambiente")]
     [Tooltip("¿Controlar la luz ambiente con este preset?")]
@@ -85,13 +68,6 @@ public class AmbientPreset : ScriptableObject
 
     public void ApplyImmediate()
     {
-        RenderSettings.fog = enableFog;
-        RenderSettings.fogColor = fogColor;
-        RenderSettings.fogDensity = fogDensity;
-        RenderSettings.fogMode = fogMode;
-        RenderSettings.fogStartDistance = fogStartDistance;
-        RenderSettings.fogEndDistance = fogEndDistance;
-
         if (controlAmbientLight)
         {
             RenderSettings.ambientLight = ambientLightColor;
@@ -101,24 +77,12 @@ public class AmbientPreset : ScriptableObject
 
     public Tween ApplyWithTransition()
     {
-        RenderSettings.fog = enableFog;
-        RenderSettings.fogMode = fogMode;
-
-        float startDensity = RenderSettings.fogDensity;
-        Color startFogColor = RenderSettings.fogColor;
-        float startFogStart = RenderSettings.fogStartDistance;
-        float startFogEnd = RenderSettings.fogEndDistance;
         Color startAmbient = RenderSettings.ambientLight;
         float startAmbientI = RenderSettings.ambientIntensity;
 
         return DOTween.To(
             () => 0f,
             t => {
-                RenderSettings.fogDensity = Mathf.Lerp(startDensity, fogDensity, t);
-                RenderSettings.fogColor = Color.Lerp(startFogColor, fogColor, t);
-                RenderSettings.fogStartDistance = Mathf.Lerp(startFogStart, fogStartDistance, t);
-                RenderSettings.fogEndDistance = Mathf.Lerp(startFogEnd, fogEndDistance, t);
-
                 if (controlAmbientLight)
                 {
                     RenderSettings.ambientLight = Color.Lerp(startAmbient, ambientLightColor, t);

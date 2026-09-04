@@ -26,7 +26,12 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
     private bool _motorWasLocked;
     private bool _suppressWasActive;
     private Vector3 _preSnapPosition;
+    [Header("Animation Layers")]
+    [Tooltip("Índice de la capa para animaciones de torso superior (comer, beber). Mismo patrón que NPCSimpleAnimator.")]
+    [SerializeField] private int upperBodyLayer = 1;
+
     private NPCWorldPoint _currentWorldPoint;
+    private int _currentActivityLayer;
     private Coroutine _activityCoroutine;
     private Coroutine _snapCoroutine;
     private Dictionary<string, float> _clipLengthCache = new();
@@ -130,8 +135,9 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
         if (_currentWorldPoint == null) return;
 
         string loopState = GetActivityLoopState(_currentWorldPoint.activityType);
-        if (!string.IsNullOrEmpty(loopState) && HasState(loopState))
-            CrossFade(loopState, 0.2f);
+        int layer = GetActivityLayer(_currentWorldPoint.activityType);
+        if (!string.IsNullOrEmpty(loopState) && HasState(loopState, layer))
+            CrossFade(loopState, 0.2f, layer);
     }
 
     /// <summary>
@@ -171,6 +177,16 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
             try { _animator.SetBool(Invector.vCharacterController.vAnimatorParameters.IsGrounded, true); } catch { }
             try { _animator.SetFloat(Invector.vCharacterController.vAnimatorParameters.InputMagnitude, 0f); } catch { }
         }
+
+        // Comer/beber viven en la UpperBody layer (torso/brazos, sin piernas) para no pisar la
+        // locomoción de la Base Layer. En la práctica el player ya está inmovilizado por
+        // SnapToSeat() mientras dura la actividad, pero mantener el gesto en su capa correcta
+        // evita que se quede "congelado" ahí si algún día se permite comer/beber de pie y en
+        // movimiento. Se guarda en _currentActivityLayer para que ReturnAnimatorToLocomotion()
+        // pueda soltarla al terminar, incluso cuando _currentWorldPoint ya se puso a null.
+        _currentActivityLayer = GetActivityLayer(worldPoint.activityType);
+        if (_currentActivityLayer > 0 && _animator != null && _currentActivityLayer < _animator.layerCount)
+            _animator.SetLayerWeight(_currentActivityLayer, 1f);
 
         if (_activityCoroutine != null) StopCoroutine(_activityCoroutine);
         _activityCoroutine = StartCoroutine(ActivityRoutine(worldPoint.activityType));
@@ -319,12 +335,13 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
     {
         string beginState = GetActivityBeginState(activity);
         string loopState  = GetActivityLoopState(activity);
+        int layer = GetActivityLayer(activity);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        Debug.Log($"[PlayerAmbientActivityHandler] Actividad: {activity} | Begin='{beginState}' (existe={HasState(beginState)}) | Loop='{loopState}' (existe={HasState(loopState)}) | Animator={_animator?.name}");
+        Debug.Log($"[PlayerAmbientActivityHandler] Actividad: {activity} | Begin='{beginState}' (existe={HasState(beginState, layer)}) | Loop='{loopState}' (existe={HasState(loopState, layer)}) | Layer={layer} | Animator={_animator?.name}");
         if (_animator != null)
         {
-            var sb = new System.Text.StringBuilder("[PlayerAmbientActivityHandler] Estados layer 0 disponibles: ");
+            var sb = new System.Text.StringBuilder("[PlayerAmbientActivityHandler] Estados por layer disponibles: ");
             for (int i = 0; i < _animator.layerCount; i++)
             {
                 var info = _animator.GetCurrentAnimatorStateInfo(i);
@@ -334,15 +351,15 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
         }
 #endif
 
-        if (!string.IsNullOrEmpty(beginState) && HasState(beginState))
+        if (!string.IsNullOrEmpty(beginState) && HasState(beginState, layer))
         {
-            CrossFade(beginState, 0.2f);
+            CrossFade(beginState, 0.2f, layer);
             yield return null;
             yield return new WaitForSeconds(Mathf.Max(0.1f, GetClipLength(beginState)));
         }
 
-        if (!string.IsNullOrEmpty(loopState) && HasState(loopState))
-            CrossFade(loopState, 0.15f);
+        if (!string.IsNullOrEmpty(loopState) && HasState(loopState, layer))
+            CrossFade(loopState, 0.15f, layer);
 
         _activityCoroutine = null;
     }
@@ -402,6 +419,15 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
     private void ReturnAnimatorToLocomotion()
     {
         if (_animator == null) return;
+
+        // Soltar la UpperBody layer si la actividad que se abandona la usaba (comer/beber),
+        // para no dejar el torso "congelado" en la última pose sobre la locomoción normal.
+        if (_currentActivityLayer > 0 && _currentActivityLayer < _animator.layerCount)
+        {
+            _animator.SetLayerWeight(_currentActivityLayer, 0f);
+            _currentActivityLayer = 0;
+        }
+
         foreach (var state in _locomotionStateCandidates)
         {
             if (HasState(state))
@@ -415,14 +441,14 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
 #endif
     }
 
-    private void CrossFade(string stateName, float duration)
+    private void CrossFade(string stateName, float duration, int layer = 0)
     {
         if (_animator == null) return;
-        _animator.CrossFadeInFixedTime(Animator.StringToHash(stateName), duration, 0);
+        _animator.CrossFadeInFixedTime(Animator.StringToHash(stateName), duration, layer);
     }
 
-    private bool HasState(string stateName)
-        => _animator != null && _animator.HasState(0, Animator.StringToHash(stateName));
+    private bool HasState(string stateName, int layer = 0)
+        => _animator != null && _animator.HasState(layer, Animator.StringToHash(stateName));
 
     private float GetClipLength(string stateName)
     {
@@ -443,6 +469,18 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
 
     // ── Mapeo actividad → estados del animator ───────────────────────────────────
     // Los nombres son idénticos a los usados en NPCSimpleAnimator.
+
+    /// <summary>
+    /// Capa del Animator en la que vive cada actividad ambiental. Comer y beber viven en la
+    /// UpperBody layer (torso/brazos, AvatarMask sin piernas); el resto (sentarse, dormir) son
+    /// poses de cuerpo completo en la Base Layer (capa 0). Mismo criterio que NPCSimpleAnimator.
+    /// </summary>
+    private int GetActivityLayer(NPCAmbientActivity a) => a switch
+    {
+        NPCAmbientActivity.Eat   => upperBodyLayer,
+        NPCAmbientActivity.Drink => upperBodyLayer,
+        _                        => 0
+    };
 
     private static string GetActivityBeginState(NPCAmbientActivity a) => a switch
     {

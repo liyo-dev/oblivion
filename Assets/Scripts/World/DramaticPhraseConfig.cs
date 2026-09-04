@@ -13,7 +13,14 @@ public enum DramaticTextBackground
     None,
     SemiBlack,  // Alpha ~0.65
     FullBlack,  // Alpha 1.0
-    Dream       // Azul índigo profundo con pulso suave — para secuencias de sueño
+    Dream,      // Azul índigo profundo con pulso suave — para secuencias de sueño
+    // Añadido 30/08/2026 (visión de la Voz en MagoOscuroFinalBattleSequencer, Fase C): mismo
+    // concepto que Dream (nebulosa + chispas + degradado + shimmer en el texto) pero con un
+    // blanco cálido en vez del azul índigo oscuro — pedido explícito de Raúl ("el fondo es
+    // blanco"). El degradado de texto se sobreescribe automáticamente a un par de tonos oscuros
+    // legibles sobre blanco (ver DramaticTextOverlayUI._dreamGradientLeftOnWhite/RightOnWhite) —
+    // los tonos claros normales de Dream serían casi invisibles aquí.
+    DreamWhite
 }
 
 public enum DramaticEntryAnimation

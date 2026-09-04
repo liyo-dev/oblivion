@@ -70,6 +70,13 @@ namespace Core.InputGlyphs
                 // "□" y llenaba la consola de avisos de fuente en cada refresco del ScrollRect.
                 Entry(InputGlyphNames.ShoulderLeft, "CONTROLS_TARGET_PREV", "Cambiar objetivo de combate (anterior)"),
                 Entry(InputGlyphNames.ShoulderRight, "CONTROLS_TARGET_NEXT", "Cambiar objetivo de combate (siguiente)"),
+                // Nuevo (1 sep 2026, petición Raúl): activar/desactivar el lock-on automático de
+                // cámara/objetivo en combate. Sin glyph propio (botón sin icono de familia) — fila
+                // manual como la de Cámara, mismo patrón. Ver GamepadInputReader.InputEventType.
+                // ToggleTargetLock / CombatCameraTargeting.ToggleTargetingSuppressed.
+                Manual("CONTROLS_TARGET_TOGGLE", "Activar/desactivar el bloqueo automático de objetivo",
+                       "GLYPH_KEY_F", "F",
+                       "GLYPH_STICK_RIGHT_CLICK", "Clic stick derecho (R3)"),
                 Entry(InputGlyphNames.DpadLeft, "CONTROLS_CHARACTER_PREV", "Cambiar de personaje (anterior)"),
                 Entry(InputGlyphNames.DpadRight, "CONTROLS_CHARACTER_NEXT", "Cambiar de personaje (siguiente)"),
                 Entry(InputGlyphNames.Teleport, "CONTROLS_TELEPORT", "Teletransportarse al punto de guardado"),

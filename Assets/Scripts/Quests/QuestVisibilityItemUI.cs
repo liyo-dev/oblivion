@@ -82,13 +82,13 @@ public class QuestVisibilityItemUI : MonoBehaviour
         if (visibility == QuestVisibility.Visible)
         {
             // Panel de visibles → Solo mostrar botón "Archivar"
-            ConfigureButton(archiveButton, QuestVisibility.Hidden, "Archivar");
+            ConfigureButton(archiveButton, QuestVisibility.Hidden, "UI_ARCHIVAR");
             if (activateButton) activateButton.gameObject.SetActive(false);
         }
         else // QuestVisibility.Hidden
         {
             // Panel de archivados → Solo mostrar botón "Activar"
-            ConfigureButton(activateButton, QuestVisibility.Visible, "Activar");
+            ConfigureButton(activateButton, QuestVisibility.Visible, "UI_ACTIVAR");
             if (archiveButton) archiveButton.gameObject.SetActive(false);
         }
 
@@ -105,7 +105,17 @@ public class QuestVisibilityItemUI : MonoBehaviour
     /// <summary>
     /// Configura un botón para cambiar la visibilidad de la quest
     /// </summary>
-    void ConfigureButton(Button button, QuestVisibility targetVisibility, string actionName)
+    /// <param name="actionKey">
+    /// FIX 4 sep 2026 (petición de Raúl: "estoy en ingles y sale Archivar" — el botón de archivar
+    /// del panel de misiones salía siempre en español, incluso jugando en inglés). Antes este
+    /// parámetro se llamaba "actionName" y llegaba con el texto en español a pelo ("Archivar"/
+    /// "Activar") — pero el método nunca llegó a usarlo para nada, así que el texto real del botón
+    /// dependía por completo de que el LocalizedText de su prefab hiciera su trabajo por su cuenta,
+    /// sin ninguna red de seguridad. Ahora es la CLAVE del catálogo (UI_ARCHIVAR/UI_ACTIVAR) y se
+    /// aplica aquí explícitamente cada vez que se configura la fila — con el idioma que esté activo
+    /// en ese momento — en vez de depender solo del componente del prefab.
+    /// </param>
+    void ConfigureButton(Button button, QuestVisibility targetVisibility, string actionKey)
     {
         if (button == null) return;
 
@@ -113,10 +123,12 @@ public class QuestVisibilityItemUI : MonoBehaviour
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(() => NotifyChange(targetVisibility));
         button.interactable = true;
-        
-        EnsureTextHighlight(button);
-        
 
+        var label = button.GetComponentInChildren<TextMeshProUGUI>(true);
+        if (label != null && LocalizationManager.Instance != null)
+            label.text = LocalizationManager.Instance.Get(actionKey, label.text);
+
+        EnsureTextHighlight(button);
     }
 
     void NotifyChange(QuestVisibility visibility)

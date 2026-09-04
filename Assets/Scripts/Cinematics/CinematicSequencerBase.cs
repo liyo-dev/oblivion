@@ -519,20 +519,129 @@ public abstract class CinematicSequencerBase : MonoBehaviour
 
     /// Muestra un texto con saltos de línea como páginas sucesivas de bocadillo.
     /// loopAnim: si true, re-dispara el animTrigger en cada página.
+    ///
+    /// BUG REAL (Raúl, 30/08/2026, ronda 9): "hace la animación de enfado, el bocadillo continúa,
+    /// y el personaje se queda en Idle" — incluso con loopAnim:true. Causa: el gesto (p.ej. Angry01)
+    /// es un one-shot de 1-2s, pero cada página se queda en pantalla "durationPerPage" (5s en el
+    /// monólogo del Mago Oscuro) — en cuanto el clip del gesto termina, NPCSimpleAnimator (si
+    /// "_isInteracting" es false, que es el caso por defecto aquí) fuerza la vuelta a Idle de pie
+    /// por su cuenta (PlayOneShotCoroutine), mucho antes de que la página cambie. Exactamente el
+    /// mismo bug ya diagnosticado y resuelto para NPCs reales en otra escena de esta sesión (ver
+    /// cabecera de PromoVideo01Sequencer.cs, sección "GESTOS QUE NO SE QUEDAN IDLE A MITAD DE
+    /// LÍNEA") — el mecanismo que ya lo resuelve ahí es NPCSimpleAnimator.BeginInteraction(), que
+    /// dejaría al NPC en su interactState ("InteractWithPeople_NoWeapon" por defecto) en vez de caer
+    /// a Idle entre gesto y gesto — simplemente no se estaba llamando desde este helper compartido.
+    /// Arreglo: se llama aquí, una sola vez, para que todo bocadillo cinemático de este archivo
+    /// (Mago Oscuro, Will, Estela, Liam, Eldran, etc.) quede cubierto sin tocar cada punto de
+    /// llamada. Solo aplica a NPCs con NPCSimpleAnimator — Will (jugador) usa PlayerDialogueAnimator,
+    /// que no tiene este problema (sus gestos viven en la UpperBody layer y se quedan en su último
+    /// frame en vez de forzar Idle, ver PlayerDialogueAnimator.PlayGestureCoroutine()).
     protected IEnumerator ShowBubblePaged(Transform target, string text, float durationPerPage,
         string animTrigger = null, bool loopAnim = false, string speakerName = null)
     {
+        var npcAnim = target != null ? target.GetComponentInChildren<NPCSimpleAnimator>(true) : null;
+        npcAnim?.BeginInteraction();
+        // FIX (30/08/2026, Raul: "sigue fallando que el mago oscuro no haga las animaciones de
+        // hablar si el bocadillo aun se ve"): BeginInteraction() + el gesto puntual de
+        // PlaySocialGesture (via animTrigger, re-disparado en cada pagina con loopAnim) ya evitan
+        // que el NPC caiga a Idle -- pero entre gesto y gesto se queda en una pose neutra estatica
+        // (interactState), que a simple vista no se distingue de estar "parado sin hablar" durante
+        // el resto de los ~3-4s que dura cada pagina. DialogueManager.ActivateSpeakerTalkAnimation()
+        // (el camino real de las conversaciones normales del juego, "asi es como lo tenemos en el
+        // juego") no depende solo del gesto puntual: tambien activa NPCSimpleAnimator.SetTalking(true)
+        // -- un parametro bool ("IsTalking") del propio Animator Controller que mantiene una
+        // animacion de hablar continua mientras dura la linea, independiente del gesto de un solo
+        // disparo. ShowBubblePaged nunca lo activaba. Se activa aqui junto con BeginInteraction() y
+        // se desactiva junto con EndInteraction() mas abajo, igual que hace DialogueManager.
+        npcAnim?.SetTalking(true);
+
+        // FIX (30/08/2026, ronda 14, Raul: "sigue fallando que el mago oscuro no haga las
+        // animaciones de hablar si el bocadillo aun se ve" + "no salen logs en esa parte"):
+        // SetTalking(true) de arriba resulto ser un no-op real para el Mago Oscuro -- su Animator
+        // Controller (NPC_NoWeapon.controller, compartido por varios NPCs) NO tiene ningun
+        // parametro "IsTalking" (confirmado leyendo el .controller: solo existen WeaponType/
+        // WeaponChange/Fidget/FidgetIndex/Flourish/FlourishIndex/InputMagnitude/InputHorizontal/
+        // InputVertical/IsStrafing). SetTalking() ya comprobaba si el parametro existe antes de
+        // usarlo y, si no lo encuentra, sale en silencio -- el aviso solo se imprime con debugMode
+        // activo (false por defecto), lo que explica exactamente el "no salen logs" de Raul: no es
+        // que nada se ejecute, es que SetTalking() no tiene nada real que hacer y no lo dice.
+        // Sin ese bool, la unica forma real de que el NPC parezca hablar durante TODA la pagina (no
+        // solo el primer 1-2s del gesto de un solo disparo) es seguir re-lanzando gestos a
+        // intervalos mientras la pagina siga en pantalla -- mismo mecanismo que ya usa `loopAnim`
+        // entre paginas distintas, aplicado ahora tambien DENTRO de una misma pagina.
+        const float talkGestureRetriggerInterval = 1.6f;
+
+        // FIX (31/08/2026, ronda 15, Raul: "lo que esta haciendo son las animaciones de enfado en
+        // bucle cuando lo que debe hacer es la animacion de enfado y luego la de hablar"): el
+        // re-disparo de la ronda 14 repetia siempre el MISMO animTrigger (p.ej. "Angry01" durante
+        // todo un tramo del monologo) -- se veia como enfado en bucle en vez de una conversacion
+        // real. Mismo criterio que ya se aplico en la vision de Will (seccion 13 del documento del
+        // proyecto): la PRIMERA vez se muestra el gesto especifico de la frase/tramo (enfado,
+        // sorpresa, etc.), y todas las veces siguientes (tanto el re-disparo entre paginas de
+        // `loopAnim` como el nuevo re-disparo dentro de una misma pagina) alternan entre variaciones
+        // genericas de "hablando" -- nunca se repite el gesto especifico una y otra vez.
+        bool specificGestureFired = false;
+        int talkVariationIndex = 0;
+
         string[] pages = text.Split('\n');
         for (int i = 0; i < pages.Length; i++)
         {
             string page = pages[i].Trim();
             if (string.IsNullOrEmpty(page)) continue;
             bool done = false;
-            string triggerThisPage = (i == 0 || loopAnim) ? animTrigger : null;
+            bool pageHasTrigger = (i == 0 || loopAnim) && !string.IsNullOrEmpty(animTrigger);
+            string triggerThisPage = pageHasTrigger
+                ? PickTalkGesture(animTrigger, ref specificGestureFired, ref talkVariationIndex)
+                : null;
             SpeechBubbleUI.Instance.Show(target, page, durationPerPage, () => done = true, triggerThisPage,
                 speakerName: speakerName);
-            yield return new WaitUntil(() => done);
+
+            if (npcAnim != null && pageHasTrigger)
+            {
+                float elapsedSinceRetrigger = 0f;
+                while (!done)
+                {
+                    yield return null;
+                    elapsedSinceRetrigger += Time.deltaTime;
+                    if (elapsedSinceRetrigger >= talkGestureRetriggerInterval)
+                    {
+                        elapsedSinceRetrigger = 0f;
+                        npcAnim.PlaySocialGesture(PickTalkGesture(animTrigger, ref specificGestureFired, ref talkVariationIndex));
+                    }
+                }
+            }
+            else
+            {
+                yield return new WaitUntil(() => done);
+            }
         }
+
+        npcAnim?.SetTalking(false);
+        npcAnim?.EndInteraction();
+    }
+
+    // Estados de "hablando" genéricos usados por PickTalkGesture() tras el primer gesto específico
+    // -- confirmados como estados reales compartidos entre NPCs y el monólogo del Mago Oscuro
+    // (sección 9.2 del documento del proyecto ya usa Talk02 como animTrigger propio de un tramo).
+    private static readonly string[] TalkVariations = { "Talk01", "Talk02", "Talk03" };
+
+    /// <summary>
+    /// La primera vez que se llama (por cada ShowBubblePaged en curso, gracias a los ref) devuelve
+    /// el gesto específico pasado (p.ej. "Angry01"); todas las veces siguientes devuelve, rotando,
+    /// una variación genérica de "hablando" -- así el personaje muestra su emoción una vez y luego
+    /// sigue "conversando" en vez de repetir el mismo gesto específico en bucle.
+    /// </summary>
+    private static string PickTalkGesture(string specificGesture, ref bool specificGestureFired, ref int talkVariationIndex)
+    {
+        if (!specificGestureFired && !string.IsNullOrEmpty(specificGesture))
+        {
+            specificGestureFired = true;
+            return specificGesture;
+        }
+
+        string chosen = TalkVariations[talkVariationIndex % TalkVariations.Length];
+        talkVariationIndex++;
+        return chosen;
     }
 
     // ── Rotación de personajes ────────────────────────────────────────────────

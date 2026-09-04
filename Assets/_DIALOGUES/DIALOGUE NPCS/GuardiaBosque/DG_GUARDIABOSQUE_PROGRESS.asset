@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: DG_GUARDIABOSQUE_PROGRESS
   m_EditorClassIdentifier: Assembly-CSharp::DialogueAsset
   lines:
-  - speakerNameId: CHAR_GUARD
+  - speakerNameId: CHAR_GUARDIA_BOSQUE
     textId: DLG_GUARDIABOSQUE_03
     text:
     portrait: {fileID: 0}

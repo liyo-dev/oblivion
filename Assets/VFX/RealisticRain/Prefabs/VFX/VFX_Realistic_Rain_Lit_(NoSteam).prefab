@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 8597827114140585894}
   - component: {fileID: 8507785595393798308}
   - component: {fileID: 5006421085898799365}
-  m_Layer: 0
+  m_Layer: 18
   m_Name: 'Particle_Out '
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4914,7 +4914,7 @@ GameObject:
   - component: {fileID: 707802142649717666}
   - component: {fileID: 6541756819577208646}
   - component: {fileID: 8133144997453715826}
-  m_Layer: 0
+  m_Layer: 18
   m_Name: Ring
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9808,7 +9808,7 @@ GameObject:
   - component: {fileID: 603485482825294952}
   - component: {fileID: 136551783113227136}
   - component: {fileID: 366575175832631680}
-  m_Layer: 0
+  m_Layer: 18
   m_Name: Rain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14652,7 +14652,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4003210005371167755}
   - component: {fileID: 1668839034923332076}
-  m_Layer: 0
+  m_Layer: 18
   m_Name: VFX_Realistic_Rain_Lit_(NoSteam)
   m_TagString: Untagged
   m_Icon: {fileID: 0}

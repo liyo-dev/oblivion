@@ -15931,6 +15931,7 @@ GameObject:
   - component: {fileID: 8747877491027333718}
   - component: {fileID: 1093861493971799819}
   - component: {fileID: 1613471923374371259}
+  - component: {fileID: 4210016675758445095}
   m_Layer: 8
   m_Name: _WILL_NPC
   m_TagString: Untagged
@@ -23312,3 +23313,15 @@ Transform:
   - {fileID: 2111759721909302532}
   m_Father: {fileID: 1988228566435264110}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4210016675758445095
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6699691312287338962}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef8f64d5eb96442293babe934966d66f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.WillIdleCommentary

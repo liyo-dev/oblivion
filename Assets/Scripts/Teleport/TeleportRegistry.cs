@@ -57,6 +57,7 @@ public static class TeleportRegistry
         
         OnPointUnlocked?.Invoke(point);
         OnRegistryChanged?.Invoke();
+
         return true;
     }
     

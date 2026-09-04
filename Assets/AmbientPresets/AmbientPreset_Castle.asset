@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8e06c90f7704958a0df37dea96290e2, type: 3}
   m_Name: AmbientPreset_Castle
   m_EditorClassIdentifier: Assembly-CSharp::FogPreset
+  forcesMist: 0
   enableFog: 0
   fogColor: {r: 0.5339979, g: 0.8941537, b: 0.9056604, a: 1}
   fogDensity: 0.0283

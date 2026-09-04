@@ -18,12 +18,14 @@ MonoBehaviour:
     text: ...
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
+    lookAtOverrideId: CHAR_LIAM
     emotion: 3
   - speakerNameId: CHAR_LIAM
     textId: LORE_CELDA_3
     text: ...
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
+    lookAtOverrideId: CHAR_ESTELA
     emotion: 3
   - speakerNameId: CHAR_ESTELA
     textId: DLG_ESTELA_PRISION_02
@@ -36,6 +38,7 @@ MonoBehaviour:
     text: ...
     portrait: {fileID: 0}
     isPlayerSpeaking: 1
+    lookAtOverrideId: CHAR_LIAM
     emotion: 2
   - speakerNameId: CHAR_LIAM
     textId: LORE_CELDA_5
@@ -61,7 +64,7 @@ MonoBehaviour:
     portrait: {fileID: 0}
     isPlayerSpeaking: 1
     emotion: 1
-  - speakerNameId: CHAR_ELDRAN
+  - speakerNameId: CHAR_LIAM
     textId: LORE_CELDA_9
     text: ...
     portrait: {fileID: 0}
@@ -73,25 +76,26 @@ MonoBehaviour:
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
     emotion: 8
-  - speakerNameId: CHAR_ELDRAN
+  - speakerNameId: CHAR_LIAM
     textId: DLG_ESTELA_PRISION_07
     text: ...
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
     emotion: 3
-  - speakerNameId: CHAR_ELDRAN
+  - speakerNameId: CHAR_LIAM
     textId: LORE_CELDA_10
     text: ...
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
+    lookAtOverrideId: CHAR_WILL
     emotion: 0
-  - speakerNameId: CHAR_ELDRAN
+  - speakerNameId: CHAR_LIAM
     textId: LORE_CELDA_11
     text: ...
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
     emotion: 0
-  - speakerNameId: CHAR_ELDRAN
+  - speakerNameId: CHAR_LIAM
     textId: LORE_CELDA_12
     text: ...
     portrait: {fileID: 0}

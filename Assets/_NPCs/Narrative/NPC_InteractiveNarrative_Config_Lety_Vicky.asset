@@ -20,15 +20,12 @@ MonoBehaviour:
     condition:
       conditionType: 0
       targetQuest: {fileID: 0}
+      targetStepConditionId: 
+      customEventKey: 
       debugMode: 0
     narrativeChain:
     - actionType: 4
       dialogue: {fileID: 0}
-      speechBubbleText: 
-      isThoughtBubble: 0
-      speechBubbleDuration: 3
-      speechBubblePrefabOverride: {fileID: 0}
-      waitForBubble: 1
       targetAnchorName: 
       targetTransform: {fileID: 0}
       moveToRandomPoint: 0
@@ -39,6 +36,9 @@ MonoBehaviour:
       moveTeamMembers: 1
       maxMovementDuration: 0
       turnAroundOnArrival: 0
+      nearPlayerRadius: 1.8
+      lookAtPlayerOnArrival: 1
+      teleportNearPlayerRadius: 1.8
       waitForPlayer: 0
       maxPlayerDistance: 0
       resumePlayerDistance: 0
@@ -56,11 +56,26 @@ MonoBehaviour:
       alertIconPrefab: {fileID: 0}
       alertIconDuration: 0
       alertIconOffset: {x: 0, y: 0, z: 0}
+      escortMaxDuration: 120
+      escortMaxPlayerDistance: 8
+      escortResumeDistance: 3
+      outOfRangeDialogue: {fileID: 0}
+      escortNpcSpeed: 0
+      escortPlayerSpeedMultiplier: 0.6
+      teleportTransition: {fileID: 0}
+      screenFadeTransition: {fileID: 0}
+      fadeIn: 1
+      fadeColor: {r: 0, g: 0, b: 0, a: 1}
+      fadeDuration: 0.5
       sendNarrativeEvent: 0
-      narrativeEventKey:
+      narrativeEventKey: 
       sendEventOnStart: 0
     singleUse: 1
     autoStartOnDetection: 1
+    autoExecuteOnQuestConditionMet: 0
+    freezePlayerOnDetection: 0
+    lockPlayerAfterChain: 0
+    lockPlayerMaxDuration: 8
     postNarrativeState: 0
     postNarrativeAmbientConfig: {fileID: 0}
     showPersistentIcon: 1
@@ -68,8 +83,12 @@ MonoBehaviour:
     sendNarrativeEvent: 0
     narrativeEventKey: 
     debugMode: 0
+    loopWhileConditionMet: 0
+    loopPauseDuration: 1
   persistState: 1
+  enableDetailedLogs: 0
   persistenceId: NPC_InteractiveNarrative_Config_Lety_Vicky_7dcb9cf0
+  dialogueCharacterId: 
   rotateToPlayerOnInteract: 1
   rotationDuration: 0.3
   initialLayer: 0
@@ -80,7 +99,3 @@ MonoBehaviour:
   alertIconHeight: 2.5
   walkTowardsPlayerOnAlert: 1
   stopDistanceFromPlayer: 2
-  defaultSpeechBubblePrefab: {fileID: 0}
-  defaultThoughtBubblePrefab: {fileID: 0}
-  speechBubbleHeight: 2.8
-  enableDetailedLogs: 0

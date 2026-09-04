@@ -12,7 +12,6 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
     [SerializeField] private MagicProjectileSpawner spawner;
     [SerializeField] private SpecialChargeMeter specialChargeMeter;
     [SerializeField] private PlayerShieldController shieldController;
-    [SerializeField] private PlayerMovementBlocker movementBlocker;
 
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = false;
@@ -25,11 +24,6 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
     private MagicSpellSO _leftSpell, _rightSpell, _specialSpell;
     private float _castingUntil;
 
-    // INC-104: bloqueo de giro/movimiento del jugador durante la animación de cast.
-    private float _castingLockUntil;
-    private Coroutine _castingLockRoutine;
-    private bool _castingModePushed;
-
     public bool IsCasting => Time.time < _castingUntil;
 
     void Awake()
@@ -40,16 +34,6 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
         if (!spawner) spawner = GetComponentInParent<MagicProjectileSpawner>();
         if (!specialChargeMeter) specialChargeMeter = GetComponentInParent<SpecialChargeMeter>();
         if (!shieldController) shieldController = GetComponentInParent<PlayerShieldController>();
-
-        // INC-104: PlayerMovementBlocker todavía no estaba colocado en ningún GameObject del
-        // proyecto (clase ya escrita, pero sin usar) — lo añadimos en el mismo root que
-        // PlayerActionManager la primera vez que se necesita.
-        if (!movementBlocker) movementBlocker = GetComponentInParent<PlayerMovementBlocker>();
-        if (!movementBlocker)
-        {
-            var root = actionManager ? actionManager.gameObject : transform.root.gameObject;
-            movementBlocker = root.AddComponent<PlayerMovementBlocker>();
-        }
 
         // Inicializar cooldowns
         InitializeCooldowns();
@@ -114,19 +98,7 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
         InitializeCooldowns();
         _slotCooldowns[slot] = spell.cooldown;
 
-        float lockDuration = GetCastingLockDuration(spell);
-        _castingUntil = Time.time + lockDuration;
-
-        // INC-104: bloquear giro y movimiento del jugador mientras dura la animación de cast
-        // (PlayerMovementBlocker.BlockMovementKeepCamera(), cámara libre) y, en paralelo,
-        // empujar ActionMode.Casting como gate lógico de Sprint/Roll/Jump/Attack/Magic. Mismo
-        // patrón Push/Pop con guard en OnDisable que AerialKnockbackReceiver usa para Stunned.
-        if (actionManager != null || movementBlocker != null)
-        {
-            _castingLockUntil = Mathf.Max(_castingLockUntil, Time.time + lockDuration);
-            if (_castingLockRoutine == null)
-                _castingLockRoutine = StartCoroutine(Co_CastingLock());
-        }
+        _castingUntil = Time.time + GetCastingLockDuration(spell);
 
         // Lanzar el hechizo usando el spawner existente
         spawner.Spawn(slot);
@@ -240,49 +212,6 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
         return duration;
     }
 
-    IEnumerator Co_CastingLock()
-    {
-        if (actionManager != null)
-        {
-            actionManager.PushMode(ActionMode.Casting);
-            _castingModePushed = true;
-        }
-
-        // BlockMovementKeepCamera() resetea InputMagnitude/H/V del Animator al instante (evita
-        // el "se queda caminando" de dejar el valor del frame anterior) y deja vThirdPersonInput
-        // activo, así que la cámara sigue respondiendo durante todo el cast.
-        movementBlocker?.BlockMovementKeepCamera();
-
-        while (Time.time < _castingLockUntil)
-            yield return null;
-
-        movementBlocker?.RestoreMovement();
-
-        if (_castingModePushed)
-        {
-            actionManager.PopMode(ActionMode.Casting);
-            _castingModePushed = false;
-        }
-        _castingLockRoutine = null;
-    }
-
-    void OnDisable()
-    {
-        // Igual que AerialKnockbackReceiver con ActionMode.Stunned: si el objeto se
-        // desactiva a mitad del lock (muerte, cambio de escena, etc.) Unity detiene la
-        // corrutina sin ejecutar lo que va después del while — hay que soltarlo aquí o
-        // ActionMode.Casting quedaría apilado para siempre en PlayerActionManager, y el
-        // player quedaría con el movimiento bloqueado (RestoreMovement() es un no-op seguro
-        // si BlockMovementKeepCamera() nunca llegó a activarse).
-        if (_castingModePushed && actionManager != null)
-        {
-            actionManager.PopMode(ActionMode.Casting);
-            _castingModePushed = false;
-        }
-        movementBlocker?.RestoreMovement();
-        _castingLockRoutine = null;
-    }
-
     /// Obtiene el hechizo para un slot específico
     public MagicSpellSO GetSpellForSlot(MagicSlot slot)
     {
@@ -331,7 +260,6 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
         if (!spawner) spawner = GetComponentInParent<MagicProjectileSpawner>();
         if (!specialChargeMeter) specialChargeMeter = GetComponentInParent<SpecialChargeMeter>();
         if (!shieldController) shieldController = GetComponentInParent<PlayerShieldController>();
-        if (!movementBlocker) movementBlocker = GetComponentInParent<PlayerMovementBlocker>();
     }
 #endif
 }

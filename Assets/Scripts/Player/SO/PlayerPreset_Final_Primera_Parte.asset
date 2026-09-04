@@ -75,6 +75,8 @@ MonoBehaviour:
     climb: 1
     magic: 1
     fly: 1
+    sprint: 1
+    shield: 1
   appearance:
   - category: 0
     partName: Body05

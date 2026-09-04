@@ -43,6 +43,20 @@ namespace Game.NPC.Common
         public bool IsActivelyFollowingPlayer { get; set; }
         public bool DebugMode { get; set; }
 
+        /// <summary>
+        /// INC-028: Time.time hasta el que este NPC debe ignorar el movimiento de
+        /// FollowPlayerState tras ser reposicionado por una carga de partida
+        /// (GameBootProfile.ApplyNpcPositionsToScene). Sin esto, un NPC con posición/rotación
+        /// persistida se restaura mirando en la dirección exacta guardada, pero en cuanto
+        /// FollowPlayerState detecta que está a más de `stopDist` del jugador (caso normal:
+        /// el jugador se restaura solo a un ancla aproximada, no a su posición exacta — ver
+        /// PlayerSaveData, que no guarda Vector3/Quaternion del jugador) empieza a moverse, y
+        /// NPCSimpleAnimator.SyncWithNavMeshAgent() gira el NPC hacia la dirección de marcha,
+        /// pisando la rotación restaurada antes de que el jugador llegue a verla quieta. 0 o
+        /// un valor ya pasado = sin margen de gracia activo (comportamiento normal).
+        /// </summary>
+        public float FollowGraceUntil { get; set; }
+
         // Social
         public Transform PendingSocialPartner { get; set; }
         public NPCRelationType PendingSocialRelation { get; set; }

@@ -156,7 +156,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 206, y: 14}
-  m_SizeDelta: {x: 620, y: 86}
+  m_SizeDelta: {x: 620, y: 128}
   m_Pivot: {x: 0, y: 0}
 --- !u!222 &4740804251120265560
 CanvasRenderer:
@@ -869,7 +869,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Button
+  m_text: Seguir
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 812c7b0dc56552d4aaa2319860b0c738, type: 2}
   m_sharedMaterial: {fileID: -2149170724207242646, guid: 812c7b0dc56552d4aaa2319860b0c738, type: 2}
@@ -1019,7 +1019,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Button
+  m_text: Archivar
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 812c7b0dc56552d4aaa2319860b0c738, type: 2}
   m_sharedMaterial: {fileID: -2149170724207242646, guid: 812c7b0dc56552d4aaa2319860b0c738, type: 2}
@@ -1218,7 +1218,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: -2.3866}
-  m_SizeDelta: {x: 1060, y: 200}
+  m_SizeDelta: {x: 1060, y: 260}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &5297725930057071470
 MonoBehaviour:

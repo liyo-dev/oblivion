@@ -219,7 +219,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     bool _isOpen;
     int _activeTab;
-    float _savedTimeScale = 1f;
     
     // Flag para controlar animaciones de uso de items
     bool _isUsingItem;
@@ -372,8 +371,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (GameState.Is(GamePhase.Equipment)) GameState.Pop(GamePhase.Equipment);
             // Limpiar registro de MenuManager
             MenuManager.Close(MenuKind.Equipment);
-            // Restaurar timeScale
-            Time.timeScale = _savedTimeScale;
+            // Restaurar timeScale (FIX INC-2026-09-01: vía TimeScaleArbiterService en vez de
+            // pisar Time.timeScale a pelo, ver OpenMenu()/CloseMenu())
+            TimeScaleArbiterService.Release(this);
             _isOpen = false;
         }
         ExitUiInputScope();
@@ -705,8 +705,16 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         Debug.Log("[PlayerEquipmentMenu] Llamando a EnterUiInputScope()");
         EnterUiInputScope();
 
-        _savedTimeScale = Time.timeScale;
-        Time.timeScale = 0f;
+        // FIX INC-2026-09-01: antes se capturaba Time.timeScale y se pisaba directo a 0, sin
+        // coordinarse con TimeScaleArbiterService. Si el menu se abria mientras un slowmotion
+        // (p.ej. DeathCameraEffect al ganar una batalla) ya habia bajado Time.timeScale, se
+        // capturaba ese valor bajo como "el normal"; si el slowmotion se liberaba mientras el
+        // menu seguia abierto, el arbitro reponia timeScale=1 por su cuenta (sin que este menu se
+        // enterase), y al cerrar el menu se volvia a pisar con el valor bajo ya obsoleto -> la
+        // camara lenta se quedaba para siempre, desincronizada del propio arbitro. Pedir la pausa
+        // como una peticion mas (0 = la mas lenta posible, siempre gana) deja que sea el arbitro
+        // quien decida el timeScale efectivo en todo momento.
+        TimeScaleArbiterService.Request(this, 0f);
         
         // Cambiar el Animator a Unscaled Time para que las animaciones sigan funcionando
         if (_playerAnimator != null)
@@ -787,7 +795,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         Sendero.UI.PlayerHUDV2.Instance?.ShowHUD();
         Sendero.UI.TimeOfDayIndicator.Instance?.Show();
         _spellView?.CancelSlotSelection(true);
-        Time.timeScale = _savedTimeScale;
+        TimeScaleArbiterService.Release(this);
         
         // Restaurar el AnimatorUpdateMode original
         if (_playerAnimator != null)
@@ -825,8 +833,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             CloseMenu(playSound: false);
         }
         
-        // Asegurar que el tiempo está a escala normal
-        Time.timeScale = 1f;
+        // Asegurar que no queda ninguna peticion de pausa de ESTE menu activa (no-op si
+        // CloseMenu() ya la libero arriba). FIX INC-2026-09-01: ya no se fuerza Time.timeScale=1
+        // a pelo aqui, pisaria cualquier otro efecto de timeScale activo en ese instante.
+        TimeScaleArbiterService.Release(this);
         
         // Debounce de input para MainMenu (similar a GameOverManager)
         MainMenuController.RequestInputDebounce();
@@ -1202,6 +1212,14 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         _mainCameraTween = seq;
     }
 
+    // NO forzar idle si se está reproduciendo una animación de uso de item (beber poción, etc.)
+    static bool ClipInfoMentionsItemUse(AnimatorClipInfo[] clipInfo)
+    {
+        if (clipInfo == null || clipInfo.Length == 0) return false;
+        var clipName = clipInfo[0].clip.name;
+        return clipName.Contains("DrinkPotion") || clipName.Contains("UseItem") || clipName.Contains("Consume");
+    }
+
     void MaintainAnimatorIdle()
     {
         if (!_isOpen || _playerAnimator == null)
@@ -1210,16 +1228,20 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         // NUEVO: Si se está usando un item, no forzar idle
         if (_isUsingItem) return;
 
-        // Verificar si se está reproduciendo una animación específica (como beber poción)
+        // Verificar si se está reproduciendo una animación específica (como beber poción).
+        // DrinkPotion_NoWeapon vive en la UpperBody layer (torso/brazos), no en la layer 0 —
+        // se comprueba también esa capa para no perder esta salvaguarda (aunque en la práctica
+        // _isUsingItem ya es la guardia principal, comprobada más arriba).
         var currentClipInfo = _playerAnimator.GetCurrentAnimatorClipInfo(0);
-        if (currentClipInfo.Length > 0)
+        bool playingItemClip = ClipInfoMentionsItemUse(currentClipInfo);
+        if (!playingItemClip && _playerAnimator.layerCount > 1)
         {
-            var clipName = currentClipInfo[0].clip.name;
-            // NO forzar idle si se está reproduciendo una animación de uso de item
-            if (clipName.Contains("DrinkPotion") || clipName.Contains("UseItem") || clipName.Contains("Consume"))
-            {
-                return;
-            }
+            var upperClipInfo = _playerAnimator.GetCurrentAnimatorClipInfo(1);
+            playingItemClip = ClipInfoMentionsItemUse(upperClipInfo);
+        }
+        if (playingItemClip)
+        {
+            return;
         }
 
         // Forzar parámetros a 0 para mantener idle (solo si existen en el Animator)

@@ -20,6 +20,12 @@ public static class AbilityPresentationKeyLookup
         { AbilityKey.Climb, new AbilityPresentationForKey { abilityKey = AbilityKey.Climb, title = "Trepar", description = "Accede a superficies verticales." } },
         { AbilityKey.Magic, new AbilityPresentationForKey { abilityKey = AbilityKey.Magic, title = "Magia", description = "Activa el uso de hechizos." } },
         { AbilityKey.Fly,   new AbilityPresentationForKey { abilityKey = AbilityKey.Fly,   title = "Volar",  description = "Permite desplazarse por el aire." } },
+        // NUEVO (1 sep 2026): Sprint y Shield ya disparaban OnAbilityUnlockedKey desde
+        // TagMinigameController.cs (recompensa del minijuego de la taberna) y
+        // PlayerShieldController.cs respectivamente, pero no tenían entrada aquí — el popup
+        // salía con el nombre del enum en crudo ("Sprint"/"Shield") y sin descripción.
+        { AbilityKey.Sprint, new AbilityPresentationForKey { abilityKey = AbilityKey.Sprint, title = "Esprintar", description = "Corre más rápido durante un tiempo limitado." } },
+        { AbilityKey.Shield, new AbilityPresentationForKey { abilityKey = AbilityKey.Shield, title = "Escudo", description = "Levanta un escudo para bloquear ataques enemigos." } },
     };
 
     /// <summary>

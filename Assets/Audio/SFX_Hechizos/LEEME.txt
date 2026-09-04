@@ -1,0 +1,17 @@
+Carpeta para los 8 SFX de hechizos pendientes (ver claude/revision-sfx-hechizos-2026-08-30.md
+en el proyecto de Claude y el mensaje de Claude con los enlaces concretos de Pixabay).
+
+Guarda aqui cada descarga con este nombre EXACTO (.mp3 o .wav, cualquiera de los dos vale):
+
+  GarraDelPacto      (hoy sin sonido de cast)
+  Huracan            (hoy sin sonido de cast)
+  MagoOscuroGolpe    (hoy sin sonido de cast)
+  MagoOscuroGrieta   (hoy sin sonido de cast)
+  SelloDelPacto      (hoy sin sonido de cast)
+  AuraEstelar        (hoy duplica el sonido de Bola Prisma)
+  BolaFuego          (hoy duplica el sonido de Llama Astral)
+  Tornado            (hoy duplica el sonido de Llama Astral, ademas fuera de tema)
+
+Luego, en Unity: menu "El Sendero -> Audio -> Registrar SFX de Hechizos (Faltantes y
+Duplicados)". Es idempotente: se puede ejecutar cuantas veces haga falta segun vayas
+añadiendo archivos, y avisa en la consola de cuales faltan todavia.

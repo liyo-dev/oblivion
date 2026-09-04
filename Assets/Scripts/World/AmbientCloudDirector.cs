@@ -81,6 +81,12 @@ public class AmbientCloudDirector : MonoBehaviour
     [Tooltip("FIX 23 ago 2026, 2ª pasada — mismo parámetro (nombre y valor por defecto) que ya usa CloudCoverSpawner para el techo de tormenta: el ángulo de elevación, visto desde el jugador, al que deben verse las nubes sin necesidad de inclinar mucho la cámara. La altura real de cada pasada se calcula como offset horizontal × tan(este ángulo), acotada entre minCloudAltitude y cloudAltitude — así una pasada muy cercana al jugador (offset pequeño) vuela baja y una pasada lejana (offset grande, hasta passOffsetRadius) vuela más alta, pero SIEMPRE dentro de un ángulo cómodo de ver, nunca cerca de los ~70° que ya sabemos que la cámara en tercera persona (Invector, 40° de inclinación + FOV 60°) no alcanza en juego normal.")]
     [SerializeField, Range(5f, 45f)] private float horizonElevationDegrees = 30f;
     [SerializeField] private Vector2 speedRange = new Vector2(3f, 6f);
+
+    [Header("Viento")]
+    [Tooltip("FIX 4 sep 2026 (nubes cruzándose en direcciones opuestas): dirección de viento compartida por TODAS las nubes de paso, en grados (0 = +Z, 90 = +X). Antes cada nube tiraba un ángulo 0-360° totalmente independiente — ver windDirectionJitterDegrees para la variación individual permitida.")]
+    [SerializeField, Range(0f, 360f)] private float windDirectionDegrees = 45f;
+    [Tooltip("Desviación aleatoria máxima (± grados) que cada nube individual puede tomar respecto a windDirectionDegrees, para que no todas vuelen en una línea perfectamente recta.")]
+    [SerializeField, Range(0f, 90f)] private float windDirectionJitterDegrees = 20f;
     [SerializeField] private float fadeInDuration = 6f;
     [SerializeField] private float fadeOutDuration = 6f;
     [Tooltip("Probabilidad de que, tras spawnear una nube, salgan 1-2 más detrás en vez de una suelta — para que a veces se vea 'un grupito' bonito pasando.")]
@@ -122,6 +128,10 @@ public class AmbientCloudDirector : MonoBehaviour
     // seguimos dentro de un interior no revela las nubes por encima del techo por error.
     private bool _hiddenByInterior;
     private bool _visibleRequested = true;
+    // 1 sep 2026 (ver SetZoneCloudBoost): true mientras el jugador está dentro de una
+    // AmbientZone con forcesMist activo -- fuerza la cadencia de CloudSpawnLoop al ritmo
+    // 'nublado' sin tocar _coverage (no puede disparar una tormenta por sí solo).
+    private bool _zoneCloudBoostActive;
 
     void Awake()
     {
@@ -279,7 +289,7 @@ public class AmbientCloudDirector : MonoBehaviour
     {
         while (true)
         {
-            float coverageFactor = Mathf.Clamp01(_coverage / Mathf.Max(0.01f, lightCloudThreshold));
+            float coverageFactor = _zoneCloudBoostActive ? 1f : Mathf.Clamp01(_coverage / Mathf.Max(0.01f, lightCloudThreshold));
             float lo = Mathf.Lerp(idleSpawnIntervalRange.x, busySpawnIntervalRange.x, coverageFactor);
             float hi = Mathf.Lerp(idleSpawnIntervalRange.y, busySpawnIntervalRange.y, coverageFactor);
             yield return new WaitForSeconds(UnityEngine.Random.Range(lo, hi));
@@ -323,7 +333,10 @@ public class AmbientCloudDirector : MonoBehaviour
         float baseHeight = Mathf.Clamp(elevationHeight, minCloudAltitude, cloudAltitude);
         passPoint.y = followT.position.y + baseHeight + UnityEngine.Random.Range(-altitudeJitter, altitudeJitter);
 
-        float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
+        // FIX 4 sep 2026: antes cada nube tiraba un ángulo 0-360° totalmente independiente,
+        // lo que producía nubes cruzándose en direcciones opuestas a la vez (reportado por Raúl).
+        // Ahora todas comparten windDirectionDegrees, con solo una pequeña desviación individual.
+        float angle = (windDirectionDegrees + UnityEngine.Random.Range(-windDirectionJitterDegrees, windDirectionJitterDegrees)) * Mathf.Deg2Rad;
         Vector3 dir = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
 
         Vector3 start = passPoint - dir * spawnDistance;
@@ -355,6 +368,20 @@ public class AmbientCloudDirector : MonoBehaviour
         _visibleRequested = visible;
         ApplyCloudVisibility();
     }
+
+    /// <summary>
+    /// 1 sep 2026 -- pedido por Raúl: que las AmbientZone con niebla de nubes bajas
+    /// (AmbientPreset.forcesMist) hagan que se vean nubes reales cruzando el cielo con más
+    /// frecuencia mientras el jugador esté dentro, no solo niebla de distancia (ver
+    /// AmbientZone.ApplyZoneTransition/OnTriggerExit, que llaman a esto igual que ya llaman a
+    /// DayNightCycle.SetZoneMistOverride). Mismo patrón: la zona pide un estado por método
+    /// público, sin guardar referencias directas entre managers (CLAUDE.md §3).
+    /// Deliberadamente NO toca <see cref="_coverage"/> (el paseo aleatorio que decide si
+    /// empieza una tormenta real en CoverageWalkLoop) -- solo fuerza la cadencia de
+    /// CloudSpawnLoop al ritmo 'nublado' (busySpawnIntervalRange) mientras dure. Así entrar en
+    /// una zona de niebla nunca puede disparar lluvia por sí sola.
+    /// </summary>
+    public void SetZoneCloudBoost(bool active) => _zoneCloudBoostActive = active;
 
     /// <summary>
     /// FIX (25 ago 2026): visibilidad real de TODAS las nubes del pool (volando o no) = lo último

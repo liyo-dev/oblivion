@@ -9,48 +9,16 @@
             "text": "Aquí vive Will, nuestro héroe."
         },
         {
-            "id": "CH1_03",
-            "text": "Su vecino se llama Eldran y lo cuida desde que era pequeño."
-        },
-        {
             "id": "CH1_04",
             "text": "Sobre la mesa hay una carta... ¿Qué contendrá?"
         },
         {
-            "id": "CIV_01",
-            "text": "Así que… la estrella finalmente ha despertado."
+            "id": "ESTELA_EXPLAINS_EPILOGUE",
+            "text": "Antes de destruir el Sendero, usó el hechizo prohibido de resurrección.\nPor eso estás vivo. Por eso... ya no está."
         },
         {
-            "id": "CIV_02",
-            "text": "El primer paso está completo…"
-        },
-        {
-            "id": "EVT_01",
-            "text": "Will llega con la caja de frutas."
-        },
-        {
-            "id": "EVT_02",
-            "text": "De pronto presiente algo."
-        },
-        {
-            "id": "EVT_03",
-            "text": "Una bola de fuego se dirige hacia ellos."
-        },
-        {
-            "id": "EVT_04",
-            "text": "Will cierra los ojos y desata sin saberlo una poderosa magia."
-        },
-        {
-            "id": "EVT_05",
-            "text": "Y una bola de fuego sale de sus manos, desviando el proyectil por completo."
-        },
-        {
-            "id": "EVT_06",
-            "text": "Will está confundido con lo que acaba de pasar cuando de pronto..."
-        },
-        {
-            "id": "EVT_07",
-            "text": "El suelo tiembla y una figura oscura emerge entre humo y fuego: un demonio."
+            "id": "ESTELA_PROTEST_PORTAL",
+            "text": "¡Will, ¿qué haces? Sal de ahí!"
         },
         {
             "id": "EVT_08",
@@ -81,10 +49,6 @@
             "text": "¡NOO!"
         },
         {
-            "id": "EVT_AWAKEN_04",
-            "text": "¡No... no puede ser!"
-        },
-        {
             "id": "EVT_AWAKEN_05",
             "text": "¿Qué... qué acabo de hacer?"
         },
@@ -103,38 +67,6 @@
         {
             "id": "EVT_ELDRAN_CHEER_03",
             "text": "¡No te rindas! ¡Acábalo de una vez!"
-        },
-        {
-            "id": "EVT_ESTELA_01",
-            "text": "Las arañas creían haber acorralado a una presa indefensa. No sabían que acababan de encerrarse con Estela."
-        },
-        {
-            "id": "EVT_ESTELA_02",
-            "text": "Con una sonrisa de desafío, Estela liberó su verdadero poder."
-        },
-        {
-            "id": "EVT_ESTELA_03",
-            "text": "Con un guiño pícaro y una sonrisa de satisfacción, Estela contempló su obra. No quedó ni una sola araña en pie."
-        },
-        {
-            "id": "EVT_ESTELA_APP_01",
-            "text": "ESTELA: ¡Fuera de mi camino!"
-        },
-        {
-            "id": "EVT_ESTELA_APP_02",
-            "text": "ESTELA: ¿Arañas? Qué decepción."
-        },
-        {
-            "id": "EVT_ESTELA_APP_03",
-            "text": "ESTELA: ¡Esta es para vosotras!"
-        },
-        {
-            "id": "EVT_ESTELA_APP_04",
-            "text": "ESTELA: No sabéis con quién os habéis metido."
-        },
-        {
-            "id": "EVT_ESTELA_APP_05",
-            "text": "ESTELA: ¡Ahí va la última!"
         },
         {
             "id": "EVT_ESTELA_ARAÑA_1",
@@ -169,34 +101,6 @@
             "text": "Esa estúpida va a arruinar mis planes..."
         },
         {
-            "id": "EVT_GOLEM_02",
-            "text": "LIAM: Veremos si es tan fuerte como dicen..."
-        },
-        {
-            "id": "EVT_GOLEM_END_01",
-            "text": "Estela: Hmph. Tal y como predije. La trayectoria de la explosión fue perfecta."
-        },
-        {
-            "id": "EVT_GOLEM_END_02",
-            "text": "Estela: Lo tenía todo calculado."
-        },
-        {
-            "id": "EVT_GOLEM_END_03",
-            "text": "Will: ¿Calculado? ¡Si te has tropezado antes de disparar! Admítelo..."
-        },
-        {
-            "id": "EVT_GOLEM_END_04",
-            "text": "Will: Ha sido un milagro que no acabáramos hechos puré."
-        },
-        {
-            "id": "EVT_GOLEM_END_05",
-            "text": "Liam (desde las sombras): Esa hechicera es un problema imprevisto en mi ecuación."
-        },
-        {
-            "id": "EVT_GOLEM_END_06",
-            "text": "Liam: El Golem ha fallado. Si quiero que el chico llegue al final, tendré que guiarlo yo mismo."
-        },
-        {
             "id": "EVT_LIAM_CRYSTAL_01",
             "text": "Y ese es el chico de corazón puro que abrirá el Sendero."
         },
@@ -219,10 +123,6 @@
         {
             "id": "EVT_MOUNTAIN_01",
             "text": "¡Nadie me interrumpe mientras como!"
-        },
-        {
-            "id": "EVT_MOUNTAIN_02",
-            "text": "¡Así que cómete esta!"
         },
         {
             "id": "EVT_MOUNTAIN_ELDRAN_RUN",
@@ -293,42 +193,6 @@
             "text": "¡¿QUÉ?!"
         },
         {
-            "id": "EVT_TABERNA_01",
-            "text": "Eldran, Will y Estela discuten de lo ocurrido y tratan de buscar una solución..."
-        },
-        {
-            "id": "EVT_TABERNA_02",
-            "text": "Cuando de repente el estómago de Estela rugió de forma atroz."
-        },
-        {
-            "id": "EVT_TABERNA_03",
-            "text": "Por fin llega la comida y nuestros héroes se disponen a comer."
-        },
-        {
-            "id": "EVT_TABERNA_04",
-            "text": "Estela lo hace de una forma un poco... especial..."
-        },
-        {
-            "id": "EVT_TABERNA_05",
-            "text": "Eldran y Will, sorprendidos por la forma de comer de Estela, pierden el apetito."
-        },
-        {
-            "id": "EVT_TABERNA_06",
-            "text": "En ese momento se acerca Liam, que estaba escuchando la conversación desde lejos."
-        },
-        {
-            "id": "EVT_TABERNA_07",
-            "text": "Intenta contar al grupo algo pero llama la atención de Estela que en ese momento solo podía pensar en la comida."
-        },
-        {
-            "id": "EVT_TABERNA_08",
-            "text": "Estela enfadada por la interrupción conjura una bola de fuego. "
-        },
-        {
-            "id": "EVT_TABERNA_09",
-            "text": "Los tres se sorprenden..."
-        },
-        {
             "id": "EVT_TABERNA_10",
             "text": "¡Corred! Huid de Estela hasta que se le pase el enfado."
         },
@@ -353,8 +217,64 @@
             "text": "Madre mía..."
         },
         {
-            "id": "EVT_WILL_POST_GOLEM",
-            "text": "¿Has visto, Estela? ¡Ahora un golem! Esto nunca había pasado... ¡Corre, volvamos con Eldran!"
+            "id": "LIAM_LAST_WORDS",
+            "text": "Cuida de mi hermano."
+        },
+        {
+            "id": "MAGOOSCURO_MONOLOGUE",
+            "text": "¿Por qué crees que estás vivo, muchacho?\n¿No te has preguntado nunca por qué no recuerdas nada de ti o tu pasado?\nTe lo diré yo, no recuerdas nada de ti, ni de tu familia ni de tu pueblo\nporque tú hace eones moriste luchando contra mí.\nTú moriste ese día. ¡Eres la reencarnación del único mago que logró detenerme!\nMe obligaste a usar el super hechizo de destrucción, pero entonces no fui capaz de controlarlo.\nCuando todo escapó de mi alcance pude ligar mi alma al sendero\npara cuando otro idiota superase las pruebas volver a pedir un deseo:\nmi regreso a la vida.\nPara que el hechizo no afectara a tu familia y estúpido pueblo\nutilizaste toda la magia de tu interior para crear un hechizo protector\nque pudo proteger a tu pueblo pero te destruyó a ti.\nLo que no entiendo es cómo después de haber muerto sigues aquí…"
+        },
+        {
+            "id": "TIME_SPELL_TUTORIAL",
+            "text": "¡Hechizo Prohibido: Regresión Temporal!\nRetrocede el tiempo... y esta vez, esquívalo."
+        },
+        {
+            "id": "VOICE_VISION_EXPLANATION",
+            "text": "Tu magia, en el momento de tu muerte,\nbuscó por el tiempo y el espacio\nun recipiente donde guardar tu alma.\nTu deseo de proteger a tu pueblo, a tu familia,\nde acabar con la tiranía de aquel hombre,\nte llevó hasta un chico enfermo\nque, justo cuando tu alma llegó,\nhabía dejado de respirar por un fallo en su corazón."
+        },
+        {
+            "id": "VOICE_VISION_MUST_END_SENDERO",
+            "text": "Debes acabar con el Sendero.\nNo hay otra forma de evitar que magos como él\nvuelvan a usar este lugar para su propio beneficio."
+        },
+        {
+            "id": "VOICE_VISION_PROTECT_THEM",
+            "text": "Debes protegerlos.\nA ellos, y a toda la humanidad que vendrá después.\nSolo así demostrarás, de una vez por todas, quién eres de verdad."
+        },
+        {
+            "id": "VOICE_VISION_REASSURANCE",
+            "text": "No, Will. Estás aquí, y allí.\nEstás donde quieras estar.\nEsto es solo tu poder, tu magia,\nfruto del bien que has hecho a lo largo de tu vida."
+        },
+        {
+            "id": "WILL_CALM_REPLY",
+            "text": "Tranquila, Estela. No te preocupes... Lo tengo todo calculado."
+        },
+        {
+            "id": "WILL_FAREWELL",
+            "text": "Cuidaos el uno al otro. Ya he vuelto a casa."
+        },
+        {
+            "id": "WILL_FINAL_WISH",
+            "text": "Cura a su hermano. Es lo único que pido."
+        },
+        {
+            "id": "WILL_FLASHBACK_REVELATION",
+            "text": "Ahora... ahora lo recuerdo todo.\nEl hechizo de protección. Mis padres. Mi pueblo…\n¿Pero qué hago aquí? ¿Cómo es posible? Y en este cuerpo…"
+        },
+        {
+            "id": "WILL_VISION_AM_I_DEAD",
+            "text": "¿He recuperado la memoria… y estoy muerto?"
+        },
+        {
+            "id": "WILL_VISION_THEN_I",
+            "text": "Entonces yo…"
+        },
+        {
+            "id": "WILL_VISION_WHAT_ABOUT_FRIENDS",
+            "text": "Destruir el Sendero… ¿Y Estela? ¿Y Liam?"
+        },
+        {
+            "id": "WILL_VISION_WHERE_AM_I",
+            "text": "¿Dónde estoy?"
         }
     ]
 }

@@ -20950,6 +20950,8 @@ GameObject:
   - component: {fileID: 810932805604953227}
   - component: {fileID: 7118422236239783251}
   - component: {fileID: 1408085124568394779}
+  - component: {fileID: 1887095494044393346}
+  - component: {fileID: 9109898122023115703}
   m_Layer: 8
   m_Name: _MAGO_OSCURO
   m_TagString: Untagged
@@ -21162,6 +21164,7 @@ MonoBehaviour:
   OnConsumed:
     m_PersistentCalls:
       m_Calls: []
+  defaultSightHeight: 1.4
 --- !u!195 &7118422236239783251
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -21197,9 +21200,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
   configuration:
-    behaviourType: 1
+    behaviourType: 3
     ambientConfig: {fileID: 0}
-    combatConfig: {fileID: 0}
+    combatConfig: {fileID: 11400000, guid: e9381490a9e507945a7a817cda522a00, type: 2}
     questConfig: {fileID: 0}
     interactiveNarrativeConfig: {fileID: 0}
     partyConfig: {fileID: 0}
@@ -21220,6 +21223,9 @@ MonoBehaviour:
   disableWander: 0
   startInIdleState: 1
   forceKinematicRigidbody: 1
+  aiUpdateDistance: 45
+  aiWakeUpMargin: 8
+  aiDistanceCheckInterval: 0.5
   persistLastPosition: 0
   persistenceId: 
   dialogueCharacterId: 
@@ -21237,6 +21243,36 @@ MonoBehaviour:
   onLeftParty:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1887095494044393346
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8330914016721479921}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 504f395522d076842b3fd892499200a1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyMarker
+--- !u!114 &9109898122023115703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8330914016721479921}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da121c18fee445abbd93a480699e2e65, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NPCEmotionController
+  emotionProfile: {fileID: 11400000, guid: 16d5ab4386c36fb4794a8154b6410158, type: 2}
+  originalEyeMesh: {fileID: 0}
+  originalMouthMesh: {fileID: 0}
+  eyePrefix: Eye
+  mouthPrefix: Mouth
+  debugMode: 0
 --- !u!1 &8344871266714992783
 GameObject:
   m_ObjectHideFlags: 0

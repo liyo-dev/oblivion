@@ -74,6 +74,18 @@ public class Damageable : MonoBehaviour, IDamageable
         }
     }
 
+    /// <summary>
+    /// Fuerza una ventana de invulnerabilidad explicita desde fuera (p. ej. durante una transicion
+    /// de fase de boss, o un combo scripted que no deberia poder interrumpirse a medias). Es
+    /// independiente de la invulnerabilidad automatica post-daño (`invulnerabilitySeconds`): si ya
+    /// hubiera una ventana mas larga en curso, esta llamada nunca la acorta.
+    /// </summary>
+    public void GrantInvulnerability(float seconds)
+    {
+        if (seconds <= 0f) return;
+        _invulnerableUntil = Mathf.Max(_invulnerableUntil, Time.time + seconds);
+    }
+
     public void Heal(float amount)
     {
         if (!IsAlive) return;

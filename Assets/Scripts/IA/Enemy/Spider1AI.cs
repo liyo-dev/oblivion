@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
 
@@ -138,11 +138,29 @@ public class Spider1AI : MonoBehaviour
             damageable.OnDamaged -= OnDamageTaken;
             damageable.OnDied -= OnDeath;
         }
+
+        // Red de seguridad: si el GameObject se destruye a mitad de persecución (descarga de
+        // escena, etc.) sin pasar por OnDeath/ExitChaseMode, no debe quedar "fake-null" en el
+        // registro de combate (ActiveCombatRegistry.CleanupDestroyedNPCs ya lo tolera, pero
+        // desregistrar aquí evita el hueco entre frames).
+        ActiveCombatRegistry.UnregisterNPC(gameObject);
     }
 
     void Update()
     {
         if (isDead) return;
+
+        // FIX (petición Raúl, 1 sep 2026): mientras hay un diálogo abierto en cualquier parte del
+        // mundo, el jugador está bloqueado (ActionMode.Cinematic) y no puede reaccionar ni recibir
+        // daño real (PlayerHealthSystem.TakeDamage ya lo bloquea en ese modo) — pero sin este gate
+        // la araña seguía persiguiendo/atacando con normalidad delante del jugador congelado, lo
+        // cual se veía mal. Se congela en sitio (sin tocar su estado de combate/registro) y se
+        // retoma en cuanto el diálogo cierra.
+        if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen)
+        {
+            if (agent && agent.isOnNavMesh && !agent.isStopped) agent.isStopped = true;
+            return;
+        }
 
         // Reevaluar objetivo más cercano cada 0.5s (jugador o compañero NPC)
         _targetRefreshTimer += Time.deltaTime;
@@ -219,12 +237,20 @@ public class Spider1AI : MonoBehaviour
                 }
                 else
                 {
-                    // Rotar hacia donde se mueve durante la patrulla
+                    // FIX 4 sep 2026: antes se reproducía AnimWalk de forma incondicional en cuanto
+                    // el estado era Patrol, aunque el NavMeshAgent tuviera velocidad casi nula
+                    // (bloqueado por un obstáculo/otra araña, o todavía acelerando) — se veía la
+                    // araña "caminando en el sitio" sin desplazarse (reportado por Raúl). Ahora la
+                    // animación de andar solo se reproduce si de verdad se está moviendo; si no, Idle.
                     if (agent.velocity.sqrMagnitude > 0.1f)
                     {
                         LookAtDirection(agent.velocity.normalized);
+                        PlayAnimation(AnimWalk);
                     }
-                    PlayAnimation(AnimWalk);
+                    else
+                    {
+                        PlayAnimation(AnimIdle);
+                    }
                 }
             }
         }
@@ -269,6 +295,18 @@ public class Spider1AI : MonoBehaviour
 
         // Activar el marker de objetivo del jugador (ver PlayerTargeting.Scan)
         if (_targetable != null) _targetable.isInActiveCombat = true;
+
+        // FIX (petición Raúl, 1 sep 2026): Spider1AI no pasaba por ActiveCombatRegistry (a
+        // diferencia de CombatState/ImpDemonAI/GolemBossAI), así que si se unía a una pelea ya en
+        // marcha (p.ej. contra Lety+Vicky) L1/R1 (CombatCameraTargeting.GetOrderedEnemies) nunca
+        // la incluía en el ciclo de objetivos — quedaba imposible de seleccionar aunque estuviera
+        // atacando. Registrarla aquí la hace ciclable igual que cualquier otro enemigo.
+        // Petición de Raúl (1 sep 2026, misma sesión): enemigo "menor" — cuenta como combate
+        // (Battle Mode, ciclable con L1/R1) pero NO debe enganchar la cámara automáticamente al
+        // cruzarse con el jugador por el bosque (era muy tedioso). El marcador de apuntado para
+        // hechizos lo sigue dando el auto-scan normal de PlayerTargeting, vía
+        // Targetable.isInActiveCombat (ya activado arriba) — no depende de esto.
+        ActiveCombatRegistry.RegisterNPC(gameObject, allowsCameraLock: false);
     }
 
     private void ExitChaseMode()
@@ -290,6 +328,7 @@ public class Spider1AI : MonoBehaviour
         }
 
         if (_targetable != null) _targetable.isInActiveCombat = false;
+        ActiveCombatRegistry.UnregisterNPC(gameObject);
     }
 
     private void ChasePlayer()
@@ -493,6 +532,7 @@ public class Spider1AI : MonoBehaviour
         currentState = SpiderState.Dead;
 
         if (_targetable != null) _targetable.isInActiveCombat = false;
+        ActiveCombatRegistry.UnregisterNPC(gameObject);
 
         if (agent && agent.isOnNavMesh)
         {

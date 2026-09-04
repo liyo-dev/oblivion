@@ -189,7 +189,13 @@ public class MagicProjectileSpawner : MonoBehaviour
         float d = Mathf.Max(0f, spell.castDelaySeconds);
         if (d > 0f) yield return new WaitForSeconds(d);
 
-        if (spell.chargeTime > 0f)
+        if (spell.kind == MagicKind.Zone)
+        {
+            // Los hechizos de zona no cargan ni vuelan: se materializan al instante en el punto
+            // de impacto calculado (ver SpawnZoneNow). El SFX de casteo ya sonó arriba.
+            SpawnZoneNow(spell, origin);
+        }
+        else if (spell.chargeTime > 0f)
             yield return Co_SpawnWithCharge(spell, origin);
         else
             SpawnNow(spell, origin, playSFX: false); // SFX ya se reprodujo arriba
@@ -237,6 +243,9 @@ public class MagicProjectileSpawner : MonoBehaviour
 
         if (playSFX && !string.IsNullOrEmpty(spell.castSFXKey) && AudioService.Instance != null)
             AudioService.Instance.PlaySFX(spell.castSFXKey);
+
+        if (spell.kind == MagicKind.Zone)
+            return SpawnZoneNow(spell, origin, directionOverride);
 
         return LaunchProjectile(spell, origin, directionOverride);
     }
@@ -395,6 +404,95 @@ public class MagicProjectileSpawner : MonoBehaviour
                 cachedRb.linearVelocity = dir * Mathf.Max(0f, effectiveSpeed);
             }
         }
+    }
+
+    /// <summary>
+    /// Materializa un hechizo de MagicKind.Zone: reproduce el VFX de casteo en la mano (mismo
+    /// camino visual que un proyectil, para aprovechar la animación de casteo existente — "sale
+    /// de la mano") y, al instante, instancia el prefab de la zona ya en su posición final —
+    /// centrada en el objetivo fijado si 'zoneSnapToTarget' lo permite y hay uno, o a
+    /// 'zoneRange' metros delante del lanzador en la dirección de apuntado. Un raycast hacia
+    /// abajo apoya la zona sobre el suelo real para que no quede flotando en terreno irregular.
+    /// </summary>
+    private GameObject SpawnZoneNow(MagicSpellSO spell, Transform origin, Vector3? directionOverride = null)
+    {
+        if (!spell || !spell.prefab) return null;
+
+        Transform o = origin ? origin : transform;
+
+        // Dirección de apuntado: mismo criterio que un proyectil (usa el target fijado si lo hay).
+        Vector3 baseForward = transform.forward;
+        Vector3 dir = directionOverride ?? ((targeting != null)
+            ? targeting.GetAimDirectionFrom(o, baseForward)
+            : baseForward);
+        dir = spell.flattenDirection ? Vector3.ProjectOnPlane(dir, Vector3.up).normalized : dir.normalized;
+        if (dir.sqrMagnitude < 0.001f) dir = baseForward;
+
+        // Punto donde aparece la zona.
+        Vector3 zonePos;
+        if (spell.zoneSnapToTarget && targeting != null && targeting.TryGetTarget(out Transform aimedTarget) && aimedTarget != null)
+        {
+            zonePos = aimedTarget.position;
+        }
+        else
+        {
+            zonePos = o.position + dir * spell.zoneRange;
+        }
+
+        // Apoyar la zona sobre el suelo real (raycast hacia abajo desde bien arriba del punto).
+        // Se eleva 'zoneGroundOffset' sobre el punto de impacto: exactamente a la altura del
+        // suelo, el VFX se mezcla/hace z-fighting con la geometría (mismo problema visual que
+        // tenían los puntos de guardado).
+        Vector3 rayStart = zonePos + Vector3.up * 25f;
+        if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit groundHit, 60f, spell.zoneGroundLayers, QueryTriggerInteraction.Ignore))
+        {
+            zonePos.y = groundHit.point.y + spell.zoneGroundOffset;
+        }
+        else
+        {
+            zonePos.y = o.position.y + spell.zoneGroundOffset; // fallback: altura del lanzador si no hay suelo detectado
+        }
+
+        // VFX de casteo en la mano — el "sale de la mano" del pedido de diseño, aunque el
+        // hechizo en sí se materialice a distancia.
+        if (spell.spawnVFX)
+        {
+            float handFxLifetime = spell.vfxLifetime > 0f ? spell.vfxLifetime : 3f;
+            Quaternion handRt = Quaternion.LookRotation(dir, Vector3.up) * Quaternion.Euler(spell.visualRotationOffsetEuler);
+            var fxTransform = VfxPoolService.Instance.Play(spell.spawnVFX, o.position + dir * spell.forwardOffset, handRt, handFxLifetime);
+            if (spell.useScaleOverride && fxTransform != null)
+                fxTransform.localScale = spell.scaleOverride;
+        }
+
+        GameObject go = Instantiate(spell.prefab, zonePos, Quaternion.identity);
+        if (spell.useScaleOverride)
+            go.transform.localScale = spell.scaleOverride;
+
+        GameObject instigator = instigatorOverride ? instigatorOverride : gameObject;
+        if (go.TryGetComponent<MagicZoneEffect>(out var zone))
+        {
+            var cfg = new MagicZoneEffect.ZoneConfig
+            {
+                damagePerTick  = spell.damage,
+                tickInterval   = spell.zoneTickInterval,
+                radius         = spell.zoneRadius,
+                duration       = spell.zoneDuration,
+                knockbackForce = spell.knockbackForce,
+                hitLayers      = GetDamageLayers(),
+                tickSFXKey     = spell.impactSFXKey,
+                despawnVFX     = spell.despawnVFX,
+                vfxLifetime    = spell.vfxLifetime
+            };
+            zone.Configure(cfg, instigator);
+        }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        else
+        {
+            Debug.LogWarning($"[MagicProjectileSpawner] El prefab de '{spell.displayName}' es MagicKind.Zone pero no tiene MagicZoneEffect — no hará nada.");
+        }
+#endif
+
+        return go;
     }
 
     private GameObject LaunchProjectile(MagicSpellSO spell, Transform origin, Vector3? directionOverride)

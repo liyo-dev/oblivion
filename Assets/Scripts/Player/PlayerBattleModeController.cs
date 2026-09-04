@@ -423,8 +423,12 @@ namespace Game.Player
             if (flatForward.sqrMagnitude < 0.0001f) flatForward = Vector3.forward;
             flatForward.Normalize();
 
+            // La cámara se coloca EN LA DIRECCIÓN a la que mira el jugador (no detrás), para que
+            // el plano quede de frente/3-4 y se vea la cara durante la pose de victoria. Con
+            // "-flatForward" (bug histórico, INC pendiente) la cámara quedaba detrás del personaje
+            // mirando en la misma dirección que él, dejándolo de espaldas a cámara.
             Quaternion yaw = Quaternion.AngleAxis(victoryCamYawOffsetDeg, Vector3.up);
-            Vector3 offsetDir = yaw * (-flatForward);
+            Vector3 offsetDir = yaw * flatForward;
             Vector3 camPos = transform.position + offsetDir * victoryCamDistance + Vector3.up * victoryCamHeight;
             Vector3 lookAt = transform.position + Vector3.up * victoryCamLookHeight;
 

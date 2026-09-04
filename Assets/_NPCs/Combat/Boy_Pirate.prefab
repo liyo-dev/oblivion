@@ -16814,6 +16814,9 @@ MonoBehaviour:
   disableWander: 1
   startInIdleState: 1
   forceKinematicRigidbody: 1
+  aiUpdateDistance: 45
+  aiWakeUpMargin: 8
+  aiDistanceCheckInterval: 0.5
   persistLastPosition: 0
   persistenceId: 
   dialogueCharacterId: CHAR_PIRATA

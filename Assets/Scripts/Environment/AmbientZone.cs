@@ -26,13 +26,9 @@ public class AmbientZone : MonoBehaviour
     [FormerlySerializedAs("ambientPreset")]
     [SerializeField] private AmbientPreset ambientPreset;
 
-    [Header("Niebla de Suelo")]
-    [Tooltip("Particle System de niebla volumétrica a ras de suelo. Debe estar configurado para hacer loop.")]
-    [SerializeField] private ParticleSystem groundMistPS;
-
     [Header("Niebla de Pies")]
-    [Tooltip("GameObject (plano con shader) que cubre los pies del jugador. Se activa al entrar en la zona.")]
-    [SerializeField] private GameObject footFogObject;
+    [Tooltip("GameObjects (planos/cubos con material de niebla) hijos de esta zona que cubren los pies del jugador. Se activan/desactivan todos juntos al entrar/salir de la zona. Fijos en su sitio, no se reparentan al jugador.")]
+    [SerializeField] private GameObject[] footFogObjects;
 
     [Header("Prioridad")]
     [SerializeField] private int priority = 0;
@@ -43,12 +39,6 @@ public class AmbientZone : MonoBehaviour
 #endif
 
     // --- Defaults globales ---
-    private static bool _defaultFogEnabled;
-    private static Color _defaultFogColor;
-    private static float _defaultFogDensity;
-    private static float _defaultFogStart;
-    private static float _defaultFogEnd;
-    private static FogMode _defaultFogMode;
     private static Color _defaultAmbientColor;
     private static float _defaultAmbientIntensity;
     private static bool _defaultsCaptured;
@@ -70,9 +60,9 @@ public class AmbientZone : MonoBehaviour
     private static bool _cameraDefaultsCaptured;
     private static Tween _cameraTween;
     private static vThirdPersonCamera _cachedCamera;
+    private static DayNightCycle _cachedDayNightCycle;
 
     private Transform _playerTransform;
-    private Transform _mistOriginalParent;
     private Collider _collider;
 
 #if UNITY_EDITOR
@@ -90,6 +80,7 @@ public class AmbientZone : MonoBehaviour
         _cameraDefaultsCaptured = false;
         _cameraTween = null;
         _cachedCamera = null;
+        _cachedDayNightCycle = null;
     }
 #endif
 
@@ -159,12 +150,6 @@ public class AmbientZone : MonoBehaviour
     {
         if (_defaultsCaptured) return;
 
-        _defaultFogEnabled       = RenderSettings.fog;
-        _defaultFogColor         = RenderSettings.fogColor;
-        _defaultFogDensity       = RenderSettings.fogDensity;
-        _defaultFogStart         = RenderSettings.fogStartDistance;
-        _defaultFogEnd           = RenderSettings.fogEndDistance;
-        _defaultFogMode          = RenderSettings.fogMode;
         _defaultAmbientColor     = RenderSettings.ambientLight;
         _defaultAmbientIntensity = RenderSettings.ambientIntensity;
         _defaultsCaptured = true;
@@ -212,12 +197,13 @@ public class AmbientZone : MonoBehaviour
 #endif
 
         _currentActiveZone = null;
-        StopGroundMist();
         StopFootFog();
         HideCameraOverlay();
         RestoreCameraDefaults();
         TransitionToDefaultFog();
         RestorePreviousMusic();
+        GetOrCacheDayNightCycle()?.SetZoneMistOverride(false);
+        AmbientCloudDirector.Instance?.SetZoneCloudBoost(false);
     }
 
     // -------------------------------------------------------------------------
@@ -231,8 +217,9 @@ public class AmbientZone : MonoBehaviour
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.LogWarning($"[AmbientZone] '{gameObject.name}' no tiene AmbientPreset asignado.");
 #endif
-            PlayGroundMist();
             PlayFootFog();
+            GetOrCacheDayNightCycle()?.SetZoneMistOverride(false);
+            AmbientCloudDirector.Instance?.SetZoneCloudBoost(false);
             return;
         }
 
@@ -241,23 +228,12 @@ public class AmbientZone : MonoBehaviour
         Color targetAmbient  = ambientPreset.controlAmbientLight ? ambientPreset.ambientLightColor     : _defaultAmbientColor;
         float targetAmbientI = ambientPreset.controlAmbientLight ? ambientPreset.ambientLightIntensity : _defaultAmbientIntensity;
 
-        RenderSettings.fog     = ambientPreset.enableFog;
-        RenderSettings.fogMode = ambientPreset.fogMode;
-
-        float startDensity  = RenderSettings.fogDensity;
-        Color startFogColor = RenderSettings.fogColor;
-        float startFogStart = RenderSettings.fogStartDistance;
-        float startFogEnd   = RenderSettings.fogEndDistance;
         Color startAmbient  = RenderSettings.ambientLight;
         float startAmbientI = RenderSettings.ambientIntensity;
 
         _currentTween = DOTween.To(
             () => 0f,
             t => {
-                RenderSettings.fogDensity       = Mathf.Lerp(startDensity,  ambientPreset.fogDensity,       t);
-                RenderSettings.fogColor         = Color.Lerp(startFogColor, ambientPreset.fogColor,         t);
-                RenderSettings.fogStartDistance = Mathf.Lerp(startFogStart, ambientPreset.fogStartDistance, t);
-                RenderSettings.fogEndDistance   = Mathf.Lerp(startFogEnd,   ambientPreset.fogEndDistance,   t);
                 RenderSettings.ambientLight     = Color.Lerp(startAmbient,  targetAmbient,                  t);
                 RenderSettings.ambientIntensity = Mathf.Lerp(startAmbientI, targetAmbientI,                 t);
             },
@@ -265,10 +241,14 @@ public class AmbientZone : MonoBehaviour
             ambientPreset.transitionDuration
         ).SetEase(ambientPreset.transitionEase).SetUpdate(true);
 
-        PlayGroundMist();
         PlayFootFog();
         ShowCameraOverlay();
         ApplyCameraTransition();
+        GetOrCacheDayNightCycle()?.SetZoneMistOverride(ambientPreset.forcesMist);
+        // 1 sep 2026 -- ver AmbientCloudDirector.SetZoneCloudBoost: el mismo checkbox 'nubes
+        // bajas' tambien sube la cadencia de nubes sueltas cruzando el cielo mientras se esta en
+        // la zona, no solo la niebla de distancia.
+        AmbientCloudDirector.Instance?.SetZoneCloudBoost(ambientPreset.forcesMist);
     }
 
     private void TransitionToDefaultFog()
@@ -278,78 +258,18 @@ public class AmbientZone : MonoBehaviour
         float dur  = ambientPreset != null ? ambientPreset.transitionDuration : 1.5f;
         Ease  ease = ambientPreset != null ? ambientPreset.transitionEase      : Ease.InOutSine;
 
-        float startDensity  = RenderSettings.fogDensity;
-        Color startFogColor = RenderSettings.fogColor;
-        float startFogStart = RenderSettings.fogStartDistance;
-        float startFogEnd   = RenderSettings.fogEndDistance;
         Color startAmbient  = RenderSettings.ambientLight;
         float startAmbientI = RenderSettings.ambientIntensity;
 
         _currentTween = DOTween.To(
             () => 0f,
             t => {
-                RenderSettings.fogDensity       = Mathf.Lerp(startDensity,  _defaultFogDensity,       t);
-                RenderSettings.fogColor         = Color.Lerp(startFogColor, _defaultFogColor,         t);
-                RenderSettings.fogStartDistance = Mathf.Lerp(startFogStart, _defaultFogStart,         t);
-                RenderSettings.fogEndDistance   = Mathf.Lerp(startFogEnd,   _defaultFogEnd,           t);
                 RenderSettings.ambientLight     = Color.Lerp(startAmbient,  _defaultAmbientColor,     t);
                 RenderSettings.ambientIntensity = Mathf.Lerp(startAmbientI, _defaultAmbientIntensity, t);
             },
             1f,
             dur
-        ).SetEase(ease).SetUpdate(true).OnComplete(() => {
-            RenderSettings.fog     = _defaultFogEnabled;
-            RenderSettings.fogMode = _defaultFogMode;
-        });
-    }
-
-    // -------------------------------------------------------------------------
-    //  Niebla de suelo
-    // -------------------------------------------------------------------------
-
-    private void PlayGroundMist()
-    {
-        if (groundMistPS == null) return;
-
-        if (!groundMistPS.gameObject.activeSelf)
-            groundMistPS.gameObject.SetActive(true);
-
-        if (_playerTransform != null)
-        {
-            _mistOriginalParent = groundMistPS.transform.parent;
-            groundMistPS.transform.SetParent(_playerTransform, false);
-            groundMistPS.transform.localPosition = Vector3.zero;
-        }
-
-        if (!groundMistPS.isPlaying)
-        {
-            // prewarm: llena el volumen de partículas inmediatamente en lugar de acumular durante ~8s
-            var main = groundMistPS.main;
-            main.prewarm = true;
-            groundMistPS.Play(true);
-        }
-    }
-
-    private void StopGroundMist(bool reparent = true)
-    {
-        if (groundMistPS == null) return;
-
-        // reparent=false durante OnDestroy: la zona (y por tanto su Transform, usado como
-        // destino de reparenting cuando _mistOriginalParent es null) puede estar siendo
-        // destruida en ese mismo instante (descarga de escena / cierre de la app). Llamar a
-        // SetParent contra un GameObject que se está destruyendo lanza
-        // "Cannot set the parent of the GameObject X while its new parent Y is being destroyed"
-        // y puede tirar el juego. En destrucción no tiene sentido reparentar: el propio
-        // groundMistPS va a desaparecer con la escena.
-        if (reparent)
-        {
-            var restoreParent = _mistOriginalParent != null ? _mistOriginalParent : transform;
-            groundMistPS.transform.SetParent(restoreParent, true);
-        }
-        _mistOriginalParent = null;
-
-        // StopEmitting: las partículas ya emitidas se desvanecen solas por su lifetime
-        groundMistPS.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        ).SetEase(ease).SetUpdate(true);
     }
 
     // -------------------------------------------------------------------------
@@ -358,21 +278,27 @@ public class AmbientZone : MonoBehaviour
 
     private void PlayFootFog()
     {
-        if (footFogObject == null) return;
+        if (footFogObjects == null) return;
 
-        // Solo activar el GO en su sitio: no se reparenta al jugador (eso movía el plano de
-        // niebla de sitio, comportamiento no deseado). El plano se queda fijo donde el diseñador
-        // lo colocó en la zona.
-        if (!footFogObject.activeSelf)
-            footFogObject.SetActive(true);
+        // Solo activar los GO en su sitio: no se reparentan al jugador (eso movía el plano de
+        // niebla de sitio, comportamiento no deseado). Cada plano/cubo se queda fijo donde el
+        // diseñador lo colocó en la zona.
+        foreach (var go in footFogObjects)
+        {
+            if (go != null && !go.activeSelf)
+                go.SetActive(true);
+        }
     }
 
     private void StopFootFog()
     {
-        if (footFogObject == null) return;
+        if (footFogObjects == null) return;
 
-        if (footFogObject.activeSelf)
-            footFogObject.SetActive(false);
+        foreach (var go in footFogObjects)
+        {
+            if (go != null && go.activeSelf)
+                go.SetActive(false);
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -549,6 +475,15 @@ public class AmbientZone : MonoBehaviour
         return _cachedCamera;
     }
 
+    // 30 ago 2026 — enlace con el sistema de clima (ver AmbientPreset.forcesMist /
+    // DayNightCycle.SetZoneMistOverride). Mismo patrón de caché estático que GetOrCacheCamera.
+    private static DayNightCycle GetOrCacheDayNightCycle()
+    {
+        if (_cachedDayNightCycle != null) return _cachedDayNightCycle;
+        _cachedDayNightCycle = Object.FindAnyObjectByType<DayNightCycle>();
+        return _cachedDayNightCycle;
+    }
+
     // -------------------------------------------------------------------------
     //  Música
     // -------------------------------------------------------------------------
@@ -621,10 +556,11 @@ public class AmbientZone : MonoBehaviour
         {
             _currentActiveZone = null;
             _playerTransform = null;
-            StopGroundMist(reparent: false);
             StopFootFog();
             HideCameraOverlay();
             RestoreDefaultsImmediate();
+            GetOrCacheDayNightCycle()?.SetZoneMistOverride(false);
+            AmbientCloudDirector.Instance?.SetZoneCloudBoost(false);
         }
     }
 
@@ -636,12 +572,6 @@ public class AmbientZone : MonoBehaviour
         if (_fogCanvasGroup != null) _fogCanvasGroup.alpha = 0f;
         if (!_defaultsCaptured) return;
 
-        RenderSettings.fog              = _defaultFogEnabled;
-        RenderSettings.fogColor         = _defaultFogColor;
-        RenderSettings.fogDensity       = _defaultFogDensity;
-        RenderSettings.fogStartDistance = _defaultFogStart;
-        RenderSettings.fogEndDistance   = _defaultFogEnd;
-        RenderSettings.fogMode          = _defaultFogMode;
         RenderSettings.ambientLight     = _defaultAmbientColor;
         RenderSettings.ambientIntensity = _defaultAmbientIntensity;
 
@@ -671,8 +601,8 @@ public class AmbientZone : MonoBehaviour
         var col = GetComponent<Collider>();
         if (col == null) return;
 
-        Color gizmoColor = ambientPreset != null && ambientPreset.enableFog
-            ? ambientPreset.fogColor
+        Color gizmoColor = ambientPreset != null && ambientPreset.forcesMist
+            ? new Color(0.75f, 0.8f, 0.85f)
             : Color.gray;
         Gizmos.color = new Color(gizmoColor.r, gizmoColor.g, gizmoColor.b, 0.25f);
 
@@ -692,11 +622,10 @@ public class AmbientZone : MonoBehaviour
     private void OnDrawGizmosSelected()
     {
         string presetInfo = ambientPreset != null ? ambientPreset.name : "Sin preset";
-        string mistInfo   = groundMistPS  != null ? "Niebla suelo"    : "";
-        string footInfo   = footFogObject != null ? "Niebla pies"     : "";
+        string footInfo   = footFogObjects != null && footFogObjects.Length > 0 ? $"Niebla pies x{footFogObjects.Length}" : "";
 
         string[] parts = System.Array.FindAll(
-            new[] { presetInfo, mistInfo, footInfo },
+            new[] { presetInfo, footInfo },
             s => !string.IsNullOrEmpty(s)
         );
 
@@ -706,85 +635,5 @@ public class AmbientZone : MonoBehaviour
         );
     }
 
-    [ContextMenu("Crear Niebla de Suelo")]
-    private void CreateGroundMistPS()
-    {
-        if (groundMistPS != null)
-        {
-            UnityEditor.EditorUtility.DisplayDialog("AmbientZone",
-                "Ya hay un Ground Mist PS asignado.\nDesasígnalo primero si quieres crear uno nuevo.", "OK");
-            return;
-        }
-
-        var go = new GameObject("GroundMist_PS");
-        UnityEditor.Undo.RegisterCreatedObjectUndo(go, "Crear Niebla de Suelo");
-        go.transform.SetParent(transform, false);
-        go.transform.localPosition = Vector3.zero;
-
-        var ps = go.AddComponent<ParticleSystem>();
-
-        var boxCol = GetComponent<BoxCollider>();
-        float areaX = boxCol != null ? boxCol.size.x : 12f;
-        float areaZ = boxCol != null ? boxCol.size.z : 12f;
-
-        var main = ps.main;
-        main.loop            = true;
-        main.playOnAwake     = false;
-        main.startLifetime   = new ParticleSystem.MinMaxCurve(5f, 8f);
-        main.startSpeed      = 0f;
-        main.startSize       = new ParticleSystem.MinMaxCurve(areaX * 0.4f, areaX * 0.7f);
-        main.startColor      = new ParticleSystem.MinMaxGradient(
-            new Color(1f, 1f, 1f, 1f),
-            new Color(0.88f, 0.9f, 0.95f, 1f)
-        );
-        main.gravityModifier = 0f;
-        main.maxParticles    = 250;
-        main.simulationSpace = ParticleSystemSimulationSpace.World;
-
-        var emission = ps.emission;
-        emission.enabled      = true;
-        emission.rateOverTime = 40f;
-
-        var shapeModule = ps.shape;
-        shapeModule.enabled   = true;
-        shapeModule.shapeType = ParticleSystemShapeType.Box;
-        shapeModule.position  = new Vector3(0f, 0.75f, 0f);
-        shapeModule.scale     = new Vector3(areaX, 1.5f, areaZ);
-
-        var colorLife = ps.colorOverLifetime;
-        colorLife.enabled = true;
-        var fadeGradient = new Gradient();
-        fadeGradient.SetKeys(
-            new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
-            new[] {
-                new GradientAlphaKey(0f,    0f),
-                new GradientAlphaKey(0.18f, 0.12f),
-                new GradientAlphaKey(0.18f, 0.88f),
-                new GradientAlphaKey(0f,    1f)
-            }
-        );
-        colorLife.color = new ParticleSystem.MinMaxGradient(fadeGradient);
-
-        var sizeLife = ps.sizeOverLifetime;
-        sizeLife.enabled = true;
-        sizeLife.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 1f, 1f, 1.1f));
-
-        var noise = ps.noise;
-        noise.enabled     = true;
-        noise.strength    = 0.08f;
-        noise.frequency   = 0.3f;
-        noise.scrollSpeed = 0.05f;
-        noise.quality     = ParticleSystemNoiseQuality.Medium;
-
-        var psRenderer = go.GetComponent<ParticleSystemRenderer>();
-        psRenderer.renderMode   = ParticleSystemRenderMode.Billboard;
-        psRenderer.sortingOrder = 0;
-
-        groundMistPS = ps;
-        UnityEditor.EditorUtility.SetDirty(this);
-
-        Debug.Log($"[AmbientZone] GroundMist_PS creado en '{gameObject.name}'. " +
-                  "Asigna tu material al Renderer del hijo GroundMist_PS.");
-    }
 #endif
 }

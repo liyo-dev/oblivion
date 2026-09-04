@@ -49,6 +49,13 @@ MonoBehaviour:
     forcedShotType: 0
     emotion: 6
   - speakerNameId: CHAR_GUERRERACHINA
+    textId: DLG_GUERRERACHINA_TARGETLOCK
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 6
+  - speakerNameId: CHAR_GUERRERACHINA
     textId: DLG_GUERRERACHINA_06
     text: 
     portrait: {fileID: 0}

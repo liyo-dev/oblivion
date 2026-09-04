@@ -61,6 +61,7 @@ public class PlayerHealthSystem : MonoBehaviour
     // Componentes
     private Animator _animator;
     private Renderer[] _renderers;
+    private WardrobeInventory _wardrobeInventory; // FIX 4 sep 2026, ver Awake()/RefreshRenderersForWardrobeChange
     private Material[] _originalMaterials;
     // FIX A10 (auditoría 2026-08-07): resuelto en Awake para god-frame en Cinematic (TakeDamage)
     // y para vaciar la pila de modos en Die()/ReviveInternal (ver comentarios más abajo).
@@ -111,6 +112,17 @@ public class PlayerHealthSystem : MonoBehaviour
         // Obtener renderers para efectos visuales
         _renderers = GetComponentsInChildren<Renderer>();
         CacheOriginalMaterials();
+
+        // FIX 4 sep 2026: _renderers se cacheaba una sola vez aquí, en Awake(). Si el jugador
+        // equipaba una prenda de WardrobeInventory (capa, gafas...) DESPUÉS de este momento, su
+        // Renderer nunca entraba en el array — el cuerpo parpadeaba al recibir daño pero la prenda
+        // se quedaba fija, quedando raro (reportado por Raúl). Nos suscribimos a
+        // WardrobeInventory.OnWardrobeChanged para añadir al array cualquier Renderer nuevo que
+        // aparezca al equipar (ver RefreshRenderersForWardrobeChange).
+        if (_wardrobeInventory == null)
+            PlayerService.TryGetComponent(out _wardrobeInventory, includeInactive: true, allowSceneLookup: true);
+        if (_wardrobeInventory != null)
+            _wardrobeInventory.OnWardrobeChanged += RefreshRenderersForWardrobeChange;
     }
 
     // Reemplaza Start/Coroutine por evento del boot service
@@ -127,6 +139,8 @@ public class PlayerHealthSystem : MonoBehaviour
     void OnDisable()
     {
         GameBootService.OnProfileReady -= HandleProfileReady;
+        if (_wardrobeInventory != null)
+            _wardrobeInventory.OnWardrobeChanged -= RefreshRenderersForWardrobeChange;
 
         // FIX A10 (auditoría 2026-08-07): si el GameObject se desactiva a mitad del ciclo "apagado"
         // de InvulnerabilityFlashCoroutine (SetRenderersVisibility(false)), la corrutina muere en
@@ -175,6 +189,44 @@ public class PlayerHealthSystem : MonoBehaviour
     // envolverla en `new Material(...)` — una fuga por renderer cada vez que se llama a este
     // método. Se usa `sharedMaterial` como origen (no instancia nada) y se destruyen instancias
     // previas si el método se llegara a llamar más de una vez en la vida del componente.
+    /// <summary>
+    /// FIX 4 sep 2026: llamado desde WardrobeInventory.OnWardrobeChanged. En vez de recapturar y
+    /// recachear TODOS los renderers (lo que destruiría y recrearía instancias de material para
+    /// piezas que ya llevaban rato con su parpadeo funcionando con normalidad), solo AÑADE al
+    /// array los Renderer nuevos que no estuvieran ya trackeados — típicamente los de la prenda
+    /// recién equipada — y les crea su propia instancia de material igual que hace
+    /// CacheOriginalMaterials() para el resto.
+    /// </summary>
+    private void RefreshRenderersForWardrobeChange()
+    {
+        var current = GetComponentsInChildren<Renderer>();
+        var already = new HashSet<Renderer>(_renderers ?? System.Array.Empty<Renderer>());
+        var newOnes = new List<Renderer>();
+        foreach (var r in current)
+        {
+            if (r != null && !already.Contains(r))
+                newOnes.Add(r);
+        }
+        if (newOnes.Count == 0) return;
+
+        int oldLen = _renderers?.Length ?? 0;
+        var mergedRenderers = new Renderer[oldLen + newOnes.Count];
+        var mergedMaterials = new Material[oldLen + newOnes.Count];
+        if (_renderers != null) System.Array.Copy(_renderers, mergedRenderers, oldLen);
+        if (_originalMaterials != null) System.Array.Copy(_originalMaterials, mergedMaterials, oldLen);
+
+        for (int i = 0; i < newOnes.Count; i++)
+        {
+            var r = newOnes[i];
+            mergedRenderers[oldLen + i] = r;
+            mergedMaterials[oldLen + i] = new Material(r.sharedMaterial);
+            r.material = mergedMaterials[oldLen + i];
+        }
+
+        _renderers = mergedRenderers;
+        _originalMaterials = mergedMaterials;
+    }
+
     private void CacheOriginalMaterials()
     {
         if (_renderers == null) return;

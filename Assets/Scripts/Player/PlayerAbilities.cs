@@ -11,5 +11,7 @@ public class PlayerAbilities
     [Tooltip("Permite trepar / escalar")] public bool climb;
     [Tooltip("Permite usar magia (casts)")] public bool magic = false;
     [Tooltip("Permite volar")] public bool fly;
+    [Tooltip("Permite usar sprint")] public bool sprint;
+    [Tooltip("Permite usar el escudo de proteccion contra magia enemiga")] public bool shield;
 }
 

@@ -31,6 +31,10 @@ public class CombatCameraTargeting : MonoBehaviour
     private float _lastShoulderSwitchAt = -999f;
     private bool _isInDialogue;
     private bool _suppressedByLevitation;
+    // Petición de Raúl (1 sep 2026): permite al jugador apagar el lock-on de cámara/objetivo a
+    // voluntad (p.ej. para correr hacia un cofre sin que la cámara se empeñe en enfocar a un
+    // enemigo cercano). Ver ToggleTargetingSuppressed().
+    private bool _targetingSuppressedByPlayer;
 
     private void Awake()
     {
@@ -104,18 +108,19 @@ public class CombatCameraTargeting : MonoBehaviour
         
         wasInCombatLastFrame = isInCombat;
         
-        if (isInCombat && !isLockActive && !_suppressedByLevitation) TryAutoLock();
+        if (isInCombat && !isLockActive && !_suppressedByLevitation && !_targetingSuppressedByPlayer) TryAutoLock();
         if (isLockActive) EnsureVisualLockSync();
     }
     
     private void TryAutoLock()
     {
+        if (_targetingSuppressedByPlayer) return;
         if (Time.time - _lastAutoLockAttempt < 0.5f) return;
         _lastAutoLockAttempt = Time.time;
         
         if (playerTransform == null) return;
         
-        GameObject closestEnemy = ActiveCombatRegistry.GetClosestCombatNPC(playerTransform.position, maxLockDistance);
+        GameObject closestEnemy = ActiveCombatRegistry.GetClosestCameraLockableCombatNPC(playerTransform.position, maxLockDistance);
         
         if (closestEnemy != null)
         {
@@ -126,7 +131,18 @@ public class CombatCameraTargeting : MonoBehaviour
     
     private void HandleGamepadInput(GamepadInputReader.InputEvent inputEvent)
     {
-        if (!isLockActive || currentTarget == null || inputEvent.Phase != UnityEngine.InputSystem.InputActionPhase.Performed)
+        if (inputEvent.Phase != UnityEngine.InputSystem.InputActionPhase.Performed)
+            return;
+
+        // El toggle de lock-on funciona siempre (haya o no un target activo ahora mismo) — es lo
+        // que permite tanto quitar un lock en marcha como impedir que uno nuevo se enganche solo.
+        if (inputEvent.Type == GamepadInputReader.InputEventType.ToggleTargetLock)
+        {
+            ToggleTargetingSuppressed();
+            return;
+        }
+
+        if (!isLockActive || currentTarget == null)
             return;
 
         if (Time.unscaledTime - _lastShoulderSwitchAt < shoulderSwitchDebounce)
@@ -144,11 +160,44 @@ public class CombatCameraTargeting : MonoBehaviour
                 break;
         }
     }
+
+    /// <summary>
+    /// Petición de Raúl (1 sep 2026): alterna si el jugador quiere que la cámara/objetivo de
+    /// combate se enganchen solos. Al activar la supresión: libera cualquier lock en marcha y
+    /// apaga también el auto-scan de PlayerTargeting (el marcador de apuntado libre), para que
+    /// "desactivar targets" sea de verdad completo — ni cámara ni marcador — mientras el jugador
+    /// quiera, por ejemplo, correr hacia un cofre sin que nada le distraiga hacia un enemigo
+    /// cercano. Al desactivar la supresión, todo vuelve al comportamiento automático de siempre
+    /// en el siguiente Update().
+    /// </summary>
+    private void ToggleTargetingSuppressed()
+    {
+        _targetingSuppressedByPlayer = !_targetingSuppressedByPlayer;
+
+        if (_targetingSuppressedByPlayer)
+        {
+            ReleaseLock();
+            if (syncWithProjectileTargeting && playerTargeting != null)
+                playerTargeting.SetAutoScanSuppressed(true);
+
+            HudToastService.Instance?.Show("COMBAT_TARGET_LOCK_OFF", 2f);
+            Log("🚫 Lock-on de objetivo DESACTIVADO por el jugador");
+        }
+        else
+        {
+            if (syncWithProjectileTargeting && playerTargeting != null)
+                playerTargeting.SetAutoScanSuppressed(false);
+            _lastAutoLockAttempt = 0f; // permitir re-lock inmediato en el siguiente Update si procede
+
+            HudToastService.Instance?.Show("COMBAT_TARGET_LOCK_ON", 2f);
+            Log("🎯 Lock-on de objetivo REACTIVADO por el jugador");
+        }
+    }
     
     private void OnEnterCombat()
     {
         Log($"🎯 Entrando en combate. Buscando objetivo...");
-        GameObject closestEnemy = ActiveCombatRegistry.GetClosestCombatNPC(playerTransform.position, maxLockDistance);
+        GameObject closestEnemy = ActiveCombatRegistry.GetClosestCameraLockableCombatNPC(playerTransform.position, maxLockDistance);
         
         if (closestEnemy != null)
         {
@@ -161,11 +210,24 @@ public class CombatCameraTargeting : MonoBehaviour
     {
         Log("🏳️ Saliendo de combate - Liberando lock");
         ReleaseLock();
+
+        // La supresión manual es un override puntual de ESTA pelea, no una preferencia
+        // permanente — al no quedar ningún NPC en combate, se resetea para el próximo encuentro.
+        if (_targetingSuppressedByPlayer)
+        {
+            _targetingSuppressedByPlayer = false;
+            if (syncWithProjectileTargeting && playerTargeting != null)
+                playerTargeting.SetAutoScanSuppressed(false);
+        }
     }
     
     private void OnNPCEnteredCombat(GameObject npc)
     {
-        if (currentTarget == null && playerTransform != null)
+        // Petición de Raúl (1 sep 2026): enemigos menores (arañas) no deben enganchar la cámara
+        // solos al entrar en combate — ver ActiveCombatRegistry.IsCameraLockExempt. Siguen
+        // registrados en ActiveCombatRegistry (Battle Mode, ciclo manual L1/R1), y el marcador de
+        // apuntado para hechizos lo sigue dando el auto-scan normal de PlayerTargeting.
+        if (currentTarget == null && playerTransform != null && !ActiveCombatRegistry.IsCameraLockExempt(npc))
         {
             if (Vector3.Distance(npc.transform.position, playerTransform.position) <= maxLockDistance)
             {
@@ -218,6 +280,13 @@ public class CombatCameraTargeting : MonoBehaviour
 
         _lastVisualResync = 0f; // Forzar resync en el siguiente Update.
         Log($"🎯 Lock establecido en: {newTarget.name}");
+
+        // Petición de Raúl (1 sep 2026, revertido el mismo día): aquí se disparaba un popup
+        // explicativo ("MechanicId.TargetLockToggle", "pulsa F...") la primera vez que había 2+
+        // objetivos en combate — Raúl lo probó y pidió quitarlo. Aclarado después: se ha quitado
+        // TODO el sistema de popups de "nueva mecánica" (Teletransporte, Cambio de personaje,
+        // Unir/disolver equipo, Sígueme incluidos) — el popup de desbloqueo de habilidades/
+        // hechizos (AbilityUnlockPopupUI) queda tal y como estaba antes de esta sesión.
     }
     
     private readonly List<GameObject> _orderedEnemiesCache = new();

@@ -12,12 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8e06c90f7704958a0df37dea96290e2, type: 3}
   m_Name: AmbientPreset_Woods
   m_EditorClassIdentifier: Assembly-CSharp::FogPreset
-  enableFog: 1
-  fogColor: {r: 0.49550554, g: 0.7988868, b: 0.8018868, a: 1}
-  fogDensity: 0.06
-  fogMode: 2
-  fogStartDistance: 0
-  fogEndDistance: 100
+  forcesMist: 0
   controlAmbientLight: 0
   ambientLightColor: {r: 1, g: 1, b: 1, a: 1}
   ambientLightIntensity: 1

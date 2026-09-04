@@ -60,6 +60,22 @@ public class MagicSpellSO : ScriptableObject
     public float manaCost = 5f;
     public float cooldown = 0.25f;
 
+    [Header("Zona (solo para MagicKind.Zone)")]
+    [Tooltip("Radio (metros) del área de efecto de la zona.")]
+    [Min(0.1f)] public float zoneRadius = 4f;
+    [Tooltip("Cuánto tiempo (segundos) permanece la zona activa antes de desaparecer.")]
+    [Min(0.1f)] public float zoneDuration = 5f;
+    [Tooltip("Cada cuántos segundos la zona aplica daño a quien esté dentro (usa 'damage' de arriba como daño por tick).")]
+    [Min(0.05f)] public float zoneTickInterval = 0.5f;
+    [Tooltip("Distancia por defecto delante del lanzador donde aparece la zona si no hay un objetivo fijado (o si 'zoneSnapToTarget' está desactivado).")]
+    [Min(0.5f)] public float zoneRange = 8f;
+    [Tooltip("Si hay un objetivo fijado (PlayerTargeting), la zona aparece centrada en él en vez de a 'zoneRange' delante del lanzador.")]
+    public bool zoneSnapToTarget = true;
+    [Tooltip("Capas contra las que se lanza el raycast hacia abajo para apoyar la zona sobre el suelo real (evita que quede flotando en terreno irregular).")]
+    public LayerMask zoneGroundLayers = ~0;
+    [Tooltip("Elevación (metros) sobre el punto de suelo detectado. Sin esto el VFX queda exactamente a la altura del suelo y se mezcla/hace z-fighting con él (mismo problema visual que tenían los puntos de guardado).")]
+    [Min(0f)] public float zoneGroundOffset = 0.15f;
+
     [Header("Levitación (solo para MagicKind.Levitation)")]
     [Tooltip("Rango máximo para detectar y afectar NPCs con levitación.")]
     [Min(0f)] public float levitationRange = 10f;

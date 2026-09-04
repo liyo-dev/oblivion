@@ -120,6 +120,13 @@ namespace Game.NPC.Modules
         
         [Tooltip("¿Esperar a que el diálogo de alerta termine antes de iniciar combate?")]
         public bool waitForAlertDialogue = true;
+
+        [Tooltip("¿Congelar al jugador (modo cinemático) en el instante en que este NPC entra en AlertState "
+                 + "(nada más detectarlo)? Se libera automáticamente en cuanto arranca el combate de verdad, "
+                 + "para que el jugador pueda moverse y luchar. Mismo mecanismo que ya usa el Rey a través del "
+                 + "módulo narrativo (freezePlayerOnDetection), aplicado aquí directamente en la IA de combate "
+                 + "para no tener dos sistemas de detección corriendo en paralelo sobre el mismo NPC.")]
+        public bool freezePlayerOnAlert = true;
         
         [Header("🎭 Comportamiento Post-Muerte")]
         [Tooltip("¿Qué sucede cuando el NPC muere?\n• DESAPARECER: El NPC desaparece con VFX después de la animación de muerte\n• MAREARSE: El NPC se levanta mareado y muestra un diálogo")]

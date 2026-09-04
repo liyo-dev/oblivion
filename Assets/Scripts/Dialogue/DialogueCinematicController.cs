@@ -141,6 +141,11 @@ public class DialogueCinematicController : MonoBehaviour
     private Transform currentSpeaker;     // Transform del speaker actual
     private Dictionary<string, Transform> speakerCache = new Dictionary<string, Transform>(); // Cache de speakers
 
+    // Foco de mirada forzado por la línea actual (DialogueLine.lookAtOverrideId), solo modo grupal.
+    // Resuelto en OnDialogueLineAdvanced junto al speaker; null = sin override, comportamiento igual
+    // que antes de este campo. Ver UpdateGroupFacing().
+    private Transform _currentLineFocusOverride;
+
     // Pool de cámaras virtuales
     private List<CinemachineCamera> cameraPool = new List<CinemachineCamera>();
     private int poolIndex;
@@ -662,6 +667,7 @@ public class DialogueCinematicController : MonoBehaviour
         // ✅ Reiniciar sistema de tracking de speakers
         currentSpeakerId = null;
         currentSpeaker = null;
+        _currentLineFocusOverride = null;
         speakerCache.Clear();
         
         // Pre-cachear speakers conocidos
@@ -771,6 +777,30 @@ public class DialogueCinematicController : MonoBehaviour
             if (Game.NPC.PlayerParty.HasInstance)
             {
                 Game.NPC.PlayerParty.Instance.PositionMembersForGroupDialogue(currentNPC, _groupCamBaseDir);
+            }
+
+            // INC-131 (30 ago 2026): "la cámara se va para el castillo cuando habla Liam" —
+            // reproducido jugando con Liam como personaje activo (Will pasa entonces a ser un
+            // NPCPartyMember visible, ActiveCharacterSwapper.WillNpcInstance). Ese NPC de Will
+            // NUNCA vive en PlayerParty.Members (ver comentarios en CalculateCameraPosition/
+            // UpdateGroupFacing), así que PositionMembersForGroupDialogue de arriba no lo mueve al
+            // semicírculo: solo se recoloca mediante el auto-teleport por distancia de
+            // PlayerParty.CheckMemberDistances(), que corre cada 0.3s en Update y se salta a
+            // propósito mientras el NPC está "en cinemática". Si la conversación grupal anterior
+            // (p.ej. la audiencia con el Rey) lo dejó lejos —dentro/junto al castillo— y esta
+            // conversación nueva (con un NPC distinto, Eldran) arranca antes de que ese
+            // auto-teleport llegue a ejecutarse, el centro/lookAt de la cámara de grupo
+            // (CalculateCameraPosition, LateUpdate) promedia su posición real y desactualizada,
+            // tirando de la mirada de la cámara hacia el castillo en cuanto el sesgo por speaker
+            // se combina con ese arrastre. Forzar aquí el mismo reenganche que ya usa el
+            // auto-teleport (TeleportWillNpcToPlayer, slot de formación tras los miembros reales)
+            // asegura que el NPC de Will ya esté en su sitio ANTES de que se calcule el primer
+            // encuadre de esta conversación, en vez de depender de que el temporizador de 0.3s
+            // llegue a tiempo.
+            var willSwapper = ActiveCharacterSwapper.Instance;
+            if (willSwapper != null && willSwapper.WillNpcInstance != null)
+            {
+                willSwapper.TeleportWillNpcToPlayer();
             }
 
             // Calcular centro del grupo para orientar a los participantes
@@ -1385,9 +1415,18 @@ public class DialogueCinematicController : MonoBehaviour
                 }
             }
 
+            // Foco forzado de la línea (DialogueLine.lookAtOverrideId): resuelto con el mismo
+            // FindSpeakerTransform que el speaker (soporta party members, decoy del personaje
+            // activo, "Player"/"MainNPC", etc.) — vacío/no encontrado = null, sin cambio de
+            // comportamiento respecto a antes de este campo. Usado por UpdateGroupFacing().
+            _currentLineFocusOverride = !string.IsNullOrEmpty(currentLine.lookAtOverrideId)
+                ? FindSpeakerTransform(currentLine.lookAtOverrideId, currentLine)
+                : null;
+
             // ── MIRADAS EN MODO GRUPAL ──
             // Los personajes que escuchan giran hacia quien habla (y el que habla, hacia su
-            // interlocutor natural), como en una conversación real.
+            // interlocutor natural, salvo que la línea fuerce un foco distinto con
+            // _currentLineFocusOverride), como en una conversación real.
             if (_isGroupConversation)
                 UpdateGroupFacing();
 
@@ -1451,7 +1490,17 @@ public class DialogueCinematicController : MonoBehaviour
             // Solo si el ID es literalmente "Player" (sin speakerNameId específico)
             if (speakerId == "Player")
             {
-                speakerTransform = currentPlayer;
+                // FIX (1 sep 2026, mismo patrón que el fix de INC-136/138 en DialogueManager.
+                // ActivateSpeakerTalkAnimation): "Player" aquí siempre significa Will
+                // específicamente, nunca "quien sea que esté controlando el jugador ahora
+                // mismo". Si Will no es el personaje activo, ActiveCharacterSwapper mantiene un
+                // NPCPartyMember visible aparte para él (WillNpcInstance != null exactamente en
+                // ese caso) y es ESE transform el que debe recibir cámara/mirada, no currentPlayer
+                // (que en ese momento es físicamente Liam o Estela).
+                var willSwapperForPlayerId = ActiveCharacterSwapper.Instance;
+                speakerTransform = (willSwapperForPlayerId != null && willSwapperForPlayerId.WillNpcInstance != null)
+                    ? willSwapperForPlayerId.WillNpcInstance.transform
+                    : currentPlayer;
             }
             // NPC principal del diálogo
             else if (speakerId == "MainNPC" || speakerId == currentNPC.name)
@@ -2165,7 +2214,16 @@ public class DialogueCinematicController : MonoBehaviour
                 if (col == null) continue;
                 Transform root = col.transform.root;
                 if (root == target || root == currentPlayer || root == currentNPC) continue;
-                if (IsPartyMember(root)) continue;
+                // FIX 4 sep 2026 ("vemos la cabeza de Will" durante el diálogo de combate del
+                // Pirata): esta exención de party members solo tiene sentido en modo GRUPAL, donde
+                // están puestos a propósito dentro del plano (semicírculo) y por tanto no deben
+                // contar como "obstrucción" a esquivar. En un diálogo 1:1 (p.ej. el taunt de combate
+                // de un enemigo, sin conversación grupal) un compañero -o el NPC clon de Will vía
+                // ActiveCharacterSwapper- que simplemente estaba parado por ahí siguiendo al jugador
+                // NO debería librarse de esta comprobación: si la cámara calculada cae encima suyo,
+                // este es precisamente el sistema que debería apartarla, y con la exención aplicada
+                // siempre no lo hacía nunca, dejando la cámara literalmente dentro de su cabeza.
+                if (_isGroupConversation && IsPartyMember(root)) continue;
                 return true;
             }
             return false;
@@ -2421,7 +2479,11 @@ public class DialogueCinematicController : MonoBehaviour
     /// En modo grupal, hace que todos los participantes miren a quien habla en esta línea:
     /// - Los que ESCUCHAN giran hacia el speaker actual (player, NPC principal o compañero).
     /// - El que HABLA gira hacia su interlocutor natural: el player habla al NPC, el NPC al
-    ///   player, y un compañero vuelve a su objetivo por defecto (el NPC del diálogo).
+    ///   player, y un compañero vuelve a su objetivo por defecto (el NPC del diálogo) — salvo
+    ///   que la línea traiga un <see cref="_currentLineFocusOverride"/> (DialogueLine.lookAtOverrideId),
+    ///   en cuyo caso quien habla mira a ese personaje concreto en su lugar (ej: acusa a uno pero
+    ///   la frase va dirigida a otro). Los oyentes NO cambian: siguen mirando a quien habla, como
+    ///   en cualquier conversación — el override solo afecta hacia dónde mira el propio hablante.
     /// Dos capas, como en los AAA: giro de CUERPO (player/NPC con corrutina suave; compañeros
     /// vía el override de mirada de su DialoguePositionState) + giro de CABEZA anticipado
     /// (DialogueHeadLook, estilo IK: la cabeza apunta al speaker antes y con más rango que el
@@ -2432,7 +2494,14 @@ public class DialogueCinematicController : MonoBehaviour
     {
         if (currentSpeaker == null) return;
 
-        // Compañeros del party: mirar al speaker (el propio speaker limpia su override)
+        // Si la línea fuerza un foco y coincide con el propio speaker (mirarse a sí mismo no
+        // tiene sentido), se ignora y se cae al comportamiento por defecto de más abajo.
+        Transform focusOverride = (_currentLineFocusOverride != null && _currentLineFocusOverride != currentSpeaker)
+            ? _currentLineFocusOverride
+            : null;
+
+        // Compañeros del party: mirar al speaker (el propio speaker limpia su override, o mira
+        // al foco forzado de la línea si hay uno)
         if (Game.NPC.PlayerParty.HasInstance)
         {
             // Mismo decoy que en CalculateCameraPosition: el NPCPartyMember oculto del personaje
@@ -2443,9 +2512,11 @@ public class DialogueCinematicController : MonoBehaviour
             {
                 if (m == null || m == hiddenNpc || !m.IsActiveInParty) continue;
                 bool isSpeaker = m.transform == currentSpeaker;
-                m.SetDialogueLookTarget(isSpeaker ? null : currentSpeaker);
-                // Cabeza: el compañero que habla mira al NPC del diálogo; los demás, al speaker
-                SetHeadLook(m.transform, isSpeaker ? currentNPC : currentSpeaker);
+                Transform speakerLookTarget = focusOverride != null ? focusOverride : null;
+                m.SetDialogueLookTarget(isSpeaker ? speakerLookTarget : currentSpeaker);
+                // Cabeza: el compañero que habla mira al foco forzado (o al NPC del diálogo si no
+                // hay override); los demás, al speaker
+                SetHeadLook(m.transform, isSpeaker ? (focusOverride != null ? focusOverride : currentNPC) : currentSpeaker);
             }
         }
 
@@ -2453,12 +2524,16 @@ public class DialogueCinematicController : MonoBehaviour
         // NPC desde el inicio del diálogo) salvo que el speaker quede fuera del alcance de la
         // cabeza. Antes el cuerpo perseguía al speaker en cada línea y el player parecía
         // nervioso — giro completo + head-look encima en cada cambio de turno.
-        Transform playerLook = (currentSpeaker == currentPlayer) ? currentNPC : currentSpeaker;
+        Transform playerLook = (currentSpeaker == currentPlayer)
+            ? (focusOverride != null ? focusOverride : currentNPC)
+            : currentSpeaker;
         FaceBodyOnlyIfOutOfHeadRange(currentPlayer, playerLook, ref _playerRotationCoroutine);
         SetHeadLook(currentPlayer, playerLook);
 
         // NPC principal: misma política que el player (cabeza sí, cuerpo solo si es necesario)
-        Transform npcLook = (currentSpeaker == currentNPC) ? currentPlayer : currentSpeaker;
+        Transform npcLook = (currentSpeaker == currentNPC)
+            ? (focusOverride != null ? focusOverride : currentPlayer)
+            : currentSpeaker;
         FaceBodyOnlyIfOutOfHeadRange(currentNPC, npcLook, ref _npcRotationCoroutine);
         SetHeadLook(currentNPC, npcLook);
     }

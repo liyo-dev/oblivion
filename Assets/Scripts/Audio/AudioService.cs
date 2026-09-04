@@ -1048,6 +1048,20 @@ public sealed class AudioService : MonoBehaviour
             src.Stop();
     }
 
+    /// <summary>
+    /// Silencia (o restaura) en el sitio el SFX en loop asociado a loopId, sin detenerlo ni
+    /// perder su posición de reproducción — a diferencia de StopLoopingSFX, pensado para
+    /// suspensiones temporales y reversibles (p.ej. lluvia/viento de ambiente mientras el
+    /// jugador está en un interior, ver DayNightCycle.SetWeatherAudioSuppressed). No hace nada
+    /// si el loopId no tiene una fuente activa todavía (PlayLoopingSFX aún no se ha llamado).
+    /// </summary>
+    public void SetLoopingSFXMuted(string loopId, bool muted)
+    {
+        if (string.IsNullOrWhiteSpace(loopId)) return;
+        if (!_loopingSfxSources.TryGetValue(loopId, out var src) || src == null) return;
+        src.mute = muted;
+    }
+
     IEnumerator FadeOutAndStopLoop(string loopId, AudioSource src, float duration)
     {
         float startVolume = src.volume;

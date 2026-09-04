@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Game.NPC.Common;
@@ -700,24 +700,16 @@ namespace Game.NPC.Modules
             }
 
             // El bucle ambiental (loopWhileConditionMet) no es una interacción real con el jugador:
-            // no hay saludo ni rotación hacia él, es solo la actividad "de espera" del NPC.
+            // no hay rotación hacia él, es solo la actividad "de espera" del NPC.
             if (!isAmbientLoop)
             {
-                // --- ANIMACIÓN DE INTERACCIÓN ---
-                if (_npcManager?.SimpleAnimator != null && PlayerService.TryGetPlayer(out var player, allowSceneLookup: true))
-                {
-                    Vector3 toPlayer = player.transform.position - transform.position;
-                    float angle = Vector3.Angle(transform.forward, toPlayer);
-
-                    if (angle <= 90f)
-                    {
-                        _npcManager.SimpleAnimator.PlayOneShot("Greeting01_NoWeapon");
-                    }
-                    else
-                    {
-                        _npcManager.SimpleAnimator.PlayOneShot("SenseSomethingStart_NoWeapon");
-                    }
-                }
+                // ❌ QUITADO (1 sep 2026, petición de Raúl): el saludo de interacción
+                // (PlayGreeting()/PlaySenseSomething()) con espera de animación antes de continuar
+                // a la cadena narrativa se retiró — el retraso que introducía en el corte de cámara
+                // del diálogo no funcionaba bien y quedaba mal. Ningún NPC amistoso hace saludo al
+                // iniciar una interacción; el único retraso de cámara de diálogo que se conserva es
+                // el de NPCs en alerta/combate (ver AlertState._dialogueStartDelay), que es un caso
+                // distinto (p.ej. el pirata reaccionando con el icono de alerta antes de luchar).
 
                 if (_npcManager.RotateToPlayerOnInteract) yield return RotateToPlayer();
             }
@@ -1839,6 +1831,24 @@ namespace Game.NPC.Modules
             if (_npcManager == null || _npcManager.InitialLayer == LayerMode.Custom) return;
             int layer = LayerMask.NameToLayer(_npcManager.InitialLayer.ToString());
             if (layer != -1) gameObject.layer = layer;
+        }
+
+        /// <summary>
+        /// Llama a un método de NPCSimpleAnimator que acepta un callback onComplete (PlayGreeting,
+        /// PlaySenseSomething...) y espera a que ese callback llegue antes de continuar. Evita que
+        /// la cadena narrativa (diálogo/cámara cinemática) corte el gesto a medias — ver
+        /// ExecuteNarrativeChain. Se pasa el propio método como delegado (p.ej.
+        /// "cb => _npcManager.SimpleAnimator.PlayGreeting(cb)") para no atarse a un único gesto:
+        /// cada NPC reproduce el que tenga configurado en su Inspector.
+        /// </summary>
+        private IEnumerator WaitForAnimatorCallback(System.Action<System.Action> play)
+        {
+            if (_npcManager?.SimpleAnimator == null) yield break;
+
+            bool done = false;
+            play(() => done = true);
+
+            while (!done) yield return null;
         }
 
         private IEnumerator RotateToPlayer()

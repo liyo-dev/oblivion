@@ -225,7 +225,9 @@ namespace Game.NPC
             _iconController?.HideAlertIcon();
 
             if (mode == PromptMode.Follow && _followIconPrefab != null)
+            {
                 _iconController?.ShowPersistentIcon(_followIconPrefab);
+            }
             else if (mode == PromptMode.StopFollow && _stopFollowIconPrefab != null)
                 _iconController?.ShowPersistentIcon(_stopFollowIconPrefab);
         }

@@ -50,7 +50,7 @@ LightmapSettings:
     m_IndirectOutputScale: 1
     m_AlbedoBoost: 1
     m_EnvironmentLightingMode: 0
-    m_EnableBakedLightmaps: 1
+    m_EnableBakedLightmaps: 0
     m_EnableRealtimeLightmaps: 0
   m_LightmapEditorSettings:
     serializedVersion: 12
@@ -94,7 +94,7 @@ LightmapSettings:
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
   m_LightingDataAsset: {fileID: 20201, guid: 0000000000000000f000000000000000, type: 0}
-  m_LightingSettings: {fileID: 0}
+  m_LightingSettings: {fileID: 4890085278179872738, guid: ad87d3186d76bf144a90efa4e289829e, type: 2}
 --- !u!196 &4
 NavMeshSettings:
   serializedVersion: 2
@@ -100002,7 +100002,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: MainMenu_Controls
 --- !u!114 &1040038826
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -119600,7 +119600,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: MainMenu_Continue
 --- !u!114 &1265009090
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -126131,7 +126131,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: MainMenu_Settings
 --- !u!114 &1329725740
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -155670,7 +155670,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: MainMenu_NewGame
 --- !u!114 &1605652956
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -166344,6 +166344,133 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 415064, guid: e0e33dabdf23b334b9bf537edfebbbb5, type: 3}
   m_PrefabInstance: {fileID: 1722048757}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1722494690
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1722494693}
+  - component: {fileID: 1722494692}
+  - component: {fileID: 1722494691}
+  m_Layer: 0
+  m_Name: Directional light
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1722494691
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1722494690}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
+--- !u!108 &1722494692
+Light:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1722494690}
+  m_Enabled: 1
+  serializedVersion: 13
+  m_Type: 1
+  m_Color: {r: 1, g: 0.91622716, b: 0.5661765, a: 1}
+  m_Intensity: 1
+  m_Range: 10
+  m_SpotAngle: 30
+  m_InnerSpotAngle: 21.80208
+  m_CookieSize2D: {x: 10, y: 10}
+  m_Shadows:
+    m_Type: 2
+    m_Resolution: -1
+    m_CustomResolution: -1
+    m_Strength: 1
+    m_Bias: 0.05
+    m_NormalBias: 0.4
+    m_NearPlane: 0.2
+    m_CullingMatrixOverride:
+      e00: 1
+      e01: 0
+      e02: 0
+      e03: 0
+      e10: 0
+      e11: 1
+      e12: 0
+      e13: 0
+      e20: 0
+      e21: 0
+      e22: 1
+      e23: 0
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1
+    m_UseCullingMatrixOverride: 0
+  m_Cookie: {fileID: 0}
+  m_DrawHalo: 0
+  m_Flare: {fileID: 0}
+  m_RenderMode: 0
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_RenderingLayerMask: 1
+  m_Lightmapping: 4
+  m_LightShadowCasterMode: 0
+  m_AreaSize: {x: 1, y: 1}
+  m_BounceIntensity: 1
+  m_ColorTemperature: 6570
+  m_UseColorTemperature: 0
+  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_UseBoundingSphereOverride: 0
+  m_UseViewFrustumForShadowCasterCull: 1
+  m_ForceVisible: 0
+  m_ShapeRadius: 0
+  m_ShadowAngle: 0
+  m_LightUnit: 1
+  m_LuxAtDistance: 1
+  m_EnableSpotReflector: 1
+--- !u!4 &1722494693
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1722494690}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.634818, y: 0.5042926, z: -0.5707038, w: 0.13035414}
+  m_LocalPosition: {x: -44.4, y: 78.7, z: 68.7}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 132.174, y: 62.05699, z: -47.057007}
 --- !u!1001 &1722502613
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -207537,7 +207664,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: COMMON_NO
 --- !u!114 &257766511092523680
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -207550,7 +207677,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: SETTINGS_MUSIC_VOLUME
 --- !u!114 &292712053168221890
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -207563,7 +207690,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: SETTINGS_CAMERA_SENSITIVITY
 --- !u!114 &418116836634570656
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -207667,7 +207794,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: SETTINGS_VIBRATION
 --- !u!114 &514349945477827149
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -207680,7 +207807,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: COMMON_YES
 --- !u!114 &534627954529571315
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -207693,7 +207820,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: SETTINGS_INVERT_LOOK_GROUND
 --- !u!1 &536353226145250365
 GameObject:
   m_ObjectHideFlags: 0
@@ -207773,7 +207900,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: SETTINGS_FULLSCREEN
 --- !u!222 &661666397552966166
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -207794,7 +207921,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: COMMON_YES
 --- !u!114 &689332414682494127
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -207807,7 +207934,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: SETTINGS_CAMERA_CONTROLS
 --- !u!114 &690748710747547381
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -207820,7 +207947,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: COMMON_NO
 --- !u!114 &709621431714808928
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -207853,7 +207980,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: COMMON_YES
 --- !u!1 &754034821838342888
 GameObject:
   m_ObjectHideFlags: 0
@@ -207938,7 +208065,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: COMMON_NO
 --- !u!224 &786690950712775500
 RectTransform:
   m_ObjectHideFlags: 0
@@ -207970,7 +208097,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: SETTINGS_AUDIO
 --- !u!114 &793025532693277425
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -207983,7 +208110,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: SETTINGS_GENERAL
 --- !u!114 &844309822599424877
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -208080,7 +208207,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: SETTINGS_SFX_VOLUME
 --- !u!114 &879309376679555724
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -208093,7 +208220,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: COMMON_NO
 --- !u!114 &880795846283619550
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -208120,7 +208247,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: SETTINGS_TITLE
 --- !u!114 &946332317086628902
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -208133,7 +208260,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: SETTINGS_INVERT_LOOK_FLIGHT
 --- !u!114 &956783287216932251
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -208172,7 +208299,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: SETTINGS_LANGUAGE
 --- !u!114 &964325679207459805
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -208185,7 +208312,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: COMMON_YES
 --- !u!224 &972509088405467696
 RectTransform:
   m_ObjectHideFlags: 0
@@ -208217,7 +208344,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7ca985a393e3e4e99f6285b52132cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
-  _key: 
+  _key: SETTINGS_MASTER_VOLUME
 --- !u!114 &991602061302306129
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -214420,3 +214547,4 @@ SceneRoots:
   - {fileID: 1996418212}
   - {fileID: 666895260}
   - {fileID: 1532511250}
+  - {fileID: 1722494693}

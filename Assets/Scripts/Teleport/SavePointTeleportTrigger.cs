@@ -26,6 +26,15 @@ public class SavePointTeleportTrigger : MonoBehaviour
         [Header("Auto-register")]
         [Tooltip("Si true, desbloquea automáticamente este punto cuando el jugador entra al trigger.")]
         [SerializeField] private bool autoUnlockOnEnter = true;
+
+        [Header("Requisito (opcional)")]
+        [Tooltip("Si no está vacío, este SavePoint concreto no deja ABRIR el menú de teletransporte " +
+                 "(aunque el punto ya esté desbloqueado) hasta que el boss con este BattleId (ver " +
+                 "BossArenaController.BattleId / BossProgressTracker) haya sido derrotado. Pensado para " +
+                 "puntos dentro de zonas de las que no se debe poder escapar por teletransporte antes de " +
+                 "cumplir un hito (p.ej. INC: fast-travel para salir del castillo antes de vencer a " +
+                 "Demon_2). Vacío = sin restricción, comportamiento de siempre.")]
+        [SerializeField] private string requiredDefeatedBossId;
         
         private string _anchorId;
         private bool _playerInRange;
@@ -118,9 +127,46 @@ public class SavePointTeleportTrigger : MonoBehaviour
             // Detectar botón Y directamente
             if (IsYButtonPressed())
             {
+                if (!RequirementSatisfied())
+                {
+                    Debug.Log($"[SavePointTeleportTrigger] Botón Y presionado pero '{requiredDefeatedBossId}' no está derrotado todavía — menú bloqueado.");
+                    ShowBlockedMessage();
+                    return;
+                }
                 Debug.Log($"[SavePointTeleportTrigger] Botón Y presionado! Abriendo menú de teletransporte...");
                 OpenTeleportUI();
             }
+        }
+
+        /// <summary>
+        /// True si no hay requisito configurado, o si el boss indicado en `requiredDefeatedBossId`
+        /// ya consta como derrotado en BossProgressTracker (mismo tracker que usa StartBattleNode
+        /// para no volver a lanzar una batalla ya ganada al restaurar una partida).
+        /// </summary>
+        private bool RequirementSatisfied()
+        {
+            if (string.IsNullOrEmpty(requiredDefeatedBossId)) return true;
+            if (!BossProgressTracker.TryGetInstance(out var tracker)) return false;
+            return tracker.IsDefeated(requiredDefeatedBossId);
+        }
+
+        private float _lastBlockedMessageTime = -999f;
+        private const float BlockedMessageCooldown = 2f;
+
+        private void ShowBlockedMessage()
+        {
+            if (Time.time - _lastBlockedMessageTime < BlockedMessageCooldown) return;
+            _lastBlockedMessageTime = Time.time;
+
+            AudioService.Instance?.PlaySFX("ui_denied");
+
+            if (SpeechBubbleUI.Instance == null) return;
+            if (!PlayerService.TryGetPlayer(out var player, allowSceneLookup: true) || player == null) return;
+
+            string text = LocalizationManager.Instance != null
+                ? LocalizationManager.Instance.Get("TELEPORT_BLOCKED_BOSS", "No puedo teletransportarme fuera de aquí todavía.")
+                : "No puedo teletransportarme fuera de aquí todavía.";
+            SpeechBubbleUI.Instance.Show(player.transform, text, duration: 2.5f, speakerName: "Pensamiento");
         }
         
         private bool IsYButtonPressed()
@@ -166,7 +212,8 @@ public class SavePointTeleportTrigger : MonoBehaviour
         {
             bool shouldShow = _playerInRange && 
                               TeleportRegistry.IsSystemAvailable && 
-                              GameState.CanInteractGlobally;
+                              GameState.CanInteractGlobally &&
+                              RequirementSatisfied();
             
             // Buscar TeleportHintUI si no existe instancia
             var hintUI = TeleportHintUI.Instance;

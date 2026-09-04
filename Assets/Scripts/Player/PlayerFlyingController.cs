@@ -16,6 +16,19 @@ public class PlayerFlyingController : MonoBehaviour
 {
     private const float GroundCheckBuffer = 0.2f;
 
+    // FIX (1 sep 2026) — "la animación de vuelo se quita y se pone": IsGrounded() usa un
+    // Physics.CheckCapsule con un buffer pequeño (GroundCheckBuffer) contra el propio collider
+    // del jugador. Volar a baja altura o rozar el terreno es parte normal del mecanismo (picados,
+    // vuelo rasante) — bastaba un único frame de solape para que Update() llamara a ExitFlight()
+    // de inmediato: eso desactiva el controller, restaura la gravedad y hace
+    // PlayerActionManager.PopMode(ActionMode.Flying), así que el jugador empieza a caer aunque
+    // siga con la intención de volar, y vuelve a entrar en vuelo al reintentar — visible como que
+    // la animación se activa y desactiva en bucle. Igual que el resto del proyecto exige contacto
+    // sostenido antes de aceptar una transición de movimiento (ver
+    // FollowPlayerState._isFollowingSticky), exigimos que IsGrounded() se mantenga true durante
+    // este margen antes de aceptarlo como aterrizaje real.
+    private const float ExitFlightGroundedGrace = 0.12f;
+
     [Header("Animación")]
     [SerializeField] private int locomotionLayerIndex = 0;
     [SerializeField] private string flyIdleState = "fly_idle";
@@ -78,6 +91,7 @@ public class PlayerFlyingController : MonoBehaviour
     private float _flightArmedExpires = -1f;
     private bool _justEnteredFlight;
     private float _currentPitch = 0f;
+    private float _groundedWhileFlyingTimer;
     private bool _isPhysicsBobbingIdle;
     [SerializeField] private float flightArmedDuration = 2f;
 
@@ -233,8 +247,16 @@ public class PlayerFlyingController : MonoBehaviour
         {
             if (IsGrounded())
             {
-                ExitFlight();
-                return;
+                _groundedWhileFlyingTimer += Time.deltaTime;
+                if (_groundedWhileFlyingTimer >= ExitFlightGroundedGrace)
+                {
+                    ExitFlight();
+                    return;
+                }
+            }
+            else
+            {
+                _groundedWhileFlyingTimer = 0f;
             }
             CacheCameraTransform();
             UpdateFlightAnimation();
@@ -399,6 +421,7 @@ public class PlayerFlyingController : MonoBehaviour
              return;
 
          _isFlying = true;
+         _groundedWhileFlyingTimer = 0f;
          _visualRootHasBase = false; // Resetear bobbing visual para que capture la posición base
          _flightArmUntil = -1f;
         _isBoosting = false;

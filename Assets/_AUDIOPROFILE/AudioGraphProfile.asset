@@ -31,6 +31,9 @@ MonoBehaviour:
   - battleId: Demon_2
     music: {fileID: 8300000, guid: 07cc773f0bc0bdc4c81aa750fc13c0f0, type: 3}
     fade: 0
+  - battleId: MagoOscuro
+    music: {fileID: 8300000, guid: 6225624124611d3409894d8c340a342b, type: 3}
+    fade: 0
   minigames:
   - minigameId: TAG_MINIGAME_01
     music: {fileID: 8300000, guid: 7eb1b7c0d589a3b458134ef956f69bb2, type: 3}
@@ -60,6 +63,10 @@ MonoBehaviour:
     music: {fileID: 8300000, guid: 325160c1b0f253a44aabf1e5bc2334fd, type: 3}
   - sceneName: Credits
     music: {fileID: 8300000, guid: e4417147d8027ae48a5ef706f52635d8, type: 3}
+  - sceneName: Sendero
+    music: {fileID: 8300000, guid: d3c300de31b869f49b6a1b40d52a47ff, type: 3}
+  - sceneName: CandyLand
+    music: {fileID: 8300000, guid: 187aae3a437affa4eaf8dd12c5d4b5ea, type: 3}
   eventSfx:
   - eventKey: UI_Navigate
     sfx: {fileID: 8300000, guid: c83e31fc92bdc722b8d62fa8ebea0722, type: 3}
@@ -163,7 +170,7 @@ MonoBehaviour:
     sfx: {fileID: 8300000, guid: 904aab8dd539b6339b59bc7bbcce3d9c, type: 3}
   - eventKey: Weather_CloudsBuildingUp
     sfx: {fileID: 8300000, guid: 78445ad04988deebc8dab480cc805ed2, type: 3}
-  - eventKey: Weather_RainStopped
+  - eventKey: Weather_WindStarted
     sfx: {fileID: 8300000, guid: a812a3d9ad10a968dbf300f765adfd5b, type: 3}
   - eventKey: Weather_MistStarted
     sfx: {fileID: 8300000, guid: 61b85a9f921d76faface6e1dfe190aa9, type: 3}
@@ -219,6 +226,22 @@ MonoBehaviour:
     sfx: {fileID: 8300000, guid: 2a83d37b0efdcd38995e24281bf94c8c, type: 3}
   - eventKey: ReinoExit_PetalAmbience
     sfx: {fileID: 8300000, guid: a812a3d9ad10a968dbf300f765adfd5b, type: 3}
+  - eventKey: AuraEstelar
+    sfx: {fileID: 8300000, guid: 1e7cf86b0eaa41c49d070d110c2037f5, type: 3}
+  - eventKey: BolaFuego
+    sfx: {fileID: 8300000, guid: f18a0dcd1bbc4ee69cbc9056c3e13f00, type: 3}
+  - eventKey: Tornado
+    sfx: {fileID: 8300000, guid: b99f5f9d19da49380b531e1d6649a8de, type: 3}
+  - eventKey: GarraDelPacto
+    sfx: {fileID: 8300000, guid: d6195cb91af5b1db781bf8564703f1cd, type: 3}
+  - eventKey: Huracan
+    sfx: {fileID: 8300000, guid: 16cb1d54cff244feba29ad024e74a5a1, type: 3}
+  - eventKey: MagoOscuroGolpe
+    sfx: {fileID: 8300000, guid: 427e63a95b2a495298b2fd808a9d1b78, type: 3}
+  - eventKey: MagoOscuroGrieta
+    sfx: {fileID: 8300000, guid: e44bb15d0be184e228244208f1a94e2c, type: 3}
+  - eventKey: SelloDelPacto
+    sfx: {fileID: 8300000, guid: a9e925ca095e74c6781bc9cceafc6743, type: 3}
   sequences:
   - sequenceId: PROLOGUE_DREAM
     music: {fileID: 8300000, guid: c82b5bd2fe09f524dac157f5342aff1f, type: 3}
@@ -251,4 +274,20 @@ MonoBehaviour:
   - sequenceId: PROMO_1
     music: {fileID: 8300000, guid: 6904c00d6a7aa0848aa3348ca1abb7b4, type: 3}
     fadeIn: 0.5
+    fadeOut: 0.5
+  - sequenceId: MAGOOSCURO_REVEAL
+    music: {fileID: 8300000, guid: 2b6499ae1b7898d41ad775bffb9b370b, type: 3}
+    fadeIn: 0.5
+    fadeOut: 0.5
+  - sequenceId: MAGOOSCURO_VISION
+    music: {fileID: 8300000, guid: 3cc104b44c356344eab24aa874ae8bb8, type: 3}
+    fadeIn: 1
+    fadeOut: 0.5
+  - sequenceId: MAGOOSCURO_CLIMAX
+    music: {fileID: 8300000, guid: 026414a9a7500f74aa7c0a445d2dca9e, type: 3}
+    fadeIn: 0.5
+    fadeOut: 0.5
+  - sequenceId: EPILOGUE
+    music: {fileID: 8300000, guid: a3cc4bb37e6b3b14885e644f20e9271a, type: 3}
+    fadeIn: 1
     fadeOut: 0.5

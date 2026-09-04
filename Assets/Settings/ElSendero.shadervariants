@@ -22,8 +22,6 @@ ShaderVariantCollection:
         passType: 13
       - keywords: _ALPHABLEND_ON _EMISSION
         passType: 13
-      - keywords: _ALPHAPREMULTIPLY_ON
-        passType: 13
       - keywords: _EMISSION
         passType: 13
       - keywords: _EMISSION _METALLICGLOSSMAP _NORMALMAP
@@ -205,12 +203,6 @@ ShaderVariantCollection:
       - keywords: 
         passType: 13
       - keywords: ALPHA_FROM_GRAYSCALE ENABLE_DISSOLVE ENABLE_DISSOLVE_VERTEX_COLOR
-          ENABLE_DUAL_COLORS ENABLE_GLOW ENABLE_MASK_FLOW ENABLE_SOFTPARTICLES ENABLE_UV_NOISE
-        passType: 13
-      - keywords: ALPHA_FROM_GRAYSCALE ENABLE_DISSOLVE ENABLE_DISSOLVE_VERTEX_COLOR
-          ENABLE_DUAL_COLORS ENABLE_MASK_FLOW ENABLE_SOFTPARTICLES ENABLE_UV_NOISE
-        passType: 13
-      - keywords: ALPHA_FROM_GRAYSCALE ENABLE_DISSOLVE ENABLE_DISSOLVE_VERTEX_COLOR
           ENABLE_MASK_NOISE ENABLE_UV_NOISE
         passType: 13
       - keywords: ALPHA_FROM_GRAYSCALE ENABLE_DISSOLVE_VERTEX_COLOR ENABLE_MASK_NOISE
@@ -277,8 +269,6 @@ ShaderVariantCollection:
       - keywords: 
         passType: 13
       - keywords: BOOLEAN_0107A33C3886411D8E1319901D3A8A0D_ON
-        passType: 13
-      - keywords: BOOLEAN_6C4164AC_ON
         passType: 13
   - first: {fileID: 4800000, guid: 8c3bb6de0c0e7c047b65c077249507e5, type: 3}
     second:
@@ -421,11 +411,6 @@ ShaderVariantCollection:
       variants:
       - keywords: 
         passType: 13
-  - first: {fileID: 4800000, guid: 5a1405ce32c0b534ebf969b4706c9285, type: 3}
-    second:
-      variants:
-      - keywords: 
-        passType: 13
   - first: {fileID: -6465566751694194690, guid: bc491dafe2d343548802479cf756c86d, type: 3}
     second:
       variants:
@@ -442,6 +427,8 @@ ShaderVariantCollection:
     second:
       variants:
       - keywords: 
+        passType: 13
+      - keywords: UNDERLAY_ON
         passType: 13
   - first: {fileID: -6465566751694194690, guid: a3d800b099a06e0478fb790c5e79057a, type: 3}
     second:
@@ -569,6 +556,9 @@ ShaderVariantCollection:
       - keywords: _ALPHATEST_ON _DETAILMAPBLENDINGMODE_MULTIPLY _RECEIVE_SHADOWS_OFF
           _TEXTUREBLENDINGMODE_MULTIPLY
         passType: 13
+      - keywords: _BASEMAP_PREMULTIPLY _DETAILMAPBLENDINGMODE_MULTIPLY _RECEIVE_SHADOWS_OFF
+          _TEXTUREBLENDINGMODE_MULTIPLY
+        passType: 13
       - keywords: _DETAILMAPBLENDINGMODE_ADD _RECEIVE_SHADOWS_OFF _TEXTUREBLENDINGMODE_MULTIPLY
         passType: 13
       - keywords: _DETAILMAPBLENDINGMODE_ADD _TEXTUREBLENDINGMODE_MULTIPLY
@@ -673,21 +663,6 @@ ShaderVariantCollection:
     second:
       variants:
       - keywords: 
-        passType: 13
-  - first: {fileID: 4800000, guid: 3d7c3e4a8a6466a4d9e09a6d594daca1, type: 3}
-    second:
-      variants:
-      - keywords: 
-        passType: 13
-      - keywords: _EMISSION
-        passType: 13
-      - keywords: _EMISSION _METALLICSPECGLOSSMAP _NORMALMAP _OCCLUSIONMAP
-        passType: 13
-      - keywords: _EMISSION _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A _SPECULAR_SETUP
-        passType: 13
-      - keywords: _METALLICSPECGLOSSMAP _NORMALMAP _OCCLUSIONMAP
-        passType: 13
-      - keywords: _SPECULAR_SETUP
         passType: 13
   - first: {fileID: -6465566751694194690, guid: 2a1ff829940883c449bc7bba5e722d0b, type: 3}
     second:
@@ -989,4 +964,9 @@ ShaderVariantCollection:
     second:
       variants:
       - keywords: 
+        passType: 13
+  - first: {fileID: 4800000, guid: baa4978fe7ec49f59c6423c08bf57af1, type: 3}
+    second:
+      variants:
+      - keywords: _ALLOWALPHAOVERFLOW_OFF
         passType: 13

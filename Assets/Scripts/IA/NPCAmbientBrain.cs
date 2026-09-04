@@ -351,7 +351,16 @@ public class NPCAmbientBrain : MonoBehaviour
         var state = ResolveStateName(GetStateFor(action));
         if (!string.IsNullOrEmpty(state))
         {
-            if (!CrossFade(state, 0.08f))
+            // Drink (DrinkPotion_NoWeapon), Greet (Greeting01_NoWeapon) y Found
+            // (FoundSomething_NoWeapon) viven en la UpperBody layer (torso/brazos, sin
+            // piernas) para no pisar la Base Layer — el resto de acciones ambientales
+            // (Dance, Dizzy, Celebrate) siguen siendo poses de cuerpo completo en la capa 0.
+            int actionLayer = (action == AmbientAction.Drink || action == AmbientAction.Greet
+                || action == AmbientAction.Found) ? 1 : 0;
+            if (actionLayer == 1 && animator != null && animator.layerCount > 1)
+                animator.SetLayerWeight(1, 1f);
+
+            if (!CrossFade(state, 0.08f, actionLayer))
                 Debug.LogWarning($"[NPCAmbientBrain] No se encontró el estado '{state}'.", this);
 
             if (IsLoopingAction(action))
@@ -460,7 +469,11 @@ public class NPCAmbientBrain : MonoBehaviour
     {
         _greetOnCooldown = true;
 
-        if (CrossFade(greetState, 0.08f))
+        // Greeting01_NoWeapon vive en UpperBody layer (no debe congelar las piernas)
+        if (animator != null && animator.layerCount > 1)
+            animator.SetLayerWeight(1, 1f);
+
+        if (CrossFade(greetState, 0.08f, 1))
         {
             float len = _clipCache?.GetLength(ResolveStateName(greetState)) ?? 0f;
             yield return new WaitForSeconds(len > 0f ? len : 1f);
@@ -498,7 +511,10 @@ public class NPCAmbientBrain : MonoBehaviour
             _faceRoutine = StartCoroutine(FaceTarget(_player));
 
         float alertDuration = Mathf.Max(0f, challengeAlertMinSeconds);
-        if (CrossFade(challengeAlertState, 0.08f))
+        // FoundSomething_NoWeapon vive en UpperBody layer (no debe congelar las piernas)
+        if (animator != null && animator.layerCount > 1)
+            animator.SetLayerWeight(1, 1f);
+        if (CrossFade(challengeAlertState, 0.08f, 1))
         {
             float clipLen = _clipCache?.GetLength(ResolveStateName(challengeAlertState)) ?? 0f;
             if (clipLen > 0f)
@@ -597,10 +613,11 @@ public class NPCAmbientBrain : MonoBehaviour
         NavMeshAgentUtility.SafeSetStopped(_agent, true);
         if (ex) Destroy(ex);
 
+        // Challenging_NoWeapon vive en UpperBody layer (no debe congelar las piernas)
         if (animator != null && animator.layerCount > 1)
             animator.SetLayerWeight(1, 1f);
 
-        CrossFade(challengeState, 0.1f);
+        CrossFade(challengeState, 0.1f, 1);
 
         if (_interactable && _player)
         {
@@ -640,16 +657,16 @@ public class NPCAmbientBrain : MonoBehaviour
     }
 
     // ===== Helpers de estados/anim =====
-    bool CrossFade(string stateName, float fade)
+    bool CrossFade(string stateName, float fade, int layer = 0)
     {
         string resolved = ResolveStateName(stateName);
         if (string.IsNullOrEmpty(resolved) || animator == null)
             return false;
 
-        if (_stateCache != null && _stateCache.CrossFade(resolved, fade))
+        if (layer == 0 && _stateCache != null && _stateCache.CrossFade(resolved, fade))
             return true;
 
-        animator.CrossFadeInFixedTime(resolved, fade, 0, 0f);
+        animator.CrossFadeInFixedTime(resolved, fade, layer, 0f);
         return true;
     }
 

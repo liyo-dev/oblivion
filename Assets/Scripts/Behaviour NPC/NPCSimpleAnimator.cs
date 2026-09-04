@@ -306,8 +306,24 @@ public class NPCSimpleAnimator : MonoBehaviour
         var behaviourMgr = GetComponent<Game.NPC.NPCBehaviourManagerV2>();
         if (behaviourMgr != null && behaviourMgr.Configuration != null)
         {
-            _walkSpeed = Mathf.Max(0.1f, behaviourMgr.Configuration.walkSpeed);
-            _runSpeed  = Mathf.Max(_walkSpeed + 0.1f, behaviourMgr.Configuration.runSpeed);
+            // FIX (1 sep 2026) — INC-096/INC-097 seguían reproduciéndose en juego pese al fix del
+            // 25 ago: el blend walk/run se normalizaba contra Configuration.walkSpeed/runSpeed
+            // (1.5/4 en los prefabs de party — Estela, Liam), pensados para NPCs ambientales, y
+            // nunca se sincronizó con las velocidades reales que FollowPlayerState usa para mover
+            // al NavMeshAgent de un compañero (NPCPartyConfig.velocidadCaminando/velocidadCorriendo
+            // = 5/10, y hasta 25 durante el catch-up dinámico de sprint). Con el techo del blend en
+            // 4, cualquier velocidad real por encima de eso — que es casi siempre que el compañero
+            // se mueve, incluso andando — se clampaba (Mathf.Clamp01 en SyncWithNavMeshAgent) a
+            // normalizedSpeed=1.0: las piernas animan al ritmo fijo de "correr al máximo" mientras
+            // el cuerpo se desliza por el NavMesh a una velocidad mucho más alta y variable — el
+            // patinazo/trompicón reportado tanto andando despacio como esprintando. Si el NPC tiene
+            // partyConfig asignado, usamos sus velocidades reales de seguimiento en vez de las
+            // genéricas de Configuration.
+            var partyCfg = behaviourMgr.Configuration.partyConfig;
+            float walkSrc = partyCfg != null ? partyCfg.walkSpeed : behaviourMgr.Configuration.walkSpeed;
+            float runSrc  = partyCfg != null ? partyCfg.runSpeed  : behaviourMgr.Configuration.runSpeed;
+            _walkSpeed = Mathf.Max(0.1f, walkSrc);
+            _runSpeed  = Mathf.Max(_walkSpeed + 0.1f, runSrc);
         }
 
         // Bind to interactable if exists
@@ -646,6 +662,24 @@ public class NPCSimpleAnimator : MonoBehaviour
             _currentState = AnimationState.Idle;
             TransitionToIdle();
         }
+        else if (_isInteracting)
+        {
+            // FIX (30/08/2026, Raul: "hace la animacion de enfado, el bocadillo continua... se
+            // queda [congelado]"; ronda siguiente: "no hace las anumaciones de hablar tras la de
+            // enfado"): sin esto, al terminar el one-shot con _isInteracting=true (ver
+            // BeginInteraction/EndInteraction en ShowBubblePaged, CinematicSequencerBase.cs) este
+            // metodo no hacia NADA -- ni transicion a Idle (correctamente evitada, eso ya estaba
+            // bien) ni ningun otro estado -- dejando el Animator congelado en el ultimo frame del
+            // gesto (p.ej. "Angry01") indefinidamente. Con paginas de dialogo (ShowBubblePaged) mas
+            // largas que el clip del gesto, y sobre todo con loopAnim repitiendo el MISMO trigger en
+            // varias paginas seguidas, volver a cruzar a un estado en el que el Animator ya esta
+            // parado (congelado en su ultimo frame) no siempre reinicia el clip de forma visible.
+            // Se vuelve al interactState entre gestos -- mismo patron que PlayBodyEmotion() ya usa
+            // con exito mas abajo en este archivo -- asi el personaje queda con una pose neutra de
+            // "hablando" hasta el siguiente trigger, y cada retrigger es un crossfade limpio desde
+            // un estado distinto, siempre visible.
+            CrossFadeToState(interactState, 0.15f);
+        }
         
         _oneShotCoroutine = null;
     }
@@ -707,13 +741,26 @@ public class NPCSimpleAnimator : MonoBehaviour
     }
     
     /// <summary>
-    /// Reproduce un saludo
+    /// Reproduce el saludo configurado para ESTE NPC (greetingState, editable en el Inspector —
+    /// cada NPC puede tener su propio gesto: Greeting01_NoWeapon, HandWave02, Reverence01...).
     /// </summary>
-    public void PlayGreeting()
+    /// <param name="onComplete">
+    /// ✅ NUEVO (1 sep 2026, petición de Raúl): callback opcional invocado cuando el gesto termina
+    /// de verdad (mismo mecanismo que PlayOneShot). Si el guard de abajo impide reproducirlo
+    /// (_isInteracting activo o greetingState vacío), se invoca igualmente al momento para no
+    /// dejar colgado a quien esté esperando el callback — ver
+    /// NPCInteractiveNarrativeExecutor.ExecuteNarrativeChain.
+    /// </param>
+    public void PlayGreeting(Action onComplete = null)
     {
         if (!_isInteracting && !string.IsNullOrEmpty(greetingState))
         {
-            PlayOneShot(greetingState);
+            // El gesto configurado vive en UpperBody layer (no debe congelar las piernas)
+            PlayOneShot(greetingState, upperBodyLayer, onComplete);
+        }
+        else
+        {
+            onComplete?.Invoke();
         }
     }
     
@@ -751,7 +798,8 @@ public class NPCSimpleAnimator : MonoBehaviour
     {
         if (!string.IsNullOrEmpty(challengingState))
         {
-            PlayOneShot(challengingState);
+            // Challenging_NoWeapon vive en UpperBody layer (no debe congelar las piernas)
+            PlayOneShot(challengingState, upperBodyLayer);
         }
     }
     
@@ -762,7 +810,8 @@ public class NPCSimpleAnimator : MonoBehaviour
     {
         if (!string.IsNullOrEmpty(challengingState))
         {
-            PlayOneShot(challengingState, 0, () =>
+            // Challenging_NoWeapon vive en UpperBody layer (no debe congelar las piernas)
+            PlayOneShot(challengingState, upperBodyLayer, () =>
             {
                 _isInBattle = true;
                 _currentState = AnimationState.Battle;
@@ -786,13 +835,24 @@ public class NPCSimpleAnimator : MonoBehaviour
 
 
     /// <summary>
-    /// Reproduce animación de alerta
+    /// Reproduce la animación de alerta configurada para ESTE NPC (senseSomethingState, editable
+    /// en el Inspector).
     /// </summary>
-    public void PlaySenseSomething()
+    /// <param name="onComplete">
+    /// ✅ NUEVO (1 sep 2026): callback opcional invocado cuando la animación termina de verdad
+    /// (mismo mecanismo que PlayGreeting/PlayOneShot). Si senseSomethingState está vacío se
+    /// invoca igualmente al momento.
+    /// </param>
+    public void PlaySenseSomething(Action onComplete = null)
     {
         if (!string.IsNullOrEmpty(senseSomethingState))
         {
-            PlayOneShot(senseSomethingState);
+            // El gesto configurado vive en UpperBody layer (no debe congelar las piernas)
+            PlayOneShot(senseSomethingState, upperBodyLayer, onComplete);
+        }
+        else
+        {
+            onComplete?.Invoke();
         }
     }
     
@@ -805,7 +865,8 @@ public class NPCSimpleAnimator : MonoBehaviour
         if (!string.IsNullOrEmpty(searchingState))
         {
             Debug.Log($"[NPCAnimator:{gameObject.name}] 🔍 PlaySearching() - Buscando al jugador");
-            PlayOneShot(searchingState);
+            // SenseSomethingSearching_NoWeapon vive en UpperBody layer (no debe congelar las piernas)
+            PlayOneShot(searchingState, upperBodyLayer);
         }
     }
     
@@ -1089,6 +1150,22 @@ public class NPCSimpleAnimator : MonoBehaviour
         // Esto evita que al reactivar, el NPC gire hacia una dirección antigua
         _targetRotation = transform.rotation;
     }
+
+    /// <summary>
+    /// FIX INC-028: sincroniza únicamente el objetivo de rotación suave (_targetRotation) con la
+    /// rotación actual del transform, SIN tocar _disableAutoRotation (a diferencia de
+    /// EnableAutoRotation()). _targetRotation se cachea una sola vez en Awake() con la rotación
+    /// que el NPC tiene en la escena en ese momento; si después algo reposiciona/reorienta al NPC
+    /// externamente (p.ej. GameBootProfile aplicando la rotación persistida al cargar partida) sin
+    /// llamar a esto, ApplySmoothRotation() lo arrastra en los siguientes frames de vuelta hacia esa
+    /// rotación cacheada — SyncWithNavMeshAgent() no la actualiza mientras el agente esté parado/sin
+    /// path, así que un NPC quieto (p.ej. Eldran esperando fuera de la taberna) se queda girando
+    /// hacia la rotación por defecto de la escena en vez de mantener la que se acaba de restaurar.
+    /// </summary>
+    public void SyncTargetRotation()
+    {
+        _targetRotation = transform.rotation;
+    }
     
     #region Dialogue Events
     
@@ -1325,7 +1402,9 @@ public class NPCSimpleAnimator : MonoBehaviour
         if (string.IsNullOrEmpty(stateName))
             return; // Emoción sin animación corporal asignada: se mantiene la pose actual
 
-        PlayOneShot(stateName, 0, () =>
+        // Los gestos corporales de diálogo (Talk01-03, Angry01-02, Cry01, Laugh01, Fear01, etc.)
+        // viven en UpperBody layer para no congelar las piernas del NPC mientras gesticula.
+        PlayOneShot(stateName, upperBodyLayer, () =>
         {
             if (_isInteracting && _currentState != AnimationState.Dead)
                 CrossFadeToState(interactState, 0.15f);
@@ -1370,22 +1449,28 @@ public class NPCSimpleAnimator : MonoBehaviour
         if (string.IsNullOrEmpty(stateName) || _currentState == AnimationState.Dead)
             return;
 
+        // Los gestos sociales pueden vivir en el Base Layer (locomoción/pose completa) o en el
+        // UpperBody layer (gestos que no deben congelar las piernas, p.ej. Greeting01/HandWave01).
+        // AnimatorLayerUtil resuelve en qué layer existe realmente el estado antes de reproducirlo
+        // (misma utilidad compartida que usan PromoVideo01Sequencer y PlayerDialogueAnimator).
+        int resolvedLayer = AnimatorLayerUtil.ResolveLayer(animator, stateName, upperBodyLayer);
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        // Diagnóstico siempre visible (no depende de debugMode): si el estado no existe en el
-        // Base Layer del Animator Controller de este NPC en concreto, PlayOneShot fallará en
-        // silencio (CrossFadeToState solo loguea con debugMode activo). Esto confirma o descarta
-        // rápidamente si "no hacen animación al socializar" es un problema de contenido
-        // (estado/clip faltante en ESTE controller) y no de la lógica del encuentro.
-        if (animator != null && !animator.HasState(0, Animator.StringToHash(stateName)))
+        // Diagnóstico siempre visible (no depende de debugMode): si el estado no existe en NINGÚN
+        // layer del Animator Controller de este NPC en concreto, PlayOneShot fallará en silencio
+        // (CrossFadeToState solo loguea con debugMode activo). Esto confirma o descarta rápidamente
+        // si "no hacen animación al socializar" es un problema de contenido (estado/clip faltante
+        // en ESTE controller) y no de la lógica del encuentro.
+        if (animator != null && resolvedLayer < 0)
         {
             Debug.LogWarning($"[NPCAnimator:{gameObject.name}] ⚠️ PlaySocialGesture('{stateName}'): " +
-                $"ese estado no existe en el Base Layer del Animator Controller " +
+                $"ese estado no existe en ningún layer del Animator Controller " +
                 $"'{(animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name : "null")}'. " +
                 "El NPC se quedará callado en este gesto.");
         }
 #endif
 
-        PlayOneShot(stateName, 0, onComplete);
+        PlayOneShot(stateName, resolvedLayer >= 0 ? resolvedLayer : 0, onComplete);
     }
 
     /// <summary>
@@ -1414,7 +1499,8 @@ public class NPCSimpleAnimator : MonoBehaviour
         string[] options = { "Cheer01", "Cheer02", "HandClap01" };
         string chosen = options[UnityEngine.Random.Range(0, options.Length)];
 
-        PlayOneShot(chosen, 0, () =>
+        // Cheer01/Cheer02/HandClap01 viven en UpperBody layer (no deben congelar las piernas)
+        PlayOneShot(chosen, upperBodyLayer, () =>
         {
             if (!_isInBattle && !_isInteracting && _currentState != AnimationState.Dead)
                 TransitionToIdle();
@@ -1450,6 +1536,13 @@ public class NPCSimpleAnimator : MonoBehaviour
         // usa un controller sin ese Any State, así que para él esto es inofensivo.
         if (_isSeated)
             ForceGroundedForSit();
+
+        // Comer/beber viven en la UpperBody layer (torso/brazos, sin piernas) para no pisar la
+        // locomoción de la Base Layer — el NPC puede seguir de pie/caminando con normalidad
+        // mientras el gesto se reproduce encima. Ver GetActivityLayer().
+        int activityLayer = GetActivityLayer(activity);
+        if (activityLayer > 0 && animator != null && activityLayer < animator.layerCount)
+            animator.SetLayerWeight(activityLayer, 1f);
 
         if (_activityCoroutine != null)
             StopCoroutine(_activityCoroutine);
@@ -1503,6 +1596,12 @@ public class NPCSimpleAnimator : MonoBehaviour
         // Devolver el prop a su posición original antes de volver al idle
         worldPoint?.DetachProp();
 
+        // Si la actividad usaba la UpperBody layer (comer/beber), soltarla al terminar para no
+        // dejar el torso "congelado" en la última pose sobre la locomoción normal.
+        int activityLayer = GetActivityLayer(activity);
+        if (activityLayer > 0 && animator != null && activityLayer < animator.layerCount)
+            animator.SetLayerWeight(activityLayer, 0f);
+
         string exitState = GetActivityExitState(activity);
         if (!string.IsNullOrEmpty(exitState) && animator != null && animator.HasState(0, Animator.StringToHash(exitState)))
         {
@@ -1521,6 +1620,7 @@ public class NPCSimpleAnimator : MonoBehaviour
 
         string beginState = GetActivityBeginState(activity);
         string loopState  = GetActivityLoopState(activity);
+        int layer = GetActivityLayer(activity);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         // Diagnóstico (15 ago 2026): a diferencia de PlaySocialGesture (que sí avisa si el estado
@@ -1532,32 +1632,49 @@ public class NPCSimpleAnimator : MonoBehaviour
         // práctica si es un problema de CONTENIDO (clip/estado faltante en ESTE controller en
         // concreto) y no de la lógica que llama a PlayAmbientActivity — que si llega hasta aquí,
         // ya está haciendo su parte correctamente.
-        bool hasBeginState = !string.IsNullOrEmpty(beginState) && animator != null && animator.HasState(0, Animator.StringToHash(beginState));
-        bool hasLoopState  = !string.IsNullOrEmpty(loopState)  && animator != null && animator.HasState(0, Animator.StringToHash(loopState));
+        bool hasBeginState = !string.IsNullOrEmpty(beginState) && animator != null && animator.HasState(layer, Animator.StringToHash(beginState));
+        bool hasLoopState  = !string.IsNullOrEmpty(loopState)  && animator != null && animator.HasState(layer, Animator.StringToHash(loopState));
         if (!hasBeginState && !hasLoopState && (!string.IsNullOrEmpty(beginState) || !string.IsNullOrEmpty(loopState)))
         {
             Debug.LogWarning($"[NPCAnimator:{gameObject.name}] ⚠️ PlayAmbientActivity({activity}): ni '{beginState}' ni '{loopState}' " +
-                $"existen en el Base Layer del Animator Controller " +
+                $"existen en la layer {layer} del Animator Controller " +
                 $"'{(animator != null && animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name : "null")}'. " +
                 "El NPC se quedará de pie en vez de sentarse — revisar si los clips están importados y wireados en ESE controller.");
         }
 #endif
 
         // Animación de inicio (one-shot)
-        if (!string.IsNullOrEmpty(beginState) && animator != null && animator.HasState(0, Animator.StringToHash(beginState)))
+        if (!string.IsNullOrEmpty(beginState) && animator != null && animator.HasState(layer, Animator.StringToHash(beginState)))
         {
-            CrossFadeToState(beginState, 0.2f);
+            CrossFadeToState(beginState, 0.2f, layer);
             float clipLen = GetClipLength(beginState);
             yield return new WaitForSeconds(Mathf.Max(0.1f, clipLen));
         }
 
         // Loop hasta que se interrumpa externamente
-        if (!string.IsNullOrEmpty(loopState) && animator != null && animator.HasState(0, Animator.StringToHash(loopState)))
+        if (!string.IsNullOrEmpty(loopState) && animator != null && animator.HasState(layer, Animator.StringToHash(loopState)))
         {
-            CrossFadeToState(loopState, 0.15f);
+            CrossFadeToState(loopState, 0.15f, layer);
         }
 
         _activityCoroutine = null;
+    }
+
+    /// <summary>
+    /// Capa del Animator en la que vive cada actividad ambiental. Comer y beber viven en la
+    /// UpperBody layer (torso/brazos, AvatarMask sin piernas) para que el NPC pueda seguir de pie
+    /// o caminando con su locomoción normal de la Base Layer mientras el gesto se reproduce
+    /// encima; el resto de actividades (sentarse, dormir) siguen siendo poses de cuerpo completo
+    /// en la Base Layer (capa 0).
+    /// </summary>
+    private int GetActivityLayer(NPCAmbientActivity activity)
+    {
+        return activity switch
+        {
+            NPCAmbientActivity.Eat   => upperBodyLayer,
+            NPCAmbientActivity.Drink => upperBodyLayer,
+            _                        => 0
+        };
     }
 
     private static string GetActivityBeginState(NPCAmbientActivity activity)
@@ -1661,6 +1778,17 @@ public class NPCSimpleAnimator : MonoBehaviour
 
     private void StartIdleVariations()
     {
+        // FIX 4 sep 2026 (petición de Raúl: "vamos a quitar que no cambie de idle porque no me
+        // gustan las animaciones, que se quede con el idle normal"): se desactiva la
+        // funcionalidad entera aquí, en vez de solo cambiar el valor por defecto de
+        // enableIdleVariations — ese campo ya viene serializado a `true` en el Inspector de
+        // muchos NPCs existentes, así que cambiar el default en el script no les habría afectado.
+        // Con este return incondicional NINGÚN NPC vuelve a cambiar de idle, sea cual sea el
+        // valor guardado en su prefab/instancia; se deja el resto del sistema (campos, coroutine)
+        // intacto por si se quiere reactivar más adelante.
+        return;
+
+#pragma warning disable CS0162 // código inalcanzable a propósito, ver comentario arriba
         if (!enableIdleVariations || idleVariationStates == null || idleVariationStates.Length == 0)
             return;
         if (_isInBattle || _isInteracting || _currentState == AnimationState.Dead)
@@ -1668,6 +1796,7 @@ public class NPCSimpleAnimator : MonoBehaviour
 
         StopIdleVariations();
         _idleVariationCoroutine = StartCoroutine(IdleVariationLoop());
+#pragma warning restore CS0162
     }
 
     private void StopIdleVariations()

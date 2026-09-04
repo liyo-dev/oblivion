@@ -5,12 +5,8 @@
             "value": "Fish Kid's Friend"
         },
         {
-            "key": "CHAR_ANTIPATICO",
-            "value": "Grumpy"
-        },
-        {
-            "key": "CHAR_COMERCIANTE",
-            "value": "Merchant"
+            "key": "CHAR_DUQUE_REGALIZ",
+            "value": "Duke of Licorice"
         },
         {
             "key": "CHAR_ELDRAN",
@@ -25,6 +21,10 @@
             "value": "Guard"
         },
         {
+            "key": "CHAR_GUARDIA_BOSQUE",
+            "value": "Forest Guard"
+        },
+        {
             "key": "CHAR_GUERRERACHINA",
             "value": "Erika"
         },
@@ -37,16 +37,12 @@
             "value": "Leonardo"
         },
         {
-            "key": "CHAR_LETY_VICKY",
-            "value": "Lety & Vicky"
-        },
-        {
             "key": "CHAR_LETY",
             "value": "Lety"
         },
         {
-            "key": "CHAR_VICKY",
-            "value": "Vicky"
+            "key": "CHAR_LETY_VICKY",
+            "value": "Lety & Vicky"
         },
         {
             "key": "CHAR_LIAM",
@@ -61,12 +57,8 @@
             "value": "Manuel"
         },
         {
-            "key": "CHAR_MERCHANT",
-            "value": "Merchant"
-        },
-        {
-            "key": "CHAR_NARRATOR",
-            "value": "Narrator"
+            "key": "CHAR_MAZAPAN",
+            "value": "Marzipan Creature"
         },
         {
             "key": "CHAR_NIÑOPEZ",
@@ -105,12 +97,20 @@
             "value": "Sofia"
         },
         {
+            "key": "CHAR_TABERNERA",
+            "value": "Rosa"
+        },
+        {
             "key": "CHAR_TENDERA",
             "value": "Bárbara"
         },
         {
             "key": "CHAR_VERONICA",
             "value": "Veronica"
+        },
+        {
+            "key": "CHAR_VICKY",
+            "value": "Vicky"
         },
         {
             "key": "CHAR_VICTORIA",
@@ -218,7 +218,7 @@
         },
         {
             "key": "DLG_AMIGAPEZ_03",
-            "value": "Sometimes it camouflages with <sprite name=\"algas\">."
+            "value": "Sometimes it camouflages with Seaweed <sprite name=\"algas\">."
         },
         {
             "key": "DLG_AMIGAPEZ_04",
@@ -246,7 +246,7 @@
         },
         {
             "key": "DLG_ANTIPATICO_05",
-            "value": "Look, let's make a deal: if you find my <sprite name=\"boots\"> you can keep them."
+            "value": "Look, let's make a deal: if you find my Boots <sprite name=\"boots\"> you can keep them."
         },
         {
             "key": "DLG_ANTIPATICO_06",
@@ -258,7 +258,7 @@
         },
         {
             "key": "DLG_ANTIPATICO_IN_PROGRESS",
-            "value": "Look for the <sprite name=\"boots\"> near the sea. I was swimming around there."
+            "value": "Look for the Boots <sprite name=\"boots\"> near the sea. I was swimming around there."
         },
         {
             "key": "DLG_ANTIPATICO_TURNIN_01",
@@ -271,6 +271,78 @@
         {
             "key": "DLG_ANTIPATICO_TURNIN_03",
             "value": "With them, you'll be able to jump. You're welcome, kid... Now get out of my sight."
+        },
+        {
+            "key": "DLG_CANDYLAND_01",
+            "value": "Everyone, rise! Candyland welcomes its new sovereign... the smiling Queen Estela!"
+        },
+        {
+            "key": "DLG_CANDYLAND_02",
+            "value": "His Grace the Duke of Licorice has spoken. Bow, commoners. I've already bowed three times myself, just in case."
+        },
+        {
+            "key": "DLG_CANDYLAND_03",
+            "value": "Liam? Since when do you talk... like that?"
+        },
+        {
+            "key": "DLG_CANDYLAND_04",
+            "value": "Since they gave me this doublet and a spun-sugar wig. It works."
+        },
+        {
+            "key": "DLG_CANDYLAND_05",
+            "value": "Smile, Your Majesty. NO ONE frowns here. Constant joy, article one of my kingdom."
+        },
+        {
+            "key": "DLG_CANDYLAND_06",
+            "value": "Excuse me? I don't smile on command, not for an entire kingdom of whipped cream."
+        },
+        {
+            "key": "DLG_CANDYLAND_07",
+            "value": "You dare defy me? Look closely at what awaits those who don't smile enough."
+        },
+        {
+            "key": "DLG_CANDYLAND_08",
+            "value": "I've... I've been trying to smile harder for three days..."
+        },
+        {
+            "key": "DLG_CANDYLAND_09",
+            "value": "That's the saddest thing I've ever heard. And believe me, I eat terribly when I'm sad. I'm not pretending to be \"sweet\" for anyone. I never have been, and I'm not starting today."
+        },
+        {
+            "key": "DLG_CANDYLAND_10",
+            "value": "That's the Estela we know."
+        },
+        {
+            "key": "DLG_CANDYLAND_11",
+            "value": "(quietly, dropping the courtier voice) For once, I agree with the plan to stop pretending. Though I'm keeping the doublet, it really does suit me."
+        },
+        {
+            "key": "DLG_CANDYLAND_12",
+            "value": "This is treason against the Crown of Candy! Guards... marzipan guards, arrest her!"
+        },
+        {
+            "key": "DLG_CANDYLAND_13",
+            "value": "Not a chance. No more pretending."
+        },
+        {
+            "key": "DLG_CANDYLAND_14",
+            "value": "Free! Finally I can frown in peace!"
+        },
+        {
+            "key": "DLG_CANDYLAND_15",
+            "value": "No... my kingdom of lies... it's crumbling..."
+        },
+        {
+            "key": "DLG_CANDYLAND_16",
+            "value": "One less kingdom faking it. Now... is anyone else hungry? All this licorice talk gave me a terrible craving."
+        },
+        {
+            "key": "DLG_CANDYLAND_17",
+            "value": "I'm going to pretend I didn't hear that."
+        },
+        {
+            "key": "DLG_ELDRAN_ARRESTO_DESPEDIDA",
+            "value": "I'll wait for you out here. I'll try to talk to someone to get you out... though, knowing you're going in with Estela, I doubt you'll last long in there."
         },
         {
             "key": "DLG_ELDRAN_MISSION1_01",
@@ -377,8 +449,12 @@
             "value": "Here, some coins for your help."
         },
         {
+            "key": "DLG_ELDRAN_MISSION3_COMEWITHME_01",
+            "value": "Well done, Will! By the way... come with me, there's something I want to show you before I go."
+        },
+        {
             "key": "DLG_ELDRAN_MISSION3_COMPLETE",
-            "value": "Well done! I'll be waiting for you at your front door, come when you are ready."
+            "value": "Well done, Will... truly. But we'll talk about it calmly later. Now come with me — I want to show you something before we go."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_01",
@@ -414,7 +490,7 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_09",
-            "value": "Then buy a <sprite name=\"lifePotion\"> at any shop."
+            "value": "Then buy a Health Potion <sprite name=\"lifePotion\"> at any shop."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_10",
@@ -426,7 +502,7 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION5_PROGRESS_02",
-            "value": "You can find the <sprite name=\"lifePotion\"> at any shop in the kingdom."
+            "value": "You can find the Health Potion <sprite name=\"lifePotion\"> at any shop in the kingdom."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_PROGRESS_03",
@@ -497,8 +573,24 @@
             "value": "Well, we better not talk here, see you at the tavern."
         },
         {
-            "key": "DLG_ELDRAN_MISSION6_TURNIN_05",
-            "value": "Finally! I can't think straight on an empty stomach."
+            "key": "DLG_ELDRAN_SAVEPOINT_01",
+            "value": "This is a Save Point, Will."
+        },
+        {
+            "key": "DLG_ELDRAN_SAVEPOINT_02",
+            "value": "Here you can save your game and rest to recover your health and mana, so don't hesitate to use it whenever you need to."
+        },
+        {
+            "key": "DLG_ELDRAN_SAVEPOINT_03",
+            "value": "Well, now you know what matters. I'll let you keep exploring."
+        },
+        {
+            "key": "DLG_ELDRAN_SAVEPOINT_TURNIN_01",
+            "value": "Take care, Will. See you soon."
+        },
+        {
+            "key": "DLG_ESTELA_ARRESTO_INDIGNADA",
+            "value": "What?! That's not fair, we were all there!"
         },
         {
             "key": "DLG_ESTELA_BOSQUE_00",
@@ -525,28 +617,8 @@
             "value": "And now, thanks to me, you can also switch characters. Press <sprite name=\"interactable_dpad_right\"> to the right to switch."
         },
         {
-            "key": "DLG_ESTELA_PRISION_00",
-            "value": "Great... now what do we do?"
-        },
-        {
-            "key": "DLG_ESTELA_PRISION_01",
-            "value": "Well, it's obvious, isn't it?"
-        },
-        {
             "key": "DLG_ESTELA_PRISION_02",
             "value": "Leave it to me, I'll blow this place sky-high."
-        },
-        {
-            "key": "DLG_ESTELA_PRISION_03",
-            "value": "Calm down, guys. The best thing is to try and reason with the King."
-        },
-        {
-            "key": "DLG_ESTELA_PRISION_04",
-            "value": "To be honest, with demons and golems threatening the kingdom... I don't feel very safe locked up in here."
-        },
-        {
-            "key": "DLG_ESTELA_PRISION_05",
-            "value": "You're right..."
         },
         {
             "key": "DLG_ESTELA_PRISION_06",
@@ -555,14 +627,6 @@
         {
             "key": "DLG_ESTELA_PRISION_07",
             "value": "No! Listen..."
-        },
-        {
-            "key": "DLG_ESTELA_PRISION_08",
-            "value": "Will, let's find a way out of here..."
-        },
-        {
-            "key": "DLG_ESTELA_PRISION_09",
-            "value": "That way, once we're out, Eldran can talk to the King and tell him what happened while we try to figure out what's going on."
         },
         {
             "key": "DLG_ESTELA_PRISION_10",
@@ -630,11 +694,11 @@
         },
         {
             "key": "DLG_GUARD_02",
-            "value": "By order of his majesty, you must come with me."
+            "value": "By order of his majesty, you three must come with me."
         },
         {
             "key": "DLG_GUARD_03",
-            "value": "Don't let anyone fall behind."
+            "value": "Who did this?"
         },
         {
             "key": "DLG_GUARD_04",
@@ -647,6 +711,22 @@
         {
             "key": "DLG_GUARD_06",
             "value": "Follow me, and don't lag behind."
+        },
+        {
+            "key": "DLG_GUARDIABOSQUE_01",
+            "value": "This forest used to be peaceful... until the spiders took over the paths."
+        },
+        {
+            "key": "DLG_GUARDIABOSQUE_02",
+            "value": "Clear them out and you'll have my gratitude. And something more."
+        },
+        {
+            "key": "DLG_GUARDIABOSQUE_03",
+            "value": "You can still hear spiders among the trees. Don't let your guard down."
+        },
+        {
+            "key": "DLG_GUARDIABOSQUE_04",
+            "value": "The forest breathes easy again. Here, you've earned this."
         },
         {
             "key": "DLG_GUERRERACHINA_01",
@@ -691,6 +771,10 @@
         {
             "key": "DLG_GUERRERACHINA_DEFEAT",
             "value": "Keep training to become a great wizard."
+        },
+        {
+            "key": "DLG_GUERRERACHINA_TARGETLOCK",
+            "value": "You can also press F or click the right stick during any fight to lock or release your target — useful if you need to look away from your enemy."
         },
         {
             "key": "DLG_KING_01",
@@ -793,6 +877,18 @@
             "value": "I will wait for you at the kingdom entrance."
         },
         {
+            "key": "DLG_LETY_ALERT_01",
+            "value": "Look Vicky, an easy target."
+        },
+        {
+            "key": "DLG_LETY_ALERT_02",
+            "value": "Let's have some fun with you."
+        },
+        {
+            "key": "DLG_LETY_DIZZY",
+            "value": "Run Vicky, run..."
+        },
+        {
             "key": "DLG_LETY_VICKY_ALERT_01",
             "value": "Look Vicky, an easy target."
         },
@@ -813,32 +909,8 @@
             "value": "Run Vicky, run..."
         },
         {
-            "key": "DLG_LETY_ALERT_01",
-            "value": "Look Vicky, an easy target."
-        },
-        {
-            "key": "DLG_LETY_ALERT_02",
-            "value": "Let's have some fun with you."
-        },
-        {
-            "key": "DLG_VICKY_ALERT_01",
-            "value": "I see, Lety... watch out boy, here comes our dual attack."
-        },
-        {
-            "key": "DLG_VICKY_ALERT_02",
-            "value": "By the way, kid, whenever you want to change your attack focus..."
-        },
-        {
-            "key": "DLG_VICKY_ALERT_03",
-            "value": "You can press <sprite name=\"interactable_rb\"> or <sprite name=\"interactable_lb\">"
-        },
-        {
-            "key": "DLG_LETY_DIZZY",
-            "value": "Run Vicky, run..."
-        },
-        {
-            "key": "DLG_VICKY_DIZZY",
-            "value": "No... Lety, be careful, you're on your own now."
+            "key": "DLG_LIAM_ARRESTO_ACUSA",
+            "value": "Yeah, it was her!"
         },
         {
             "key": "DLG_MAGO#1_ALERT",
@@ -869,6 +941,22 @@
             "value": "What you see between those pillars is a save point. Approach it and you can save your game."
         },
         {
+            "key": "DLG_MANUEL_POCIONES_01",
+            "value": "Good thing you're here. My grandmother has been very weak for days and I can't find health potions anywhere."
+        },
+        {
+            "key": "DLG_MANUEL_POCIONES_02",
+            "value": "Could you get me 2 health potions? I'll give you something special in return, I promise."
+        },
+        {
+            "key": "DLG_MANUEL_POCIONES_03",
+            "value": "Do you have the potions yet? My grandmother needs them as soon as possible."
+        },
+        {
+            "key": "DLG_MANUEL_POCIONES_04",
+            "value": "Thank you so much! This will help her a lot. Here, I wanted you to have this — it'll look great on you."
+        },
+        {
             "key": "DLG_NIÑOPEZ_01",
             "value": "Glub! Sorry, sometimes I forget to speak air."
         },
@@ -878,7 +966,7 @@
         },
         {
             "key": "DLG_NIÑOPEZ_03",
-            "value": "But I can't get in the water without my camouflage <sprite name=\"algas\">,"
+            "value": "But I can't get in the water without my camouflage Seaweed <sprite name=\"algas\">,"
         },
         {
             "key": "DLG_NIÑOPEZ_04",
@@ -890,7 +978,7 @@
         },
         {
             "key": "DLG_NIÑOPEZ_ALGAS_PROGRRESS",
-            "value": "I'm sure someone in the Kingdom has <sprite name=\"algas\">..."
+            "value": "I'm sure someone in the Kingdom has Seaweed <sprite name=\"algas\">..."
         },
         {
             "key": "DLG_NIÑOPEZ_CARACOLA_01",
@@ -906,7 +994,7 @@
         },
         {
             "key": "DLG_NIÑOPEZ_TURNIN_01",
-            "value": "Oh thank you so much, now that I have my <sprite name=\"algas\"> I can go into the sea."
+            "value": "Oh thank you so much, now that I have my Seaweed <sprite name=\"algas\"> I can go into the sea."
         },
         {
             "key": "DLG_NIÑOPEZ_TURNIN_02",
@@ -919,6 +1007,22 @@
         {
             "key": "DLG_NORA_01",
             "value": "I love warm hugs."
+        },
+        {
+            "key": "DLG_NORA_POCIONES_01",
+            "value": "Great timing! I've been wanting to try a new spell for days, but I need more magic energy than I have."
+        },
+        {
+            "key": "DLG_NORA_POCIONES_02",
+            "value": "If you get me 3 magic potions, I'll make it worth your while, I promise!"
+        },
+        {
+            "key": "DLG_NORA_POCIONES_03",
+            "value": "Do you have the 3 magic potions yet? I can't wait to try the spell."
+        },
+        {
+            "key": "DLG_NORA_POCIONES_04",
+            "value": "Great, now I can try it! Here, this is for you, for the trouble."
         },
         {
             "key": "DLG_OLIVER_MENUS_01",
@@ -949,10 +1053,6 @@
             "value": "With the quest menu open, you can edit them if you press <sprite name=\"interactable_dpad_up\"> <gpadonly>UP</gpadonly> again."
         },
         {
-            "key": "DLG_OLIVER_MENUS_08",
-            "value": "And now for a little break, what a busy morning..."
-        },
-        {
             "key": "DLG_PIRATE_01",
             "value": "See this eye?"
         },
@@ -974,11 +1074,11 @@
         },
         {
             "key": "DLG_ROBERTO_02",
-            "value": "If you bring me a <sprite name=\"lifePotion\"> I can give you something you'll like..."
+            "value": "If you bring me a Health Potion <sprite name=\"lifePotion\"> I can give you something you'll like..."
         },
         {
             "key": "DLG_ROBERTO_03",
-            "value": "I hope you can get a <sprite name=\"lifePotion\"> for my dizziness."
+            "value": "I hope you can get a Health Potion <sprite name=\"lifePotion\"> for my dizziness."
         },
         {
             "key": "DLG_ROBERTO_04",
@@ -994,11 +1094,27 @@
         },
         {
             "key": "DLG_RUDOLFO_COMPLETE_03",
-            "value": "I hope my <sprite name=\"boots\"> fit you well. Bye."
+            "value": "I hope my Boots <sprite name=\"boots\"> fit you well. Bye."
         },
         {
             "key": "DLG_SARA_01",
             "value": "I love you."
+        },
+        {
+            "key": "DLG_TABERNERA_ALGAS_01",
+            "value": "Ugh, my head... Last night's party at the tavern ran way too long. I need to make my hangover remedy, but I'm out of seaweed."
+        },
+        {
+            "key": "DLG_TABERNERA_ALGAS_02",
+            "value": "Could you bring me 2 seaweed? I'll pay you well for it, I promise."
+        },
+        {
+            "key": "DLG_TABERNERA_ALGAS_03",
+            "value": "Do you have the seaweed yet? I need it for the remedy, the sooner the better."
+        },
+        {
+            "key": "DLG_TABERNERA_ALGAS_04",
+            "value": "Perfect, just what I needed! Here, this is for you. Now I can finally cure this hangover."
         },
         {
             "key": "DLG_TENDERA_01",
@@ -1006,7 +1122,23 @@
         },
         {
             "key": "DLG_TENDERA_02",
-            "value": "But take some <sprite name=\"algas\">, I have plenty to spare."
+            "value": "But take some Seaweed <sprite name=\"algas\">, I have plenty to spare."
+        },
+        {
+            "key": "DLG_TENDERA_ALGAS_01",
+            "value": "I need a couple of magic potions for my remedies, and I’ve run out at the shop."
+        },
+        {
+            "key": "DLG_TENDERA_ALGAS_02",
+            "value": "Bring me two magic potions and I’ll give you fresh algae in return — I have plenty."
+        },
+        {
+            "key": "DLG_TENDERA_ALGAS_03",
+            "value": "Do you have the magic potions yet? I need them for my remedies."
+        },
+        {
+            "key": "DLG_TENDERA_ALGAS_04",
+            "value": "Just what I needed. Here, the algae are yours — good trade."
         },
         {
             "key": "DLG_VERONICA_01",
@@ -1027,6 +1159,22 @@
         {
             "key": "DLG_VERONICA_05",
             "value": "Better not try it..."
+        },
+        {
+            "key": "DLG_VICKY_ALERT_01",
+            "value": "I see, Lety... watch out boy, here comes our dual attack."
+        },
+        {
+            "key": "DLG_VICKY_ALERT_02",
+            "value": "By the way, kid, whenever you want to change your attack focus..."
+        },
+        {
+            "key": "DLG_VICKY_ALERT_03",
+            "value": "You can press <sprite name=\"interactable_rb\"> or <sprite name=\"interactable_lb\">"
+        },
+        {
+            "key": "DLG_VICKY_DIZZY",
+            "value": "No... Lety, be careful, you're on your own now."
         },
         {
             "key": "DLG_VICTORIA_01",
@@ -1053,6 +1201,10 @@
             "value": "My shop is closed. Come back later."
         },
         {
+            "key": "DLG_WILL_ARRESTO_ACUSA",
+            "value": "It was her!"
+        },
+        {
             "key": "DLG_WOODS_GUARD",
             "value": "Only wizards are allowed into the forbidden forest."
         },
@@ -1066,7 +1218,7 @@
         },
         {
             "key": "LORE_CELDA_11",
-            "value": "Now you can use the split party function, so each of us can handle a task."
+            "value": "I think if we split up we can move faster, each of us can handle something different."
         },
         {
             "key": "LORE_CELDA_12",
@@ -1090,7 +1242,7 @@
         },
         {
             "key": "LORE_CELDA_7",
-            "value": "If all the trials are passed, the Path can grant each person a wish at the end."
+            "value": "If all the trials are passed, the Path can grant a single wish at the end."
         },
         {
             "key": "LORE_CELDA_8",
@@ -1165,112 +1317,8 @@
             "value": "Nothing. Sometimes I think that's the day I started to exist."
         },
         {
-            "key": "DLG_GUARDIABOSQUE_01",
-            "value": "This forest used to be peaceful... until the spiders took over the paths."
-        },
-        {
-            "key": "DLG_GUARDIABOSQUE_02",
-            "value": "Clear them out and you'll have my gratitude. And something more."
-        },
-        {
-            "key": "DLG_GUARDIABOSQUE_03",
-            "value": "You can still hear spiders among the trees. Don't let your guard down."
-        },
-        {
-            "key": "DLG_GUARDIABOSQUE_04",
-            "value": "The forest breathes easy again. Here, you've earned this."
-        },
-        {
-            "key": "DLG_TENDERA_ALGAS_01",
-            "value": "I need a couple of magic potions for my remedies, and I’ve run out at the shop."
-        },
-        {
-            "key": "DLG_TENDERA_ALGAS_02",
-            "value": "Bring me two magic potions and I’ll give you fresh algae in return — I have plenty."
-        },
-        {
-            "key": "DLG_TENDERA_ALGAS_03",
-            "value": "Do you have the magic potions yet? I need them for my remedies."
-        },
-        {
-            "key": "DLG_TENDERA_ALGAS_04",
-            "value": "Just what I needed. Here, the algae are yours — good trade."
-        },
-        {
             "key": "QUEST_ELDRAN_MISSION12_DESC_02",
             "value": "Talk to the King."
-        },
-        {
-            "key": "CHAR_TABERNERA",
-            "value": "Rosa"
-        },
-        {
-            "key": "DLG_TABERNERA_ALGAS_01",
-            "value": "Ugh, my head... Last night's party at the tavern ran way too long. I need to make my hangover remedy, but I'm out of seaweed."
-        },
-        {
-            "key": "DLG_TABERNERA_ALGAS_02",
-            "value": "Could you bring me 2 seaweed? I'll pay you well for it, I promise."
-        },
-        {
-            "key": "DLG_TABERNERA_ALGAS_03",
-            "value": "Do you have the seaweed yet? I need it for the remedy, the sooner the better."
-        },
-        {
-            "key": "DLG_TABERNERA_ALGAS_04",
-            "value": "Perfect, just what I needed! Here, this is for you. Now I can finally cure this hangover."
-        },
-        {
-            "key": "DLG_MANUEL_POCIONES_01",
-            "value": "Good thing you're here. My grandmother has been very weak for days and I can't find health potions anywhere."
-        },
-        {
-            "key": "DLG_MANUEL_POCIONES_02",
-            "value": "Could you get me 2 health potions? I'll give you something special in return, I promise."
-        },
-        {
-            "key": "DLG_MANUEL_POCIONES_03",
-            "value": "Do you have the potions yet? My grandmother needs them as soon as possible."
-        },
-        {
-            "key": "DLG_MANUEL_POCIONES_04",
-            "value": "Thank you so much! This will help her a lot. Here, I wanted you to have this — it'll look great on you."
-        },
-        {
-            "key": "DLG_NORA_POCIONES_01",
-            "value": "Great timing! I've been wanting to try a new spell for days, but I need more magic energy than I have."
-        },
-        {
-            "key": "DLG_NORA_POCIONES_02",
-            "value": "If you get me 3 magic potions, I'll make it worth your while, I promise!"
-        },
-        {
-            "key": "DLG_NORA_POCIONES_03",
-            "value": "Do you have the 3 magic potions yet? I can't wait to try the spell."
-        },
-        {
-            "key": "DLG_NORA_POCIONES_04",
-            "value": "Great, now I can try it! Here, this is for you, for the trouble."
-        },
-        {
-            "key": "DLG_ELDRAN_MISSION3_COMEWITHME_01",
-            "value": "Well done, Will! By the way... come with me, there's something I want to show you before I go."
-        },
-        {
-            "key": "DLG_ELDRAN_SAVEPOINT_01",
-            "value": "This is a Save Point, Will."
-        },
-        {
-            "key": "DLG_ELDRAN_SAVEPOINT_02",
-            "value": "Here you can save your game and rest to recover your health and mana, so don't hesitate to use it whenever you need to."
-        },
-        {
-            "key": "DLG_ELDRAN_SAVEPOINT_03",
-            "value": "Well, now you know what matters. I'll let you keep exploring."
-        },
-        {
-            "key": "DLG_ELDRAN_SAVEPOINT_TURNIN_01",
-            "value": "Take care, Will. See you soon."
         }
     ]
 }

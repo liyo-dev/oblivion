@@ -32,7 +32,13 @@ namespace Game.NPC
     /// tocar nada más — se auto-desactiva solo mientras no toque (combate, diálogo, personaje
     /// controlado, modo Libre, etc.) y no hace nada si esos campos se dejan vacíos.
     /// </summary>
-    [RequireComponent(typeof(NPCPartyMember))]
+    // OJO: a propósito SIN [RequireComponent(typeof(NPCPartyMember))]. NPCPartyMember lo añade
+    // NPCBehaviourManagerV2.EnsureRequiredComponents() a mano, con partyMember.SetConfig(...) —
+    // si RequireComponent lo auto-instancia antes (Unity lo hace al construir el GameObject,
+    // antes de que corra ningún Awake()), EnsureRequiredComponents() se lo encuentra ya
+    // presente y se SALTA el SetConfig(), dejando el PartyConfig sin asignar — así es como se
+    // rompió el party de Estela y Liam (INC-149/INC-151). GetComponent<NPCPartyMember>() en
+    // Start() ya maneja con seguridad el caso null (ver IsEligibleNow) sin necesitar el atributo.
     [RequireComponent(typeof(NPCBehaviourManagerV2))]
     public class EstelaIdleCommentary : MonoBehaviour
     {
@@ -91,11 +97,42 @@ namespace Game.NPC
         private float _nextTriggerTime;
         private bool _timerArmed;
 
+        // ✅ MEJORA (1 sep 2026, petición de Raúl: dar la misma vida a Will/Liam/Eldran): referencia
+        // a la acción de "sentarse con hambre" actualmente en curso (si hay alguna), para que otro
+        // compañero (ver LiamIdleCommentary) pueda pedirle a Estela que se levante antes de tiempo
+        // como pago de su propio numerito, sin tener que tocar el NPCStateContext de Estela desde
+        // fuera.
+        private EstelaSitAction _activeSitAction;
+
+        // Evento estático: se dispara justo cuando Estela se sienta a quejarse de hambre, para que
+        // otro compañero (Liam) pueda reaccionar. Solo transporta el Transform de Estela — nada de
+        // estado pesado. Patrón de reset obligatorio para estado estático (CLAUDE.md §3), evita
+        // contaminación entre sesiones de PlayMode en el Editor.
+        public static event Action<Transform> EstelaSatDownHungry;
+
+#if UNITY_EDITOR
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() { EstelaSatDownHungry = null; }
+#endif
+
+        /// <summary>
+        /// Llamado desde fuera (LiamIdleCommentary) para pedirle a Estela que corte su numerito de
+        /// "sentarse con hambre" antes de tiempo. No-op si no está sentada en ese momento — seguro
+        /// de llamar siempre.
+        /// </summary>
+        public void RequestStandUp() => _activeSitAction?.ForceComplete();
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         private float _nextDiagnosticLogTime;
 #endif
 
-        void Awake()
+        // NPCPartyMember se añade en tiempo de ejecución dentro del propio Awake() de
+        // NPCBehaviourManagerV2 (EnsureRequiredComponents) — Unity no garantiza qué Awake()
+        // de los dos corre primero en el mismo GameObject. Por eso el cacheo va en Start()
+        // (que Unity sí garantiza que corre después de TODOS los Awake() de la escena) y no en
+        // Awake() pese a la convención habitual del proyecto — si esto corriera en Awake(),
+        // _partyMember podría quedarse en null para siempre según el orden de ejecución.
+        void Start()
         {
             _partyMember = GetComponent<NPCPartyMember>();
             _npcManager = GetComponent<NPCBehaviourManagerV2>();
@@ -230,9 +267,14 @@ namespace Game.NPC
             string line = PickLine(hungryLines);
             if (debugMode) Debug.Log($"[EstelaIdleCommentary] Se sienta a quejarse de hambre: \"{line}\"");
 
+            var action = new EstelaSitAction(sitDuration, line, bubbleDuration);
+            _activeSitAction = action;
+
             var sequence = new CompositeSequence();
-            sequence.AddAction(new EstelaSitAction(sitDuration, line, bubbleDuration));
+            sequence.AddAction(action);
             _npcManager.StartCinematicSequence(sequence);
+
+            EstelaSatDownHungry?.Invoke(transform);
         }
 
         private void TriggerBlockPlayer()
@@ -284,6 +326,13 @@ namespace Game.NPC
             _line = line;
             _bubbleDuration = bubbleDuration;
         }
+
+        /// <summary>
+        /// Corta el numerito ya mismo (ver EstelaIdleCommentary.RequestStandUp). Marca completado
+        /// tal cual — Cleanup() ya se llama sea cual sea el motivo de la finalización (normal o
+        /// interrumpida), así que esto por sí solo ya deja a Estela de pie de nuevo.
+        /// </summary>
+        internal void ForceComplete() => IsCompleted = true;
 
         public override void Update(NPCStateContext context)
         {

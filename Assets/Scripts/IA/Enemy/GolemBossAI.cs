@@ -92,6 +92,15 @@ public class GolemBossAI : MonoBehaviour
     [SerializeField] private float attackCooldown = 3f;
     [SerializeField] private float rockRainCooldown = 8f;
     [SerializeField] private float jumpAttackCooldown = 12f;
+
+    [Header("Cadencia de Ataque")]
+    [Tooltip("Tiempo minimo de 'respiro' tras CUALQUIER ataque antes de poder iniciar el siguiente. "
+             + "TryAttack() se reevalua cada aiUpdateFrequency (0.1s por defecto) mientras el Golem no "
+             + "esta atacando, y cada eleccion es una tirada de probabilidad independiente — sin este "
+             + "minimo, dos ataques de tipo distinto podian encadenarse sin ninguna pausa perceptible. "
+             + "Mismo patron que attackRecoveryBeat en ImpDemonAI.cs (propuesta de identidad de fase).")]
+    [SerializeField] private float attackRecoveryBeat = 0.35f;
+    private float _lastAttackEndTime = -999f;
     
     [Header("Embestida con Puñetazo (Transición entre fases)")]
     [Tooltip("Velocidad de carrera durante la embestida")]
@@ -314,7 +323,15 @@ public class GolemBossAI : MonoBehaviour
     void Update()
     {
         if (!_hasSpawned || _isDead) return;
-        
+
+        // FIX (petición Raúl, 1 sep 2026): durante un diálogo, congelar también la rotación hacia
+        // el jugador (el resto de la lógica de ataque vive en AIBehaviorRoutine, ver arriba).
+        if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen)
+        {
+            if (agent && agent.isOnNavMesh && !agent.isStopped) agent.isStopped = true;
+            return;
+        }
+
         // Reevaluar objetivo más cercano cada 0.5s (jugador o compañero NPC)
         _targetRefreshTimer += Time.deltaTime;
         if (_targetRefreshTimer >= 0.5f)
@@ -377,7 +394,12 @@ public class GolemBossAI : MonoBehaviour
     {
         while (true)
         {
-            if (canStartCombat && !_isDead && player)
+            // FIX (petición Raúl, 1 sep 2026): congelar IA hostil mientras hay un diálogo abierto
+            // en cualquier parte del mundo (ver mismo fix en Spider1AI.Update/ImpDemonAI.Update).
+            // No corta un ataque ya en marcha (vive en su propia corrutina), solo evita que este
+            // tick periódico dispare la siguiente decisión mientras el jugador está bloqueado.
+            bool dialogueOpen = DialogueManager.Instance != null && DialogueManager.Instance.IsOpen;
+            if (canStartCombat && !_isDead && player && !dialogueOpen)
             {
                 UpdateBehavior(Vector3.Distance(transform.position, player.position));
             }
@@ -481,14 +503,19 @@ public class GolemBossAI : MonoBehaviour
     /// </summary>
     private bool TryAttack()
     {
-        // PRIORIDAD MÁXIMA: Embestida pendiente por cambio de fase
+        // PRIORIDAD MÁXIMA: Embestida pendiente por cambio de fase — no espera al respiro de
+        // CanStartNewAttack(), es la propia entrada de fase la que la dispara.
         if (_pendingChargeAttack && CanCharge())
         {
             _pendingChargeAttack = false;
             StartCoroutine(ChargeAttack());
             return true;
         }
-        
+
+        // Hueco minimo de respiro desde el ultimo ataque (ver "Cadencia de Ataque"): evita que la
+        // tirada de probabilidad de mas abajo encadene un ataque nuevo justo al terminar el anterior.
+        if (!CanStartNewAttack()) return false;
+
         // Embestida disponible en cualquier fase (cooldown independiente)
         bool canDoCharge = CanCharge() && GetDistanceToPlayer() >= chargeMinDistance;
         
@@ -563,6 +590,20 @@ public class GolemBossAI : MonoBehaviour
 
     private bool CanAttack() => Time.time >= _lastAttackTime + attackCooldown;
     private bool CanCharge() => Time.time >= _lastChargeTime + chargeCooldown;
+
+    // Cadencia de ataque (ver "Cadencia de Ataque" en el Inspector): true si ha pasado el hueco
+    // minimo de respiro desde que termino el ultimo ataque. Envuelve TryAttack() para que no se
+    // encadenen ataques de distinto tipo sin pausa perceptible. Mismo patron que ImpDemonAI.cs.
+    private bool CanStartNewAttack() => Time.time >= _lastAttackEndTime + attackRecoveryBeat;
+
+    // Sustituye a "_isAttacking = false;" suelto en las corrutinas de ataque: ademas de bajar el
+    // flag, marca el instante en que termino el ataque para que CanStartNewAttack() pueda exigir
+    // el respiro minimo antes del siguiente.
+    private void EndAttack()
+    {
+        _isAttacking = false;
+        _lastAttackEndTime = Time.time;
+    }
     
     private float GetDistanceToPlayer()
     {
@@ -867,7 +908,7 @@ public class GolemBossAI : MonoBehaviour
         // Esperar fin de animación
         yield return new WaitForSeconds(0.8f);
         
-        _isAttacking = false;
+        EndAttack();
     }
     
     /// <summary>
@@ -950,7 +991,7 @@ public class GolemBossAI : MonoBehaviour
         
         yield return new WaitForSeconds(0.8f);
         
-        _isAttacking = false;
+        EndAttack();
     }
     
     /// <summary>
@@ -970,7 +1011,7 @@ public class GolemBossAI : MonoBehaviour
 
         if (!player)
         {
-            _isAttacking = false;
+            EndAttack();
             yield break;
         }
 
@@ -1013,7 +1054,7 @@ public class GolemBossAI : MonoBehaviour
         // Esperar a que terminen de caer
         yield return new WaitForSeconds(1.5f);
 
-        _isAttacking = false;
+        EndAttack();
 
         Log("🌧️ Lluvia de rocas finalizada");
     }
@@ -1139,7 +1180,7 @@ public class GolemBossAI : MonoBehaviour
         
         if (!player)
         {
-            _isAttacking = false;
+            EndAttack();
             _isCharging = false;
             yield break;
         }
@@ -1246,7 +1287,7 @@ public class GolemBossAI : MonoBehaviour
         // ¡PUÑETAZO!
         yield return StartCoroutine(ExecutePunch());
         
-        _isAttacking = false;
+        EndAttack();
         _isCharging = false;
         
         Log("🏃 Embestida completada");
@@ -1396,7 +1437,7 @@ public class GolemBossAI : MonoBehaviour
         // Calcular posición objetivo (donde está el jugador ahora)
         if (!player)
         {
-            _isAttacking = false;
+            EndAttack();
             yield break;
         }
         
@@ -1489,7 +1530,7 @@ public class GolemBossAI : MonoBehaviour
         // Esperar recuperación
         yield return new WaitForSeconds(1.0f);
         
-        _isAttacking = false;
+        EndAttack();
 
         Log("🦘 Salto completado");
     }

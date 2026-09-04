@@ -18,3 +18,5 @@
 • Nuevo: constelaciones propias del juego en el cielo nocturno — la Espada, la Corona y la Estrella Guía del Sendero.
 • Arreglado: las estrellas del cielo nocturno volvían a aparecer delante de las montañas en algunas partidas nuevas; corregido de raíz, y ahora quedan más altas en el cielo.
 • Varias optimizaciones internas de rendimiento.
+• Arreglado: al comer o beber una poción (o ver a un NPC hacerlo), las piernas ya no se congelan a mitad de zancada — el gesto ahora se anima solo en el torso/brazos, y la caminata sigue con normalidad.
+• Arreglado: al saludar, reír, enfadarse o hacer otros gestos (tanto NPCs como el jugador durante diálogos), las piernas ya no se congelan si estás caminando — el gesto se anima solo en el torso/brazos.

@@ -63,6 +63,17 @@ namespace Game.NPC.States
         // que 30 deja margen de sobra sin colar teletransportes.
         private const float PLAYER_SPEED_TELEPORT_CUTOFF = 30f;
 
+        // FIX (1 sep 2026) — continuación de INC-096: aunque Agent.speed sube dinámicamente hasta
+        // runSpeed*2.5 para alcanzar al jugador en sprint, Agent.acceleration se quedaba en el
+        // valor de fábrica del prefab (8 en Estela/Liam) sin relación con esa velocidad objetivo.
+        // Con el destino recalculándose cada PATH_UPDATE_INTERVAL mientras el jugador sigue en
+        // movimiento, el agente nunca llegaba a alcanzar de verdad la velocidad alta que se le
+        // pedía — seguía quedándose atrás hasta cruzar distanciaParaTeletransporte y disparar el
+        // teletransporte de emergencia ("de pronto aparecen" / pop-in en cámara). Escalamos la
+        // aceleración junto con la velocidad en vez de dejarla fija.
+        private const float AGENT_ACCELERATION_MULTIPLIER = 2.5f;
+        private const float AGENT_MIN_ACCELERATION = 8f;
+
         // Constantes NavMesh
         private const float PLAYER_STATIC_BEFORE_WANDER = 3f;
         private const float PATH_UPDATE_INTERVAL = 0.1f;
@@ -208,7 +219,7 @@ namespace Game.NPC.States
                 }
                 context.Agent.updatePosition = false;
                 context.Agent.updateRotation = false;
-                context.Agent.speed = GetWalkSpeed();
+                SetAgentSpeed(context.Agent, GetWalkSpeed());
             }
 
             context.Animator?.SetMovementSpeed(0f);
@@ -251,6 +262,20 @@ namespace Game.NPC.States
             if (context.Agent == null || !context.Agent.isOnNavMesh) return;
 
             if (_stateTimer < INITIAL_DELAY)
+            {
+                context.Agent.isStopped = true;
+                context.Animator?.SetMovementSpeed(0f);
+                return;
+            }
+
+            // FIX INC-028: margen de gracia tras restaurar posición/rotación persistida al
+            // cargar partida (ver GameBootProfile.ApplyNpcPositionsToScene y
+            // NPCStateContext.FollowGraceUntil). El jugador casi siempre se restaura solo a
+            // un ancla aproximada (no a su Vector3/Quaternion exacto), así que nada más cargar
+            // este NPC suele estar a más de stopDist de él — sin esta comprobación arrancaría
+            // a caminar de inmediato y NPCSimpleAnimator.SyncWithNavMeshAgent() sustituiría la
+            // rotación recién restaurada por la de marcha antes de que se llegue a ver quieto.
+            if (Time.time < context.FollowGraceUntil)
             {
                 context.Agent.isStopped = true;
                 context.Animator?.SetMovementSpeed(0f);
@@ -357,7 +382,7 @@ namespace Game.NPC.States
                 float catchUpT = Mathf.Clamp01((distance - runDist) / Mathf.Max(1f, catchUpDistance - runDist));
                 float speedMargin = Mathf.Lerp(1.15f, 1.6f, catchUpT);
                 float dynamicRunSpeed = Mathf.Clamp(_smoothedPlayerSpeed * speedMargin, runSpeed, runSpeed * 2.5f);
-                context.Agent.speed = distance > runDist ? dynamicRunSpeed : walkSpeed;
+                SetAgentSpeed(context.Agent, distance > runDist ? dynamicRunSpeed : walkSpeed);
 
                 _pathUpdateTimer += Time.deltaTime;
                 if (_pathUpdateTimer >= PATH_UPDATE_INTERVAL)
@@ -911,6 +936,18 @@ namespace Game.NPC.States
 
         private float GetWalkSpeed() => _config?.velocidadCaminando ?? DEFAULT_WALK_SPEED;
 
+        /// <summary>
+        /// Fija Agent.speed y escala Agent.acceleration junto con ella (ver comentario de
+        /// AGENT_ACCELERATION_MULTIPLIER) para que el NavMeshAgent pueda alcanzar de verdad
+        /// velocidades altas de catch-up en vez de quedarse limitado por la aceleración fija
+        /// serializada en el prefab.
+        /// </summary>
+        private static void SetAgentSpeed(NavMeshAgent agent, float speed)
+        {
+            agent.speed = speed;
+            agent.acceleration = Mathf.Max(AGENT_MIN_ACCELERATION, speed * AGENT_ACCELERATION_MULTIPLIER);
+        }
+
         private void TryStartPartyWander(NPCStateContext context, float stopDist)
         {
             if (context.Player == null || context.Agent == null) return;
@@ -929,7 +966,7 @@ namespace Game.NPC.States
                 context.Agent.updatePosition = true;
             }
             context.Agent.isStopped = false;
-            context.Agent.speed = _config.velocidadCaminando;
+            SetAgentSpeed(context.Agent, _config.velocidadCaminando);
             context.Agent.SetDestination(_wanderTarget);
         }
 

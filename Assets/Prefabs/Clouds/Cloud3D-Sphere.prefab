@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 2129729216621039285}
   - component: {fileID: 665151089435441373}
   - component: {fileID: 2894025123592262994}
-  m_Layer: 0
+  m_Layer: 18
   m_Name: Cloud3D-Sphere
   m_TagString: Untagged
   m_Icon: {fileID: 0}

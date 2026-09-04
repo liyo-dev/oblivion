@@ -4,7 +4,89 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Rendering;
 
+/// <summary>
+/// 30 ago 2026 — dos cambios pedidos por Raúl el mismo día que el pase de la estrella protagonista
+/// (ver NightSkyStarSpawner.cs), para poder probar más rápido:
+///
+/// 1) **Botones de prueba en el Inspector** ("testeos"): Ir a Amanecer/Día/Atardecer/Noche, Lluvia
+/// iniciar/detener, Niebla iniciar/detener, y forzar un sorteo de clima ya — todos como
+/// <c>[ContextMenu]</c> con el prefijo "Testeo:" (ver el final de la clase). Los de periodo usan
+/// <c>immediate: true</c> a propósito, sin esperar la transición suave, para poder saltar
+/// directamente a noche y ver el cielo estrellado sin esperar al ciclo automático.
+///
+/// 2) **El clima (lluvia/niebla) deja de estar atado al periodo del día**. Petición textual: *"la
+/// lluvia esta metida como si fuera parte del dia siempre llueve y luego se hace de noche y eso no
+/// es esa [...] deben ocurrir en cualquier momento. Los estados del dia son: amanecer, de dia,
+/// atardecer, de noche"*. Antes, <c>ApplyTimeOfDay</c> sorteaba lluvia (<c>forceRain</c>/
+/// <c>rainChance</c>) y niebla ocasional (<c>fogChance</c>) UNA SOLA VEZ, en el instante exacto de
+/// entrar en cada periodo — así que el clima solo podía "decidirse" en esos 4 instantes concretos
+/// del ciclo, dando la sensación de estar pegado al ciclo día/noche en vez de ser un sistema aparte.
+/// Se ha quitado ese acoplamiento de raíz: <c>forceRain</c>/<c>rainChance</c>/<c>fogChance</c>
+/// desaparecen de <see cref="TimeOfDaySettings"/> (ya no existen "por periodo"), y en su lugar hay un
+/// temporizador de clima completamente independiente (<see cref="WeatherRollLoop"/> +
+/// <see cref="TryRollWeather"/>, ver Header("Clima — sorteo independiente del periodo")): cada
+/// <see cref="weatherCheckIntervalRange"/> segundos (aleatorio dentro del rango, para que no sea
+/// predecible) se sortea si arranca lluvia (<see cref="rainChancePerCheck"/>) o niebla
+/// (<see cref="mistChancePerCheck"/>), sin importar en qué periodo del día se esté ni si se acaba de
+/// entrar en uno o se lleva ya un rato — el clima puede empezar, seguir activo, o terminar a mitad
+/// de cualquier periodo. <c>rainLastsWholePeriod</c>/<c>mistLastsWholePeriod</c> también desaparecen
+/// (ya no tiene sentido "durar todo el periodo" si el clima no depende del periodo): la lluvia ahora
+/// siempre sortea su propia duración dentro de <see cref="rainDurationRange"/> (igual que la niebla
+/// ya hacía con <c>mistDurationRange</c>). <c>ApplyTimeOfDay</c> ya no toca el clima en absoluto —
+/// si ya estaba lloviendo/con niebla al cambiar de periodo, sigue exactamente igual.
+///
+/// 30 ago 2026 (mismo día, pasada siguiente) — "añade lo que se quedó fuera de esta tanda": viento y
+/// tormenta, inicialmente dejados fuera por falta de assets/VFX (ver más abajo por qué). Añadidos con
+/// el mismo patrón que lluvia/niebla, degradando con elegancia donde faltan assets en vez de
+/// bloquearse por ellos:
+/// - **Viento** (<see cref="IsWindy"/>, <see cref="StartWind"/>/<see cref="StopWind"/>,
+///   <see cref="windChancePerCheck"/>/<see cref="windDurationRange"/>): mismo patrón que la niebla
+///   ocasional. <see cref="windPrefab"/> es OPCIONAL (null-safe, igual que <c>mistPrefab</c>) — sin
+///   asignar, el viento sigue funcionando como evento lógico completo (flag, eventos, SFX en loop)
+///   pero sin ningún VFX de hojas/polvo, porque este proyecto no tiene ese prefab todavía. Asignarlo
+///   en cuanto exista arte para ello no necesita ningún cambio de código.
+/// - **Tormenta** (<see cref="IsThunderstorm"/>, <see cref="StartThunderstorm"/>/
+///   <see cref="StopThunderstorm"/>): NO es un sistema de lluvia paralelo — una tormenta ES lluvia
+///   normal (reutiliza <see cref="StartRain"/> tal cual) más una capa de rayos periódicos
+///   (<see cref="LightningLoop"/>/<see cref="FlashLightningRoutine"/>) que SÍ es un efecto visual
+///   real que funciona ya, sin ningún asset nuevo: cada rayo crea una Light direccional temporal a
+///   <see cref="thunderstormFlashIntensity"/> durante <see cref="thunderstormFlashDuration"/>
+///   segundos y la destruye — DELIBERADAMENTE una luz nueva y no un cambio directo sobre
+///   <c>directionalLight.intensity</c>, porque esa propiedad ya se recalcula cada frame en
+///   <c>LateUpdate</c> a partir de su propio valor anterior mientras llueve (oscurecimiento por
+///   lluvia), así que escribir el destello ahí se pelearía con ese cálculo frame a frame. El trueno
+///   (<see cref="thunderstormThunderSfxKey"/>) suena con un retraso aleatorio tras el destello
+///   (<see cref="thunderstormThunderDelayRange"/>), como en la realidad.
+///
+/// Alcance que sigue sin cubrir esta pasada: los VFX de partículas en sí (hojas/polvo para el
+/// viento) — el sistema lógico completo ya funciona y se oye/comporta correctamente, pero visualmente
+/// el viento no mueve nada todavía porque no hay ningún prefab de partículas en el proyecto para él;
+/// asignar <see cref="windPrefab"/> cuando exista ese arte es todo lo que hace falta.
+///
+/// Además, revisando este script para hacer este cambio se encontró y corrigió una regresión
+/// independiente y bastante más vieja: el comentario del propio código (ver más abajo, "13 ago
+/// 2026") ya decía que <see cref="timeSettings"/> se había reducido de 7 franjas a 4
+/// (Amanecer/Día/Atardecer/Noche) a petición de Raúl — pero las 4 escenas que usan este componente
+/// (MainWorld, CandyLand, Sendero, PlayerTest) seguían con el array de 7 franjas ANTIGUO serializado
+/// tal cual desde antes de ese cambio (BrightMorning/EarlyDusk/Midnight incluidas), porque Unity no
+/// vuelve a sincronizar un array ya serializado en la escena con un array por defecto distinto del
+/// código — el mismo tipo de bug ya documentado varias veces en este proyecto (ver
+/// `contexto-proyecto.md` y el comentario de clase de NightSkyStarSpawner.cs). Es decir: el ciclo
+/// del día llevaba 17 días pasando por 7 franjas en el juego real de Raúl, no por las 4 que el
+/// código decía desde el 13 de agosto — probablemente parte de por qué el clima se sentía errático
+/// y "pegado" a un ciclo más largo y raro de lo esperado. Corregido en las 4 escenas: se han quitado
+/// las 3 franjas obsoletas (BrightMorning/EarlyDusk/Midnight) del array serializado, dejando solo
+/// las 4 correctas con los valores que YA tenían en cada escena (ninguna tonalidad de luz/niebla
+/// tocada, solo se han quitado las franjas de más).
+/// </summary>
 [DisallowMultipleComponent]
+// 30 ago 2026 — debe ejecutar su Awake() ANTES que AmbientZone (orden no garantizado entre
+// scripts sin esto). AmbientZone.CaptureDefaults() guarda RenderSettings.fog tal cual esté en
+// ese instante para restaurarlo al salir de una zona — si captura el valor ANTES de que este
+// Awake ponga RenderSettings.fog = controlFog, se queda con el "false" horneado en la escena, y
+// la niebla (que aquí depende solo de fogDensity, sin mistPrefab) deja de verse en cuanto el
+// jugador sale de cualquier interior una vez. Ver comentario de clase.
+[DefaultExecutionOrder(-100)]
 public class DayNightCycle : MonoBehaviour
 {
     public enum TimeOfDay
@@ -55,13 +137,8 @@ public class DayNightCycle : MonoBehaviour
         [Range(0f, 0.1f)] public float fogDensity = 0.01f;
 
         [Header("Ciclo")]
+        [Tooltip("Duración de este periodo en segundos. El clima (lluvia/niebla) ya NO depende de esto — ver Header(\"Clima — sorteo independiente del periodo\") más abajo en la clase: el clima corre con su propio temporizador y puede empezar o seguir activo en cualquier periodo, incluido a mitad de uno.")]
         public float duration = 60f;
-        [Tooltip("Si es true, este periodo SIEMPRE tendrá lluvia activa")]
-        public bool forceRain = false;
-        [Tooltip("Probabilidad (0-1) de que llueva 'de vez en cuando' al entrar en este periodo. Se sortea una vez por periodo, independiente de forceRain.")]
-        [Range(0f, 1f)] public float rainChance = 0f;
-        [Tooltip("Probabilidad (0-1) de que aparezca niebla espesa 'de vez en cuando' al entrar en este periodo, independiente de la lluvia. Solo se sortea si no está lloviendo.")]
-        [Range(0f, 1f)] public float fogChance = 0f;
     }
 
     // 13 ago 2026 — Reducido de 7 franjas activas a 4 (Amanecer/Día/Atardecer/Noche), a petición
@@ -145,8 +222,8 @@ public class DayNightCycle : MonoBehaviour
     [Header("Clima - Lluvia")]
     [Tooltip("Prefab del sistema de partículas de lluvia.")]
     [SerializeField] private GameObject rainPrefab;
-    [Tooltip("Si es true, la lluvia dura todo el periodo. Si es false, tiene duración aleatoria.")]
-    [SerializeField] private bool rainLastsWholePeriod = true;
+    [Tooltip("Duración aleatoria (min, max) en segundos de un evento de lluvia sorteado por el temporizador de clima independiente (ver Header(\"Clima — sorteo independiente del periodo\") más abajo). No se usa si la lluvia se arranca a mano con una duración explícita (StartRain(duration), narrativa, tests).")]
+    [SerializeField] private Vector2 rainDurationRange = new Vector2(40f, 100f);
     [Tooltip("Segundos que tardan en desaparecer las partículas al detener la lluvia.")]
     [SerializeField] private float rainFadeOutTime = 3f;
 
@@ -170,9 +247,7 @@ public class DayNightCycle : MonoBehaviour
     [Header("Clima - Niebla ocasional")]
     [Tooltip("Prefab opcional de niebla volumétrica (partículas) para el evento de niebla ocasional. Si es null, solo se espesa la niebla global (RenderSettings.fog), sin partículas.")]
     [SerializeField] private GameObject mistPrefab;
-    [Tooltip("Si es true, la niebla ocasional dura todo el periodo. Si es false, tiene duración aleatoria dentro de mistDurationRange.")]
-    [SerializeField] private bool mistLastsWholePeriod = false;
-    [Tooltip("Duración aleatoria (min, max) en segundos de la niebla ocasional cuando no dura todo el periodo.")]
+    [Tooltip("Duración aleatoria (min, max) en segundos de un evento de niebla ocasional.")]
     [SerializeField] private Vector2 mistDurationRange = new Vector2(20f, 45f);
     [Tooltip("Segundos que tardan en desaparecer las partículas al detener la niebla ocasional.")]
     [SerializeField] private float mistFadeOutTime = 4f;
@@ -180,6 +255,50 @@ public class DayNightCycle : MonoBehaviour
     [SerializeField, Range(1f, 8f)] private float mistFogDensityMultiplier = 4f;
     [Tooltip("Segundos que tarda en espesar/disipar la niebla ocasional.")]
     [SerializeField] private float mistTransitionDuration = 8f;
+
+    [Header("Clima - Viento (30 ago 2026)")]
+    [Tooltip("Prefab OPCIONAL de partículas de viento (hojas/polvo en el aire). Si es null, el viento sigue funcionando igual como evento lógico (IsWindy, eventos, SFX en loop) pero sin ningún VFX — mismo patrón de degradado que ya usa mistPrefab. Este proyecto no tiene todavía ningún prefab de este tipo; asignar aquí en cuanto exista arte para ello, no hace falta tocar código.")]
+    [SerializeField] private GameObject windPrefab;
+    [Tooltip("Duración aleatoria (min, max) en segundos de un evento de viento.")]
+    [SerializeField] private Vector2 windDurationRange = new Vector2(30f, 90f);
+    [Tooltip("Segundos que tardan en desaparecer las partículas (si hay windPrefab asignado) al detener el viento.")]
+    [SerializeField] private float windFadeOutTime = 3f;
+
+    [Header("Clima - Tormenta / Rayos (30 ago 2026)")]
+    [Tooltip("Una tormenta es lluvia normal (mismas partículas/oscurecimiento/niebla de siempre, ver StartThunderstorm) más rayos periódicos. Rango (min, max) en segundos entre un rayo y el siguiente mientras dura la tormenta.")]
+    [SerializeField] private Vector2 thunderstormLightningIntervalRange = new Vector2(8f, 22f);
+    [Tooltip("Intensidad (Light.intensity) del destello de cada rayo. Es una luz direccional NUEVA y temporal creada solo para el destello (ver FlashLightningRoutine), no un multiplicador sobre la luz principal — así no interfiere con el oscurecimiento por lluvia (rainLightIntensityMultiplier), que ya recalcula la luz principal cada frame en LateUpdate y se pelearía con cualquier cambio directo sobre directionalLight.intensity.")]
+    [SerializeField] private float thunderstormFlashIntensity = 3.5f;
+    [Tooltip("Segundos que dura visible cada destello de rayo.")]
+    [SerializeField] private float thunderstormFlashDuration = 0.12f;
+    [Tooltip("Retraso (min, max) en segundos entre el destello del rayo y el trueno — la luz llega antes que el sonido, igual que en la realidad. Solo afecta a CUÁNDO suena thunderstormThunderSfxKey, no al destello en sí.")]
+    [SerializeField] private Vector2 thunderstormThunderDelayRange = new Vector2(0.3f, 1.8f);
+    [Tooltip("Altura (unidades de mundo) desde la que 'cae' el rayo visible, por encima de la posición del jugador. No depende de ningún terreno/collider real (no se hace Raycast): el extremo inferior del rayo se dibuja a la altura actual del jugador, como aproximación razonable del suelo cercano.")]
+    [SerializeField] private float thunderstormBoltHeight = 220f;
+    [Tooltip("Distancia horizontal (min, max) a la que 'cae' cada rayo respecto al jugador, en una dirección aleatoria — para que se vea caer en el paisaje, no encima del jugador ni siempre en el mismo sitio.")]
+    [SerializeField] private Vector2 thunderstormBoltDistanceRange = new Vector2(18f, 55f);
+    [Tooltip("Grosor visual del rayo (LineRenderer.widthMultiplier).")]
+    [SerializeField] private float thunderstormBoltWidth = 1.4f;
+    [Tooltip("Color del rayo — blanco azulado brillante. Canales por encima de 1 a propósito (con Bloom activo aporta el brillo extra del propio rayo), igual que otros elementos emisivos de este proyecto (p.ej. NightSkyStarSpawner.starColor).")]
+    [SerializeField] private Color thunderstormBoltColor = new Color(2.2f, 2.3f, 2.7f);
+    [Tooltip("Número de segmentos del zigzag del rayo — más segmentos = forma más quebrada/detallada.")]
+    [SerializeField, Range(2, 16)] private int thunderstormBoltSegments = 7;
+    [Tooltip("Desplazamiento horizontal aleatorio máximo (unidades de mundo) de cada segmento respecto a la línea recta cielo-suelo, para la silueta quebrada característica de un rayo.")]
+    [SerializeField] private float thunderstormBoltJitter = 7f;
+    [Tooltip("Cuánto tiempo (segundos) queda visible el trazo del rayo en sí, independiente de thunderstormFlashDuration (que solo controla el destello de luz ambiental). 0.12s resultaba casi imperceptible — un solo parpadeo de un frame o dos.")]
+    [SerializeField] private float thunderstormBoltVisibleDuration = 0.3f;
+
+    [Header("Clima — sorteo independiente del periodo (30 ago 2026, ver comentario de clase)")]
+    [Tooltip("Cada cuánto se vuelve a intentar un cambio de clima (sorteo de lluvia/niebla/viento/tormenta), en segundos — se elige un valor aleatorio dentro de este rango cada vez, para que no sea predecible. Corre en un temporizador propio, totalmente independiente de a qué periodo del día (amanecer/día/atardecer/noche) corresponda ese instante — el clima puede empezar, seguir o terminar en cualquier periodo, incluso a mitad de uno.")]
+    [SerializeField] private Vector2 weatherCheckIntervalRange = new Vector2(45f, 110f);
+    [Tooltip("Probabilidad (0-1) de que arranque una TORMENTA en cada sorteo (lluvia + rayos) — se comprueba ANTES que rainChancePerCheck, así que si sale, no se vuelve a tirar el dado para lluvia normal ese mismo sorteo. Deliberadamente baja: las tormentas deben ser un evento poco frecuente y notable, no una lluvia más.")]
+    [SerializeField, Range(0f, 1f)] private float thunderstormChancePerCheck = 0.05f;
+    [Tooltip("Probabilidad (0-1) de que arranque a llover (lluvia normal, sin rayos) en cada sorteo — solo se comprueba si el sorteo de tormenta de ese mismo intento no salió.")]
+    [SerializeField, Range(0f, 1f)] private float rainChancePerCheck = 0.18f;
+    [Tooltip("Probabilidad (0-1) de que arranque viento en cada sorteo — solo se comprueba si ni tormenta ni lluvia salieron en ese mismo intento.")]
+    [SerializeField, Range(0f, 1f)] private float windChancePerCheck = 0.15f;
+    [Tooltip("Probabilidad (0-1) de que arranque niebla ocasional en cada sorteo — la última en probarse (solo si tormenta/lluvia/viento no salieron). No se solapan lluvia y niebla ocasional a propósito (la lluvia ya espesa la niebla por su cuenta).")]
+    [SerializeField, Range(0f, 1f)] private float mistChancePerCheck = 0.12f;
 
     [Header("Clima - Audio (grafo sonoro)")]
     [Tooltip("Event Key del AudioGraphProfile (lista 'Event Sfx') que se reproduce cuando el cielo empieza a nublarse, ANTES de que arranque la lluvia. Déjalo vacío para no reproducir nada.")]
@@ -194,6 +313,12 @@ public class DayNightCycle : MonoBehaviour
     [SerializeField] private string mistStartedSfxKey;
     [Tooltip("Event Key del AudioGraphProfile que se reproduce al disiparse la niebla ocasional.")]
     [SerializeField] private string mistStoppedSfxKey;
+    [Tooltip("Event Key del AudioGraphProfile del SFX/ambiente de viento. Igual que rainStartedSfxKey, se reproduce en LOOP (AudioService.PlayLoopingSFX) mientras IsWindy es true, no como one-shot.")]
+    [SerializeField] private string windStartedSfxKey;
+    [Tooltip("Event Key opcional del AudioGraphProfile para un one-shot al terminar el viento. El loop de windStartedSfxKey se detiene siempre, tenga o no clave este campo.")]
+    [SerializeField] private string windStoppedSfxKey;
+    [Tooltip("Event Key del AudioGraphProfile del trueno — one-shot, se reproduce con retraso tras cada destello de rayo (ver thunderstormThunderDelayRange).")]
+    [SerializeField] private string thunderstormThunderSfxKey;
 
     [Header("Ciclo")]
     [Tooltip("Si es falso, no avanza automáticamente el ciclo.")]
@@ -208,18 +333,30 @@ public class DayNightCycle : MonoBehaviour
     [SerializeField] private UnityEvent onRainStopped;
     [SerializeField] private UnityEvent onMistStarted;
     [SerializeField] private UnityEvent onMistStopped;
+    [SerializeField] private UnityEvent onWindStarted;
+    [SerializeField] private UnityEvent onWindStopped;
+    [SerializeField] private UnityEvent onThunderstormStarted;
+    [SerializeField] private UnityEvent onThunderstormStopped;
 
     public event Action<TimeOfDay> TimeOfDayChanged;
-    /// <summary>Se dispara al empezar a nublarse el cielo, ANTES de que arranque la lluvia. Útil para SFX de viento/truenos.</summary>
+    /// <summary>Se dispara al empezar a nublarse el cielo, ANTES de que arranque la lluvia (también con tormenta, que arranca como una lluvia normal). Útil para SFX de viento/truenos.</summary>
     public event Action CloudsBuildingUp;
     public event Action RainStarted;
     public event Action RainStopped;
     public event Action MistStarted;
     public event Action MistStopped;
+    public event Action WindStarted;
+    public event Action WindStopped;
+    /// <summary>Se dispara al arrancar/terminar la capa de tormenta (rayos) por encima de la lluvia — ver StartThunderstorm. No confundir con RainStarted/RainStopped, que también se disparan (una tormenta ES lluvia, más rayos).</summary>
+    public event Action ThunderstormStarted;
+    public event Action ThunderstormStopped;
 
     public TimeOfDay CurrentTimeOfDay { get; private set; }
     public bool IsRaining { get; private set; }
     public bool IsMisty { get; private set; }
+    public bool IsWindy { get; private set; }
+    /// <summary>True mientras la capa de rayos está activa (ver StartThunderstorm). Independiente de IsRaining a nivel de flag, aunque en la práctica una tormenta siempre implica IsRaining == true a la vez (StartThunderstorm arranca la lluvia por debajo).</summary>
+    public bool IsThunderstorm { get; private set; }
     public float TimeProgress => _currentDuration > 0 ? Mathf.Clamp01(_timeElapsed / _currentDuration) : 1f;
 
     /// <summary>Segundos que tarda el cielo en nublarse/despejarse. Expuesto para que sistemas
@@ -272,6 +409,26 @@ public class DayNightCycle : MonoBehaviour
     private Coroutine _mistFadeCoroutine;
     private Coroutine _mistDarkenCoroutine;
     private float _mistAmount;
+
+    private GameObject _activeWindInstance;
+    private Coroutine _windCoroutine;
+    private Coroutine _windFadeCoroutine;
+    const string WindWeatherSfxLoopId = "Weather_Wind";
+
+    // La tormenta reutiliza StartRain/StopRain por debajo (mismas partículas/oscurecimiento/niebla
+    // de siempre) — _thunderstormCoroutine solo controla CUÁNTO dura la capa extra de rayos,
+    // _lightningCoroutine es el bucle que va disparando cada rayo individual mientras tanto.
+    private Coroutine _thunderstormCoroutine;
+    private Coroutine _lightningCoroutine;
+    // Material compartido del trazo visible del rayo (construido en Awake, liberado en OnDestroy) —
+    // ver SpawnLightningBolt.
+    private Material _lightningBoltMaterial;
+    // 30 ago 2026 — true mientras el jugador está dentro de una AmbientZone con forcesMist activo
+    // (ver SetZoneMistOverride). Mientras esté a true, TryRollWeather deja de sortear NADA nuevo
+    // (ni lluvia, ni tormenta, ni viento) y solo mantiene la niebla — a petición de Raúl, "la
+    // niebla manda, bloquea el resto" mientras estás en una zona así. Si ya estaba lloviendo al
+    // entrar en la zona, esa lluvia sigue igual (no se le pisa) hasta que termine sola.
+    private bool _zoneMistForced;
 
     // Niebla "base" del periodo actual (sin el oscurecimiento de lluvia/niebla ocasional aplicado).
     // LateUpdate() recalcula el fog final SIEMPRE a partir de esta base, en vez de multiplicar el
@@ -333,6 +490,12 @@ public class DayNightCycle : MonoBehaviour
         // estuviera horneado en la escena — así "desactivar niebla" en el Inspector apaga de
         // verdad la niebla, en lugar de depender de lo último que hubiera en Lighting Settings.
         RenderSettings.fog = controlFog;
+
+        // Material del rayo visible (30 ago 2026) — construido UNA vez y compartido por todos los
+        // rayos, igual que _starMaterial en NightSkyStarSpawner.cs. Sprites/Default: mismo shader ya
+        // confirmado compatible con URP en este proyecto (ver comentario de clase de
+        // NightSkyStarSpawner), sin arriesgarse a un shader nuevo sin Editor para comprobarlo.
+        _lightningBoltMaterial = new Material(Shader.Find("Sprites/Default"));
     }
 
     void OnDestroy()
@@ -344,6 +507,11 @@ public class DayNightCycle : MonoBehaviour
         {
             Destroy(_runtimeSkybox);
             _runtimeSkybox = null;
+        }
+        if (_lightningBoltMaterial != null)
+        {
+            Destroy(_lightningBoltMaterial);
+            _lightningBoltMaterial = null;
         }
     }
 
@@ -357,8 +525,7 @@ public class DayNightCycle : MonoBehaviour
         var ec = EnvironmentController.Instance;
         _outdoorWeatherSuppressedIndoors = ec != null && ec.CurrentMode == EnvironmentMode.Interior;
 
-        // Un frame de margen antes de aplicar el periodo inicial (y, si forceRain/rainChance
-        // dispara lluvia ya en ese primer periodo, antes de arrancarla). Si esta escena se abre y
+        // Un frame de margen antes de aplicar el periodo inicial. Si esta escena se abre y
         // se le da Play directamente (AutoBootstrapOnPlay carga 'Start' aditivamente ANTES de
         // entrar en PlayMode, ver Editor/AutoBootstrapOnPlay.cs), el orden de Awake/OnEnable entre
         // la escena 'Start' y esta escena no está garantizado, y tampoco lo está el orden relativo
@@ -372,12 +539,79 @@ public class DayNightCycle : MonoBehaviour
         // un frame garantiza que todos los Awake/OnEnable de la carga inicial ya han corrido (mismo
         // patrón que usa WorldBootstrap.InitializeWorldDelayed / AmbientZone.CheckInitialOverlapNextFrame).
         StartCoroutine(InitializeCycleDelayed());
+
+        // 30 ago 2026: temporizador de clima independiente del ciclo día/noche — ver
+        // Header("Clima — sorteo independiente del periodo") y comentario de clase. Arranca aquí
+        // (no hace falta esperar ningún frame de margen como InitializeCycleDelayed: el primer
+        // sorteo no llega hasta pasado weatherCheckIntervalRange.x segundos como mínimo, tiempo de
+        // sobra para que todo lo demás — AudioService, CloudCoverSpawner, etc. — ya esté listo).
+        // Se detiene solo con StopAllCoroutines() en OnDisable, igual que el resto de corrutinas de
+        // este componente.
+        StartCoroutine(WeatherRollLoop());
     }
 
     IEnumerator InitializeCycleDelayed()
     {
         yield return null;
         InitializeCycle();
+    }
+
+    /// <summary>
+    /// Bucle infinito con su PROPIO temporizador (weatherCheckIntervalRange), sin ninguna relación
+    /// con las transiciones de periodo del día — ver TryRollWeather. Antes de este fix, ApplyTimeOfDay
+    /// sorteaba lluvia/niebla una única vez cada vez que se ENTRABA en un periodo nuevo, así que el
+    /// clima solo podía cambiar en esos instantes concretos; ahora puede cambiar en cualquier momento,
+    /// esté el ciclo del día en amanecer/día/atardecer/noche o a mitad de transición entre dos.
+    /// </summary>
+    IEnumerator WeatherRollLoop()
+    {
+        while (true)
+        {
+            float wait = UnityEngine.Random.Range(weatherCheckIntervalRange.x, weatherCheckIntervalRange.y);
+            yield return new WaitForSeconds(wait);
+            TryRollWeather();
+        }
+    }
+
+    /// <summary>
+    /// Un único sorteo de clima, completamente independiente de qué periodo del día esté activo en
+    /// este instante. No hace nada si ya hay clima en marcha (lluvia, nublándose, o niebla ocasional)
+    /// — así un evento de clima activo no se ve interrumpido/reemplazado por el siguiente sorteo, se
+    /// deja que termine solo (StartRain/StartMist ya gestionan su propia duración y desvanecido). El
+    /// guard de minijuego activo ya lo hace StartRain() por su cuenta, pero se comprueba aquí también
+    /// para no gastar el sorteo de niebla en ese caso (que StartMist SÍ dejaría arrancar, al no tener
+    /// ese guard — la niebla no afecta a los minijuegos como sí lo hace la lluvia).
+    /// </summary>
+    void TryRollWeather()
+    {
+        if (IsRaining || _isCloudBuildingUp || IsMisty || IsWindy || IsThunderstorm) return;
+        if (TagMinigameController.IsAnyMinigameActive) return;
+
+        // Zona con niebla forzada (30 ago 2026, ver SetZoneMistOverride): nada de sorteo nuevo
+        // (ni lluvia, ni tormenta, ni viento) mientras esté activa, solo se asegura de que la
+        // niebla esté puesta — "la niebla manda, bloquea el resto" mientras estés dentro.
+        if (_zoneMistForced) { TryActivateZoneMist(); return; }
+
+        // Escalera de exclusión mutua (30 ago 2026): un único tipo de clima a la vez en esta
+        // pasada — se prueba tormenta primero (la más rara/notable), luego lluvia normal, luego
+        // viento, y por último niebla ocasional. Si uno "sale", los siguientes de ESTE mismo
+        // sorteo ya no se comprueban (el siguiente sorteo llega solo en weatherCheckIntervalRange).
+        if (UnityEngine.Random.value < thunderstormChancePerCheck)
+        {
+            StartThunderstorm(UnityEngine.Random.Range(rainDurationRange.x, rainDurationRange.y));
+        }
+        else if (UnityEngine.Random.value < rainChancePerCheck)
+        {
+            StartRain(UnityEngine.Random.Range(rainDurationRange.x, rainDurationRange.y));
+        }
+        else if (UnityEngine.Random.value < windChancePerCheck)
+        {
+            StartWind(UnityEngine.Random.Range(windDurationRange.x, windDurationRange.y));
+        }
+        else if (UnityEngine.Random.value < mistChancePerCheck)
+        {
+            StartMist(UnityEngine.Random.Range(mistDurationRange.x, mistDurationRange.y));
+        }
     }
 
     void OnDisable()
@@ -417,6 +651,19 @@ public class DayNightCycle : MonoBehaviour
             Destroy(_activeMistInstance);
             _activeMistInstance = null;
         }
+
+        IsWindy = false;
+        _windFadeCoroutine = null;
+        AudioService.Instance?.StopLoopingSFX(WindWeatherSfxLoopId);
+        if (_activeWindInstance != null)
+        {
+            Destroy(_activeWindInstance);
+            _activeWindInstance = null;
+        }
+
+        IsThunderstorm = false;
+        _thunderstormCoroutine = null;
+        _lightningCoroutine = null;
     }
 
     /// <summary>
@@ -464,6 +711,8 @@ public class DayNightCycle : MonoBehaviour
         _outdoorWeatherSuppressedIndoors = true;
         SetRainVisualActive(false);
         SetMistVisualActive(false);
+        SetWindVisualActive(false);
+        SetWeatherAudioSuppressed(true);
     }
 
     void HandleInteriorExited()
@@ -471,6 +720,8 @@ public class DayNightCycle : MonoBehaviour
         _outdoorWeatherSuppressedIndoors = false;
         SetRainVisualActive(true);
         SetMistVisualActive(true);
+        SetWindVisualActive(true);
+        SetWeatherAudioSuppressed(false);
 
         // Si la tormenta arrancó mientras estábamos dentro, o cambió el periodo del día,
         // ApplyStormSkybox()/ApplySettingsImmediate()/TransitionToSettings() se saltaron el cambio
@@ -489,6 +740,27 @@ public class DayNightCycle : MonoBehaviour
     {
         if (_activeMistInstance != null)
             _activeMistInstance.SetActive(active);
+    }
+
+    void SetWindVisualActive(bool active)
+    {
+        if (_activeWindInstance != null)
+            _activeWindInstance.SetActive(active);
+    }
+
+    // FIX (30 ago 2026, incidencia reportada por Raúl: "se escuchaba como caía la lluvia" estando
+    // dentro del castillo): HandleInteriorEntered/Exited y el sondeo cinemático de más abajo ya
+    // suprimían la lluvia/niebla/viento VISUALMENTE al entrar en un interior, pero nunca tocaban
+    // el audio — el loop de ambiente (PlayLoopingSFX, RainWeatherSfxLoopId/WindWeatherSfxLoopId)
+    // es un AudioSource global sin spatial blend, así que seguía sonando igual de fuerte estando
+    // dentro de cualquier interior, incluida una cinemática. Silenciar (no detener) el loop existente
+    // conserva su posición de reproducción y el temporizador/fade-out real de la lluvia (IsRaining,
+    // BeginRainFadeOut) intactos: si deja de llover mientras el jugador está dentro, el loop se para
+    // igualmente vía StopLoopingSFX en su momento; esto solo evita que se OIGA mientras dure.
+    void SetWeatherAudioSuppressed(bool suppressed)
+    {
+        AudioService.Instance?.SetLoopingSFXMuted(RainWeatherSfxLoopId, suppressed);
+        AudioService.Instance?.SetLoopingSFXMuted(WindWeatherSfxLoopId, suppressed);
     }
 
     /// <summary>
@@ -536,6 +808,8 @@ public class DayNightCycle : MonoBehaviour
             _outdoorWeatherSuppressedIndoors = effectivelyInteriorNow;
             SetRainVisualActive(!effectivelyInteriorNow);
             SetMistVisualActive(!effectivelyInteriorNow);
+            SetWindVisualActive(!effectivelyInteriorNow);
+            SetWeatherAudioSuppressed(effectivelyInteriorNow);
             if (!effectivelyInteriorNow) ReapplyPendingSkybox();
         }
 
@@ -544,8 +818,14 @@ public class DayNightCycle : MonoBehaviour
         // entrar en el minijuego. Sondeo edge-triggered porque IsAnyMinigameActive es un flag
         // estático sin evento propio de inicio/fin (mismo patrón que el resto de este método).
         bool minigameActiveNow = TagMinigameController.IsAnyMinigameActive;
-        if (minigameActiveNow && !_wasMinigameActive && (IsRaining || _isCloudBuildingUp))
-            StopRain();
+        if (minigameActiveNow && !_wasMinigameActive)
+        {
+            // Si era una tormenta, StopThunderstorm() ya para la lluvia de debajo (ver su cuerpo) —
+            // llamarla en vez de StopRain() a secas evita dejar IsThunderstorm/los rayos colgados
+            // con la lluvia ya parada.
+            if (IsThunderstorm) StopThunderstorm();
+            else if (IsRaining || _isCloudBuildingUp) StopRain();
+        }
         _wasMinigameActive = minigameActiveNow;
 
         if (!autoAdvance || _isTransitioning) return;
@@ -644,12 +924,25 @@ public class DayNightCycle : MonoBehaviour
     /// </summary>
     public void StartRain(float? duration = null, bool immediate = false)
     {
-        if (rainPrefab == null || IsRaining || _isCloudBuildingUp) return;
+        if (rainPrefab == null)
+        {
+            Debug.LogWarning("[DayNightCycle] StartRain() no ha hecho nada: rainPrefab no está asignado en este GameObject/escena.");
+            return;
+        }
+        if (IsRaining || _isCloudBuildingUp)
+        {
+            Debug.Log("[DayNightCycle] StartRain() no ha hecho nada: ya está lloviendo o nublándose (IsRaining/_isCloudBuildingUp). Usa StopRain() primero si quieres reiniciarla.");
+            return;
+        }
 
         // Durante los minijuegos no puede llover (p.ej. TagMinigameController): bloqueamos aquí
         // cualquier intento de arrancar lluvia, tanto el sorteo automático de ApplyTimeOfDay como
         // una llamada manual/narrativa a StartRain o ToggleRain.
-        if (TagMinigameController.IsAnyMinigameActive) return;
+        if (TagMinigameController.IsAnyMinigameActive)
+        {
+            Debug.Log("[DayNightCycle] StartRain() no ha hecho nada: hay un minijuego activo (TagMinigameController.IsAnyMinigameActive).");
+            return;
+        }
 
         if (_rainCoroutine != null)
             StopCoroutine(_rainCoroutine);
@@ -712,6 +1005,51 @@ public class DayNightCycle : MonoBehaviour
         BeginMistFadeOut();
     }
 
+    /// <summary>
+    /// Llamado por AmbientZone (ver AmbientPreset.forcesMist, 30 ago 2026) al entrar/salir de una
+    /// zona con niebla forzada — por ejemplo el Bosque. Con active=true fuerza la niebla ocasional
+    /// mientras dure la zona (y bloquea nuevos sorteos de lluvia/tormenta/viento vía TryRollWeather,
+    /// "la niebla manda, bloquea el resto"); si ya estaba lloviendo al entrar, esa lluvia sigue tal
+    /// cual (no se apila niebla encima) hasta que termine sola — ver BeginRainFadeOut, que llama a
+    /// TryActivateZoneMist() al terminar por si sigue activa esta zona. Con active=false libera el
+    /// bloqueo y apaga la niebla si la había puesto la zona. IMPORTANTE: esto NO se salta el
+    /// bloqueo de interiores — sigue pasando por ActivateMist()/BeginMistFadeOut(), que ya
+    /// respetan IsSkyboxLockedByEnvironment() igual que la niebla ocasional normal, así que no
+    /// puede reintroducir niebla/lluvia dentro de un interior.
+    /// </summary>
+    public void SetZoneMistOverride(bool active)
+    {
+        if (_zoneMistForced == active) return;
+        _zoneMistForced = active;
+
+        if (active)
+        {
+            TryActivateZoneMist();
+        }
+        else if (IsMisty)
+        {
+            if (_mistCoroutine != null)
+            {
+                StopCoroutine(_mistCoroutine);
+                _mistCoroutine = null;
+            }
+            BeginMistFadeOut();
+        }
+    }
+
+    /// <summary>Activa la niebla YA (sin coroutine de duración) si toca — ver SetZoneMistOverride.</summary>
+    void TryActivateZoneMist()
+    {
+        if (!_zoneMistForced) return;
+        if (IsMisty || IsRaining || _isCloudBuildingUp || IsThunderstorm) return;
+        if (_mistCoroutine != null)
+        {
+            StopCoroutine(_mistCoroutine);
+            _mistCoroutine = null;
+        }
+        ActivateMist();
+    }
+
     void ApplyTimeOfDay(int index, bool immediate, bool invokeEvents)
     {
         if (_transitionCoroutine != null)
@@ -739,24 +1077,13 @@ public class DayNightCycle : MonoBehaviour
         else
             _transitionCoroutine = StartCoroutine(TransitionToSettings(settings, invokeEvents));
 
-        // forceRain = lluvia garantizada (usado por narrativa/tests).
-        // rainChance = sorteo "de vez en cuando" cada vez que arranca el periodo, independiente de forceRain.
-        bool shouldRain = settings.forceRain ||
-                           (settings.rainChance > 0f && UnityEngine.Random.value < settings.rainChance);
-
-        if (shouldRain)
-            StartRain(rainLastsWholePeriod ? settings.duration : (float?)null, immediate);
-        else if (IsRaining || _isCloudBuildingUp)
-            StopRain();
-
-        // Niebla ocasional: no se sortea si ya va a llover (la lluvia ya espesa la niebla por su
-        // cuenta vía rainFogDensityMultiplier) para no solapar los dos efectos.
-        bool shouldMist = !shouldRain && settings.fogChance > 0f && UnityEngine.Random.value < settings.fogChance;
-
-        if (shouldMist)
-            StartMist(mistLastsWholePeriod ? settings.duration : (float?)null);
-        else if (IsMisty)
-            StopMist();
+        // 30 ago 2026: el clima (lluvia/niebla) YA NO se sortea aquí — ver
+        // Header("Clima — sorteo independiente del periodo") y WeatherRollLoop/TryRollWeather más
+        // abajo. Antes, cambiar de periodo era el ÚNICO momento en que se sorteaba lluvia/niebla, lo
+        // que hacía que el clima se sintiera "pegado" al ciclo del día (petición explícita de Raúl:
+        // el clima debe poder ocurrir en cualquier momento, no solo al entrar en un periodo nuevo).
+        // Si ya estaba lloviendo/con niebla al cambiar de periodo, simplemente sigue como estaba —
+        // ninguna transición de periodo interrumpe ni fuerza clima por sí sola.
     }
 
     void ApplySettingsImmediate(TimeOfDaySettings settings)
@@ -1038,6 +1365,12 @@ public class DayNightCycle : MonoBehaviour
         // (bug reportado: "ha terminado de llover y no ha parado el sfx"). PlayLoopingSFX usa una
         // fuente dedicada que solo se detiene explícitamente en BeginRainFadeOut vía StopLoopingSFX.
         AudioService.Instance?.PlayLoopingSFX(RainWeatherSfxLoopId, rainStartedSfxKey);
+        // FIX (30 ago 2026): el comentario de arriba ("que no se vea/oiga hasta que salga") solo se
+        // cumplía a medias — _activeRainInstance.SetActive(false) oculta el visual, pero el loop de
+        // audio arrancaba igual de audible aunque el jugador ya estuviera dentro de un interior (o de
+        // una cinemática con override de interior) en el instante exacto en que empieza a llover.
+        if (IsSkyboxLockedByEnvironment())
+            AudioService.Instance?.SetLoopingSFXMuted(RainWeatherSfxLoopId, true);
         // El oscurecimiento (luz + niebla) y la cobertura de nubes ya se aplicaron durante la
         // nubosidad previa (CloudBuildUpRoutine) o de golpe si immediate=true, así que aquí solo
         // queda instanciar las partículas de lluvia.
@@ -1063,6 +1396,11 @@ public class DayNightCycle : MonoBehaviour
 
         if (_activeRainInstance != null)
             _rainFadeCoroutine = StartCoroutine(RainFadeOutRoutine(_activeRainInstance));
+
+        // Si la lluvia termina mientras seguimos dentro de una zona con niebla forzada (ver
+        // SetZoneMistOverride) — porque ya estaba lloviendo al entrar en la zona, así que no se le
+        // pisó — la niebla de zona toma el relevo aquí mismo, sin esperar al siguiente sorteo.
+        TryActivateZoneMist();
     }
 
     void StartRainDarken(float target)
@@ -1159,7 +1497,7 @@ public class DayNightCycle : MonoBehaviour
         IsMisty = true;
         onMistStarted?.Invoke();
         MistStarted?.Invoke();
-        PlayWeatherSfx(mistStartedSfxKey);
+        // SFX de inicio de niebla quitado a petición de Raúl (no le gustaba) — 1 sep 2026.
         StartMistAmount(1f);
     }
 
@@ -1170,7 +1508,10 @@ public class DayNightCycle : MonoBehaviour
         IsMisty = false;
         onMistStopped?.Invoke();
         MistStopped?.Invoke();
-        PlayWeatherSfx(mistStoppedSfxKey);
+        // SFX de fin de niebla quitado a petición de Raúl (no quiere que suene nada al
+        // salir la niebla) — 1 sep 2026. Mismo criterio que el SFX de inicio, ya quitado
+        // antes (ver ActivateMist). mistStoppedSfxKey se deja serializado sin más, por si se
+        // quiere reactivar más adelante.
         StartMistAmount(0f);
 
         if (_mistFadeCoroutine != null)
@@ -1224,7 +1565,367 @@ public class DayNightCycle : MonoBehaviour
         _mistFadeCoroutine = null;
     }
 
-    [ContextMenu("Avanzar al siguiente periodo")]
+    // ==================== Viento (30 ago 2026) ====================
+    // Mismo patrón que la niebla ocasional (StartMist/StopMist/MistRoutine/ActivateMist/
+    // BeginMistFadeOut/MistFadeOutRoutine) pero más simple: el viento no oscurece luz ni engorda
+    // niebla en esta pasada, así que no hace falta ningún "amount" gradual — solo instancia
+    // opcional (windPrefab, null-safe) + evento/SFX en loop + fundido de las partículas al parar.
+
+    public void ToggleWind()
+    {
+        if (IsWindy) StopWind();
+        else StartWind();
+    }
+
+    /// <summary>Arranca un evento de viento, independiente de la lluvia/niebla/tormenta.</summary>
+    public void StartWind(float? duration = null)
+    {
+        if (IsWindy) return;
+
+        if (_windCoroutine != null)
+            StopCoroutine(_windCoroutine);
+
+        float windDuration = duration ?? UnityEngine.Random.Range(windDurationRange.x, windDurationRange.y);
+        _windCoroutine = StartCoroutine(WindRoutine(windDuration));
+    }
+
+    public void StopWind()
+    {
+        if (!IsWindy) return;
+
+        if (_windCoroutine != null)
+        {
+            StopCoroutine(_windCoroutine);
+            _windCoroutine = null;
+        }
+
+        BeginWindFadeOut();
+    }
+
+    IEnumerator WindRoutine(float duration)
+    {
+        ActivateWind();
+        yield return new WaitForSeconds(duration);
+        BeginWindFadeOut();
+        _windCoroutine = null;
+    }
+
+    void ActivateWind()
+    {
+        if (IsWindy) return;
+
+        if (_windFadeCoroutine != null)
+        {
+            StopCoroutine(_windFadeCoroutine);
+            _windFadeCoroutine = null;
+            if (_activeWindInstance != null)
+            {
+                Destroy(_activeWindInstance);
+                _activeWindInstance = null;
+            }
+        }
+
+        if (windPrefab != null)
+        {
+            Transform parent = PlayerService.Player != null ? PlayerService.Player.transform :
+                               Camera.main != null ? Camera.main.transform : null;
+
+            if (parent != null)
+            {
+                _activeWindInstance = Instantiate(windPrefab, parent);
+                _activeWindInstance.transform.localPosition = Vector3.zero;
+            }
+            else
+            {
+                _activeWindInstance = Instantiate(windPrefab, transform.position, Quaternion.identity);
+                Debug.LogWarning("[DayNightCycle] No se encontró jugador ni cámara, viento instanciado sin padre.");
+            }
+
+            if (IsSkyboxLockedByEnvironment())
+                _activeWindInstance.SetActive(false);
+        }
+
+        IsWindy = true;
+        onWindStarted?.Invoke();
+        WindStarted?.Invoke();
+        GameplayEventLog.Log("VientoInicio");
+        // Igual que la lluvia (ver ActivateRain): loop dedicado, no un one-shot que se autodevuelve
+        // al pool cuando termina el CLIP en vez de cuando termina el viento de verdad.
+        AudioService.Instance?.PlayLoopingSFX(WindWeatherSfxLoopId, windStartedSfxKey);
+        // FIX (30 ago 2026): mismo hueco que ActivateRain (ver comentario ahí) — silenciar también
+        // si ya estamos en un interior/cinemática cuando arranca el viento.
+        if (IsSkyboxLockedByEnvironment())
+            AudioService.Instance?.SetLoopingSFXMuted(WindWeatherSfxLoopId, true);
+    }
+
+    void BeginWindFadeOut()
+    {
+        if (!IsWindy) return;
+
+        IsWindy = false;
+        onWindStopped?.Invoke();
+        WindStopped?.Invoke();
+        GameplayEventLog.Log("VientoFin");
+        AudioService.Instance?.StopLoopingSFX(WindWeatherSfxLoopId, windFadeOutTime);
+        PlayWeatherSfx(windStoppedSfxKey);
+
+        if (_windFadeCoroutine != null)
+            StopCoroutine(_windFadeCoroutine);
+
+        if (_activeWindInstance != null)
+            _windFadeCoroutine = StartCoroutine(WindFadeOutRoutine(_activeWindInstance));
+    }
+
+    IEnumerator WindFadeOutRoutine(GameObject windInstance)
+    {
+        var particles = windInstance.GetComponentsInChildren<ParticleSystem>();
+        foreach (var ps in particles)
+        {
+            var emission = ps.emission;
+            emission.enabled = false;
+        }
+
+        yield return new WaitForSeconds(windFadeOutTime);
+
+        if (windInstance != null)
+            Destroy(windInstance);
+
+        if (_activeWindInstance == windInstance)
+            _activeWindInstance = null;
+
+        _windFadeCoroutine = null;
+    }
+
+    // ==================== Tormenta / Rayos (30 ago 2026) ====================
+    // Una tormenta ES lluvia (reutiliza StartRain/StopRain tal cual — mismas partículas,
+    // oscurecimiento, niebla, nubosidad previa y SFX de siempre) MÁS una capa de rayos periódicos
+    // por encima. No se ha creado un sistema de lluvia paralelo: solo se añade la parte de rayos.
+
+    /// <summary>
+    /// Arranca una tormenta: lluvia normal (StartRain) + rayos periódicos (LightningLoop) durante
+    /// <paramref name="duration"/> segundos. Si ya está lloviendo (narrativa, u otra llamada), no
+    /// hace nada — igual que StartRain, para no pisar una lluvia ya en marcha por otro motivo.
+    /// </summary>
+    public void StartThunderstorm(float? duration = null, bool immediate = false)
+    {
+        if (IsThunderstorm)
+        {
+            Debug.Log("[DayNightCycle] StartThunderstorm() no ha hecho nada: ya hay una tormenta activa.");
+            return;
+        }
+        if (IsRaining || _isCloudBuildingUp)
+        {
+            Debug.Log("[DayNightCycle] StartThunderstorm() no ha hecho nada: ya está lloviendo o nublándose por otro motivo (StartRain/StartThunderstorm no se pueden solapar). Usa StopRain() primero si quieres forzar la tormenta.");
+            return;
+        }
+        if (TagMinigameController.IsAnyMinigameActive)
+        {
+            Debug.Log("[DayNightCycle] StartThunderstorm() no ha hecho nada: hay un minijuego activo.");
+            return;
+        }
+
+        if (_thunderstormCoroutine != null)
+            StopCoroutine(_thunderstormCoroutine);
+
+        float stormDuration = duration ?? UnityEngine.Random.Range(rainDurationRange.x, rainDurationRange.y);
+        _thunderstormCoroutine = StartCoroutine(ThunderstormRoutine(stormDuration, immediate));
+    }
+
+    /// <summary>
+    /// Para la tormenta YA (rayos + lluvia), sin esperar a que acabe su temporizador. Si la lluvia
+    /// de una tormenta se para con StopRain() en vez de con esta función, los rayos seguirán
+    /// sonando/destellando hasta que acabe el temporizador de la tormenta — usar siempre
+    /// StopThunderstorm() para pararla del todo de golpe (p.ej. narrativa, minijuego).
+    /// </summary>
+    public void StopThunderstorm()
+    {
+        if (!IsThunderstorm) return;
+
+        if (_thunderstormCoroutine != null)
+        {
+            StopCoroutine(_thunderstormCoroutine);
+            _thunderstormCoroutine = null;
+        }
+
+        FinishThunderstorm();
+        StopRain();
+    }
+
+    IEnumerator ThunderstormRoutine(float duration, bool immediate)
+    {
+        IsThunderstorm = true;
+        onThunderstormStarted?.Invoke();
+        ThunderstormStarted?.Invoke();
+        GameplayEventLog.Log("TormentaInicio");
+
+        StartRain(duration, immediate);
+
+        if (_lightningCoroutine != null)
+            StopCoroutine(_lightningCoroutine);
+        // El primer rayo llega YA (sin esperar thunderstormLightningIntervalRange) — una tormenta
+        // que empieza con un trueno inmediato se lee mejor que un silencio de hasta 22s, y de paso
+        // da feedback instantáneo al testear ("Testeo: Tormenta (iniciar)"). Los rayos siguientes
+        // dentro del mismo LightningLoop sí respetan el intervalo normal.
+        _lightningCoroutine = StartCoroutine(LightningLoop(firstStrikeImmediate: true));
+
+        yield return new WaitForSeconds(duration);
+
+        // La lluvia de debajo ya se para sola (StartRain(duration) programó su propio fin) — aquí
+        // solo queda cerrar la capa extra de rayos.
+        FinishThunderstorm();
+        _thunderstormCoroutine = null;
+    }
+
+    void FinishThunderstorm()
+    {
+        if (!IsThunderstorm) return;
+
+        IsThunderstorm = false;
+        onThunderstormStopped?.Invoke();
+        ThunderstormStopped?.Invoke();
+        GameplayEventLog.Log("TormentaFin");
+
+        if (_lightningCoroutine != null)
+        {
+            StopCoroutine(_lightningCoroutine);
+            _lightningCoroutine = null;
+        }
+    }
+
+    IEnumerator LightningLoop(bool firstStrikeImmediate = false)
+    {
+        bool first = true;
+        while (true)
+        {
+            if (first && firstStrikeImmediate)
+            {
+                // Nada de espera para el primer rayo — ver comentario en ThunderstormRoutine.
+            }
+            else
+            {
+                float wait = UnityEngine.Random.Range(thunderstormLightningIntervalRange.x, thunderstormLightningIntervalRange.y);
+                yield return new WaitForSeconds(wait);
+            }
+            first = false;
+            yield return FlashLightningRoutine();
+        }
+    }
+
+    /// <summary>
+    /// Un único rayo: destello + trueno con retraso. El destello es una Light DIRECCIONAL NUEVA y
+    /// temporal (no toca directionalLight para nada) — ver el tooltip de thunderstormFlashIntensity
+    /// para el porqué: directionalLight.intensity ya se recalcula cada frame en LateUpdate a partir
+    /// de SU PROPIO valor actual mientras llueve (oscurecimiento por lluvia, ver
+    /// rainLightIntensityMultiplier), así que escribir ahí directamente para el destello se pelearía
+    /// con ese cálculo y dejaría un resultado impredecible en vez de un destello limpio.
+    /// </summary>
+    /// <summary>
+    /// El trazo del rayo en sí (el "zigzag" que cae del cielo), no solo el destello de luz
+    /// ambiental de FlashLightningRoutine — sin esto un "rayo" era indistinguible de un simple
+    /// parpadeo de brillo general, que es justo lo que Raúl señaló que faltaba ("debe verse con
+    /// rayos caer"). GameObject temporal con LineRenderer en world space (mismo patrón de líneas
+    /// que NightSkyConstellationSpawner), material compartido _lightningBoltMaterial (ver Awake).
+    /// Nace en el cielo (thunderstormBoltHeight) y "golpea" un punto en el suelo a una distancia y
+    /// ángulo aleatorios alrededor del jugador (thunderstormBoltDistanceRange) — los extremos
+    /// (cielo/impacto) quedan fijos, y solo los puntos intermedios se desvían horizontalmente
+    /// (thunderstormBoltJitter) para dar la forma quebrada característica de un rayo, en vez de una
+    /// línea recta. Se autodestruye a los pocos instantes, igual que el destello de luz.
+    /// </summary>
+    void SpawnLightningBolt()
+    {
+        if (_lightningBoltMaterial == null)
+            return;
+
+        Transform reference = PlayerService.Player != null ? PlayerService.Player.transform :
+                              Camera.main != null ? Camera.main.transform : transform;
+
+        // Sesgado hacia donde mira la cámara (±65°) en vez de 360° completos — con ángulo
+        // totalmente libre, la mayoría de los rayos nacían fuera de la vista de la cámara y era
+        // imposible verlos por pura geometría, sin que hubiera nada mal en el material/shader.
+        float cameraYaw = Camera.main != null ? Camera.main.transform.eulerAngles.y : reference.eulerAngles.y;
+        float boltYaw = cameraYaw + UnityEngine.Random.Range(-65f, 65f);
+        float distance = UnityEngine.Random.Range(thunderstormBoltDistanceRange.x, thunderstormBoltDistanceRange.y);
+        Vector3 horizontalOffset = (Quaternion.Euler(0f, boltYaw, 0f) * Vector3.forward) * distance;
+
+        Vector3 groundPoint = reference.position + horizontalOffset;
+        Vector3 topPoint = groundPoint + Vector3.up * thunderstormBoltHeight;
+
+        int segments = Mathf.Max(2, thunderstormBoltSegments);
+
+        var boltObj = new GameObject("[ThunderstormLightningBolt]");
+        var line = boltObj.AddComponent<LineRenderer>();
+        line.useWorldSpace = true;
+        line.material = _lightningBoltMaterial;
+        line.startColor = thunderstormBoltColor;
+        line.endColor = thunderstormBoltColor;
+        line.widthMultiplier = thunderstormBoltWidth;
+        line.numCapVertices = 2;
+        line.positionCount = segments + 1;
+
+        for (int i = 0; i <= segments; i++)
+        {
+            float t = (float)i / segments;
+            Vector3 point = Vector3.Lerp(topPoint, groundPoint, t);
+
+            // Los extremos se dejan sin desviar (nace arriba, golpea el punto elegido) — el
+            // zigzag va solo en los puntos intermedios.
+            if (i != 0 && i != segments)
+            {
+                float jitterX = UnityEngine.Random.Range(-thunderstormBoltJitter, thunderstormBoltJitter);
+                float jitterZ = UnityEngine.Random.Range(-thunderstormBoltJitter, thunderstormBoltJitter);
+                point += new Vector3(jitterX, 0f, jitterZ);
+            }
+
+            line.SetPosition(i, point);
+        }
+
+        Destroy(boltObj, Mathf.Max(0.05f, thunderstormBoltVisibleDuration));
+    }
+
+    IEnumerator FlashLightningRoutine()
+    {
+        SpawnLightningBolt();
+
+        var flashObj = new GameObject("[ThunderstormLightningFlash]");
+        var flash = flashObj.AddComponent<Light>();
+        flash.type = LightType.Directional;
+        flash.color = Color.white;
+        flash.intensity = thunderstormFlashIntensity;
+        flash.shadows = LightShadows.None;
+        if (directionalLight != null)
+            flashObj.transform.rotation = directionalLight.transform.rotation;
+
+        yield return new WaitForSeconds(Mathf.Max(0.01f, thunderstormFlashDuration));
+
+        if (flashObj != null)
+            Destroy(flashObj);
+
+        float thunderDelay = UnityEngine.Random.Range(thunderstormThunderDelayRange.x, thunderstormThunderDelayRange.y);
+        yield return new WaitForSeconds(thunderDelay);
+        PlayWeatherSfx(thunderstormThunderSfxKey);
+    }
+
+    // 30 ago 2026 — Raúl pidió botones de prueba en el Inspector ("testeos") para poder forzar cada
+    // periodo del día y el clima sin esperar al ciclo automático, sobre todo para probar cambios de
+    // arte del cielo (p.ej. el domo de estrellas, ver NightSkyStarSpawner) sin tener que esperar a
+    // que le toque la noche por turno. Todos con el prefijo "Testeo:" para que aparezcan agrupados y
+    // se distingan a simple vista de las acciones "de verdad" (SetTimeOfDay/StartRain/etc., ya
+    // públicas y usadas por narrativa). Los periodos usan immediate:true a propósito (sin la
+    // transición suave de transitionDuration, ~10-16s) — para testear rápido interesa el cambio ya,
+    // no verlo animarse.
+    [ContextMenu("Testeo: Ir a Amanecer")]
+    public void DebugGoToMorning() => SetTimeOfDay(TimeOfDay.Morning, immediate: true);
+
+    [ContextMenu("Testeo: Ir a Día")]
+    public void DebugGoToDay() => SetTimeOfDay(TimeOfDay.AfterNoon, immediate: true);
+
+    [ContextMenu("Testeo: Ir a Atardecer")]
+    public void DebugGoToSunset() => SetTimeOfDay(TimeOfDay.Sunset, immediate: true);
+
+    [ContextMenu("Testeo: Ir a Noche")]
+    public void DebugGoToNight() => SetTimeOfDay(TimeOfDay.Night, immediate: true);
+
+    [ContextMenu("Testeo: Avanzar al siguiente periodo")]
     public void DebugAdvanceTime() => AdvanceToNextPeriod();
 
     // Antes había un único "Activar/Desactivar lluvia" (ToggleRain) — con un solo ítem que hace lo
@@ -1232,15 +1933,33 @@ public class DayNightCycle : MonoBehaviour
     // pare (o al revés) si no se tiene clara la etiqueta ni el estado actual. Separado en dos
     // acciones explícitas: cada una hace SIEMPRE lo que dice, sin depender de IsRaining. StartRain()/
     // StopRain() ya no hacen nada si ya está en ese estado (no hace falta guardia extra aquí).
-    [ContextMenu("Lluvia: iniciar")]
+    [ContextMenu("Testeo: Lluvia (iniciar)")]
     public void DebugStartRain() => StartRain();
 
-    [ContextMenu("Lluvia: detener")]
+    [ContextMenu("Testeo: Lluvia (detener)")]
     public void DebugStopRain() => StopRain();
 
-    [ContextMenu("Niebla: iniciar")]
+    [ContextMenu("Testeo: Niebla (iniciar)")]
     public void DebugStartMist() => StartMist();
 
-    [ContextMenu("Niebla: detener")]
+    [ContextMenu("Testeo: Niebla (detener)")]
     public void DebugStopMist() => StopMist();
+
+    [ContextMenu("Testeo: Viento (iniciar)")]
+    public void DebugStartWind() => StartWind();
+
+    [ContextMenu("Testeo: Viento (detener)")]
+    public void DebugStopWind() => StopWind();
+
+    [ContextMenu("Testeo: Tormenta (iniciar)")]
+    public void DebugStartThunderstorm() => StartThunderstorm(immediate: true);
+
+    [ContextMenu("Testeo: Tormenta (detener)")]
+    public void DebugStopThunderstorm() => StopThunderstorm();
+
+    [ContextMenu("Testeo: Rayo ya (un solo destello + trueno)")]
+    public void DebugStrikeLightning() => StartCoroutine(FlashLightningRoutine());
+
+    [ContextMenu("Testeo: Forzar sorteo de clima ya (sin esperar weatherCheckIntervalRange)")]
+    public void DebugForceWeatherRoll() => TryRollWeather();
 }

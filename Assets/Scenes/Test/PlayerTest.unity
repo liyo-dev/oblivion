@@ -17695,28 +17695,6 @@ MonoBehaviour:
     fogColor: {r: 0.68, g: 0.78, b: 0.92, a: 1}
     fogDensity: 0.008
     duration: 120
-    forceRain: 0
-    rainChance: 0
-    fogChance: 0
-  - timeOfDay: 1
-    skybox: {fileID: 2100000, guid: 0b846be1b116429409a7669cacf2a62e, type: 2}
-    skyboxTint: {r: 1, g: 1, b: 1, a: 1}
-    skyboxIntensity: 1
-    skyboxExponent: 1
-    skyboxDirectionYaw: 0
-    skyboxDirectionPitch: 0
-    lightColor: {r: 1, g: 1, b: 1, a: 1}
-    lightIntensity: 1.4
-    sunRotationX: 60
-    sunRotationY: 120
-    ambientColor: {r: 0.38, g: 0.37, b: 0.33, a: 1}
-    ambientIntensity: 1
-    fogColor: {r: 0.88, g: 0.9, b: 0.92, a: 1}
-    fogDensity: 0.005
-    duration: 90
-    forceRain: 0
-    rainChance: 0
-    fogChance: 0
   - timeOfDay: 0
     skybox: {fileID: 2100000, guid: 1cf32c17fea93ef4fb120e8e0cdfbef1, type: 2}
     skyboxTint: {r: 1, g: 1, b: 1, a: 1}
@@ -17733,28 +17711,6 @@ MonoBehaviour:
     fogColor: {r: 0.85, g: 0.85, b: 0.85, a: 1}
     fogDensity: 0.004
     duration: 120
-    forceRain: 0
-    rainChance: 0
-    fogChance: 0
-  - timeOfDay: 3
-    skybox: {fileID: 2100000, guid: 82b660520bdecce4daf45d270ec93fe4, type: 2}
-    skyboxTint: {r: 1, g: 1, b: 1, a: 1}
-    skyboxIntensity: 1
-    skyboxExponent: 1
-    skyboxDirectionYaw: 0
-    skyboxDirectionPitch: 0
-    lightColor: {r: 1, g: 1, b: 1, a: 1}
-    lightIntensity: 0.9
-    sunRotationX: 100
-    sunRotationY: 210
-    ambientColor: {r: 0.36, g: 0.28, b: 0.22, a: 1}
-    ambientIntensity: 0.85
-    fogColor: {r: 0.78, g: 0.65, b: 0.52, a: 1}
-    fogDensity: 0.009
-    duration: 60
-    forceRain: 0
-    rainChance: 0
-    fogChance: 0
   - timeOfDay: 8
     skybox: {fileID: 2100000, guid: ac2eeb98f1b423941b373f537bc56e18, type: 2}
     skyboxTint: {r: 1, g: 1, b: 1, a: 1}
@@ -17771,9 +17727,6 @@ MonoBehaviour:
     fogColor: {r: 0.9, g: 0.55, b: 0.3, a: 1}
     fogDensity: 0.013
     duration: 45
-    forceRain: 0
-    rainChance: 0
-    fogChance: 0
   - timeOfDay: 7
     skybox: {fileID: 2100000, guid: 493bfb50af5d9424da505ba945c86600, type: 2}
     skyboxTint: {r: 1, g: 1, b: 1, a: 1}
@@ -17790,28 +17743,7 @@ MonoBehaviour:
     fogColor: {r: 0.08, g: 0.08, b: 0.18, a: 1}
     fogDensity: 0.016
     duration: 90
-    forceRain: 0
-    rainChance: 0
-    fogChance: 0
-  - timeOfDay: 5
-    skybox: {fileID: 2100000, guid: 97637a2a763b7f24b8da4e139e4144ca, type: 2}
-    skyboxTint: {r: 1, g: 1, b: 1, a: 1}
-    skyboxIntensity: 1
-    skyboxExponent: 1
-    skyboxDirectionYaw: 0
-    skyboxDirectionPitch: 0
-    lightColor: {r: 1, g: 1, b: 1, a: 1}
-    lightIntensity: 0.2
-    sunRotationX: 180
-    sunRotationY: 355
-    ambientColor: {r: 0.04, g: 0.04, b: 0.1, a: 1}
-    ambientIntensity: 0.3
-    fogColor: {r: 0.04, g: 0.04, b: 0.1, a: 1}
-    fogDensity: 0.022
-    duration: 60
-    forceRain: 0
-    rainChance: 0
-    fogChance: 0
+
   sharedSkyboxMaterial: {fileID: 0}
   directionalLight: {fileID: 1448444570}
   transitionDuration: 10
@@ -17819,7 +17751,6 @@ MonoBehaviour:
   controlAmbientLight: 1
   controlFog: 1
   rainPrefab: {fileID: 3292688598545588766, guid: 1b7e584853e241a1956d417c4436d159, type: 3}
-  rainLastsWholePeriod: 0
   rainFadeOutTime: 3
   stormSkybox: {fileID: 0}
   rainLightIntensityMultiplier: 0.55
@@ -17829,11 +17760,14 @@ MonoBehaviour:
   rainMinLightIntensity: 0.28
   rainDarkenTransitionDuration: 4
   mistPrefab: {fileID: 0}
-  mistLastsWholePeriod: 0
   mistDurationRange: {x: 20, y: 45}
   mistFadeOutTime: 4
   mistFogDensityMultiplier: 4
   mistTransitionDuration: 8
+  weatherCheckIntervalRange: {x: 45, y: 110}
+  rainChancePerCheck: 0.18
+  rainDurationRange: {x: 40, y: 100}
+  mistChancePerCheck: 0.12
   cloudsBuildingUpSfxKey: 
   rainStartedSfxKey: 
   rainStoppedSfxKey: 

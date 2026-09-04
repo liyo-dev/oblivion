@@ -25,7 +25,8 @@ namespace Core
         Interact,
         LeftShoulder,
         RightShoulder,
-        ToggleBigMap
+        ToggleBigMap,
+        ToggleTargetLock
     }
 
     public readonly struct InputEvent
@@ -440,6 +441,16 @@ namespace Core
 #if ENABLE_INPUT_SYSTEM
     private static void PollHardwareFallback()
     {
+        // Equivalente en teclado del toggle de lock-on de objetivo — tecla F ("Fijar objetivo"),
+        // libre en PlayerControls.inputactions (no confundir con la T de teletransporte en punto
+        // de guardado, que es un sistema aparte: ver InputGlyphNames.Teleport /
+        // SavePointTeleportTrigger). Comprobado ANTES del early-return por falta de mando: a
+        // diferencia del resto de este método (fallback puramente de gamepad), esta tecla debe
+        // funcionar también en partidas jugadas solo con teclado.
+        var kbToggleLock = UnityEngine.InputSystem.Keyboard.current;
+        if (kbToggleLock != null && kbToggleLock.fKey.wasPressedThisFrame)
+            Emit(InputEventType.ToggleTargetLock, Vector2.zero, InputActionPhase.Performed, applySuppression: true, dedupePerFrame: true);
+
         var gp = GetGamepad();
         if (gp == null) return;
 
@@ -476,6 +487,13 @@ namespace Core
             Emit(InputEventType.RightShoulder, Vector2.zero, InputActionPhase.Performed, applySuppression: true, dedupePerFrame: true);
         if (gp.selectButton != null && gp.selectButton.wasPressedThisFrame)
             Emit(InputEventType.ToggleBigMap, Vector2.zero, InputActionPhase.Performed, applySuppression: true, dedupePerFrame: true);
+
+        // Activar/desactivar el lock-on de objetivo en combate (petición Raúl, 1 sep 2026) —
+        // clic del stick derecho (R3), botón sin usar por ningún otro sistema del proyecto (ver
+        // PlayerControls.inputactions). Único suscriptor: CombatCameraTargeting.HandleGamepadInput.
+        if (gp.rightStickButton != null && gp.rightStickButton.wasPressedThisFrame)
+            Emit(InputEventType.ToggleTargetLock, Vector2.zero, InputActionPhase.Performed, applySuppression: true, dedupePerFrame: true);
+
     }
 #endif
 

@@ -215,11 +215,16 @@ namespace Game.NPC
             PlayerService.OnPlayerUnregistered += OnPlayerUnregistered;
             ResolvePlayerReferences();
 
-            // 9. Refugio de lluvia: escuchar cambios de clima y aplicar el estado actual por si
-            // ya está lloviendo al activarse este NPC (recarga de escena a mitad de tormenta, etc.)
-            NPCWeatherAwareness.RainStarted += HandleRainStarted;
-            NPCWeatherAwareness.RainStopped += HandleRainStopped;
-            _context.ShouldSeekShelter = NPCWeatherAwareness.IsRaining;
+            // 9. Refugio de lluvia: DESACTIVADO (31 ago 2026, a petición de diseño de Raúl —
+            // ya no quiere que los NPCs reaccionen a la lluvia sentándose/tiritando bajo un
+            // NPCShelterPoint). El sistema completo (SeekShelterState, ReturnFromShelterState,
+            // NPCShelterPoint, los chequeos en IdleState/WanderState/WalkToActivityState) se deja
+            // intacto en el código por si se retoma más adelante: basta con descomentar estas 3
+            // líneas para reactivarlo. Con ShouldSeekShelter siempre en su valor por defecto
+            // (false), esos 3 estados nunca disparan la transición a SeekShelterState.
+            // NPCWeatherAwareness.RainStarted += HandleRainStarted;
+            // NPCWeatherAwareness.RainStopped += HandleRainStopped;
+            // _context.ShouldSeekShelter = NPCWeatherAwareness.IsRaining;
 
             // 🌍 LOD de IA: offset aleatorio para no acumular las comprobaciones de distancia de
             // todos los NPCs de la escena en el mismo frame (ver aiDistanceCheckInterval).
@@ -269,17 +274,83 @@ namespace Game.NPC
             {
                 _brain.ChangeState(new States.IdleState());
             }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            WarnIfFixedSitterMisplaced();
+#endif
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // FIX (30 ago 2026, incidencia reportada por Raúl: NPC sentado pero hundido en el suelo —
+        // confirmado que NO estaba en un NPCShelterPoint, así que SeekShelterState queda descartado
+        // como causa): los NPCs con actividad ambiental FIJA (ambientConfig.enableWander = false +
+        // ambientActivity = Sit*, ver IdleState.OnEnter) se sientan exactamente en su posición de
+        // spawn — un Transform colocado a mano en la escena — sin ningún raycast de comprobación
+        // contra el suelo real, a diferencia de SeekShelterState, que sí avisa si su punto de
+        // refugio queda muy por encima/debajo del NavMesh (ver LogWarning en esa clase). Como estos
+        // NPCs nunca caminan (enableWander = false), si el Transform se colocó ligeramente por
+        // debajo de la malla de terreno al diseñar la escena, el NPC se sienta ahí hundido para
+        // siempre y nada lo corrige ni lo detecta solo. Este chequeo solo avisa por consola al
+        // arrancar — no mueve al NPC — para poder localizar rápido qué NPC/escena tiene el
+        // Transform mal colocado la próxima vez que se reporte este síntoma.
+        private const float SitterGroundMismatchWarnThreshold = 0.15f;
+
+        private void WarnIfFixedSitterMisplaced()
+        {
+            var ambientConfig = configuration?.ambientConfig;
+            if (ambientConfig == null || ambientConfig.enableWander) return;
+
+            bool isSitActivity = ambientConfig.ambientActivity == NPCAmbientActivity.SitGround
+                || ambientConfig.ambientActivity == NPCAmbientActivity.SitLow
+                || ambientConfig.ambientActivity == NPCAmbientActivity.SitMedium
+                || ambientConfig.ambientActivity == NPCAmbientActivity.SitHigh;
+            if (!isSitActivity) return;
+
+            Vector3 origin = transform.position + Vector3.up * 1.5f;
+            var hits = Physics.RaycastAll(origin, Vector3.down, 5f, ~0, QueryTriggerInteraction.Ignore);
+            System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+            foreach (var hit in hits)
+            {
+                if (hit.transform == transform || hit.transform.IsChildOf(transform)) continue;
+
+                float verticalDiff = hit.point.y - transform.position.y;
+                if (Mathf.Abs(verticalDiff) > SitterGroundMismatchWarnThreshold)
+                {
+                    Debug.LogWarning($"[NPCBehaviourManagerV2:{gameObject.name}] NPC con actividad fija '{ambientConfig.ambientActivity}' " +
+                        $"(enableWander=false) tiene su Transform a {Mathf.Abs(verticalDiff):F2}m " +
+                        $"{(verticalDiff > 0 ? "por debajo del suelo detectado (probablemente hundido)" : "por encima del suelo detectado")} " +
+                        $"bajo '{hit.collider.name}' — revisar la altura Y de su Transform en el Editor, se sentará así para siempre sin corregirse solo.");
+                }
+                break; // solo el primer hit válido (el más cercano que no sea el propio NPC)
+            }
+        }
+#endif
         
         void Update()
         {
             if (aiUpdateDistance > 0f)
             {
                 _distanceCheckTimer -= Time.deltaTime;
+
+                // FIX (31 ago 2026, INC-129 — NPC "congelado" en la pose de reacción a la lluvia
+                // tras dejar de llover, aunque el causante concreto -el refugio de lluvia- se ha
+                // desactivado por diseño más abajo, esta carrera de condiciones es general): si
+                // el chequeo periódico de distancia duerme a este NPC en ESTE mismo frame
+                // (justEnteredFar), antes se saltaba _brain.Update() sin más — y si justo en ese
+                // instante una condición de exención (ver HasActiveAiExemption) acababa de pasar
+                // a false, el estado activo nunca llegaba a enterarse del cambio y se quedaba
+                // congelado hasta que el jugador volviera a acercarse. Ahora, el frame en el que
+                // el NPC pasa a estar "lejos" siempre deja pasar un último _brain.Update() antes
+                // de empezar a saltárselo, para que cualquier transición pendiente por un cambio
+                // de flag reciente se procese antes de dormir al NPC.
+                bool justEnteredFar = false;
                 if (_distanceCheckTimer <= 0f)
                 {
                     _distanceCheckTimer = aiDistanceCheckInterval;
+                    bool wasFarBefore = _isFarFromPlayer;
                     UpdateDistanceLOD();
+                    justEnteredFar = !wasFarBefore && _isFarFromPlayer;
                 }
 
                 // El NPC está "dormido" (lejos y sin ninguna razón para seguir activo): nos
@@ -287,7 +358,7 @@ namespace Game.NPC
                 // el frame time alto en exteriores grandes: cada NPC esparcido por el mundo
                 // seguía corriendo su FSM entera (detección, wander, NavMeshAgent...) aunque
                 // estuviera a cientos de metros del jugador y fuera de cámara.
-                if (_isFarFromPlayer)
+                if (_isFarFromPlayer && !justEnteredFar)
                 {
                     // Si justo AHORA aparece una razón para estar activo (p.ej. algo externo nos
                     // metió en combate/cinemática mientras dormíamos), despertamos de inmediato en
@@ -457,8 +528,9 @@ namespace Game.NPC
             UnregisterNarrativeIdentity();
             PlayerService.OnPlayerRegistered -= OnPlayerRegistered;
             PlayerService.OnPlayerUnregistered -= OnPlayerUnregistered;
-            NPCWeatherAwareness.RainStarted -= HandleRainStarted;
-            NPCWeatherAwareness.RainStopped -= HandleRainStopped;
+            // Ver Awake(): suscripción desactivada, así que no hace falta des-suscribirse.
+            // NPCWeatherAwareness.RainStarted -= HandleRainStarted;
+            // NPCWeatherAwareness.RainStopped -= HandleRainStopped;
         }
 
         // =================================================================================

@@ -1,480 +1,468 @@
 {
-  "texts": [
-    {
-      "key": "ELDRAN_MISSION2_NAME",
-      "value": "A por la caja de frutas"
-    },
-    {
-      "key": "ELDRAN_MISSION8",
-      "value": "Protege a la gente del Reino de la furia de Estela."
-    },
-    {
-      "key": "FUEGOFATUO_DESC_01",
-      "value": "Buscar provisiones con Estela"
-    },
-    {
-      "key": "FUEGOFATUO_DESC_02",
-      "value": "Inspeccionar el terreno con Will y Liam"
-    },
-    {
-      "key": "FUEGOFATUO_DETAIL",
-      "value": "Algo extraño está sucediendo en el bosque durante la noche. Tienes dos cosas que hacer para investigarlo:\n1. Busca provisiones junto a Estela.\n2. Inspecciona el terreno junto a Will y Liam.\nCompleta ambas tareas para descubrir qué se esconde entre los árboles."
-    },
-    {
-      "key": "FUEGOFATUO_NAME",
-      "value": "Algo ocurre en el bosque de noche"
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION0_DETAIL",
-      "value": "Sobre la mesita de tu habitación hay una carta esperando a que la leas. Acércate y ábrela para descubrir cómo empieza tu aventura."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION10_DESC",
-      "value": "Busca la forma de salir."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION10_DETAIL",
-      "value": "Te encuentras atrapado y necesitas encontrar la manera de escapar. Explora los alrededores en busca de una salida."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION10_NAME",
-      "value": "Operación Avestruz"
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION11_DESC",
-      "value": "Vuelve por donde has venido y sal del castillo."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION11_DETAIL",
-      "value": "Ya has conseguido lo que necesitabas. Ahora desanda tus pasos por el mismo camino que recorriste al entrar y sal del castillo."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION11_NAME",
-      "value": "Sal del castillo"
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION12_DESC",
-      "value": "Usa a todo el equipo para derrotar al demonio."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION12_DETAIL",
-      "value": "El demonio ha vuelto a aparecer, esta vez más fuerte. Reúne a todo tu equipo y coordinaos para derrotarlo entre todos; cuando Will tenga la oportunidad, indícale que use su habilidad especial contra el demonio."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION12_NAME",
-      "value": "El regreso del demonio"
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION13_DESC",
-      "value": "Reúnete con Eldran en las afueras del Reino."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION13_DETAIL",
-      "value": "Eldran te ha citado en las afueras del Reino. Sal de la ciudad y búscalo allí para reuniros."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION13_NAME",
-      "value": "Nos vemos fuera."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION14_DESC",
-      "value": "Busca al amigo de Eldran en el pueblo de al lado."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION14_DETAIL",
-      "value": "Eldran te ha hablado de un viejo amigo suyo que vive en el pueblo vecino. Viaja hasta allí y encuéntralo."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION14_NAME",
-      "value": "Operación Avestruz 2.0"
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION15_DESC",
-      "value": "Encuentra el templo olvidado."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION15_DESC_01",
-      "value": "Encuentra el libro de hechizos prohibidos."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION15_DETAIL",
-      "value": "Se dice que existe un templo olvidado escondido en algún lugar. Encuéntralo y, una vez dentro, explóralo a fondo hasta dar con el libro de hechizos prohibidos que se guarda en su interior."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION15_NAME",
-      "value": "El Templo Olvidado"
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION1_DESC",
-      "value": "Ve a hablar con Eldran en la entrada del reino"
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION1_DETAIL",
-      "value": "Ha llegado un nuevo día. Sal de casa y dirígete a la entrada del Reino, donde Eldran te está esperando para hablar contigo. Sigue el camino principal hasta llegar a las puertas del Reino."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION1_NAME",
-      "value": "De buena mañana"
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION2_DESC",
-      "value": "Encuentra la caja de frutas en el bosque y llévasela a Eldran"
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION2_DETAIL",
-      "value": "Eldran necesita una caja de frutas que se ha quedado perdida en el bosque. Adéntrate entre los árboles y explora la zona hasta encontrarla; una vez la tengas en tu poder, vuelve al Reino y entrégasela a Eldran."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION2_NAME",
-      "value": "A por la caja de frutas"
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION3_DESC",
-      "value": "Derrota al demonio."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION3_DETAIL",
-      "value": "Un demonio se ha presentado ante ti. Prepárate para el combate y utiliza tus habilidades para derrotarlo; este será tu primer gran desafío como una Estrella."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION3_NAME",
-      "value": "El despertar de una Estrella"
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION4_DESC",
-      "value": "Ve a hablar con Eldran cuando estés preparado."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION4_DETAIL",
-      "value": "Cuando te sientas preparado, regresa junto a Eldran para contarle lo ocurrido y recibir sus próximas indicaciones."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION4_NAME",
-      "value": "Vuelve con Eldran"
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION5_DESC",
-      "value": "Sigue las instrucciones de Eldran."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION5_DESC_01",
-      "value": "Busca a Victoria y pídele una capa de mago."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION5_DESC_02",
-      "value": "Compra una poción de vida."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION5_DESC_03",
-      "value": "Entrena con Erika, la puedes encontrar cerca del castillo."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION5_DETAIL",
-      "value": "Eldran quiere asegurarse de que estás bien preparado antes de continuar. Tienes tres cosas que hacer:\n1. Busca a Victoria y pídele una capa de mago.\n2. Compra una poción de vida.\n3. Entrena con Erika, a quien puedes encontrar cerca del castillo.\nCompleta las tres tareas, en el orden que prefieras, para terminar tu preparación."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION5_NAME",
-      "value": "La preparación del Mago"
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION6_DESC",
-      "value": "Regresa con Estela a ver a Eldran."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION6_DESC_01",
-      "value": "Busca a Estela en el bosque prohibido."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION6_DESC_02",
-      "value": "Regresa con Estela a ver a Eldran."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION6_DETAIL",
-      "value": "Estela se ha adentrado en el Bosque Prohibido. Búscala entre la espesura del bosque y, cuando la encuentres, acompáñala de vuelta para presentaros juntos ante Eldran."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION6_NAME",
-      "value": "Hacia el Bosque Prohibido"
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION7_DESC",
-      "value": "Reúnete con Eldran en la taberna."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION7_DETAIL",
-      "value": "Eldran te espera en la taberna del pueblo. Dirígete allí y reúnete con él."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION7_NAME",
-      "value": "Nos vemos en la taberna."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION8_DESC",
-      "value": "Acércate a la gente del Reino y usa los botones para lanzar un hechizo protector."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION8_DETAIL",
-      "value": "La furia de Estela amenaza a los habitantes del Reino. Acércate a cada persona en peligro y usa los botones indicados en pantalla para lanzar sobre ella un hechizo protector."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION8_NAME",
-      "value": "Protege a la gente del Reino."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION9_2_DESC",
-      "value": "Sigue al guardia y entra al castillo y habla con el Rey."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION9_2_NAME",
-      "value": "Arrestados"
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION9_DESC",
-      "value": "Sigue al guardia hasta el palacio para ver al Rey."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION9_DESC_02",
-      "value": "Entra al castillo y habla con el Rey."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION9_DETAIL",
-      "value": "Un guardia real te ha detenido. Síguelo hasta el palacio y, una vez dentro del castillo, preséntate ante el Rey para conocer el motivo de tu arresto."
-    },
-    {
-      "key": "QUEST_ELDRAN_MISSION9_NAME",
-      "value": "Arrestados"
-    },
-    {
-      "key": "QUEST_MISSION1_STEP1",
-      "value": "Habla con Eldran"
-    },
-    {
-      "key": "QUEST_NIÑOPEZ_CARACOLA_DESC",
-      "value": "Busca la caracola del niño pez."
-    },
-    {
-      "key": "QUEST_NIÑOPEZ_CARACOLA_DETAIL",
-      "value": "El niño pez ha perdido su caracola. Búscala por los alrededores y devuélvesela."
-    },
-    {
-      "key": "QUEST_NIÑOPEZ_DESC",
-      "value": "Consigue algas para el niño pez."
-    },
-    {
-      "key": "QUEST_NIÑOPEZ_DETAIL",
-      "value": "El niño pez necesita algas antes de que puedas entrar al agua. Búscalas por la zona y llévaselas para que te dé permiso de nadar."
-    },
-    {
-      "key": "QUEST_ROBERTO_MISSION1_DESC",
-      "value": "Consigue una poción de vida para Roberto."
-    },
-    {
-      "key": "QUEST_ROBERTO_MISSION1_DETAIL",
-      "value": "Roberto se encuentra mareado y necesita ayuda. Consigue una poción de vida y llévasela para que se recupere."
-    },
-    {
-      "key": "QUEST_RUDOLFO_DESC",
-      "value": "Busca las botas de Rudolfo cerca del agua."
-    },
-    {
-      "key": "QUEST_RUDOLFO_DETAIL",
-      "value": "Rudolfo ha perdido sus botas cerca del agua. Búscalas por la orilla y llévaselas de vuelta."
-    },
-    {
-      "key": "QUEST_STATE_ACTIVE",
-      "value": "Activa"
-    },
-    {
-      "key": "QUEST_STATE_COMPLETED",
-      "value": "Completada"
-    },
-    {
-      "key": "QUEST_STATE_INACTIVE",
-      "value": "Inactiva"
-    },
-    {
-      "key": "Q_NIÑOPEZ",
-      "value": "Antes de entrar al agua necesitas ayudar al niño pez."
-    },
-    {
-      "key": "Q_ROBERTO",
-      "value": "El mareo de Roberto."
-    },
-    {
-      "key": "Q_GUARDIABOSQUE_ARANAS",
-      "value": "La plaga de arañas."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_DESC",
-      "value": "Derrota a las arañas que han invadido el Bosque Prohibido."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_DETAIL",
-      "value": "El guardia del bosque necesita ayuda: varias arañas han tomado los senderos del Bosque Prohibido. Elimínalas y vuelve a hablar con él para cobrar tu recompensa."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP01_DESC",
-      "value": "Derrota una araña del Bosque Prohibido."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP02_DESC",
-      "value": "Derrota otra araña del Bosque Prohibido."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP03_DESC",
-      "value": "Derrota otra araña del Bosque Prohibido."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP04_DESC",
-      "value": "Derrota otra araña del Bosque Prohibido."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP05_DESC",
-      "value": "Derrota otra araña del Bosque Prohibido."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP06_DESC",
-      "value": "Derrota otra araña del Bosque Prohibido."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP07_DESC",
-      "value": "Derrota otra araña del Bosque Prohibido."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP08_DESC",
-      "value": "Derrota otra araña del Bosque Prohibido."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP09_DESC",
-      "value": "Derrota otra araña del Bosque Prohibido."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP10_DESC",
-      "value": "Derrota otra araña del Bosque Prohibido."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP11_DESC",
-      "value": "Derrota otra araña del Bosque Prohibido."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP12_DESC",
-      "value": "Derrota otra araña del Bosque Prohibido."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP13_DESC",
-      "value": "Derrota otra araña del Bosque Prohibido."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP14_DESC",
-      "value": "Derrota otra araña del Bosque Prohibido."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP15_DESC",
-      "value": "Derrota otra araña del Bosque Prohibido."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP16_DESC",
-      "value": "Derrota otra araña del Bosque Prohibido."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP17_DESC",
-      "value": "Derrota otra araña del Bosque Prohibido."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP18_DESC",
-      "value": "Derrota otra araña del Bosque Prohibido."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP19_DESC",
-      "value": "Derrota otra araña del Bosque Prohibido."
-    },
-    {
-      "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP20_DESC",
-      "value": "Derrota la última araña del Bosque Prohibido."
-    },
-    {
-      "key": "Q_TENDERA_ALGAS",
-      "value": "El remedio de Bárbara."
-    },
-    {
-      "key": "QUEST_TENDERA_ALGAS_DESC",
-      "value": "Consigue 2 pociones de magia para Bárbara."
-    },
-    {
-      "key": "QUEST_TENDERA_ALGAS_DETAIL",
-      "value": "Bárbara necesita pociones de magia para sus remedios. Llévale 2 y te dará algas frescas a cambio."
-    },
-    {
-      "key": "QUEST_TENDERA_ALGAS_STEP01_DESC",
-      "value": "Consigue 2 pociones de magia y entrégaselas a Bárbara."
-    },
-    {
-      "key": "READ_THE_LETTER_DESC",
-      "value": "leer la carta que hay sobre la mesita."
-    },
-    {
-      "key": "Q_TABERNERA_ALGAS",
-      "value": "El remedio contra la resaca"
-    },
-    {
-      "key": "QUEST_TABERNERA_ALGAS_DESC",
-      "value": "Ayuda a Rosa, la tabernera, a preparar su remedio contra la resaca."
-    },
-    {
-      "key": "QUEST_TABERNERA_ALGAS_DETAIL",
-      "value": "Rosa necesita algas para preparar su famoso remedio contra la resaca. Tráele 2 algas y te recompensará con algo de dinero."
-    },
-    {
-      "key": "QUEST_TABERNERA_ALGAS_STEP01_DESC",
-      "value": "Consigue 2 algas para Rosa."
-    },
-    {
-      "key": "Q_MANUEL_POCIONES",
-      "value": "Pociones para la abuela"
-    },
-    {
-      "key": "QUEST_MANUEL_POCIONES_DESC",
-      "value": "Ayuda a Manuel a conseguir pociones de vida para su abuela."
-    },
-    {
-      "key": "QUEST_MANUEL_POCIONES_DETAIL",
-      "value": "La abuela de Manuel lleva unos días débil. Consigue 2 pociones de vida y tráeselas."
-    },
-    {
-      "key": "QUEST_MANUEL_POCIONES_STEP01_DESC",
-      "value": "Consigue 2 pociones de vida para Manuel."
-    },
-    {
-      "key": "Q_NORA_POCIONES",
-      "value": "Suministros para el hechizo"
-    },
-    {
-      "key": "QUEST_NORA_POCIONES_DESC",
-      "value": "Ayuda a Nora a conseguir pociones de magia para un hechizo que quiere probar."
-    },
-    {
-      "key": "QUEST_NORA_POCIONES_DETAIL",
-      "value": "Nora quiere intentar un hechizo nuevo, pero necesita 3 pociones de magia para tener energía suficiente. A cambio te compensará bien."
-    },
-    {
-      "key": "QUEST_NORA_POCIONES_STEP01_DESC",
-      "value": "Consigue 3 pociones de magia para Nora."
-    },
-    {
-      "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_NAME",
-      "value": "Un lugar seguro"
-    },
-    {
-      "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_DESC",
-      "value": "Eldran te enseña un Punto de Guardado."
-    },
-    {
-      "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_DETAIL",
-      "value": "Antes de seguir su camino, Eldran quiere enseñarte un Punto de Guardado: aquí podrás guardar tu partida y descansar para recuperar tu salud y tu maná."
-    },
-    {
-      "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_STEP01_DESC",
-      "value": "Escucha lo que Eldran tiene que decirte sobre el Punto de Guardado."
-    }
-  ]
+    "texts": [
+        {
+            "key": "ELDRAN_MISSION8",
+            "value": "Protege a la gente del Reino de la furia de Estela."
+        },
+        {
+            "key": "FUEGOFATUO_DESC_01",
+            "value": "Buscar provisiones con Estela"
+        },
+        {
+            "key": "FUEGOFATUO_DESC_02",
+            "value": "Inspeccionar el terreno con Will y Liam"
+        },
+        {
+            "key": "FUEGOFATUO_DETAIL",
+            "value": "Algo extraño está sucediendo en el bosque durante la noche. Tienes dos cosas que hacer para investigarlo:\n1. Busca provisiones junto a Estela.\n2. Inspecciona el terreno junto a Will y Liam.\nCompleta ambas tareas para descubrir qué se esconde entre los árboles."
+        },
+        {
+            "key": "FUEGOFATUO_NAME",
+            "value": "Algo ocurre en el bosque de noche"
+        },
+        {
+            "key": "Q_GUARDIABOSQUE_ARANAS",
+            "value": "La plaga de arañas."
+        },
+        {
+            "key": "Q_MANUEL_POCIONES",
+            "value": "Pociones para la abuela"
+        },
+        {
+            "key": "Q_NIÑOPEZ",
+            "value": "Antes de entrar al agua necesitas ayudar al niño pez."
+        },
+        {
+            "key": "Q_NORA_POCIONES",
+            "value": "Suministros para el hechizo"
+        },
+        {
+            "key": "Q_ROBERTO",
+            "value": "El mareo de Roberto."
+        },
+        {
+            "key": "Q_TABERNERA_ALGAS",
+            "value": "El remedio contra la resaca"
+        },
+        {
+            "key": "Q_TENDERA_ALGAS",
+            "value": "El remedio de Bárbara."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION0_DETAIL",
+            "value": "Sobre la mesita de tu habitación hay una carta esperando a que la leas. Acércate y ábrela para descubrir cómo empieza tu aventura."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION1_DESC",
+            "value": "Ve a hablar con Eldran en la entrada del reino"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION1_DETAIL",
+            "value": "Ha llegado un nuevo día. Sal de casa y dirígete a la entrada del Reino, donde Eldran te está esperando para hablar contigo. Sigue el camino principal hasta llegar a las puertas del Reino."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION1_NAME",
+            "value": "De buena mañana"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION10_DESC",
+            "value": "Busca la forma de salir."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION10_DETAIL",
+            "value": "Te encuentras atrapado y necesitas encontrar la manera de escapar. Explora los alrededores en busca de una salida."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION10_NAME",
+            "value": "Operación Avestruz"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION11_DESC",
+            "value": "Vuelve por donde has venido y sal del castillo."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION11_DETAIL",
+            "value": "Ya has conseguido lo que necesitabas. Ahora desanda tus pasos por el mismo camino que recorriste al entrar y sal del castillo."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION11_NAME",
+            "value": "Sal del castillo"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION12_DESC",
+            "value": "Usa a todo el equipo para derrotar al demonio."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION12_DETAIL",
+            "value": "El demonio ha vuelto a aparecer, esta vez más fuerte. Reúne a todo tu equipo y coordinaos para derrotarlo entre todos; cuando Will tenga la oportunidad, indícale que use su habilidad especial contra el demonio."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION12_NAME",
+            "value": "El regreso del demonio"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION13_DESC",
+            "value": "Reúnete con Eldran en las afueras del Reino."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION13_DETAIL",
+            "value": "Eldran te ha citado en las afueras del Reino. Sal de la ciudad y búscalo allí para reuniros."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION13_NAME",
+            "value": "Nos vemos fuera."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION14_DESC",
+            "value": "Busca al amigo de Eldran en el pueblo de al lado."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION14_DETAIL",
+            "value": "Eldran te ha hablado de un viejo amigo suyo que vive en el pueblo vecino. Viaja hasta allí y encuéntralo."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION14_NAME",
+            "value": "Operación Avestruz 2.0"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION15_DESC",
+            "value": "Encuentra el templo olvidado."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION15_DESC_01",
+            "value": "Encuentra el libro de hechizos prohibidos."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION15_DETAIL",
+            "value": "Se dice que existe un templo olvidado escondido en algún lugar. Encuéntralo y, una vez dentro, explóralo a fondo hasta dar con el libro de hechizos prohibidos que se guarda en su interior."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION15_NAME",
+            "value": "El Templo Olvidado"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION2_DESC",
+            "value": "Encuentra la caja de frutas en el bosque y llévasela a Eldran"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION2_DETAIL",
+            "value": "Eldran necesita una caja de frutas que se ha quedado perdida en el bosque. Adéntrate entre los árboles y explora la zona hasta encontrarla; una vez la tengas en tu poder, vuelve al Reino y entrégasela a Eldran."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION2_NAME",
+            "value": "A por la caja de frutas"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION3_DESC",
+            "value": "Derrota al demonio."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION3_DETAIL",
+            "value": "Un demonio se ha presentado ante ti. Prepárate para el combate y utiliza tus habilidades para derrotarlo; este será tu primer gran desafío como una Estrella."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION3_NAME",
+            "value": "El despertar de una Estrella"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION4_DESC",
+            "value": "Ve a hablar con Eldran cuando estés preparado."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION4_DETAIL",
+            "value": "Cuando te sientas preparado, regresa junto a Eldran para contarle lo ocurrido y recibir sus próximas indicaciones."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION4_NAME",
+            "value": "Vuelve con Eldran"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION5_DESC",
+            "value": "Sigue las instrucciones de Eldran."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION5_DESC_01",
+            "value": "Busca a Victoria y pídele una capa de mago."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION5_DESC_02",
+            "value": "Compra una poción de vida."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION5_DESC_03",
+            "value": "Entrena con Erika, la puedes encontrar cerca del castillo."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION5_DETAIL",
+            "value": "Eldran quiere asegurarse de que estás bien preparado antes de continuar. Tienes tres cosas que hacer:\n1. Busca a Victoria y pídele una capa de mago.\n2. Compra una poción de vida.\n3. Entrena con Erika, a quien puedes encontrar cerca del castillo.\nCompleta las tres tareas, en el orden que prefieras, para terminar tu preparación."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION5_NAME",
+            "value": "La preparación del Mago"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION6_DESC",
+            "value": "Regresa con Estela a ver a Eldran."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION6_DESC_01",
+            "value": "Busca a Estela en el bosque prohibido."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION6_DESC_02",
+            "value": "Regresa con Estela a ver a Eldran."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION6_DETAIL",
+            "value": "Estela se ha adentrado en el Bosque Prohibido. Búscala entre la espesura del bosque y, cuando la encuentres, acompáñala de vuelta para presentaros juntos ante Eldran."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION6_NAME",
+            "value": "Hacia el Bosque Prohibido"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION7_DESC",
+            "value": "Reúnete con Eldran en la taberna."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION7_DETAIL",
+            "value": "Eldran te espera en la taberna del pueblo. Dirígete allí y reúnete con él."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION7_NAME",
+            "value": "Nos vemos en la taberna."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION8_DESC",
+            "value": "Acércate a la gente del Reino y usa los botones para lanzar un hechizo protector."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION8_DETAIL",
+            "value": "La furia de Estela amenaza a los habitantes del Reino. Acércate a cada persona en peligro y usa los botones indicados en pantalla para lanzar sobre ella un hechizo protector."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION8_NAME",
+            "value": "Protege a la gente del Reino."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION9_DESC",
+            "value": "Sigue al guardia hasta el palacio para ver al Rey."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION9_DESC_02",
+            "value": "Entra al castillo y habla con el Rey."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION9_DETAIL",
+            "value": "Un guardia real te ha detenido. Síguelo hasta el palacio y, una vez dentro del castillo, preséntate ante el Rey para conocer el motivo de tu arresto."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION9_NAME",
+            "value": "Arrestados"
+        },
+        {
+            "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_DESC",
+            "value": "Eldran te enseña un Punto de Guardado."
+        },
+        {
+            "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_DETAIL",
+            "value": "Antes de seguir su camino, Eldran quiere enseñarte un Punto de Guardado: aquí podrás guardar tu partida y descansar para recuperar tu salud y tu maná."
+        },
+        {
+            "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_NAME",
+            "value": "Un lugar seguro"
+        },
+        {
+            "key": "QUEST_ELDRAN_SAVEPOINT_INTRO_STEP01_DESC",
+            "value": "Escucha lo que Eldran tiene que decirte sobre el Punto de Guardado."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_DESC",
+            "value": "Derrota a las arañas que han invadido el Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_DETAIL",
+            "value": "El guardia del bosque necesita ayuda: varias arañas han tomado los senderos del Bosque Prohibido. Elimínalas y vuelve a hablar con él para cobrar tu recompensa."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP01_DESC",
+            "value": "Derrota una araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP02_DESC",
+            "value": "Derrota otra araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP03_DESC",
+            "value": "Derrota otra araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP04_DESC",
+            "value": "Derrota otra araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP05_DESC",
+            "value": "Derrota otra araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP06_DESC",
+            "value": "Derrota otra araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP07_DESC",
+            "value": "Derrota otra araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP08_DESC",
+            "value": "Derrota otra araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP09_DESC",
+            "value": "Derrota otra araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP10_DESC",
+            "value": "Derrota otra araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP11_DESC",
+            "value": "Derrota otra araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP12_DESC",
+            "value": "Derrota otra araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP13_DESC",
+            "value": "Derrota otra araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP14_DESC",
+            "value": "Derrota otra araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP15_DESC",
+            "value": "Derrota otra araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP16_DESC",
+            "value": "Derrota otra araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP17_DESC",
+            "value": "Derrota otra araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP18_DESC",
+            "value": "Derrota otra araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP19_DESC",
+            "value": "Derrota otra araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_GUARDIABOSQUE_ARANAS_STEP20_DESC",
+            "value": "Derrota la última araña del Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_MANUEL_POCIONES_DESC",
+            "value": "Ayuda a Manuel a conseguir pociones de vida para su abuela."
+        },
+        {
+            "key": "QUEST_MANUEL_POCIONES_DETAIL",
+            "value": "La abuela de Manuel lleva unos días débil. Consigue 2 pociones de vida y tráeselas."
+        },
+        {
+            "key": "QUEST_MANUEL_POCIONES_STEP01_DESC",
+            "value": "Consigue 2 pociones de vida para Manuel."
+        },
+        {
+            "key": "QUEST_MISSION1_STEP1",
+            "value": "Habla con Eldran"
+        },
+        {
+            "key": "QUEST_NIÑOPEZ_CARACOLA_DESC",
+            "value": "Busca la caracola del niño pez."
+        },
+        {
+            "key": "QUEST_NIÑOPEZ_CARACOLA_DETAIL",
+            "value": "El niño pez ha perdido su caracola. Búscala por los alrededores y devuélvesela."
+        },
+        {
+            "key": "QUEST_NIÑOPEZ_DESC",
+            "value": "Consigue algas para el niño pez."
+        },
+        {
+            "key": "QUEST_NIÑOPEZ_DETAIL",
+            "value": "El niño pez necesita algas antes de que puedas entrar al agua. Búscalas por la zona y llévaselas para que te dé permiso de nadar."
+        },
+        {
+            "key": "QUEST_NORA_POCIONES_DESC",
+            "value": "Ayuda a Nora a conseguir pociones de magia para un hechizo que quiere probar."
+        },
+        {
+            "key": "QUEST_NORA_POCIONES_DETAIL",
+            "value": "Nora quiere intentar un hechizo nuevo, pero necesita 3 pociones de magia para tener energía suficiente. A cambio te compensará bien."
+        },
+        {
+            "key": "QUEST_NORA_POCIONES_STEP01_DESC",
+            "value": "Consigue 3 pociones de magia para Nora."
+        },
+        {
+            "key": "QUEST_ROBERTO_MISSION1_DESC",
+            "value": "Consigue una poción de vida para Roberto."
+        },
+        {
+            "key": "QUEST_ROBERTO_MISSION1_DETAIL",
+            "value": "Roberto se encuentra mareado y necesita ayuda. Consigue una poción de vida y llévasela para que se recupere."
+        },
+        {
+            "key": "QUEST_RUDOLFO_DESC",
+            "value": "Busca las botas de Rudolfo cerca del agua."
+        },
+        {
+            "key": "QUEST_RUDOLFO_DETAIL",
+            "value": "Rudolfo ha perdido sus botas cerca del agua. Búscalas por la orilla y llévaselas de vuelta."
+        },
+        {
+            "key": "QUEST_STATE_ACTIVE",
+            "value": "Activa"
+        },
+        {
+            "key": "QUEST_STATE_COMPLETED",
+            "value": "Completada"
+        },
+        {
+            "key": "QUEST_STATE_INACTIVE",
+            "value": "Inactiva"
+        },
+        {
+            "key": "QUEST_TABERNERA_ALGAS_DESC",
+            "value": "Ayuda a Rosa, la tabernera, a preparar su remedio contra la resaca."
+        },
+        {
+            "key": "QUEST_TABERNERA_ALGAS_DETAIL",
+            "value": "Rosa necesita algas para preparar su famoso remedio contra la resaca. Tráele 2 algas y te recompensará con algo de dinero."
+        },
+        {
+            "key": "QUEST_TABERNERA_ALGAS_STEP01_DESC",
+            "value": "Consigue 2 algas para Rosa."
+        },
+        {
+            "key": "QUEST_TENDERA_ALGAS_DESC",
+            "value": "Consigue 2 pociones de magia para Bárbara."
+        },
+        {
+            "key": "QUEST_TENDERA_ALGAS_DETAIL",
+            "value": "Bárbara necesita pociones de magia para sus remedios. Llévale 2 y te dará algas frescas a cambio."
+        },
+        {
+            "key": "QUEST_TENDERA_ALGAS_STEP01_DESC",
+            "value": "Consigue 2 pociones de magia y entrégaselas a Bárbara."
+        },
+        {
+            "key": "READ_THE_LETTER_DESC",
+            "value": "leer la carta que hay sobre la mesita."
+        }
+    ]
 }

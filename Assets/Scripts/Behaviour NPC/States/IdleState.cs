@@ -30,6 +30,9 @@ namespace Game.NPC.States
         // ambiente no tiene NPCTeamMember, así que el GetComponent fallaba constantemente y
         // aparecía como GC.Alloc en el profiler (NPCBehaviourManagerV2.Update -> CheckPlayerDetection).
         private NPCTeamMember _teamMember;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private bool _loggedCombatBlockThisIdle; // evita spam: solo un log por bloqueo, no por frame
+#endif
 
         public override void OnEnter(NPCStateContext context)
         {
@@ -176,8 +179,27 @@ namespace Game.NPC.States
             if (!teammateAlreadyFighting
                 && ActiveCombatRegistry.HasActiveCombatExcluding(context.Transform.gameObject))
             {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                // 🔍 DIAGNÓSTICO (incidencia recurrente "no me detectan" - Lety/Vicky y otros):
+                // este early-return era totalmente silencioso, así que cada vez que el bloqueo
+                // global de combate (un solo combate activo a la vez, ver ActiveCombatRegistry)
+                // impedía la detección, no quedaba ningún rastro en consola de POR QUÉ. Log único
+                // por NPC (no por frame) listando quién está ocupando el registro ahora mismo.
+                if (!_loggedCombatBlockThisIdle)
+                {
+                    _loggedCombatBlockThisIdle = true;
+                    var blockers = ActiveCombatRegistry.GetAllInCombat();
+                    string blockerNames = blockers.Count > 0
+                        ? string.Join(", ", blockers.ConvertAll(b => b != null ? b.name : "?"))
+                        : "(ninguno con nombre resoluble - revisar CleanupDestroyedNPCs)";
+                    context.Log($"[IdleState] 🚫 '{context.Transform.name}' NO detecta al jugador: bloqueo global de combate activo. Ocupando el registro: {blockerNames}");
+                }
+#endif
                 return;
             }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            _loggedCombatBlockThisIdle = false;
+#endif
 
             // ✅ FIX: Si soy miembro de un equipo y ya notifiqué, no sigo detectando
             // Esto evita el bucle infinito de detección

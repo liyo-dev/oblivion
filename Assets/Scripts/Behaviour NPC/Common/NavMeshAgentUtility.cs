@@ -132,5 +132,32 @@ namespace Game.NPC.Common
 
             return Mathf.Clamp01(refSpeed / agent.speed);
         }
+
+        // FIX 4 sep 2026 (petición de Raúl: "cuando eldran camina... antes hacia la animación
+        // correcta ahora los npcs... cuando les tengo que seguir del punto A al punto B están
+        // haciendo una animación de andar que no es la que toca, deben hacer la que hagan los
+        // personajes principales"): el Animator Controller genérico de los NPCs (NPC_NoWeapon,
+        // usado por Eldran y compañía) resultó ser LITERALMENTE el mismo blend tree "Free
+        // Locomotion" y los mismos clips que usa el propio Invector@BasicLocomotion.controller de
+        // los personajes jugables (mismos guids de WalkFWD_RM en el umbral 0.5 y MoveFWD_Normal_RM
+        // en el umbral 1) — no son sistemas de animación distintos como se sospechaba al principio.
+        // El problema es de CALIBRACIÓN: ComputeSpeedFactor (arriba) devuelve
+        // velocidad_actual/agent.speed, así que en cuanto un NavMeshAgent alcanza su velocidad
+        // configurada -algo casi inmediato al hacer SetDestination en una secuencia de "sígueme",
+        // ver CinematicState.MoveToPositionSequence/MoveToAction/LeadPlayerToAnchorSequence- el
+        // valor llega a ~1.0, que en el blend tree cae en el tramo de MoveFWD_Normal (el mismo
+        // clip que el jugador solo enseña esprintando), no en WalkFWD (umbral 0.5, lo que el
+        // jugador enseña al caminar con normalidad). De ahí que estos NPCs parecieran "trotar" en
+        // vez de caminar. Este helper satura el resultado al tramo de caminar del blend tree, para
+        // usar en las secuencias donde el NPC debe caminar con paso normal (nunca correr) sin
+        // tocar ComputeSpeedFactor en sí -otros llamadores (p.ej. combate/persecución) sí pueden
+        // querer el rango completo 0-1 para mostrar una marcha más rápida-.
+        public const float WalkGaitThreshold = 0.5f;
+
+        public static float ComputeWalkGaitSpeedFactor(NavMeshAgent agent)
+        {
+            float raw = ComputeSpeedFactor(agent);
+            return raw > 0f ? Mathf.Min(raw, WalkGaitThreshold) : 0f;
+        }
     }
 }

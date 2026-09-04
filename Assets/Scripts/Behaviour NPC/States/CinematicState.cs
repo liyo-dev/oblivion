@@ -329,7 +329,9 @@ namespace Game.NPC.States
             if (_hasTeleported || context.Agent == null || context.Animator == null)
                 return;
             
-            float speedFactor = Common.NavMeshAgentUtility.ComputeSpeedFactor(context.Agent);
+            // FIX 4 sep 2026, ver Common.NavMeshAgentUtility.ComputeWalkGaitSpeedFactor(): el NPC
+            // debe caminar con el mismo paso que enseñan los personajes jugables al andar, no trotar.
+            float speedFactor = Common.NavMeshAgentUtility.ComputeWalkGaitSpeedFactor(context.Agent);
             context.Animator.SetMovementSpeed(speedFactor);
             
             // ✅ FIX: Rotar hacia la dirección del movimiento para evitar caminar de espaldas
@@ -814,7 +816,9 @@ namespace Game.NPC.States
             // Actualizar animación de movimiento
             if (context.Agent != null && context.Animator != null)
             {
-                float speedFactor = Common.NavMeshAgentUtility.ComputeSpeedFactor(context.Agent);
+                // FIX 4 sep 2026, ver Common.NavMeshAgentUtility.ComputeWalkGaitSpeedFactor(): el NPC
+                // debe caminar con el mismo paso que enseñan los personajes jugables al andar, no trotar.
+                float speedFactor = Common.NavMeshAgentUtility.ComputeWalkGaitSpeedFactor(context.Agent);
                 context.Animator.SetMovementSpeed(speedFactor);
             }
             
@@ -1198,7 +1202,9 @@ namespace Game.NPC.States
             // Animación de movimiento
             if (context.Animator != null && context.Agent != null)
             {
-                float speedFactor = Common.NavMeshAgentUtility.ComputeSpeedFactor(context.Agent);
+                // FIX 4 sep 2026, ver Common.NavMeshAgentUtility.ComputeWalkGaitSpeedFactor(): el NPC
+                // debe caminar con el mismo paso que enseñan los personajes jugables al andar, no trotar.
+                float speedFactor = Common.NavMeshAgentUtility.ComputeWalkGaitSpeedFactor(context.Agent);
                 context.Animator.SetMovementSpeed(speedFactor);
                 if (context.Agent.velocity.sqrMagnitude > 0.01f)
                     context.Animator.FaceDirection(context.Agent.velocity.normalized);
@@ -1220,9 +1226,10 @@ namespace Game.NPC.States
                 agent.ResetPath(); // Limpiar ruta de fetch antes de volver al anchor
                 agent.SetDestination(_anchorPos);
             }
-            // Arrancar animación de andar inmediatamente sin esperar a que agent.velocity tenga magnitud
+            // Arrancar animación de andar inmediatamente sin esperar a que agent.velocity tenga magnitud.
+            // FIX 4 sep 2026: usar el umbral de "caminar" (no 1f/trote), ver ComputeWalkGaitSpeedFactor.
             context.Animator?.TransitionToLocomotion();
-            context.Animator?.SetMovementSpeed(1f);
+            context.Animator?.SetMovementSpeed(Common.NavMeshAgentUtility.WalkGaitThreshold);
         }
 
         public override void Cleanup(Common.NPCStateContext context)

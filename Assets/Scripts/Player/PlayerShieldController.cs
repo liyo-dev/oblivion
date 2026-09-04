@@ -37,6 +37,7 @@ public class PlayerShieldController : MonoBehaviour
     private float _originalUpperBodyWeight;
     private MagicCaster _magicCaster;
     private ManaPool _manaPool;
+    private PlayerActionManager _playerActionManager;
 
     public bool IsDefending => _isDefending;
 
@@ -49,6 +50,7 @@ public class PlayerShieldController : MonoBehaviour
         CacheBlockedLayers();
         _magicCaster = GetComponentInParent<MagicCaster>();
         _manaPool = GetComponentInParent<ManaPool>();
+        _playerActionManager = GetComponentInParent<PlayerActionManager>();
         CreateShieldInstance();
     }
 
@@ -63,10 +65,14 @@ public class PlayerShieldController : MonoBehaviour
         _controls.GamePlay.LT.canceled += OnTriggerChanged;
         _controls.GamePlay.RT.performed += OnTriggerChanged;
         _controls.GamePlay.RT.canceled += OnTriggerChanged;
+
+        UnlockService.OnSpellUnlocked += OnSpellUnlocked;
     }
 
     void OnDisable()
     {
+        UnlockService.OnSpellUnlocked -= OnSpellUnlocked;
+
         if (_controls == null) return;
 
         _controls.GamePlay.LT.performed -= OnTriggerChanged;
@@ -78,6 +84,15 @@ public class PlayerShieldController : MonoBehaviour
             _controls.Disable();
 
         StopDefending();
+    }
+
+    // INC-078: la proteccion contra magia enemiga se desbloquea en el mismo momento en que
+    // se desbloquea Bola Prisma (justo al ganar la batalla con Erika), sin tener que tocar
+    // los campos serializados del nodo UnlockAbilitiesNode del grafo.
+    private void OnSpellUnlocked(SpellId spell)
+    {
+        if (spell == SpellId.Plasmaball)
+            UnlockService.UnlockAbility(AbilityKey.Shield);
     }
 
     void Update()
@@ -117,7 +132,8 @@ public class PlayerShieldController : MonoBehaviour
         bool wantsDefense = lt >= triggerThreshold && rt >= triggerThreshold;
 
         bool hasMana = _manaPool == null || manaPerSecond <= 0f || _manaPool.Current > 0f;
-        if (wantsDefense && hasMana)
+        bool isAllowed = _playerActionManager == null || _playerActionManager.AllowShield;
+        if (wantsDefense && hasMana && isAllowed)
             StartDefending();
         else
             StopDefending();
@@ -134,6 +150,9 @@ public class PlayerShieldController : MonoBehaviour
             return;
 
         if (_magicCaster != null && _magicCaster.IsCasting)
+            return;
+
+        if (_playerActionManager != null && !_playerActionManager.AllowShield)
             return;
 
         _isDefending = true;

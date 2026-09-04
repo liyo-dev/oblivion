@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.UI;
 
 /// <summary>
@@ -42,6 +43,8 @@ public class MinimapController : MonoBehaviour
     bool _hiddenByMenu;
     bool _hiddenByCinematic;
     float _normalOrthoSize;
+    bool _fogWasEnabledBeforeMinimap;
+    bool _minimapFogOverrideActive;
 
     // ── API para MinimapUIController ─────────────────────────────────────────
     public Vector3 PlayerPosition => _playerTransform != null ? _playerTransform.position : Vector3.zero;
@@ -60,6 +63,8 @@ public class MinimapController : MonoBehaviour
         BossArenaController.OnAnyBattleEnded    += OnBattleEnded;
         MenuManager.MenuOpened                  += OnMenuOpened;
         MenuManager.MenuClosed                  += OnMenuClosed;
+        RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
+        RenderPipelineManager.endCameraRendering   += OnEndCameraRendering;
 
         SetupCamera();
     }
@@ -72,6 +77,8 @@ public class MinimapController : MonoBehaviour
         BossArenaController.OnAnyBattleEnded    -= OnBattleEnded;
         MenuManager.MenuOpened                  -= OnMenuOpened;
         MenuManager.MenuClosed                  -= OnMenuClosed;
+        RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
+        RenderPipelineManager.endCameraRendering   -= OnEndCameraRendering;
     }
 
     void Start()
@@ -196,6 +203,31 @@ public class MinimapController : MonoBehaviour
 
         _hiddenByMenu = MenuManager.AnyOpenExcept(MenuKind.BigMap);
         RefreshMinimapVisibility();
+    }
+
+    // ── Niebla global desactivada solo mientras renderiza esta cámara ──────────
+    // RenderSettings.fog es un estado GLOBAL (no existe culling mask para niebla), así
+    // que sin esto la niebla de lluvia/tormenta/niebla de DayNightCycle (rainFogDensityMultiplier,
+    // etc.) se aplicaba también al minimapa. Al ser una cámara ortográfica top-down con altura
+    // fija (cameraHeight), la distancia cámara-suelo es prácticamente constante en toda la
+    // imagen — a diferencia de la cámara principal, donde la niebla degrada con la distancia,
+    // aquí toda la textura del minimapa se "blanqueaba" de golpe y uniformemente en cuanto subía
+    // la densidad de niebla (INC: minimapa en blanco durante la lluvia, 1 sep 2026).
+    void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
+    {
+        if (camera != minimapCamera) return;
+
+        _fogWasEnabledBeforeMinimap = RenderSettings.fog;
+        RenderSettings.fog = false;
+        _minimapFogOverrideActive = true;
+    }
+
+    void OnEndCameraRendering(ScriptableRenderContext context, Camera camera)
+    {
+        if (camera != minimapCamera || !_minimapFogOverrideActive) return;
+
+        RenderSettings.fog = _fogWasEnabledBeforeMinimap;
+        _minimapFogOverrideActive = false;
     }
 
     /// <summary>

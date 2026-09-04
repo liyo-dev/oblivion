@@ -459,11 +459,14 @@ namespace Game.NPC
     /// narrativo, cero executor legacy — ninguno de los dos sistemas narrativos se toca aquí.
     ///
     /// Da igual qué miembro detectó al jugador: los dos (o más) se paran y miran de inmediato
-    /// (sin caminar antes, "nada más detectarte"). Cada miembro con dialogueOnAlert configurado
-    /// dice SU PROPIA frase, en orden — quien detectó primero, y luego el resto del equipo —
-    /// con la misma cámara grupal (enfocando a todo el equipo) durante toda la secuencia. Al
-    /// terminar (o de inmediato si nadie tiene diálogo configurado) entran en combate todos a la
-    /// vez vía ForceEnterCombat — no dependen de que cada uno "descubra" el combate por su cuenta.
+    /// (icono + música + animación de sobresalto), luego caminan en formación hacia él (ver
+    /// Co_ApproachFormation, 1 sep 2026 — "el jugador se congela, se acercan y ENTONCES empieza
+    /// el diálogo") y solo al llegar (o tras el margen de seguridad) habla cada miembro con
+    /// dialogueOnAlert configurado, en orden — quien detectó primero, y luego el resto del
+    /// equipo — con la misma cámara grupal (enfocando a todo el equipo) durante toda la
+    /// secuencia. Al terminar (o de inmediato si nadie tiene diálogo configurado) entran en
+    /// combate todos a la vez vía ForceEnterCombat — no dependen de que cada uno "descubra" el
+    /// combate por su cuenta.
     /// </summary>
     private IEnumerator Co_DetectAndEngage(Transform player, NPCBehaviourManagerV2 detector = null)
     {
@@ -472,6 +475,21 @@ namespace Game.NPC
 
         if (showDebugLogs)
             Debug.Log($"[NPCCombatTeam] {name}: ¡Jugador detectado! Deteniendo y encarando al equipo...");
+
+        // Congelar al jugador en el instante de la detección (mismo mecanismo que AlertState.cs
+        // usa para los NPCs en solitario, ver NPCCombatConfig.freezePlayerOnAlert) - se hace UNA
+        // sola vez aquí para todo el equipo, no por cada miembro (los AlertState que se fuerzan
+        // más abajo van con skipDialogue=true, que ya excluye su propio freeze individual). Usa
+        // la config de quien detectó como referencia; si no hay detector o no tiene config, se
+        // congela por defecto (mismo default que freezePlayerOnAlert).
+        bool teamPlayerFrozen = false;
+        var detectorFreezeConfig = detector != null ? detector.Configuration?.combatConfig : null;
+        bool shouldFreezeTeam = detectorFreezeConfig != null ? detectorFreezeConfig.freezePlayerOnAlert : true;
+        if (shouldFreezeTeam && global::Core.PlayerInputManager.Instance != null)
+        {
+            global::Core.PlayerInputManager.Instance.PushUIMode();
+            teamPlayerFrozen = true;
+        }
 
         // 1. TODO el equipo se para y mira al jugador de inmediato. Reutiliza AlertState (icono
         // de detección, música de alerta, animación de "Sense") con skipDialogue=true: el
@@ -482,6 +500,17 @@ namespace Game.NPC
             if (member.Context != null) member.Context.Player = player;
             member.Brain?.ForceState(new AlertState(duration: 999f, walk: false, stopDist: 0f, skipDialogue: true));
         }
+
+        // ✅ MEJORA (1 sep 2026, petición de Raúl): "cuando Lety y Vicky me ven, el jugador se
+        // congela, las dos caminan hacia mí y ENTONCES empieza el diálogo — ese es el
+        // comportamiento correcto y debe ser igual para cualquier NPC de combate". Antes, aquí no
+        // había ninguna fase de aproximación real: el equipo se paraba en seco (walk:false arriba)
+        // y el diálogo arrancaba de inmediato, viniera el jugador de donde viniera. Ahora, tras
+        // fijar a todos en AlertState (icono/música/animación de sobresalto), se les hace caminar
+        // en formación hacia el jugador (mismo NavMeshAgent que ya usa AlertState.MoveAndRotate
+        // para NPCs en solitario) y solo cuando llegan (o tras un margen de seguridad) arranca la
+        // secuencia de diálogo de abajo.
+        yield return Co_ApproachFormation(player);
 
         // ✅ REDISEÑO (15 ago 2026, a petición de Raúl): "cada NPC con su propia frase; quien te
         // ve primero habla primero, luego el resto — así se siente como un equipo sin necesitar
@@ -529,6 +558,14 @@ namespace Game.NPC
             Debug.Log($"[NPCCombatTeam] {name}: DialogueManager no disponible — se pasa directo a combate.");
         }
 
+        // Soltar al jugador justo antes de que arranque el combate de verdad (mismo punto que
+        // AlertState.OnExit usa para el caso en solitario), para que pueda moverse y luchar.
+        if (teamPlayerFrozen && global::Core.PlayerInputManager.Instance != null)
+        {
+            global::Core.PlayerInputManager.Instance.PopUIMode();
+            teamPlayerFrozen = false;
+        }
+
         // 3. Combate para TODO el equipo a la vez.
         _isRegrouping = false;
         _isTeamInCombat = true;
@@ -545,6 +582,87 @@ namespace Game.NPC
             Debug.Log($"[NPCCombatTeam] {name}: Equipo en combate.");
 
         OnTeamCombatStarted?.Invoke();
+    }
+
+    /// <summary>
+    /// ✅ NUEVO (1 sep 2026, petición de Raúl): fase de aproximación del equipo antes del
+    /// diálogo de alerta — reemplaza el "pararse en seco" por un acercamiento real, en formación,
+    /// hacia el jugador (congelado mientras tanto por Co_DetectAndEngage). Reutiliza
+    /// GetFormationPosition (ya existente, antes solo usado por gizmos) para que cada miembro
+    /// camine a su hueco del semicírculo frente al jugador. Salvaguardada con APPROACH_MAX_TIME
+    /// por si algún miembro se queda atascado (pathing bloqueado, formación inalcanzable) — en
+    /// ese caso se corta la espera y se continúa igualmente con el diálogo.
+    /// </summary>
+    private const float APPROACH_ARRIVE_DIST = 0.5f;
+    private const float APPROACH_MAX_TIME = 8f;
+
+    private IEnumerator Co_ApproachFormation(Transform player)
+    {
+        var approachingMembers = new List<NPCBehaviourManagerV2>();
+        var approachDestinations = new List<Vector3>();
+
+        for (int i = 0; i < _allMembers.Count; i++)
+        {
+            var member = _allMembers[i];
+            if (member == null || !member.gameObject.activeInHierarchy) continue;
+
+            var ctx = member.Context;
+            if (ctx == null || ctx.Agent == null || !ctx.Agent.isOnNavMesh) continue;
+
+            Vector3 dest = GetFormationPosition(i);
+            ctx.Agent.isStopped = false;
+            ctx.Agent.updateRotation = false;
+            ctx.Agent.SetDestination(dest);
+
+            approachingMembers.Add(member);
+            approachDestinations.Add(dest);
+        }
+
+        float elapsed = 0f;
+        while (elapsed < APPROACH_MAX_TIME)
+        {
+            bool allArrived = true;
+
+            for (int i = 0; i < approachingMembers.Count; i++)
+            {
+                var member = approachingMembers[i];
+                if (member == null) continue;
+
+                var ctx = member.Context;
+                if (ctx == null || ctx.Agent == null) continue;
+
+                if (ctx.Animator != null)
+                {
+                    float speedFactor = ctx.Agent.speed > 0.01f ? ctx.Agent.velocity.magnitude / ctx.Agent.speed : 0f;
+                    ctx.Animator.SetMovementSpeed(speedFactor);
+                }
+
+                float dist = Vector3.Distance(member.transform.position, approachDestinations[i]);
+                if (dist > APPROACH_ARRIVE_DIST)
+                    allArrived = false;
+            }
+
+            if (allArrived) break;
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        // Detener a todos y dejarlos mirando al jugador, listos para hablar.
+        foreach (var member in approachingMembers)
+        {
+            if (member == null) continue;
+            var ctx = member.Context;
+            if (ctx == null || ctx.Agent == null) continue;
+
+            ctx.Agent.isStopped = true;
+            ctx.Animator?.SetMovementSpeed(0);
+
+            Vector3 dir = (player.position - member.transform.position).normalized;
+            dir.y = 0;
+            if (dir.sqrMagnitude > 0.01f)
+                ctx.Animator?.FaceDirection(dir);
+        }
     }
 
     /// <summary>

@@ -1,8 +1,136 @@
 {
     "texts": [
         {
+            "key": "ABILITIES_LEVEL_LABEL",
+            "value": "Level: {0}"
+        },
+        {
+            "key": "ABILITIES_MANA_LABEL",
+            "value": "Mana: {0}/{1}"
+        },
+        {
+            "key": "BOSS_DEMONIO_HEALTHBAR_NAME",
+            "value": "Demon Boss"
+        },
+        {
+            "key": "BOSS_DEMONIO_NAME",
+            "value": "DEMON"
+        },
+        {
+            "key": "BOSS_GOLEM_HEALTHBAR_NAME",
+            "value": "Golem Boss"
+        },
+        {
+            "key": "BOSS_GOLEM_NAME",
+            "value": "GOLEM"
+        },
+        {
+            "key": "BOSS_MAGOOSCURO_NAME",
+            "value": "DARK MAGE"
+        },
+        {
+            "key": "BugReport_Error",
+            "value": "Couldn't send it. Check your connection and try again."
+        },
+        {
+            "key": "BugReport_ErrorBuild",
+            "value": "Enter the build number."
+        },
+        {
+            "key": "BugReport_ErrorDescripcion",
+            "value": "Describe the bug before submitting."
+        },
+        {
+            "key": "BugReport_ErrorSeveridad",
+            "value": "Choose the bug's severity."
+        },
+        {
+            "key": "BugReport_HelpBuild",
+            "value": "You can find it in the bottom-left corner of the screen"
+        },
+        {
+            "key": "BugReport_LabelBuild",
+            "value": "Build Number *"
+        },
+        {
+            "key": "BugReport_LabelDescripcion",
+            "value": "Bug Description *"
+        },
+        {
+            "key": "BugReport_LabelPasos",
+            "value": "Steps to Reproduce (optional)"
+        },
+        {
+            "key": "BugReport_LabelSeveridad",
+            "value": "Bug Severity *"
+        },
+        {
+            "key": "BugReport_PlaceholderBuild",
+            "value": "0.0.0"
+        },
+        {
+            "key": "BugReport_PlaceholderDescripcion",
+            "value": "Try to be as specific as possible."
+        },
+        {
+            "key": "BugReport_PlaceholderPasos",
+            "value": "How can I reproduce the bug?"
+        },
+        {
+            "key": "BugReport_Sending",
+            "value": "Sending…"
+        },
+        {
+            "key": "BugReport_SeverityGameBreaking",
+            "value": "Game Breaking"
+        },
+        {
+            "key": "BugReport_SeverityMayor",
+            "value": "Major Bug"
+        },
+        {
+            "key": "BugReport_SeverityMenor",
+            "value": "Minor Bug"
+        },
+        {
+            "key": "BugReport_SeverityPuntual",
+            "value": "One-off Bug"
+        },
+        {
+            "key": "BugReport_Submit",
+            "value": "SUBMIT"
+        },
+        {
+            "key": "BugReport_Success",
+            "value": "Thanks! Report sent."
+        },
+        {
+            "key": "BugReport_Title",
+            "value": "REPORT A BUG"
+        },
+        {
+            "key": "COMBAT_FLED_SOLO",
+            "value": "You retreat from the fight."
+        },
+        {
+            "key": "COMBAT_FLED_TEAM",
+            "value": "You retreat from the fight. You can pick it back up later."
+        },
+        {
+            "key": "COMBAT_TARGET_LOCK_OFF",
+            "value": "Target lock disabled"
+        },
+        {
+            "key": "COMBAT_TARGET_LOCK_ON",
+            "value": "Target lock enabled"
+        },
+        {
             "key": "COMMON_NO",
             "value": "No"
+        },
+        {
+            "key": "COMMON_NONE",
+            "value": "None"
         },
         {
             "key": "COMMON_SEGURO",
@@ -23,6 +151,10 @@
         {
             "key": "CONFIRM_NEW_GAME",
             "value": "Current save data will be deleted. Do you want to continue?"
+        },
+        {
+            "key": "CONTROLS_BIG_MAP",
+            "value": "View big map"
         },
         {
             "key": "CONTROLS_CAMERA",
@@ -53,10 +185,6 @@
             "value": "Pause / Menu"
         },
         {
-            "key": "CONTROLS_BIG_MAP",
-            "value": "View big map"
-        },
-        {
             "key": "CONTROLS_SPELL_LEFT",
             "value": "Spell — left slot"
         },
@@ -79,6 +207,10 @@
         {
             "key": "CONTROLS_TARGET_PREV",
             "value": "Switch combat target (previous)"
+        },
+        {
+            "key": "CONTROLS_TARGET_TOGGLE",
+            "value": "Toggle automatic target lock"
         },
         {
             "key": "CONTROLS_TELEPORT",
@@ -121,16 +253,12 @@
             "value": "D-Pad Right"
         },
         {
-            "key": "GLYPH_SHARE",
-            "value": "Share"
-        },
-        {
-            "key": "GLYPH_VIEW",
-            "value": "View"
-        },
-        {
             "key": "GLYPH_DPAD_UP",
             "value": "D-Pad Up"
+        },
+        {
+            "key": "GLYPH_KEY_F",
+            "value": "F"
         },
         {
             "key": "GLYPH_KEY_SHIFT",
@@ -149,8 +277,12 @@
             "value": "Mouse"
         },
         {
+            "key": "GLYPH_SHARE",
+            "value": "Share"
+        },
+        {
             "key": "GLYPH_STICK",
-            "value": "the Left Stick"
+            "value": "Left stick"
         },
         {
             "key": "GLYPH_STICK_CLICK",
@@ -161,12 +293,28 @@
             "value": "Right stick"
         },
         {
+            "key": "GLYPH_STICK_RIGHT_CLICK",
+            "value": "Right stick click (R3)"
+        },
+        {
+            "key": "GLYPH_VIEW",
+            "value": "View"
+        },
+        {
             "key": "GLYPH_WHEEL_DOWN",
             "value": "Scroll down"
         },
         {
             "key": "GLYPH_WHEEL_UP",
             "value": "Scroll up"
+        },
+        {
+            "key": "HUD_FOLLOW_PROMPT_FOLLOW",
+            "value": "Follow me"
+        },
+        {
+            "key": "HUD_FOLLOW_PROMPT_STOP",
+            "value": "Stop following"
         },
         {
             "key": "HUD_FOLLOW_STATUS_FOLLOWING",
@@ -217,6 +365,390 @@
             "value": "Talk"
         },
         {
+            "key": "INVENTORY_EMPTY",
+            "value": "Empty inventory"
+        },
+        {
+            "key": "INVENTORY_NO_DESCRIPTION",
+            "value": "No description."
+        },
+        {
+            "key": "INVENTORY_QUANTITY_LABEL",
+            "value": "Quantity: {0}"
+        },
+        {
+            "key": "INVENTORY_SELECT_ITEM",
+            "value": "Select an item"
+        },
+        {
+            "key": "INVENTORY_UNAVAILABLE",
+            "value": "Inventory unavailable"
+        },
+        {
+            "key": "ITEM_AC01_HEART_DESC",
+            "value": "A small heart-shaped charm."
+        },
+        {
+            "key": "ITEM_AC01_HEART_NAME",
+            "value": "Heart"
+        },
+        {
+            "key": "ITEM_AC02_LEAF_DESC",
+            "value": "An autumn leaf worn as an ornament."
+        },
+        {
+            "key": "ITEM_AC02_LEAF_NAME",
+            "value": "Leaf"
+        },
+        {
+            "key": "ITEM_AC03_BLACKGLASS_DESC",
+            "value": "Dark-lensed glasses, great for staying incognito."
+        },
+        {
+            "key": "ITEM_AC03_BLACKGLASS_NAME",
+            "value": "Black Glasses"
+        },
+        {
+            "key": "ITEM_AC03_HEAVYMETALGLASS_DESC",
+            "value": "Glasses with a rebellious, rock-and-roll edge."
+        },
+        {
+            "key": "ITEM_AC03_HEAVYMETALGLASS_NAME",
+            "value": "Heavy Metal Glasses"
+        },
+        {
+            "key": "ITEM_AC03_NERDGLASS_DESC",
+            "value": "Thick-framed glasses, very intellectual."
+        },
+        {
+            "key": "ITEM_AC03_NERDGLASS_NAME",
+            "value": "Nerd Glasses"
+        },
+        {
+            "key": "ITEM_AC03_NIGHTVISION_DESC",
+            "value": "They help you see in the dark... or so it seems."
+        },
+        {
+            "key": "ITEM_AC03_NIGHTVISION_NAME",
+            "value": "Night Vision Goggles"
+        },
+        {
+            "key": "ITEM_AC04_ANGELEARS_DESC",
+            "value": "Angel ears."
+        },
+        {
+            "key": "ITEM_AC04_ANGELEARS_NAME",
+            "value": "Angel Ears"
+        },
+        {
+            "key": "ITEM_AC04_ANTHENAEARS_DESC",
+            "value": "Ears with antennas, like something from another world."
+        },
+        {
+            "key": "ITEM_AC04_ANTHENAEARS_NAME",
+            "value": "Antenna Ears"
+        },
+        {
+            "key": "ITEM_AC04_BUNNYEARS_DESC",
+            "value": "Bunny ears."
+        },
+        {
+            "key": "ITEM_AC04_BUNNYEARS_NAME",
+            "value": "Bunny Ears"
+        },
+        {
+            "key": "ITEM_AC04_SHORTEARS_DESC",
+            "value": "A small, discreet pair of ears."
+        },
+        {
+            "key": "ITEM_AC04_SHORTEARS_NAME",
+            "value": "Short Ears"
+        },
+        {
+            "key": "ITEM_AC05_HORN01_DESC",
+            "value": "A curved horn with a demonic look."
+        },
+        {
+            "key": "ITEM_AC05_HORN01_NAME",
+            "value": "Curved Horn"
+        },
+        {
+            "key": "ITEM_AC05_HORN02_DESC",
+            "value": "A straight, sharp horn."
+        },
+        {
+            "key": "ITEM_AC05_HORN02_NAME",
+            "value": "Straight Horn"
+        },
+        {
+            "key": "ITEM_AC05_HORN03_DESC",
+            "value": "Two small twin horns."
+        },
+        {
+            "key": "ITEM_AC05_HORN03_NAME",
+            "value": "Twin Horns"
+        },
+        {
+            "key": "ITEM_AC05_HORN04_DESC",
+            "value": "An imposing dragon-shaped horn."
+        },
+        {
+            "key": "ITEM_AC05_HORN04_NAME",
+            "value": "Dragon Horn"
+        },
+        {
+            "key": "ITEM_AC06_CROWN01_DESC",
+            "value": "A gleaming crown fit for royalty."
+        },
+        {
+            "key": "ITEM_AC06_CROWN01_NAME",
+            "value": "Golden Crown"
+        },
+        {
+            "key": "ITEM_AC06_CROWN02_DESC",
+            "value": "A modest crown of polished silver."
+        },
+        {
+            "key": "ITEM_AC06_CROWN02_NAME",
+            "value": "Silver Crown"
+        },
+        {
+            "key": "ITEM_AC06_CROWN03_DESC",
+            "value": "A crown woven from flowers of the Path."
+        },
+        {
+            "key": "ITEM_AC06_CROWN03_NAME",
+            "value": "Flower Crown"
+        },
+        {
+            "key": "ITEM_AC07_PIRATEPATCH_DESC",
+            "value": "A patch hiding an eye... or a secret."
+        },
+        {
+            "key": "ITEM_AC07_PIRATEPATCH_NAME",
+            "value": "Pirate Patch"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK01_DESC",
+            "value": "A dark mask that conceals the face, perfect for stealth."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK01_NAME",
+            "value": "Ninja Mask I"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK02_DESC",
+            "value": "A dark mask that conceals the face, perfect for stealth."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK02_NAME",
+            "value": "Ninja Mask II"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK03_DESC",
+            "value": "A dark mask that conceals the face, perfect for stealth."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK03_NAME",
+            "value": "Ninja Mask III"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK04_DESC",
+            "value": "A dark mask that conceals the face, perfect for stealth."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK04_NAME",
+            "value": "Ninja Mask IV"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK05_DESC",
+            "value": "A dark mask that conceals the face, perfect for stealth."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK05_NAME",
+            "value": "Ninja Mask V"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK06_DESC",
+            "value": "A dark mask that conceals the face, perfect for stealth."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK06_NAME",
+            "value": "Ninja Mask VI"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK07_DESC",
+            "value": "A dark mask that conceals the face, perfect for stealth."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK07_NAME",
+            "value": "Ninja Mask VII"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK08_DESC",
+            "value": "A dark mask that conceals the face, perfect for stealth."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK08_NAME",
+            "value": "Ninja Mask VIII"
+        },
+        {
+            "key": "ITEM_AC09_RIBBON_DESC",
+            "value": "A decorative ribbon for an elegant touch."
+        },
+        {
+            "key": "ITEM_AC09_RIBBON_NAME",
+            "value": "Ribbon"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE01_DESC",
+            "value": "A classic, neat, well-groomed mustache."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE01_NAME",
+            "value": "Classic Mustache"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE02_DESC",
+            "value": "A thin, discreet mustache."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE02_NAME",
+            "value": "Thin Mustache"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE03_DESC",
+            "value": "A mustache with the tips curled upward."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE03_NAME",
+            "value": "Curly Mustache"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE04_DESC",
+            "value": "A thick, bushy mustache."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE04_NAME",
+            "value": "Bushy Mustache"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE05_DESC",
+            "value": "A refined mustache with a noble touch."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE05_NAME",
+            "value": "Elegant Mustache"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE06_DESC",
+            "value": "A huge, eye-catching mustache."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE06_NAME",
+            "value": "Extravagant Mustache"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE01_DESC",
+            "value": "A mustache paired with a short, neat beard."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE01_NAME",
+            "value": "Mustache & Short Beard"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE02_DESC",
+            "value": "A mustache paired with a goatee."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE02_NAME",
+            "value": "Mustache & Goatee"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE03_DESC",
+            "value": "A mustache paired with a long, full beard."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE03_NAME",
+            "value": "Mustache & Long Beard"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE04_DESC",
+            "value": "A mustache paired with a braided beard."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE04_NAME",
+            "value": "Mustache & Braided Beard"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE05_DESC",
+            "value": "A mustache and beard fit for a king."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE05_NAME",
+            "value": "Royal Mustache"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE06_DESC",
+            "value": "A mustache and beard with a strange arcane sheen."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE06_NAME",
+            "value": "Magic Mustache"
+        },
+        {
+            "key": "ITEM_ALGAS_NAME",
+            "value": "Seaweed"
+        },
+        {
+            "key": "ITEM_BOOTS_NAME",
+            "value": "Boots"
+        },
+        {
+            "key": "ITEM_CARACOLA_NAME",
+            "value": "Seashell"
+        },
+        {
+            "key": "ITEM_CHEST25COIN_NAME",
+            "value": "Chest"
+        },
+        {
+            "key": "ITEM_CLOAK01_DESC",
+            "value": "A mage cloak worn by the most powerful mages."
+        },
+        {
+            "key": "ITEM_CLOAK01_NAME",
+            "value": "Expert Mage Cloak"
+        },
+        {
+            "key": "ITEM_COIN_NAME",
+            "value": "Coin"
+        },
+        {
+            "key": "ITEM_KEY_DESC",
+            "value": "A key that might come in handy."
+        },
+        {
+            "key": "ITEM_KEY_NAME",
+            "value": "Key"
+        },
+        {
+            "key": "ITEM_POCIONMAGIA_DESC",
+            "value": "A potion that restores magic when consumed. Restores 25 MP."
+        },
+        {
+            "key": "ITEM_POCIONMAGIA_NAME",
+            "value": "Magic Potion"
+        },
+        {
+            "key": "ITEM_POCIONVIDA_DESC",
+            "value": "A potion that restores health when consumed. Restores 25 HP."
+        },
+        {
+            "key": "ITEM_POCIONVIDA_NAME",
+            "value": "Health Potion"
+        },
+        {
             "key": "MainMenu_BugReport",
             "value": "Bug Report"
         },
@@ -249,96 +781,28 @@
             "value": "Settings"
         },
         {
-            "key": "BugReport_Title",
-            "value": "REPORT A BUG"
-        },
-        {
-            "key": "BugReport_LabelSeveridad",
-            "value": "Bug Severity *"
-        },
-        {
-            "key": "BugReport_SeverityGameBreaking",
-            "value": "Game Breaking"
-        },
-        {
-            "key": "BugReport_SeverityMayor",
-            "value": "Major Bug"
-        },
-        {
-            "key": "BugReport_SeverityMenor",
-            "value": "Minor Bug"
-        },
-        {
-            "key": "BugReport_SeverityPuntual",
-            "value": "One-off Bug"
-        },
-        {
-            "key": "BugReport_LabelBuild",
-            "value": "Build Number *"
-        },
-        {
-            "key": "BugReport_PlaceholderBuild",
-            "value": "0.0.0"
-        },
-        {
-            "key": "BugReport_HelpBuild",
-            "value": "You can find it in the bottom-left corner of the screen"
-        },
-        {
-            "key": "BugReport_LabelDescripcion",
-            "value": "Bug Description *"
-        },
-        {
-            "key": "BugReport_PlaceholderDescripcion",
-            "value": "Try to be as specific as possible."
-        },
-        {
-            "key": "BugReport_LabelPasos",
-            "value": "Steps to Reproduce (optional)"
-        },
-        {
-            "key": "BugReport_PlaceholderPasos",
-            "value": "How can I reproduce the bug?"
-        },
-        {
-            "key": "BugReport_Submit",
-            "value": "SUBMIT"
-        },
-        {
-            "key": "BugReport_ErrorSeveridad",
-            "value": "Choose the bug's severity."
-        },
-        {
-            "key": "BugReport_ErrorBuild",
-            "value": "Enter the build number."
-        },
-        {
-            "key": "BugReport_ErrorDescripcion",
-            "value": "Describe the bug before submitting."
-        },
-        {
-            "key": "BugReport_Sending",
-            "value": "Sending…"
-        },
-        {
-            "key": "BugReport_Success",
-            "value": "Thanks! Report sent."
-        },
-        {
-            "key": "BugReport_Error",
-            "value": "Couldn't send it. Check your connection and try again."
+            "key": "NPC_REQUIRES_WILL",
+            "value": "Only Will can speak with this character"
         },
         {
             "key": "PatchNotes_Title",
             "value": "PATCH NOTES"
         },
         {
-            "key": "NPC_REQUIRES_WILL",
-            "value": "Only Will can speak with this character"
-        },
-        {
             "key": "Pensamiento",
             "value": "Thought"
+        },
+        {
+            "key": "QUEST_MENU_HEADER_HIDDEN",
+            "value": "Hidden missions ({0})"
+        },
+        {
+            "key": "QUEST_MENU_HEADER_MAIN",
+            "value": "Missions (main)"
+        },
+        {
+            "key": "QUEST_MENU_HEADER_VISIBLE",
+            "value": "Visible missions ({0})"
         },
         {
             "key": "ROOM_EXIT_BLOCKED",
@@ -365,20 +829,144 @@
             "value": "Audio"
         },
         {
+            "key": "SETTINGS_AUDIO",
+            "value": "Audio"
+        },
+        {
             "key": "Settings_Back",
             "value": "Back"
+        },
+        {
+            "key": "SETTINGS_CAMERA_CONTROLS",
+            "value": "Camera / Controls"
+        },
+        {
+            "key": "SETTINGS_CAMERA_SENSITIVITY",
+            "value": "Camera Sensitivity"
         },
         {
             "key": "Settings_Controls",
             "value": "Controls"
         },
         {
+            "key": "SETTINGS_FULLSCREEN",
+            "value": "Fullscreen"
+        },
+        {
+            "key": "SETTINGS_GENERAL",
+            "value": "General"
+        },
+        {
             "key": "Settings_Graphics",
             "value": "Graphics"
         },
         {
+            "key": "SETTINGS_INVERT_LOOK_FLIGHT",
+            "value": "Invert Y axis (flight)"
+        },
+        {
+            "key": "SETTINGS_INVERT_LOOK_GROUND",
+            "value": "Invert Y axis (ground)"
+        },
+        {
             "key": "Settings_Language",
             "value": "Language"
+        },
+        {
+            "key": "SETTINGS_LANGUAGE",
+            "value": "Language"
+        },
+        {
+            "key": "SETTINGS_MASTER_VOLUME",
+            "value": "Master Volume"
+        },
+        {
+            "key": "SETTINGS_MUSIC_VOLUME",
+            "value": "Music Volume"
+        },
+        {
+            "key": "SETTINGS_SFX_VOLUME",
+            "value": "SFX Volume"
+        },
+        {
+            "key": "SETTINGS_TITLE",
+            "value": "Settings"
+        },
+        {
+            "key": "SETTINGS_VIBRATION",
+            "value": "Vibration"
+        },
+        {
+            "key": "SHOP_BUY_BUTTON",
+            "value": "BUY"
+        },
+        {
+            "key": "SHOP_ITEM_AVAILABLE",
+            "value": "Available"
+        },
+        {
+            "key": "SHOP_MSG_INVALID_ITEM",
+            "value": "Invalid item."
+        },
+        {
+            "key": "SHOP_MSG_INVALID_SELECTION",
+            "value": "Invalid selection."
+        },
+        {
+            "key": "SHOP_MSG_ITEM_UNAVAILABLE",
+            "value": "Item unavailable."
+        },
+        {
+            "key": "SHOP_MSG_NO_CURRENCY_ITEM",
+            "value": "No currency item has been assigned."
+        },
+        {
+            "key": "SHOP_MSG_NO_INVENTORY",
+            "value": "No inventory configured."
+        },
+        {
+            "key": "SHOP_MSG_NOT_ENOUGH_CURRENCY",
+            "value": "You don't have enough coins."
+        },
+        {
+            "key": "SHOP_MSG_NOT_ENOUGH_QUANTITY",
+            "value": "You don't have enough of that item."
+        },
+        {
+            "key": "SHOP_MSG_OUT_OF_STOCK",
+            "value": "Product out of stock."
+        },
+        {
+            "key": "SHOP_PRICE_LABEL",
+            "value": "Price: {0}"
+        },
+        {
+            "key": "SHOP_PURCHASE_FAILED",
+            "value": "Couldn't complete the purchase."
+        },
+        {
+            "key": "SHOP_PURCHASE_SUCCESS",
+            "value": "Purchased!"
+        },
+        {
+            "key": "SHOP_SELL_BUTTON",
+            "value": "SELL"
+        },
+        {
+            "key": "SHOP_SELL_NOT_IMPLEMENTED",
+            "value": "Selling isn't implemented yet."
+        },
+        {
+            "key": "SHOP_STOCK_IN_STOCK",
+            "value": "In stock"
+        },
+        {
+            "key": "SHOP_STOCK_OUT",
+            "value": "Out of stock"
+        },
+        {
+            "key": "SHOP_STOCK_UNLIMITED",
+            "value": "Unlimited stock"
         },
         {
             "key": "SHOP_TITTLE",
@@ -387,6 +975,74 @@
         {
             "key": "SHOP_VENDOR",
             "value": "What would you like to buy today?"
+        },
+        {
+            "key": "SPELL_ASSIGN_HINT",
+            "value": "Press A on a spell, then choose the slot to assign it to."
+        },
+        {
+            "key": "SPELL_AURA_ESTELAR_NAME",
+            "value": "Stellar Aura"
+        },
+        {
+            "key": "SPELL_BOLA_FUEGO_NAME",
+            "value": "Fireball"
+        },
+        {
+            "key": "SPELL_BOLA_PRISMA_NAME",
+            "value": "Prism Ball"
+        },
+        {
+            "key": "SPELL_COOLDOWN_LABEL",
+            "value": "Cooldown: {0}s"
+        },
+        {
+            "key": "SPELL_CORAZON_ESTELAR_NAME",
+            "value": "Stellar Heart"
+        },
+        {
+            "key": "SPELL_DAMAGE_LABEL",
+            "value": "Damage: {0}"
+        },
+        {
+            "key": "SPELL_LEVITATION_NAME",
+            "value": "Levitation"
+        },
+        {
+            "key": "SPELL_LLAMA_ASTRAL_NAME",
+            "value": "Astral Flame"
+        },
+        {
+            "key": "SPELL_MANA_COST_LABEL",
+            "value": "Mana cost: {0}"
+        },
+        {
+            "key": "SPELL_NO_INFO",
+            "value": "Spell with no information."
+        },
+        {
+            "key": "SPELL_SELECT_SLOT_HINT",
+            "value": "Select a slot with A or cancel with B."
+        },
+        {
+            "key": "SPELL_SELECT_SPELL_HINT",
+            "value": "Select a spell with A or cancel with B."
+        },
+        {
+            "key": "SPELL_TORNADO_NAME",
+            "value": "Cycloneburst"
+        },
+        {
+            "key": "SPELL_UNASSIGNED",
+            "value": "Unassigned."
+        },
+        {
+            "key": "SPELL_UNASSIGNED_SHORT",
+            "value": "Unassigned"
+        },
+        {
+            "key": "SPLASH_PRESENTA",
+            "value": "Presents"
         },
         {
             "key": "System_Error",
@@ -399,6 +1055,10 @@
         {
             "key": "System_Saving",
             "value": "Saving..."
+        },
+        {
+            "key": "TELEPORT_BLOCKED_BOSS",
+            "value": "I can't teleport out of here yet."
         },
         {
             "key": "TELEPORT_POINT_BEDROOM",
@@ -493,6 +1153,18 @@
             "value": "Archive"
         },
         {
+            "key": "UI_ACTIVAR",
+            "value": "Activate"
+        },
+        {
+            "key": "UI_CANCELAR_SALIR",
+            "value": "Cancel / Exit"
+        },
+        {
+            "key": "UI_DESPLAZAMIENTO",
+            "value": "Movement"
+        },
+        {
             "key": "UI_Experience",
             "value": "Experience"
         },
@@ -565,8 +1237,16 @@
             "value": "Resume"
         },
         {
+            "key": "UI_SALIR_MENU",
+            "value": "Exit to menu"
+        },
+        {
             "key": "UI_SEGUIR",
             "value": "Follow"
+        },
+        {
+            "key": "UI_SELECCION",
+            "value": "Selection"
         },
         {
             "key": "UI_SIGUIENDO",
@@ -575,6 +1255,10 @@
         {
             "key": "UI_TELETRANSPORTE",
             "value": "Teleport"
+        },
+        {
+            "key": "UI_USAR",
+            "value": "Use"
         },
         {
             "key": "UI_VOLVER_MENU",
@@ -593,824 +1277,196 @@
             "value": "Rest and wait until nightfall?"
         },
         {
-            "key": "WATER_ENTER_NEEDS",
-            "value": "Before entering the water, you need:"
-        },
-        {
-            "key": "WOODS_EXIT_BLOCKED",
-            "value": "I should talk to that guard."
-        },
-        {
-            "key": "SHOP_PRICE_LABEL",
-            "value": "Price: {0}"
-        },
-        {
-            "key": "SHOP_STOCK_IN_STOCK",
-            "value": "In stock"
-        },
-        {
-            "key": "SHOP_STOCK_OUT",
-            "value": "Out of stock"
-        },
-        {
-            "key": "SHOP_STOCK_UNLIMITED",
-            "value": "Unlimited stock"
-        },
-        {
-            "key": "SHOP_SELL_NOT_IMPLEMENTED",
-            "value": "Selling isn't implemented yet."
-        },
-        {
-            "key": "SHOP_PURCHASE_SUCCESS",
-            "value": "Purchased!"
-        },
-        {
-            "key": "SHOP_PURCHASE_FAILED",
-            "value": "Couldn't complete the purchase."
-        },
-        {
-            "key": "SHOP_MSG_INVALID_SELECTION",
-            "value": "Invalid selection."
-        },
-        {
-            "key": "SHOP_MSG_ITEM_UNAVAILABLE",
-            "value": "Item unavailable."
-        },
-        {
-            "key": "SHOP_MSG_OUT_OF_STOCK",
-            "value": "Product out of stock."
-        },
-        {
-            "key": "SHOP_MSG_NOT_ENOUGH_CURRENCY",
-            "value": "You don't have enough coins."
-        },
-        {
-            "key": "SHOP_MSG_INVALID_ITEM",
-            "value": "Invalid item."
-        },
-        {
-            "key": "SHOP_MSG_NOT_ENOUGH_QUANTITY",
-            "value": "You don't have enough of that item."
-        },
-        {
-            "key": "SHOP_MSG_NO_INVENTORY",
-            "value": "No inventory configured."
-        },
-        {
-            "key": "SHOP_MSG_NO_CURRENCY_ITEM",
-            "value": "No currency item has been assigned."
-        },
-        {
-            "key": "QUEST_MENU_HEADER_MAIN",
-            "value": "Missions (main)"
-        },
-        {
-            "key": "QUEST_MENU_HEADER_VISIBLE",
-            "value": "Visible missions ({0})"
-        },
-        {
-            "key": "QUEST_MENU_HEADER_HIDDEN",
-            "value": "Hidden missions ({0})"
-        },
-        {
-            "key": "COMMON_NONE",
-            "value": "None"
-        },
-        {
-            "key": "ABILITIES_LEVEL_LABEL",
-            "value": "Level: {0}"
-        },
-        {
-            "key": "ABILITIES_MANA_LABEL",
-            "value": "Mana: {0}/{1}"
-        },
-        {
-            "key": "INVENTORY_UNAVAILABLE",
-            "value": "Inventory unavailable"
-        },
-        {
-            "key": "INVENTORY_EMPTY",
-            "value": "Empty inventory"
-        },
-        {
-            "key": "INVENTORY_SELECT_ITEM",
-            "value": "Select an item"
-        },
-        {
-            "key": "INVENTORY_NO_DESCRIPTION",
-            "value": "No description."
-        },
-        {
-            "key": "INVENTORY_QUANTITY_LABEL",
-            "value": "Quantity: {0}"
-        },
-        {
-            "key": "HUD_FOLLOW_PROMPT_FOLLOW",
-            "value": "Follow me"
-        },
-        {
-            "key": "HUD_FOLLOW_PROMPT_STOP",
-            "value": "Stop following"
-        },
-        {
-            "key": "UI_DESPLAZAMIENTO",
-            "value": "Movement"
-        },
-        {
-            "key": "UI_SELECCION",
-            "value": "Selection"
-        },
-        {
-            "key": "UI_CANCELAR_SALIR",
-            "value": "Cancel / Exit"
-        },
-        {
-            "key": "UI_SALIR_MENU",
-            "value": "Exit to menu"
-        },
-        {
-            "key": "UI_USAR",
-            "value": "Use"
-        },
-        {
-            "key": "SPLASH_PRESENTA",
-            "value": "Presents"
-        },
-        {
-            "key": "SPELL_AURA_ESTELAR_NAME",
-            "value": "Stellar Aura"
-        },
-        {
-            "key": "SPELL_BOLA_FUEGO_NAME",
-            "value": "Fireball"
-        },
-        {
-            "key": "SPELL_BOLA_PRISMA_NAME",
-            "value": "Prism Ball"
-        },
-        {
-            "key": "SPELL_CORAZON_ESTELAR_NAME",
-            "value": "Stellar Heart"
-        },
-        {
-            "key": "SPELL_LEVITATION_NAME",
-            "value": "Levitation"
-        },
-        {
-            "key": "SPELL_LLAMA_ASTRAL_NAME",
-            "value": "Astral Flame"
-        },
-        {
-            "key": "SPELL_TORNADO_NAME",
-            "value": "Cycloneburst"
-        },
-        {
-            "key": "SPELL_DAMAGE_LABEL",
-            "value": "Damage: {0}"
-        },
-        {
-            "key": "SPELL_MANA_COST_LABEL",
-            "value": "Mana cost: {0}"
-        },
-        {
-            "key": "SPELL_COOLDOWN_LABEL",
-            "value": "Cooldown: {0}s"
-        },
-        {
-            "key": "SPELL_UNASSIGNED",
-            "value": "Unassigned."
-        },
-        {
-            "key": "SPELL_UNASSIGNED_SHORT",
-            "value": "Unassigned"
-        },
-        {
-            "key": "SPELL_NO_INFO",
-            "value": "Spell with no information."
-        },
-        {
-            "key": "SPELL_SELECT_SPELL_HINT",
-            "value": "Select a spell with A or cancel with B."
-        },
-        {
-            "key": "SPELL_SELECT_SLOT_HINT",
-            "value": "Select a slot with A or cancel with B."
-        },
-        {
-            "key": "SPELL_ASSIGN_HINT",
-            "value": "Press A on a spell, then choose the slot to assign it to."
-        },
-        {
-            "key": "ITEM_AC04_ANGELEARS_NAME",
-            "value": "Angel Ears"
-        },
-        {
-            "key": "ITEM_AC04_ANGELEARS_DESC",
-            "value": "Angel ears."
-        },
-        {
-            "key": "ITEM_AC04_BUNNYEARS_NAME",
-            "value": "Bunny Ears"
-        },
-        {
-            "key": "ITEM_AC04_BUNNYEARS_DESC",
-            "value": "Bunny ears."
-        },
-        {
-            "key": "ITEM_ALGAS_NAME",
-            "value": "Seaweed"
-        },
-        {
-            "key": "ITEM_BOOTS_NAME",
-            "value": "Boots"
-        },
-        {
-            "key": "ITEM_CARACOLA_NAME",
-            "value": "Seashell"
-        },
-        {
-            "key": "ITEM_CHEST25COIN_NAME",
-            "value": "Chest"
-        },
-        {
-            "key": "ITEM_CLOAK01_NAME",
-            "value": "Expert Mage Cloak"
-        },
-        {
-            "key": "ITEM_CLOAK01_DESC",
-            "value": "A mage cloak worn by the most powerful mages."
-        },
-        {
-            "key": "ITEM_COIN_NAME",
-            "value": "Coin"
-        },
-        {
-            "key": "ITEM_KEY_NAME",
-            "value": "Key"
-        },
-        {
-            "key": "ITEM_KEY_DESC",
-            "value": "A key that might come in handy."
-        },
-        {
-            "key": "ITEM_POCIONMAGIA_NAME",
-            "value": "Magic Potion"
-        },
-        {
-            "key": "ITEM_POCIONMAGIA_DESC",
-            "value": "A potion that restores magic when consumed. Restores 25 MP."
-        },
-        {
-            "key": "ITEM_POCIONVIDA_NAME",
-            "value": "Health Potion"
-        },
-        {
-            "key": "ITEM_POCIONVIDA_DESC",
-            "value": "A potion that restores health when consumed. Restores 25 HP."
-        },
-        {
-            "key": "WARDROBE_BODY05_NAME",
-            "value": "Villager clothes"
-        },
-        {
-            "key": "WARDROBE_BODY05_DESC",
-            "value": "Plain clothes that any villager might wear day to day."
-        },
-        {
-            "key": "WARDROBE_CLOAK01_NAME",
-            "value": "Expert mage cloak."
-        },
-        {
-            "key": "WARDROBE_CLOAK01_DESC",
-            "value": "A magic cloak worn by the most powerful mages."
-        },
-        {
-            "key": "WARDROBE_CLOAK02_NAME",
-            "value": "Beginner mage cloak."
-        },
-        {
-            "key": "WARDROBE_CLOAK02_DESC",
-            "value": "A magic cloak used by mages starting out on their adventure."
-        },
-        {
-            "key": "WARDROBE_CLOAK03_NAME",
-            "value": "Advanced mage cloak."
-        },
-        {
-            "key": "WARDROBE_CLOAK03_DESC",
-            "value": "A magic cloak worn by mages who have mastered magic."
-        },
-        {
-            "key": "SETTINGS_TITLE",
-            "value": "Settings"
-        },
-        {
-            "key": "SETTINGS_INVERT_LOOK_GROUND",
-            "value": "Invert Y axis (ground)"
-        },
-        {
-            "key": "SETTINGS_SFX_VOLUME",
-            "value": "SFX Volume"
-        },
-        {
-            "key": "SETTINGS_MUSIC_VOLUME",
-            "value": "Music Volume"
-        },
-        {
-            "key": "SETTINGS_CAMERA_CONTROLS",
-            "value": "Camera / Controls"
-        },
-        {
-            "key": "SETTINGS_GENERAL",
-            "value": "General"
-        },
-        {
-            "key": "SETTINGS_FULLSCREEN",
-            "value": "Fullscreen"
-        },
-        {
-            "key": "SETTINGS_MASTER_VOLUME",
-            "value": "Master Volume"
-        },
-        {
-            "key": "SETTINGS_VIBRATION",
-            "value": "Vibration"
-        },
-        {
-            "key": "SETTINGS_LANGUAGE",
-            "value": "Language"
-        },
-        {
-            "key": "SETTINGS_AUDIO",
-            "value": "Audio"
-        },
-        {
-            "key": "SETTINGS_CAMERA_SENSITIVITY",
-            "value": "Camera Sensitivity"
-        },
-        {
-            "key": "SETTINGS_INVERT_LOOK_FLIGHT",
-            "value": "Invert Y axis (flight)"
-        },
-        {
-            "key": "SHOP_BUY_BUTTON",
-            "value": "BUY"
-        },
-        {
-            "key": "SHOP_SELL_BUTTON",
-            "value": "SELL"
-        },
-        {
-            "key": "SHOP_ITEM_AVAILABLE",
-            "value": "Available"
+            "key": "WARDROBE_BODY01_DESC",
+            "value": "Simple, patched clothing typical of field workers."
         },
         {
             "key": "WARDROBE_BODY01_NAME",
             "value": "Peasant Clothes"
         },
         {
-            "key": "WARDROBE_BODY01_DESC",
-            "value": "Simple, patched clothing typical of field workers."
+            "key": "WARDROBE_BODY02_DESC",
+            "value": "Light layers made for long walks along the Path."
         },
         {
             "key": "WARDROBE_BODY02_NAME",
             "value": "Traveler's Garb"
         },
         {
-            "key": "WARDROBE_BODY02_DESC",
-            "value": "Light layers made for long walks along the Path."
+            "key": "WARDROBE_BODY03_DESC",
+            "value": "A plain tunic, comfortable for everyday wear."
         },
         {
             "key": "WARDROBE_BODY03_NAME",
             "value": "Humble Tunic"
         },
         {
-            "key": "WARDROBE_BODY03_DESC",
-            "value": "A plain tunic, comfortable for everyday wear."
+            "key": "WARDROBE_BODY04_DESC",
+            "value": "Tanned leather that protects among the forest brush."
         },
         {
             "key": "WARDROBE_BODY04_NAME",
             "value": "Hunter's Gear"
         },
         {
-            "key": "WARDROBE_BODY04_DESC",
-            "value": "Tanned leather that protects among the forest brush."
+            "key": "WARDROBE_BODY05_DESC",
+            "value": "Plain clothes that any villager might wear day to day."
         },
         {
-            "key": "WARDROBE_BODY06_NAME",
-            "value": "Guard Uniform"
+            "key": "WARDROBE_BODY05_NAME",
+            "value": "Villager clothes"
         },
         {
             "key": "WARDROBE_BODY06_DESC",
             "value": "The standard-issue uniform of the village guard."
         },
         {
-            "key": "WARDROBE_BODY07_NAME",
-            "value": "Mage Apprentice Robe"
+            "key": "WARDROBE_BODY06_NAME",
+            "value": "Guard Uniform"
         },
         {
             "key": "WARDROBE_BODY07_DESC",
             "value": "Cloth touched by a faint arcane glow."
         },
         {
-            "key": "WARDROBE_BODY08_NAME",
-            "value": "Blacksmith's Apron"
+            "key": "WARDROBE_BODY07_NAME",
+            "value": "Mage Apprentice Robe"
         },
         {
             "key": "WARDROBE_BODY08_DESC",
             "value": "Thick leather that withstands sparks and forge heat."
         },
         {
-            "key": "WARDROBE_BODY09_NAME",
-            "value": "Fisherman's Clothes"
+            "key": "WARDROBE_BODY08_NAME",
+            "value": "Blacksmith's Apron"
         },
         {
             "key": "WARDROBE_BODY09_DESC",
             "value": "Waterproof and light, perfect for days by the river."
         },
         {
-            "key": "WARDROBE_BODY10_NAME",
-            "value": "Merchant's Attire"
+            "key": "WARDROBE_BODY09_NAME",
+            "value": "Fisherman's Clothes"
         },
         {
             "key": "WARDROBE_BODY10_DESC",
             "value": "Elegant yet practical, made for closing good deals."
         },
         {
-            "key": "WARDROBE_BODY11_NAME",
-            "value": "Noble's Dress"
+            "key": "WARDROBE_BODY10_NAME",
+            "value": "Merchant's Attire"
         },
         {
             "key": "WARDROBE_BODY11_DESC",
             "value": "Velvet and embroidery worthy of the royal court."
         },
         {
-            "key": "WARDROBE_BODY12_NAME",
-            "value": "Scholar's Robe"
+            "key": "WARDROBE_BODY11_NAME",
+            "value": "Noble's Dress"
         },
         {
             "key": "WARDROBE_BODY12_DESC",
             "value": "Pockets full of notes and ink stains."
         },
         {
-            "key": "WARDROBE_BODY13_NAME",
-            "value": "Bard's Costume"
+            "key": "WARDROBE_BODY12_NAME",
+            "value": "Scholar's Robe"
         },
         {
             "key": "WARDROBE_BODY13_DESC",
             "value": "Bright colors that turn heads in any tavern."
         },
         {
-            "key": "WARDROBE_BODY14_NAME",
-            "value": "Priest's Cassock"
+            "key": "WARDROBE_BODY13_NAME",
+            "value": "Bard's Costume"
         },
         {
             "key": "WARDROBE_BODY14_DESC",
             "value": "Plain cloth blessed in the temples of the Path."
         },
         {
-            "key": "WARDROBE_BODY15_NAME",
-            "value": "Thief's Garb"
+            "key": "WARDROBE_BODY14_NAME",
+            "value": "Priest's Cassock"
         },
         {
             "key": "WARDROBE_BODY15_DESC",
             "value": "Dark tones meant to help you go unnoticed."
         },
         {
-            "key": "WARDROBE_BODY16_NAME",
-            "value": "Light Warrior Armor"
+            "key": "WARDROBE_BODY15_NAME",
+            "value": "Thief's Garb"
         },
         {
             "key": "WARDROBE_BODY16_DESC",
             "value": "Light plating that doesn't sacrifice mobility."
         },
         {
-            "key": "WARDROBE_BODY17_NAME",
-            "value": "Elder's Clothes"
+            "key": "WARDROBE_BODY16_NAME",
+            "value": "Light Warrior Armor"
         },
         {
             "key": "WARDROBE_BODY17_DESC",
             "value": "Warm and comfortable, fit for the years of wisdom."
         },
         {
-            "key": "WARDROBE_BODY18_NAME",
-            "value": "Baker's Apron"
+            "key": "WARDROBE_BODY17_NAME",
+            "value": "Elder's Clothes"
         },
         {
             "key": "WARDROBE_BODY18_DESC",
             "value": "Always smells of freshly baked bread."
         },
         {
-            "key": "WARDROBE_BODY19_NAME",
-            "value": "Herbalist's Clothes"
+            "key": "WARDROBE_BODY18_NAME",
+            "value": "Baker's Apron"
         },
         {
             "key": "WARDROBE_BODY19_DESC",
             "value": "Many pockets for storing herbs and remedies."
         },
         {
-            "key": "WARDROBE_BODY20_NAME",
-            "value": "Festival Outfit"
+            "key": "WARDROBE_BODY19_NAME",
+            "value": "Herbalist's Clothes"
         },
         {
             "key": "WARDROBE_BODY20_DESC",
             "value": "Reserved for the village's grand celebrations."
         },
         {
-            "key": "ITEM_AC01_HEART_NAME",
-            "value": "Heart"
+            "key": "WARDROBE_BODY20_NAME",
+            "value": "Festival Outfit"
         },
         {
-            "key": "ITEM_AC01_HEART_DESC",
-            "value": "A small heart-shaped charm."
+            "key": "WARDROBE_CLOAK01_DESC",
+            "value": "A magic cloak worn by the most powerful mages."
         },
         {
-            "key": "ITEM_AC02_LEAF_NAME",
-            "value": "Leaf"
+            "key": "WARDROBE_CLOAK01_NAME",
+            "value": "Expert mage cloak."
         },
         {
-            "key": "ITEM_AC02_LEAF_DESC",
-            "value": "An autumn leaf worn as an ornament."
+            "key": "WARDROBE_CLOAK02_DESC",
+            "value": "A magic cloak used by mages starting out on their adventure."
         },
         {
-            "key": "ITEM_AC03_BLACKGLASS_NAME",
-            "value": "Black Glasses"
+            "key": "WARDROBE_CLOAK02_NAME",
+            "value": "Beginner mage cloak."
         },
         {
-            "key": "ITEM_AC03_BLACKGLASS_DESC",
-            "value": "Dark-lensed glasses, great for staying incognito."
+            "key": "WARDROBE_CLOAK03_DESC",
+            "value": "A magic cloak worn by mages who have mastered magic."
         },
         {
-            "key": "ITEM_AC03_HEAVYMETALGLASS_NAME",
-            "value": "Heavy Metal Glasses"
+            "key": "WARDROBE_CLOAK03_NAME",
+            "value": "Advanced mage cloak."
         },
         {
-            "key": "ITEM_AC03_HEAVYMETALGLASS_DESC",
-            "value": "Glasses with a rebellious, rock-and-roll edge."
+            "key": "WATER_ENTER_NEEDS",
+            "value": "Before entering the water, you need:"
         },
         {
-            "key": "ITEM_AC03_NERDGLASS_NAME",
-            "value": "Nerd Glasses"
-        },
-        {
-            "key": "ITEM_AC03_NERDGLASS_DESC",
-            "value": "Thick-framed glasses, very intellectual."
-        },
-        {
-            "key": "ITEM_AC03_NIGHTVISION_NAME",
-            "value": "Night Vision Goggles"
-        },
-        {
-            "key": "ITEM_AC03_NIGHTVISION_DESC",
-            "value": "They help you see in the dark... or so it seems."
-        },
-        {
-            "key": "ITEM_AC04_ANTHENAEARS_NAME",
-            "value": "Antenna Ears"
-        },
-        {
-            "key": "ITEM_AC04_ANTHENAEARS_DESC",
-            "value": "Ears with antennas, like something from another world."
-        },
-        {
-            "key": "ITEM_AC04_SHORTEARS_NAME",
-            "value": "Short Ears"
-        },
-        {
-            "key": "ITEM_AC04_SHORTEARS_DESC",
-            "value": "A small, discreet pair of ears."
-        },
-        {
-            "key": "ITEM_AC05_HORN01_NAME",
-            "value": "Curved Horn"
-        },
-        {
-            "key": "ITEM_AC05_HORN01_DESC",
-            "value": "A curved horn with a demonic look."
-        },
-        {
-            "key": "ITEM_AC05_HORN02_NAME",
-            "value": "Straight Horn"
-        },
-        {
-            "key": "ITEM_AC05_HORN02_DESC",
-            "value": "A straight, sharp horn."
-        },
-        {
-            "key": "ITEM_AC05_HORN03_NAME",
-            "value": "Twin Horns"
-        },
-        {
-            "key": "ITEM_AC05_HORN03_DESC",
-            "value": "Two small twin horns."
-        },
-        {
-            "key": "ITEM_AC05_HORN04_NAME",
-            "value": "Dragon Horn"
-        },
-        {
-            "key": "ITEM_AC05_HORN04_DESC",
-            "value": "An imposing dragon-shaped horn."
-        },
-        {
-            "key": "ITEM_AC06_CROWN01_NAME",
-            "value": "Golden Crown"
-        },
-        {
-            "key": "ITEM_AC06_CROWN01_DESC",
-            "value": "A gleaming crown fit for royalty."
-        },
-        {
-            "key": "ITEM_AC06_CROWN02_NAME",
-            "value": "Silver Crown"
-        },
-        {
-            "key": "ITEM_AC06_CROWN02_DESC",
-            "value": "A modest crown of polished silver."
-        },
-        {
-            "key": "ITEM_AC06_CROWN03_NAME",
-            "value": "Flower Crown"
-        },
-        {
-            "key": "ITEM_AC06_CROWN03_DESC",
-            "value": "A crown woven from flowers of the Path."
-        },
-        {
-            "key": "ITEM_AC07_PIRATEPATCH_NAME",
-            "value": "Pirate Patch"
-        },
-        {
-            "key": "ITEM_AC07_PIRATEPATCH_DESC",
-            "value": "A patch hiding an eye... or a secret."
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK01_NAME",
-            "value": "Ninja Mask I"
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK01_DESC",
-            "value": "A dark mask that conceals the face, perfect for stealth."
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK02_NAME",
-            "value": "Ninja Mask II"
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK02_DESC",
-            "value": "A dark mask that conceals the face, perfect for stealth."
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK03_NAME",
-            "value": "Ninja Mask III"
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK03_DESC",
-            "value": "A dark mask that conceals the face, perfect for stealth."
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK04_NAME",
-            "value": "Ninja Mask IV"
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK04_DESC",
-            "value": "A dark mask that conceals the face, perfect for stealth."
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK05_NAME",
-            "value": "Ninja Mask V"
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK05_DESC",
-            "value": "A dark mask that conceals the face, perfect for stealth."
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK06_NAME",
-            "value": "Ninja Mask VI"
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK06_DESC",
-            "value": "A dark mask that conceals the face, perfect for stealth."
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK07_NAME",
-            "value": "Ninja Mask VII"
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK07_DESC",
-            "value": "A dark mask that conceals the face, perfect for stealth."
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK08_NAME",
-            "value": "Ninja Mask VIII"
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK08_DESC",
-            "value": "A dark mask that conceals the face, perfect for stealth."
-        },
-        {
-            "key": "ITEM_AC09_RIBBON_NAME",
-            "value": "Ribbon"
-        },
-        {
-            "key": "ITEM_AC09_RIBBON_DESC",
-            "value": "A decorative ribbon for an elegant touch."
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE01_NAME",
-            "value": "Classic Mustache"
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE01_DESC",
-            "value": "A classic, neat, well-groomed mustache."
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE02_NAME",
-            "value": "Thin Mustache"
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE02_DESC",
-            "value": "A thin, discreet mustache."
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE03_NAME",
-            "value": "Curly Mustache"
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE03_DESC",
-            "value": "A mustache with the tips curled upward."
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE04_NAME",
-            "value": "Bushy Mustache"
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE04_DESC",
-            "value": "A thick, bushy mustache."
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE05_NAME",
-            "value": "Elegant Mustache"
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE05_DESC",
-            "value": "A refined mustache with a noble touch."
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE06_NAME",
-            "value": "Extravagant Mustache"
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE06_DESC",
-            "value": "A huge, eye-catching mustache."
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE01_NAME",
-            "value": "Mustache & Short Beard"
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE01_DESC",
-            "value": "A mustache paired with a short, neat beard."
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE02_NAME",
-            "value": "Mustache & Goatee"
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE02_DESC",
-            "value": "A mustache paired with a goatee."
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE03_NAME",
-            "value": "Mustache & Long Beard"
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE03_DESC",
-            "value": "A mustache paired with a long, full beard."
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE04_NAME",
-            "value": "Mustache & Braided Beard"
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE04_DESC",
-            "value": "A mustache paired with a braided beard."
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE05_NAME",
-            "value": "Royal Mustache"
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE05_DESC",
-            "value": "A mustache and beard fit for a king."
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE06_NAME",
-            "value": "Magic Mustache"
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE06_DESC",
-            "value": "A mustache and beard with a strange arcane sheen."
+            "key": "WOODS_EXIT_BLOCKED",
+            "value": "I should talk to that guard."
         }
     ]
 }

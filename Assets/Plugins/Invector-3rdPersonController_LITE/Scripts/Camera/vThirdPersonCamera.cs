@@ -179,7 +179,18 @@ public class vThirdPersonCamera : MonoBehaviour
 
     public void RotateCamera(float x, float y)
     {
-        if (lockCameraForCinematic || _lockTarget != null || zoneRotationLocked) return;
+        // FIX (cámara a trompicones al cerrar el menú de equipamiento, 27/08): mientras este
+        // componente está deshabilitado (PlayerEquipmentMenuController.cs pone
+        // mainThirdPersonCamera.enabled = false durante el desplazamiento/retorno de cámara del
+        // menú), CameraMovement() no corre en LateUpdate — pero vThirdPersonInput.CameraInput()
+        // sigue llamando a RotateCamera() todos los frames en cuanto el input de mirar se
+        // reactiva (justo al cerrar el menú, antes de que termine el tween de retorno de ~0.4s).
+        // Sin este guard, mouseX/mouseY seguían acumulando la rotación real del jugador durante
+        // ese margen sin efecto visible, y al reactivarse el componente el Slerp de
+        // CameraMovement() tenía que "recuperar" de golpe todo ese input acumulado — eso es lo
+        // que se veía como cámara a trompicones justo tras cerrar el inventario, hasta que dejar
+        // de mover la cámara le daba tiempo a converger.
+        if (!isActiveAndEnabled || lockCameraForCinematic || _lockTarget != null || zoneRotationLocked) return;
 
         mouseX += x * xMouseSensitivity;
         mouseY -= y * yMouseSensitivity;

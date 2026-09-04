@@ -84,7 +84,12 @@ using Sendero.Core.Feedback;
 ///   Swimming_Floating_NoWeapon, TakeDamage, TakeDamage_2, Talk01, Talk02, Talk03, Victory_NoWeapon,
 ///   fly_dive, fly_idle. **Talk01/02/03 SÍ son estados reales de "hablar" — se usan ya abajo para dar
 ///   variedad en vez de repetir InteractWithPeople_NoWeapon en cada línea genérica.**
-///   La UpperBody layer (índice 1, no se usa aquí) tiene su propia lista, mucho más corta.
+///   ⚠️ Actualizado 30 ago 2026: la mayoría de los gestos puntuales de arriba (Talk01-03,
+///   Greeting01_NoWeapon, Reverence01, Question02, HeadShake01/02, Laugh01, Fear01, HandWave02,
+///   SenseSomethingStart_NoWeapon, FoundSomething_NoWeapon...) viven ahora en la UpperBody layer
+///   (índice 1), migrados fuera del Base Layer para no congelar las piernas. LevelUp_NoWeapon
+///   sigue a propósito en el Base Layer. ReproducirGesto() resuelve la layer correcta sola por
+///   nombre de estado (ver AnimatorLayerUtil.ResolveLayer()) — no hace falta tocar nada aquí al añadir gestos.
 ///   Vacío = no se dispara nada, la línea se ve igual, solo sin gesto.
 ///
 /// ── GESTOS QUE NO SE QUEDAN "IDLE" A MITAD DE LÍNEA ────────────────────────────────────────
@@ -886,6 +891,12 @@ public class PromoVideo01Sequencer : CinematicSequencerBase
     /// reemplace (esa siguiente llamada siempre resetea speed a 1 antes de reproducir nada, así
     /// que no hace falta "descongelar" a mano en ningún otro sitio).
     /// </param>
+    // Índice de la layer "UpperBody" (Avatar Mask sin piernas) del Animator Controller de
+    // Estela/Liam/Will — mismo índice que NPCSimpleAnimator.upperBodyLayer para los NPC reales.
+    // La mayoría de los gestos puntuales de este script viven aquí desde la migración fuera del
+    // Base Layer (30 ago 2026); LevelUp_NoWeapon sigue a propósito en el Base Layer.
+    private const int CapaUpperBody = 1;
+
     private void ReproducirGesto(Animator animator, string estado, bool mantenerConversando)
     {
         if (animator == null) return;
@@ -895,13 +906,20 @@ public class PromoVideo01Sequencer : CinematicSequencerBase
 
         animator.speed = 1f; // por si un gesto anterior se congeló con speed = 0 (ver más arriba)
 
-        if (string.IsNullOrEmpty(estado) || !animator.HasState(0, Animator.StringToHash(estado)))
+        // AnimatorLayerUtil resuelve en qué layer vive realmente `estado`: la UpperBody layer si
+        // existe ahí (donde vive la inmensa mayoría de los gestos puntuales desde la migración
+        // fuera del Base Layer), o el Base Layer si no (p.ej. LevelUp_NoWeapon, que se quedó a
+        // propósito en el Base Layer — ver cabecera del script). Misma utilidad compartida que
+        // usan NPCSimpleAnimator.PlaySocialGesture() y PlayerDialogueAnimator.
+        int capa = AnimatorLayerUtil.ResolveLayer(animator, estado, CapaUpperBody);
+        if (capa < 0)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (!string.IsNullOrEmpty(estado))
                 Debug.LogWarning($"[PromoVideo01Sequencer] El Animator Controller de '{animator.name}' no tiene " +
-                    $"ningún estado llamado '{estado}' en su Base Layer — el gesto no se reproducirá. Revisa la " +
-                    "clave en el Inspector (debe ser un NOMBRE DE ESTADO, no un parámetro Trigger).");
+                    $"ningún estado llamado '{estado}' ni en su Base Layer ni en su UpperBody layer — el gesto " +
+                    "no se reproducirá. Revisa la clave en el Inspector (debe ser un NOMBRE DE ESTADO, no un " +
+                    "parámetro Trigger).");
 #endif
             if (mantenerConversando)
                 CrossFadeSiNoEsta(animator, EstadoConversando, 0.15f);
@@ -909,8 +927,11 @@ public class PromoVideo01Sequencer : CinematicSequencerBase
             return;
         }
 
-        animator.Play(estado, 0, 0f);
-        _reposoPendiente[animator] = StartCoroutine(Co_TrasGesto(animator, estado, mantenerConversando));
+        if (capa == CapaUpperBody)
+            animator.SetLayerWeight(CapaUpperBody, 1f); // si no, el gesto se reproduce pero no se ve
+
+        animator.Play(estado, capa, 0f);
+        _reposoPendiente[animator] = StartCoroutine(Co_TrasGesto(animator, estado, capa, mantenerConversando));
     }
 
     /// Espera a que termine el clip que ReproducirGesto() acaba de lanzar y entonces aplica el
@@ -918,10 +939,10 @@ public class PromoVideo01Sequencer : CinematicSequencerBase
     /// se lee del propio Animator (GetCurrentAnimatorStateInfo().length) en vez de mantener una
     /// tabla de duraciones a mano — así siempre está sincronizado aunque cambie el clip asignado al
     /// estado en el Animator Controller.
-    private IEnumerator Co_TrasGesto(Animator animator, string estadoGesto, bool mantenerConversando)
+    private IEnumerator Co_TrasGesto(Animator animator, string estadoGesto, int capa, bool mantenerConversando)
     {
         yield return null; // 1 frame para que el Play() de ReproducirGesto ya esté activo
-        var info = animator.GetCurrentAnimatorStateInfo(0);
+        var info = animator.GetCurrentAnimatorStateInfo(capa);
         float duracionClip = info.IsName(estadoGesto) ? info.length : 1f;
         yield return new WaitForSeconds(duracionClip);
 
@@ -929,7 +950,7 @@ public class PromoVideo01Sequencer : CinematicSequencerBase
             CrossFadeSiNoEsta(animator, EstadoConversando, 0.2f);
         else
         {
-            animator.Play(estadoGesto, 0, 0.999f);
+            animator.Play(estadoGesto, capa, 0.999f);
             animator.speed = 0f;
         }
 

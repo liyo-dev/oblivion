@@ -2,7 +2,7 @@
 
 **Versión:** 2.0 (migrado desde el Google Doc original "GDD" v1.0)
 **Autor original:** Raúl Báez Amate — Liyodev
-**Última revisión:** 24 de agosto de 2026 — ver [Registro de cambios](#registro-de-cambios) al final del documento.
+**Última revisión:** 1 de septiembre de 2026 — ver [Registro de cambios](#registro-de-cambios) al final del documento.
 
 ---
 
@@ -16,6 +16,8 @@ El Google Doc original quedó congelado en "Versión 1.0" mientras el juego segu
 - `TDD.md` — arquitectura, sistemas, reglas de código, bugs técnicos.
 - `GDD.md` (este archivo) — historia, guión, fichas de personaje, balance de hechizos/contenido, estado de diálogos.
 - `CLAUDE.md` / `AGENTS.md` — resumen corto de ambos para que las IA lo carguen sin gastar espacio de más.
+
+**Regla añadida el 30 de agosto de 2026, a petición de Raúl — la novela también es canon:** la novela (`novela/manuscrito-novela-completo.md`, proyecto de Cowork "El Sendero de las Estrellas") no es solo material de marketing, es la otra fuente narrativa del universo. Cualquier corrección de historia/canon que se haga en uno de los dos (la novela o este GDD) debe revisarse y, si aplica, reflejarse también en el otro — no dejar que se desalineen en silencio, mismo criterio que ya se aplica entre `GDD.md`/`TDD.md`/`TRACKER.md`. Precedente: `INC-126` en `TRACKER.md` (escena 17, las tres pruebas del Sendero) fue justo un desnivel de este tipo, encontrado porque la novela ya tenía la corrección y el GDD no.
 
 ---
 
@@ -33,7 +35,7 @@ El Google Doc original quedó congelado en "Versión 1.0" mientras el juego segu
 
 ## La Historia
 
-Hace mucho tiempo, un mago recorrió el Sendero de las Estrellas, una sucesión de portales mágicos capaces de conceder cualquier deseo. Su ambición por obtener poder infinito provocó que perdiera el control de un **hechizo devastador** que supuso su fin. Para evitar otro desastre, los dioses sellaron el Sendero y ocultaron sus secretos en un libro prohibido. Siglos después, la humanidad ha olvidado esta leyenda.
+Hace mucho tiempo, un mago recorrió el Sendero de las Estrellas, una sucesión de portales mágicos capaces de conceder un deseo a quien logre superar sus pruebas. Ante el altar final, pidió que ningún poder en la Creación pudiera oponérsele — y el Sendero se lo concedió. Su ambición desató una Marcha de Conquista que arrasó reino tras reino, hasta que un único mago, sin ejército ni título, se plantó ante él para proteger a su gente. El choque de ambos hechizos no lo mató: quedó sellado dentro del propio Sendero que había corrompido con su deseo. Siglos después, la humanidad ha olvidado esta leyenda.
 
 En la era actual, Liam, un mago que cuida de su hermano enfermo, descubre **referencias y fragmentos antiguos** sobre el Sendero. Está convencido de que es su única salvación, pero los textos están incompletos. Sabe que existe un **Libro de los Hechizos Prohibidos** que tiene el ritual, pero no sabe dónde está. Lo que sí ha descubierto en sus investigaciones es que el Sendero solo responde ante un "corazón puro". Tras rastrear linajes y señales, localiza a Will. Para confirmar que Will es quien busca y forzarlo a usar su poder, Liam orquesta los ataques iniciales.
 
@@ -219,9 +221,12 @@ Estas dos escenas ya no son dos beats separados como en el guión original: est�
 ### 17. El Sendero de las Estrellas
 
 - Contexto: abren el portal. Se crea un punto de guardado entre el mundo real y el del sendero situado en el cielo entre las estrellas. Una vez se atraviesa el portal ya no se puede guardar la partida hasta superar cada prueba.
-- Prueba 1: la prueba de Will. Laberinto con puzzles y jefes para que Will venza sus miedos.
-- Prueba 2: Chuchelandia, la prueba de Estela. Estela odia las chuches, odia lo cursi y detesta la purpurina. Se tendrá que enfrentar a una historia donde debe ser reina del mundo de las chuches.
-- Prueba 3: el laberinto de los ecos, la prueba de Liam (gameplay narrativo y exploración). El grupo entra en un laberinto ilusorio donde Liam debe sacrificar recuerdos dolorosos para avanzar. El laberinto comienza a proyectar "ecos" de las mentiras de Liam. Al llegar a la última puerta, que sella la salida, una Voz Ancestral lanza la pregunta final: *"¿Cuál fue el precio real que pagaste para llegar hasta aquí, Mago?"*. La magia de la puerta arranca la verdad de la mente de Liam, proyectando un holograma gigante: el recuerdo de Liam orquestando la emboscada mortal contra Will al principio de la aventura. Will y Estela lo ven todo atónitos. La puerta se abre. El grupo sale al nexo del Sendero en absoluto silencio.
+- **Corrección de canon (30 ago 2026, aclarada por Raúl y ya aplicada en la novela — ver `novela/manuscrito-novela-completo.md`): las tres pruebas NO son caminos solitarios paralelos.** La versión anterior de este guión (heredada del Google Doc v1.0) describía "Prueba 1 de Will", "Prueba 2 de Estela", "Prueba 3 de Liam" como si cada personaje las afrontara en solitario — no es así:
+  - **Prueba 1 (el laberinto de los miedos de Will) y Prueba 2 (Chuchelandia, de Estela) las vive el grupo entero, juntos**, aunque cada una esté centrada en un personaje — los otros dos acompañan y participan, no se quedan fuera.
+  - **Prueba 3 (la de Liam) es la única donde el grupo se separa, y de forma distinta a como decía la versión anterior.** Antes del laberinto, los tres pasan por un parque de atracciones donde se relajan y estrechan su amistad (noria, juego de anillas, mareo de Will, los tres compartiendo helado). Al fondo del parque aparece la entrada a un laberinto de espejos oscuro. Will decide no entrar — le remueve algo demasiado parecido a su propia prueba. Estela elige quedarse fuera con él en vez de entrar sola o forzarlo. **Liam entra solo.** Will y Estela ven desde fuera, como en una pantalla, lo que le ocurre a Liam dentro — así es como descubren su traición en tiempo real, en vez de que Liam se lo cuente después.
+- Prueba 1: laberinto con puzzles y jefes para que Will venza sus miedos (Estela y Liam presentes, acompañando).
+- Prueba 2: Chuchelandia. Estela odia las chuches, odia lo cursi y detesta la purpurina; se enfrenta a una historia donde debe ser reina del mundo de las chuches (Will y Liam presentes).
+- Prueba 3 (el laberinto de espejos/de los ecos, gameplay narrativo y exploración — Liam en solitario, Will y Estela observan desde fuera): Liam entra solo en el laberinto ilusorio y debe sacrificar recuerdos dolorosos para avanzar. El laberinto comienza a proyectar "ecos" de sus mentiras. Al llegar a la última puerta, que sella la salida, una Voz Ancestral lanza la pregunta final: *"¿Cuál fue el precio real que pagaste para llegar hasta aquí, Mago?"*. La magia de la puerta arranca la verdad de la mente de Liam, proyectando un holograma gigante: el recuerdo de Liam orquestando la emboscada mortal contra Will al principio de la aventura — visible también para Will y Estela, que lo observan desde fuera del laberinto (no dentro, como decía la versión anterior de este guión). La puerta se abre. El grupo se reencuentra en el nexo del Sendero en absoluto silencio.
 
 ### 18. La Ruptura: la Furia de Estela
 
@@ -229,11 +234,45 @@ Estas dos escenas ya no son dos beats separados como en el guión original: est�
 - Texto / Narrativa: el silencio se rompe cuando Estela estalla. Se siente traicionada y utilizada. Grita a Liam, acusándolo de haber usado a Will como carnada. Liam, abrumado por la culpa, intenta justificarse hablando de su hermano enfermo, pero Estela no escucha. La discusión escala y Estela, impulsiva, ataca a Liam con magia. Will intenta separarlos, pero recibe daño accidentalmente. Estela, asustada por haber lastimado a Will y asqueada con Liam, se marcha corriendo y se pierde por uno de los senderos oscuros. Liam, consumido por la vergüenza y creyendo que no merece la salvación, se aleja en dirección opuesta, rindiéndose a la oscuridad del Sendero. El grupo se ha roto.
 - Gameplay: breve combate interactivo o Quick Time Event (QTE) donde el jugador (como Will) intenta frenar los ataques mágicos de Estela usando sus escudos, pero falla por el descontrol emocional de la escena.
 
+**Diálogo propuesto (1 sept 2026, adaptado del capítulo XVIII de la novela — pendiente de aprobación de Raúl; claves de localización sugeridas, mismo prefijo `RUPTURA_` que no colisiona con ninguna clave existente):**
+
+| Clave | ES | EN |
+|---|---|---|
+| `RUPTURA_ESTELA_01` | Dime que no es verdad. Dime que lo que acabamos de ver no es lo que parece. | Tell me it isn't true. Tell me what we just saw isn't what it looks like. |
+| `RUPTURA_ESTELA_02` | Lo orquestaste todo. El demonio del bosque. El peligro. Usaste a Will como cebo desde el primer día. | You planned all of it. The demon in the woods. The danger. You used Will as bait from day one. |
+| `RUPTURA_LIAM_01` | Mi hermano se está muriendo. Estaba desesperado. Pensé que si llegaba al Sendero... | My brother is dying. I was desperate. I thought if I could reach the Path... |
+| `RUPTURA_ESTELA_03` | ¡No te atrevas a usar eso como excusa! | Don't you dare use that as an excuse! |
+| `RUPTURA_WILL_01` | ¡Parad los dos, por favor! | Both of you, please, stop! |
+| `RUPTURA_ESTELA_04` | Will... lo siento... | Will... I'm sorry... |
+| `RUPTURA_LIAM_02` | No merezco que me sigáis. | I don't deserve to be followed. |
+
+`RUPTURA_WILL_01` no está en la novela — es una línea nueva, necesaria porque el gameplay (Will intentando frenar el ataque y recibiendo daño) es un beat que la novela no tiene por ser un medio sin combate jugable. Revisar con Raúl junto con el resto.
+
+**Gameplay (detalle propuesto):** el QTE de Will debe leerse claramente como "no ganable" para que el jugador no lo sienta como un fallo propio — mismo criterio de telegrafía honesta que ya se aplica a los jefes (ver `propuesta-diseno-fases-boss.md`, proyecto Cowork). Sugerencia concreta: el prompt de bloqueo aparece con timing normal, pero el propio Estela lo consigue esquivar/romper con un ataque "más rápido que de costumbre" (line de diseño, no de código) — así el jugador ve que lo intentó bien y que el fallo es de la ficción, no de su ejecución. Tras esto, Estela huye por un sendero y Liam por el opuesto — dos triggers de salida de escena separados, sin combate real (es un momento de ruptura emocional, no un desafío de habilidad).
+
 ### 19. El Corazón de Will: la Reunión
 
 - Tipo: Gameplay (Acción/Aventura).
 - Texto / Narrativa: Will se queda completamente solo. El Sendero, al percibir la desunión, comienza a volverse hostil e inestable, plagado de bestias de las sombras. En lugar de guardar rencor, Will entiende que el amor de Liam por su hermano lo llevó a la desesperación. Fiel a su corazón puro, decide que nadie se queda atrás. Primero localiza a Estela y la rescata. Will le dice: *"Si no lo perdonamos, no somos mejores que él"*. Juntos, van a buscar a Liam. Lo encuentran rodeado de bestias, esperando su fin. Will y Estela lo salvan en el último segundo. Will le extiende la mano a Liam, validando su amistad por encima de la traición. El grupo recupera sus poderes definitivos (Sinergia Total).
 - Gameplay: Fase 1: el jugador controla a Will en solitario, luchando contra las defensas del Sendero hasta encontrar a Estela. Fase 2: Will y Estela unen fuerzas (mecánicas cooperativas) para buscar a Liam. Clímax: batalla final de la zona para salvar a Liam, donde el grupo recupera el 100% de su magia.
+
+**Diálogo propuesto (1 sept 2026, adaptado del capítulo XIX de la novela — pendiente de aprobación de Raúl; claves sugeridas con prefijo `REUNION_`):**
+
+| Clave | ES | EN |
+|---|---|---|
+| `REUNION_ESTELA_01` | No merezco que vengas a buscarme. Le hice daño a mi propio amigo. | I don't deserve you coming to find me. I hurt my own friend. |
+| `REUNION_WILL_01` | Fue un accidente. Y no vine a buscarte para juzgarte. Vine porque nadie se queda atrás. Ni siquiera cuando se equivoca. | It was an accident. And I didn't come to judge you. I came because no one gets left behind. Not even when they mess up. |
+| `REUNION_ESTELA_02` | ¿Y Liam? Después de lo que hizo... | And Liam? After what he did... |
+| `REUNION_WILL_02` | Si no lo perdonamos, no somos mejores que el hombre que lo empujó a hacerlo. | If we don't forgive him, we're no better than the man who pushed him to do it. |
+| `REUNION_ESTELA_03` | Vamos a buscarlo, entonces. Antes de que este sitio se lo trague del todo. | Let's go find him, then. Before this place swallows him whole. |
+| `REUNION_ESTELA_04` | Que quede claro: esto no significa que esté todo perdonado. Solo que no pienso dejar que se muera por seguir sintiéndose culpable. | Just so we're clear: this doesn't mean everything's forgiven. It just means I'm not letting him die over feeling guilty. |
+| `REUNION_WILL_03` | Levántate. Todavía no hemos terminado. | Get up. We're not done yet. |
+| `REUNION_LIAM_01` | Después de lo que hice... | After what I did... |
+| `REUNION_WILL_04` | Después de lo que hiciste, y de todo lo que has hecho desde entonces para intentar arreglarlo. Eso también cuenta. | After what you did — and everything you've done since then to try to fix it. That counts too. |
+
+Estas 9 líneas son una adaptación casi literal de la novela (menos reescritura que en la escena 18, porque aquí la novela ya tiene el ritmo de diálogo corto que necesita el juego). Tras `REUNION_WILL_04` y el gesto de aceptar la mano de Liam, dispara el momento de "Sinergia Total" (ver Gameplay): sugerencia de puesta en escena — destello dorado compartido entre los tres, más que un simple aumento de números, para que el jugador LEA el reencuentro igual que ya se exige para los cambios de fase de jefe (`propuesta-diseno-fases-boss.md`: "un momento real, no decoración").
+
+**Gameplay (detalle propuesto):** Fase 1 (Will en solitario) debe sentirse deliberadamente más débil/vulnerable que el resto del juego — sin apoyo de compañeros, es el único tramo donde el jugador experimenta mecánicamente el coste de la ruptura del grupo, no solo narrativamente. Fase 2 (Will+Estela) introduce alguna mecánica cooperativa de dos personajes simultáneos si el sistema de combate lo permite (p. ej. un ataque combinado que solo existe estando ambos activos), reservada para este tramo y la batalla final de la escena 20, para que se sienta como una recompensa nueva y no un simple relleno. El clímax (romper el cerco de bestias alrededor de Liam) es buen candidato a un patrón ya usado en el proyecto: acorralamiento breve resuelto con `OverlapSphereNonAlloc` + un pulso de daño en área al conectar el "gesto de la mano" (evitar `Physics.OverlapSphere` sin pool, ver TDD.md §12).
 
 ### 20. El Mago Oscuro y la Verdad
 
@@ -245,7 +284,7 @@ Estas dos escenas ya no son dos beats separados como en el guión original: est�
 - Will: *"¿Dónde estoy?" "¿He recuperado la memoria y estoy muerto?"*
 - Voz: *"No Will. Estás aquí, y allí. Estás donde quieras estar. Esto es solo tu poder, tu magia, fruto del bien que has hecho a lo largo de tu vida. Tu magia en el momento de tu muerte buscó por el tiempo y el espacio un recipiente donde meter tu alma. Tu deseo de proteger a tu pueblo y familia y acabar con la tiranía del Mago Oscuro hicieron que encontraras a Will. Este chico estaba enfermo y justo cuando ocupaba su cuerpo falleció por un fallo en su corazón. Will, debes acabar con el sendero. No hay otra forma de evitar que magos como este quieran poder y lo utilicen para su beneficio y hacer el mal."*
 - Will: *"Destruir el sendero… pero ¿y Estela y Liam?"*
-- Voz: *"Debes protegerlos y a la humanidad. Así podrás regresar con tu familia y volver a ser quien eras."*
+- Voz: *"Debes protegerlos y a la humanidad. Solo así demostrarás, de una vez por todas, quién eres de verdad."*
 - Gameplay (Batalla Final Épica y la Mecánica del Tiempo):
   - Fase 1: combate cooperativo estándar donde Will usa su poder desbloqueado.
   - Fase 2 (El Hechizo Prohibido del Tiempo): el Mago Oscuro, viéndose acorralado, lanza un ataque cataclísmico ineludible que barre todo el escenario. El juego se congela justo antes del impacto. Se activa el tutorial final: "Hechizo Prohibido: Regresión Temporal". El jugador debe usar este hechizo para retroceder el tiempo 10 segundos en tiempo real. Al retroceder, el jugador ahora sabe dónde caerá el ataque mortal. Usando esta ventaja temporal, Will puede posicionarse en el único punto ciego del ataque y lanzar un contrahechizo crítico que debilita al jefe.
@@ -256,10 +295,37 @@ Estas dos escenas ya no son dos beats separados como en el guión original: est�
 - Tipo: Cinemática.
 - Texto: (vencen al Mago Oscuro y Will pide el deseo de salvar al hermano de Liam. Ahora deben salir del sendero. Will empuja a Estela fuera del portal que colapsa). Estela: *"¡Will, ¿qué haces? sal de ahí!"* Will: *"Tranquila, Estela. No te preocupes... Lo tengo todo calculado."* (Will ejecuta el hechizo prohibido entregando su vida para revivir a Liam y destruir el Sendero).
 
+**Completado 1 sept 2026 — desglose por fases + resolución de la derrota del Mago Oscuro (era una pregunta abierta en `guion-tecnico-batalla-final-2026-08-30.md`, proyecto Cowork, punto 3 de "Preguntas concretas"). Todo lo de esta sección es PROPUESTA, pendiente de aprobación de Raúl — no promover a canon confirmado sin su ok.**
+
+**A. Derrota del Mago Oscuro (propuesta de resolución visual):** la novela deja claro que no tiene cuerpo — es una consciencia atada al Sendero que él mismo corrompió con su deseo original (`plan-revision-estructural-novela-2026-08-30.md`, Regla 7), así que "cae al suelo" no encaja. Propuesta: al recibir el golpe final, no se desvanece como un enemigo normal — se disuelve en las mismas partículas de luz que forman el propio Sendero, y es ese mismo instante el que dispara el colapso de la fase C (causa y efecto en la misma imagen, no dos beats sueltos): su derrota y la inestabilidad del Sendero son la misma cosa, porque él era parte de lo que lo mantenía corrompido y en pie. Técnicamente: retintar el mismo VFX de "carga/impacto" que hoy comparten Will y el Mago Oscuro en `PrologueDreamSequencer` (ver el hallazgo de la escena 20 sobre VFX sin diferenciar luz/oscuridad) pero en reversa — implosión en vez de explosión, violeta/negro disolviéndose hacia el blanco/dorado del propio Sendero.
+- **B. El deseo:** Will: *"Cura a su hermano. Es lo único que pido."* (`WILL_FINAL_WISH`, ya en `dialogues`/`cinematics_es.json`/`cinematics_en.json` — reutilizar la clave existente, no crear una nueva).
+- **C. Colapso del Sendero:** temblor, grietas de luz que se propagan desde el punto donde se disolvió el Mago Oscuro (ver punto A).
+- **D. Will empuja a Estela fuera del portal:** Estela: *"¡Will, ¿qué haces?! ¡Sal de ahí!"* (`ESTELA_PROTEST_PORTAL`, ya existente). Will: *"Tranquila, Estela. No te preocupes... Lo tengo todo calculado."* (`WILL_CALM_REPLY`, ya existente). **Nota de continuidad ya presente en el juego, digna de conservar tal cual:** esta línea es un eco deliberado de la broma de Estela tras el Gólem (`EVT_GOLEM_END_02`, *"Lo tenía todo calculado"*) — Will le devuelve su propia frase en el peor y más sereno momento posible. Si se toca esta línea en el futuro, no perder ese eco.
+- **E. Will solo, ejecuta el Hechizo de Resurrección:** efecto de luz consumiéndose a sí mismo, el Sendero se destruye. Will sereno y decidido en todo momento — nada de pánico en actuación/cámara (la propia novela insiste en que es un sacrificio deliberado, no reactivo).
+
+**Gameplay (detalle propuesto):** escena mayoritariamente cinemática, tal y como ya la describía el guión técnico de la batalla final — no forzar interactividad donde la propia novela y el ritmo emocional piden un remate contemplativo. Si se quiere un mínimo de agencia del jugador (opcional, a decidir con Raúl), un único input contextual sereno en la fase E (mantener pulsado un botón mientras el hechizo se completa, sin posibilidad de fallo) puede ayudar a que el jugador sienta que "acompaña" la decisión de Will en vez de solo verla — nunca un QTE con posibilidad de fallo, rompería el tono de sacrificio sereno.
+
 ### 22. Epílogo: el Adiós
 
 - Tipo: Cinemática.
 - Texto: Liam revive. El fantasma de Will aparece. Estela le explica a Liam que antes de destruir el sendero Will utilizó el hechizo prohibido de resurrección y destruyó el sendero. Ambos entienden por qué lo hizo. En el final ven a Will como fantasma se despide de él y ven cómo Will vuelve con su familia en el cielo.
+
+**Completado 1 sept 2026 — diálogo completo por fases. La mayoría de estas líneas YA EXISTEN implementadas en `cinematics_es.json`/`cinematics_en.json` (marcadas "ya existente" abajo) — lo que faltaba era el tramo de conexión al principio (Liam despertando) y al final (despedida completa de Will), que aquí se propone como contenido nuevo. Pendiente de aprobación de Raúl.**
+
+| Fase | Clave | ES | EN |
+|---|---|---|---|
+| A. Liam despierta | `EPILOGO_LIAM_01` *(nueva)* | ¿Estela? ¿Qué...? | Estela? What...? |
+| A. Liam despierta | `EPILOGO_ESTELA_01` *(nueva)* | Estás vivo. Estás vivo, idiota. | You're alive. You're alive, you idiot. |
+| A. Liam despierta | `EPILOGO_LIAM_02` *(nueva)* | ¿Dónde está Will? | Where's Will? |
+| B. Estela explica | `ESTELA_EXPLAINS_EPILOGUE` *(ya existente)* | Antes de destruir el Sendero, usó el hechizo prohibido de resurrección. Por eso estás vivo. Por eso... ya no está. | Before he destroyed the Path, he used the forbidden spell of resurrection. That's why you're alive. That's why... he's gone. |
+| C. Aparece el espíritu de Will | `EPILOGO_WILL_01` *(nueva)* | Hola. No podía iros sin despedirme como es debido. | Hey. I couldn't leave without saying goodbye properly. |
+| D. Despedida — a Liam | `LIAM_LAST_WORDS` *(ya existente, reutilizada aquí como recuerdo/eco, no repetida literal)* — sustituir por línea propia de despedida: `EPILOGO_WILL_02` *(nueva)* | Cuida de tu hermano. Cuídalo de mi parte también. Y cuidaos el uno al otro. | Take care of your brother. Take care of him for me too. And take care of each other. |
+| D. Despedida — cierre | `WILL_FAREWELL` *(ya existente)* | Cuidaos el uno al otro. Ya he vuelto a casa. | Take care of each other. I've already made it home. |
+| E. Último gesto antes de disolverse | `EPILOGO_WILL_03` *(nueva)* | Gracias, por haber sido mi familia, aunque fuera solo por un ratito. | Thank you, for being my family, even if only for a little while. |
+
+**Nota sobre `WILL_FAREWELL` vs `EPILOGO_WILL_02`:** con la línea nueva añadida antes, `WILL_FAREWELL` ("Cuidaos el uno al otro. Ya he vuelto a casa.") deja de sonar repetida — pasa a ser el cierre corto después del encargo más largo sobre el hermano de Liam, en vez de la única frase de despedida. No hace falta tocar la clave ya existente, solo añadir las nuevas alrededor.
+
+**Gameplay (detalle propuesto):** cinemática pura, sin input del jugador — es el único punto de la historia donde la propia narrativa pide desconexión total de la mecánica (todo lo demás en el juego, incluida la escena 21, deja alguna forma de agencia). Cierre sugerido: no cortar directamente a créditos sobre negro — un último plano fijo de Liam y Estela mirando al cielo nocturno (mismo tipo de plano que ya usa `PrologueDreamSequencer`/`Co_MemoryVision` para el "stage" alejado de la geometría real) antes del fundido a créditos, para que el corte no se sienta abrupto tras un momento tan cargado.
 
 ### Sequencers ya resueltos contra el grafo real (histórico, sección cerrada)
 
@@ -378,6 +444,15 @@ Tampoco existía esta sección en el GDD original. De momento no hay ningún sit
 
 ## Registro de Cambios
 
+**1 de septiembre de 2026 — Claude (Cowork), a petición de Raúl ("nivela la novela con el GDD, revisa los diálogos del juego contra la novela, y completa el GDD con diálogos y gameplay de lo que falta").**
+
+- **Nivelado "La Historia" (resumen del principio del documento) con "La Verdadera Historia de Will" y con la novela.** El resumen seguía con el planteamiento heredado del Google Doc v1.0 ("los dioses sellaron el Sendero... ocultaron sus secretos en un libro prohibido"), que nunca se corrigió cuando se escribió la versión detallada y ya correcta de más abajo (ni cuando la novela fijó el mismo canon: sin dioses, el Mago Oscuro queda sellado dentro del propio Sendero por el choque de su hechizo con la Protección Absoluta del mago del valle). Reescrito el resumen para que cuente la misma historia que el resto del documento. Ver `INC-152` en `TRACKER.md`.
+- **Corregida la misma línea de la Voz en tres sitios que se habían quedado desalineados entre sí:** `GDD.md` (escena 20), `docs/guion-doblaje-elevenlabs-es.md` y las claves de localización `VOICE_VISION_PROTECT_THEM` en `cinematics_es.json`/`cinematics_en.json` seguían con la frase antigua ("Así podrás regresar con tu familia y volver a ser quien eras" / "Only then will you truly become who you were again"), ya sustituida en la novela el 30 ago 2026 por ser ambigua (Will no "vuelve" a nada, muere) — la corrección real es "Solo así demostrarás, de una vez por todas, quién eres de verdad" / "Only then will you truly prove, once and for all, who you really are". El juego (documentación + localización) no se había enterado de ese cambio. Ver `INC-153` en `TRACKER.md`.
+- **Corregida una contradicción de lore real entre un diálogo ya implementado y el desenlace real de la historia:** `LORE_CELDA_7` (`dialogues_es.json`/`dialogues_en.json`, escena 11, el calabozo) decía que el Sendero concede "un deseo a cada uno" de los tres — pero el desenlace real (aquí mismo y en la novela/sinopsis, "Tres destinos rotos. Un único deseo.") es que solo Will pide un deseo, y lo pide para el hermano de Liam, no para sí mismo. Corregido a "un único deseo" / "a single wish" en ambos idiomas. Ver `INC-154` en `TRACKER.md`.
+- **Prólogo del juego (`prologue_es.json`/`prologue_en.json`) reescrito** — tenía una leyenda fundacional distinta e incompatible con el canon ya fijado ("los dioses sellaron el Sendero"/"the gods sealed the knowledge of the Path"), probablemente una versión más antigua que nunca se actualizó cuando se desarrolló "La Verdadera Historia de Will". Reescrito en ambos idiomas para contar la versión real: un mago pide poder absoluto, emprende una Marcha de Conquista, y un mago sin nombre lo detiene a costa de su vida, sellándolo dentro del propio Sendero. Es la primera cinemática que ve cualquier jugador — con diferencia el hallazgo de mayor alcance de esta pasada. Ver `INC-152` en `TRACKER.md` (mismo incidente que el resumen de "La Historia", una sola causa raíz con dos síntomas).
+- **Revisados de punta a punta los 6 archivos de diálogo/cinemáticas en español e inglés** (`dialogues_es/en.json`, `cinematics_es/en.json`, `prologue_es/en.json`, `other_es/en.json`) contra `biblia-del-universo.md` y la novela — el resto del contenido revisado (fichas de Liam sin capa, Eldran/Victoria sin relación romántica, Eldran conoce a Estela solo de oídas, el gag del estómago de Estela, la "eones sin amenaza" del Reino, etc.) ya estaba alineado, sin cambios necesarios.
+- **Completadas con diálogo y gameplay las escenas 18, 19, 21 y 22**, que hasta ahora solo tenían un resumen narrativo sin líneas concretas ni detalle de mecánica (a diferencia de la 17 y la 20, ya desarrolladas). Añadido en cada una: tabla de diálogo ES/EN adaptado de la novela con claves de localización propuestas, y una subsección de "Gameplay (detalle propuesto)". Incluye una propuesta para el punto que quedaba abierto en `guion-tecnico-batalla-final-2026-08-30.md` sobre cómo se resuelve visualmente la derrota del Mago Oscuro (escena 21-A): se disuelve en las mismas partículas de luz del Sendero, y ese instante dispara el colapso, en vez de dos beats sueltos. **Todo lo añadido en esta pasada es propuesta de diseño, no canon confirmado — pendiente de que Raúl lo apruebe o lo ajuste antes de que otro hilo lo use para implementar.**
+
 **24 de agosto de 2026 — Claude (Cowork), a petición de Raúl.**
 
 - Migrado el contenido íntegro del GDD desde el Google Doc (v1.0) a este archivo, siguiendo el mismo criterio de "fuente de verdad única" que `TDD.md` ya aplica a lo técnico (ver nota al principio de este documento).
@@ -420,3 +495,7 @@ Se leyeron enteros los 6 capítulos de `Assets/NarrativeGraph/MainNarrative_Cap1
 - **Balance de hechizos:** añadida la tabla "Orden de desbloqueo narrativo", reconstruida a partir de los `UnlockAbilitiesNode` reales de los 6 capítulos — Bola de Fuego (Cap.1) → Bola Prisma (Cap.2) → Corazón Estelar (Cap.5, regalo del Rey). Son los únicos 3 hechizos con desbloqueo narrativo confirmado dentro de lo implementado; el resto probablemente pertenece a Liam/Estela o a contenido aún sin construir.
 - **Estado de Diálogos:** sembrada la tabla vacía con los 4 nodos de texto/diálogo reales encontrados (el `DramaticTextNode` del prólogo, el pensamiento de Will sobre la pesadilla, y los dos `ShowLorePopupNode` de las escenas 10 y 14) — aclarando que solo se confirma que existen y están bien enlazados, no que su contenido esté revisado.
 - **Bug técnico encontrado y anotado (no corregido):** en la escena 10, el `WaitCustomEventNode(EVT_ARRESTADOS)` tiene una salida que apunta a un GUID que no corresponde a ningún nodo del Capítulo 4 — enlace roto/huérfano en el grafo, probablemente resto de una edición anterior en el Editor. No bloqueante (las otras dos salidas sí conectan), pero merece revisión.
+
+**30 de agosto de 2026 — Claude (Cowork), a petición de Raúl (nivelar el guión con la novela ya corregida).**
+
+- Corregida la escena 17 (El Sendero de las Estrellas): el guión describía las tres pruebas como caminos solitarios ("Prueba 1 de Will", "Prueba 2 de Estela", "Prueba 3 de Liam"), heredado sin cambios del Google Doc v1.0. Esto ya no coincidía con la corrección de canon que Raúl aclaró y que la novela (`novela/manuscrito-novela-completo.md`) ya refleja: las pruebas 1 y 2 las vive el grupo entero junto; solo la prueba 3 separa al grupo, y lo hace de otra forma (parque de atracciones + laberinto de espejos donde Will y Estela se quedan fuera viendo la traición de Liam desde fuera, no entrando los tres juntos como decía la versión anterior). Ver `INC-126` en `TRACKER.md`. Sin impacto en el juego implementado: las escenas 15-22 siguen sin ningún nodo en el grafo narrativo actual (ver nota de "hasta dónde llega el contenido implementado" más arriba), así que es una corrección puramente de diseño/documentación.

@@ -10,6 +10,9 @@ using DG.Tweening;
 public class BossHealthBar : MonoBehaviour
 {
     [Header("Configuración")]
+    [Tooltip("ID de localización para el nombre del boss (ej: 'BOSS_DEMONIO_NAME'). Si está vacío, usa bossName.")]
+    [SerializeField] private string bossNameId;
+    [Tooltip("Nombre del boss mostrado en la barra de vida. Fallback si bossNameId no resuelve.")]
     [SerializeField] private string bossName = "Boss Demonio";
     [SerializeField] private Vector2 barSize     = new Vector2(400f, 40f);
     // INC-107: centro-superior de pantalla (convención habitual del género), antes
@@ -47,8 +50,13 @@ public class BossHealthBar : MonoBehaviour
     private bool  _suspendedByMenu    = false;
     private Tween _fadeTween;
 
-    void Awake()
+    void Start()
     {
+        // FIX (ronda 16): antes esta búsqueda de Damageable vivía en Awake(), pero Damageable se añade
+        // dinámicamente en tiempo de ejecución por NPCBehaviourManagerV2 (componente hermano), y Unity NO
+        // garantiza el orden de Awake() entre componentes del mismo GameObject — solo garantiza que todos
+        // los Awake() terminan antes de que se ejecute cualquier Start(). Moviendo la dependencia aquí se
+        // elimina el riesgo de carrera sin importar qué script añada Damageable primero.
         _bossDamageable = GetComponent<Damageable>();
         if (!_bossDamageable)
         {
@@ -57,16 +65,10 @@ public class BossHealthBar : MonoBehaviour
             return;
         }
         CreateBossHealthBarUI();
-    }
 
-    void Start()
-    {
-        if (_bossDamageable)
-        {
-            _bossDamageable.OnDamaged += OnBossDamaged;
-            _bossDamageable.OnDied   += OnBossDied;
-            UpdateHealthBar();
-        }
+        _bossDamageable.OnDamaged += OnBossDamaged;
+        _bossDamageable.OnDied   += OnBossDied;
+        UpdateHealthBar();
         // No auto-mostrar — BossArenaController llama a Show() cuando corresponde
     }
 
@@ -210,6 +212,14 @@ public class BossHealthBar : MonoBehaviour
 
     // ── Creación de UI ─────────────────────────────────────────────────────
 
+    /// <summary>Obtiene el nombre localizado del boss (usa bossNameId si está definido).</summary>
+    private string GetLocalizedBossName()
+    {
+        if (!string.IsNullOrEmpty(bossNameId) && LocalizationManager.Instance != null)
+            return LocalizationManager.Instance.Get(bossNameId, bossName);
+        return bossName;
+    }
+
     private void CreateBossHealthBarUI()
     {
         GameObject canvasObj = new GameObject("BossHealthBar_Canvas");
@@ -248,7 +258,7 @@ public class BossHealthBar : MonoBehaviour
         nameRect.sizeDelta        = new Vector2(0f, 30f);
 
         _bossNameText           = nameObj.AddComponent<TextMeshProUGUI>();
-        _bossNameText.text      = bossName;
+        _bossNameText.text      = GetLocalizedBossName();
         _bossNameText.fontSize  = 24;
         _bossNameText.fontStyle = FontStyles.Bold;
         _bossNameText.alignment = TextAlignmentOptions.Center;

@@ -430,6 +430,20 @@ namespace Game.NPC
         {
             while (_isActive && _player != null)
             {
+                // FIX (petición Raúl, 1 sep 2026): mientras hay un diálogo abierto en cualquier
+                // parte del mundo, el jugador está bloqueado (ActionMode.Cinematic) y no puede
+                // reaccionar ni recibir daño real (PlayerHealthSystem.TakeDamage ya lo bloquea) —
+                // pero sin este gate NPCs de combate como Lety/Vicky seguían encadenando estados
+                // (reposicionarse, lanzar el siguiente hechizo...) delante del jugador congelado.
+                // Solo se pausa ENTRE estados (no corta un ataque ya en marcha a mitad de
+                // animación, que vive dentro de State_Attack) y el agente se detiene en sitio.
+                if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen)
+                {
+                    if (_agent != null && _agent.enabled && _agent.isOnNavMesh) _agent.isStopped = true;
+                    yield return null;
+                    continue;
+                }
+
                 switch (_currentState)
                 {
                     case CombatState.EVALUATE:

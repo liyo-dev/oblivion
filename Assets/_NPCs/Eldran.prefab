@@ -11170,6 +11170,8 @@ GameObject:
   - component: {fileID: 5014074110871755233}
   - component: {fileID: 671181542998378555}
   - component: {fileID: 892032856192410032}
+  - component: {fileID: 6938378013747625067}
+  - component: {fileID: 3622547188665190604}
   m_Layer: 8
   m_Name: Eldran
   m_TagString: Untagged
@@ -11520,6 +11522,19 @@ MonoBehaviour:
   minInterval: 6
   maxInterval: 14
   lookAtSpeed: 360
+--- !u!114 &6938378013747625067
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8894687061216898430}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2ab8443da834e209ce6da45644efe88, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EldranStaysBehindController
+  leaveSignal: EVT_ARRESTADOS
 --- !u!1 &8911537771988408263
 GameObject:
   m_ObjectHideFlags: 0
@@ -12213,3 +12228,15 @@ Transform:
   - {fileID: 3517789935099870636}
   m_Father: {fileID: 1381823610886760323}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3622547188665190604
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8894687061216898430}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c81648c51f84d818f09c59e67dc37da, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.EldranIdleCommentary

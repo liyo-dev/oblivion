@@ -21,14 +21,37 @@ MonoBehaviour:
     forcedShotType: 0
     emotion: 0
   - speakerNameId: CHAR_GUARD
-    textId: DLG_GUARD_02
+    textId: DLG_GUARD_03
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
     forcedShotType: 0
     emotion: 0
+  - speakerNameId: CHAR_WILL
+    textId: DLG_WILL_ARRESTO_ACUSA
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 1
+    lookAtOverrideId: CHAR_ESTELA
+    forcedShotType: 0
+    emotion: 8
+  - speakerNameId: CHAR_LIAM
+    textId: DLG_LIAM_ARRESTO_ACUSA
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    lookAtOverrideId: CHAR_ESTELA
+    forcedShotType: 0
+    emotion: 8
+  - speakerNameId: CHAR_ESTELA
+    textId: DLG_ESTELA_ARRESTO_INDIGNADA
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 4
   - speakerNameId: CHAR_GUARD
-    textId: DLG_GUARD_03
+    textId: DLG_GUARD_02
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
@@ -41,3 +64,11 @@ MonoBehaviour:
     isPlayerSpeaking: 0
     forcedShotType: 0
     emotion: 0
+  - speakerNameId: CHAR_ELDRAN
+    textId: DLG_ELDRAN_ARRESTO_DESPEDIDA
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 8
+  isGroupConversation: 1

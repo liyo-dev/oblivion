@@ -72,6 +72,14 @@ public class DramaticTextOverlayUI : MonoBehaviour
     [Tooltip("Intensidad máxima del destello shimmer (0=sin shimmer, 1=blanco puro).")]
     [Range(0f, 1f)] [SerializeField] float _dreamShimmerIntensity = 0.65f;
 
+    [Header("Sueño — variante DreamWhite (visión de la Voz, 30/08/2026)")]
+    [Tooltip("Fondo blanco cálido (no blanco puro, para que no 'queme'). Pulsa suavemente hacia _dreamBgWhiteBright igual que Dream pulsa entre sus dos azules.")]
+    [SerializeField] Color _dreamBgWhite       = new Color(0.98f, 0.97f, 0.94f, 1f);
+    [SerializeField] Color _dreamBgWhiteBright = new Color(1f,    0.99f, 0.93f, 1f);
+    [Tooltip("Degradado izquierdo/derecho del texto SOLO para DreamWhite — los tonos claros de _dreamGradientLeft/Right (pensados para el fondo azul oscuro de Dream) serían casi invisibles sobre blanco. Tonos oscuros por defecto, mismo par dorado/azul del resto del proyecto pero oscurecido para contraste.")]
+    [SerializeField] Color _dreamGradientLeftOnWhite  = new Color(0.04f, 0.14f, 0.42f, 1f);
+    [SerializeField] Color _dreamGradientRightOnWhite = new Color(0.55f, 0.28f, 0.02f, 1f);
+
     [Header("Kingdom Hearts Style")]
     [Tooltip("Caracteres por segundo en la animación KingdomHearts (independiente de TypeWriter).")]
     [SerializeField] float _khRevealSpeed = 10f;
@@ -89,6 +97,14 @@ public class DramaticTextOverlayUI : MonoBehaviour
     bool      _dreamModeActive;
     Coroutine _playRoutine;
     Tween     _bgPulseTween;
+
+    // DreamWhite (30/08/2026): al entrar se guarda el degradado normal de texto (pensado para
+    // Dream) y se sustituye por el par legible sobre blanco; al salir se restaura. No usa el
+    // mismo mecanismo save/restore que Co_BossName (que también toca _dreamGradientLeft/Right)
+    // porque Co_BossName nunca pasa por DreamWhite — no hay solape entre ambos.
+    bool  _dreamWhiteActive;
+    Color _dreamGradientLeftPreWhite;
+    Color _dreamGradientRightPreWhite;
 
     // FIX: el overlay solo tapaba visualmente el HUD/minimapa/icono de tiempo con el fondo negro;
     // no los ocultaba de verdad. Dependía de que el Canvas de este overlay se dibujara por encima
@@ -675,6 +691,25 @@ public class DramaticTextOverlayUI : MonoBehaviour
         _bgPulseTween?.Kill();
         _bgPulseTween = null;
 
+        // DreamWhite entra/sale: guarda y restaura _dreamGradientLeft/Right (ver campos arriba).
+        if (bg == DramaticTextBackground.DreamWhite)
+        {
+            if (!_dreamWhiteActive)
+            {
+                _dreamGradientLeftPreWhite  = _dreamGradientLeft;
+                _dreamGradientRightPreWhite = _dreamGradientRight;
+                _dreamWhiteActive = true;
+            }
+            _dreamGradientLeft  = _dreamGradientLeftOnWhite;
+            _dreamGradientRight = _dreamGradientRightOnWhite;
+        }
+        else if (_dreamWhiteActive)
+        {
+            _dreamGradientLeft  = _dreamGradientLeftPreWhite;
+            _dreamGradientRight = _dreamGradientRightPreWhite;
+            _dreamWhiteActive = false;
+        }
+
         if (_background == null) return;
         switch (bg)
         {
@@ -692,6 +727,15 @@ public class DramaticTextOverlayUI : MonoBehaviour
                 // Pulso suave: el azul "respira" entre oscuro y ligeramente más brillante
                 _bgPulseTween = _background
                     .DOColor(_dreamBgLight, 3.2f)
+                    .SetEase(Ease.InOutSine)
+                    .SetLoops(-1, LoopType.Yoyo)
+                    .SetUpdate(true);
+                break;
+            case DramaticTextBackground.DreamWhite:
+                _background.color = _dreamBgWhite;
+                // Mismo pulso suave que Dream, pero entre los dos blancos cálidos.
+                _bgPulseTween = _background
+                    .DOColor(_dreamBgWhiteBright, 3.2f)
                     .SetEase(Ease.InOutSine)
                     .SetLoops(-1, LoopType.Yoyo)
                     .SetUpdate(true);

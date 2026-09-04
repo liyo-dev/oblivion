@@ -9,6 +9,15 @@ using System.Collections.Generic;
 public static class ActiveCombatRegistry
 {
     private static readonly HashSet<GameObject> _npcsInCombat = new HashSet<GameObject>();
+
+    // Petición de Raúl (1 sep 2026): enemigos "menores" (arañas, de momento) que sí deben contar
+    // como combate activo (Battle Mode, ciclo manual L1/R1, etc.) pero NO deben hacer que la
+    // cámara/objetivo se enganchen solos al caminar cerca de ellos — ver
+    // CombatCameraTargeting.TryAutoLock/OnEnterCombat/OnNPCEnteredCombat, que usan
+    // GetClosestCameraLockableCombatNPC en vez de GetClosestCombatNPC para las decisiones de
+    // auto-lock. El marcador de apuntado para hechizos sigue funcionando igual vía el auto-scan
+    // normal de PlayerTargeting (Targetable.isInActiveCombat), que no pasa por aquí.
+    private static readonly HashSet<GameObject> _cameraLockExempt = new HashSet<GameObject>();
     
     /// <summary>
     /// Se dispara cuando un NPC entra en combate (útil para que los compañeros reaccionen)
@@ -25,6 +34,7 @@ public static class ActiveCombatRegistry
     static void ResetStatics()
     {
         _npcsInCombat.Clear();
+        _cameraLockExempt.Clear();
         OnNPCEnteredCombat = null;
         OnNPCExitedCombat = null;
     }
@@ -33,14 +43,19 @@ public static class ActiveCombatRegistry
     /// <summary>
     /// Registra un NPC como "en combate"
     /// </summary>
-    public static void RegisterNPC(GameObject npc)
+    public static void RegisterNPC(GameObject npc, bool allowsCameraLock = true)
     {
         if (npc == null) return;
-        
+
+        if (!allowsCameraLock)
+            _cameraLockExempt.Add(npc);
+        else
+            _cameraLockExempt.Remove(npc);
+
         if (_npcsInCombat.Add(npc))
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            Debug.Log($"[ActiveCombatRegistry] ⚔️ NPC '{npc.name}' registrado en combate");
+            Debug.Log($"[ActiveCombatRegistry] ⚔️ NPC '{npc.name}' registrado en combate{(allowsCameraLock ? "" : " (sin auto-lock de cámara)")}");
 #endif
             OnNPCEnteredCombat?.Invoke(npc);
         }
@@ -52,6 +67,8 @@ public static class ActiveCombatRegistry
     public static void UnregisterNPC(GameObject npc)
     {
         if (npc == null) return;
+
+        _cameraLockExempt.Remove(npc);
 
         if (_npcsInCombat.Remove(npc))
         {
@@ -68,6 +85,15 @@ public static class ActiveCombatRegistry
     public static bool IsInCombat(GameObject npc)
     {
         return npc != null && _npcsInCombat.Contains(npc);
+    }
+
+    /// <summary>
+    /// True si el NPC está registrado como "exento de auto-lock de cámara" (ver
+    /// RegisterNPC(npc, allowsCameraLock: false)) — p.ej. arañas y otros enemigos menores.
+    /// </summary>
+    public static bool IsCameraLockExempt(GameObject npc)
+    {
+        return npc != null && _cameraLockExempt.Contains(npc);
     }
 
     /// <summary>
@@ -126,6 +152,33 @@ public static class ActiveCombatRegistry
             Debug.LogWarning($"[ActiveCombatRegistry] ⚠️ {nullCount} NPCs null en el registro (destruidos)");
         Debug.Log($"[ActiveCombatRegistry] Resultado: {(closest != null ? $"'{closest.name}' a {closestDist:F1}m" : "NINGUNO")}");
 #endif
+
+        return closest;
+    }
+
+    /// <summary>
+    /// Igual que <see cref="GetClosestCombatNPC"/> pero ignorando los NPCs marcados como
+    /// "exentos de auto-lock de cámara" (ver RegisterNPC(npc, allowsCameraLock: false)) — usado
+    /// por CombatCameraTargeting para decidir cuándo enganchar la cámara automáticamente sin
+    /// perder de vista a esos NPCs para otros propósitos (Battle Mode, ciclo manual L1/R1...).
+    /// </summary>
+    public static GameObject GetClosestCameraLockableCombatNPC(Vector3 position, float maxDistance = 50f)
+    {
+        GameObject closest = null;
+        float closestDist = maxDistance;
+
+        foreach (var npc in _npcsInCombat)
+        {
+            if (npc == null) continue;
+            if (_cameraLockExempt.Contains(npc)) continue;
+
+            float dist = Vector3.Distance(npc.transform.position, position);
+            if (dist < closestDist)
+            {
+                closestDist = dist;
+                closest = npc;
+            }
+        }
 
         return closest;
     }

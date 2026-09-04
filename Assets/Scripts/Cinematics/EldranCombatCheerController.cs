@@ -84,6 +84,7 @@ public class EldranCombatCheerController : MonoBehaviour
     private void StartCheering()
     {
         StopCheering();
+
         _cheerCoroutine = StartCoroutine(Co_Cheer());
 
         if (willTransform != null && eldranTransform != null)

@@ -279,6 +279,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossHealthBar
   bossName: Boss Golem
+  bossNameId: BOSS_GOLEM_HEALTHBAR_NAME
   barSize: {x: 400, y: 40}
   barPosition: {x: 0, y: -30}
   healthyColor: {r: 0.8, g: 0.2, b: 0.2, a: 1}

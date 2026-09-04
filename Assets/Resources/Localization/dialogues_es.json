@@ -5,12 +5,8 @@
             "value": "Amiga del Niño Pez"
         },
         {
-            "key": "CHAR_ANTIPATICO",
-            "value": "Antipático"
-        },
-        {
-            "key": "CHAR_COMERCIANTE",
-            "value": "Comerciante"
+            "key": "CHAR_DUQUE_REGALIZ",
+            "value": "Duque de Regaliz"
         },
         {
             "key": "CHAR_ELDRAN",
@@ -25,6 +21,10 @@
             "value": "Guardia"
         },
         {
+            "key": "CHAR_GUARDIA_BOSQUE",
+            "value": "Guardia del Bosque"
+        },
+        {
             "key": "CHAR_GUERRERACHINA",
             "value": "Erika"
         },
@@ -37,16 +37,12 @@
             "value": "Leonardo"
         },
         {
-            "key": "CHAR_LETY_VICKY",
-            "value": "Lety y Vicky"
-        },
-        {
             "key": "CHAR_LETY",
             "value": "Lety"
         },
         {
-            "key": "CHAR_VICKY",
-            "value": "Vicky"
+            "key": "CHAR_LETY_VICKY",
+            "value": "Lety y Vicky"
         },
         {
             "key": "CHAR_LIAM",
@@ -61,12 +57,8 @@
             "value": "Manuel"
         },
         {
-            "key": "CHAR_MERCHANT",
-            "value": "Mercader"
-        },
-        {
-            "key": "CHAR_NARRATOR",
-            "value": "Narrador"
+            "key": "CHAR_MAZAPAN",
+            "value": "Criatura de Mazapán"
         },
         {
             "key": "CHAR_NIÑOPEZ",
@@ -105,12 +97,20 @@
             "value": "Sofia"
         },
         {
+            "key": "CHAR_TABERNERA",
+            "value": "Rosa"
+        },
+        {
             "key": "CHAR_TENDERA",
             "value": "Bárbara"
         },
         {
             "key": "CHAR_VERONICA",
             "value": "Verónica"
+        },
+        {
+            "key": "CHAR_VICKY",
+            "value": "Vicky"
         },
         {
             "key": "CHAR_VICTORIA",
@@ -218,7 +218,7 @@
         },
         {
             "key": "DLG_AMIGAPEZ_03",
-            "value": "A veces se camufla con <sprite name=\"algas\">."
+            "value": "A veces se camufla con Algas <sprite name=\"algas\">."
         },
         {
             "key": "DLG_AMIGAPEZ_04",
@@ -246,7 +246,7 @@
         },
         {
             "key": "DLG_ANTIPATICO_05",
-            "value": "Mira hacemos una cosa: si encuentras mis <sprite name=\"boots\"> te las puedes quedar."
+            "value": "Mira hacemos una cosa: si encuentras mis Botas <sprite name=\"boots\"> te las puedes quedar."
         },
         {
             "key": "DLG_ANTIPATICO_06",
@@ -258,7 +258,7 @@
         },
         {
             "key": "DLG_ANTIPATICO_IN_PROGRESS",
-            "value": "Busca las <sprite name=\"boots\"> cerca del mar. Estuve nadando por ahí."
+            "value": "Busca las Botas <sprite name=\"boots\"> cerca del mar. Estuve nadando por ahí."
         },
         {
             "key": "DLG_ANTIPATICO_TURNIN_01",
@@ -271,6 +271,78 @@
         {
             "key": "DLG_ANTIPATICO_TURNIN_03",
             "value": "Con ellas podrás saltar. De nada muchacho... Ahora fuera de mi vista."
+        },
+        {
+            "key": "DLG_CANDYLAND_01",
+            "value": "¡Todos en pie! Chuchelandia da la bienvenida a su nueva soberana... ¡la sonriente Reina Estela!"
+        },
+        {
+            "key": "DLG_CANDYLAND_02",
+            "value": "Su Alteza el Duque de Regaliz ha hablado. Inclínense, plebe. Yo ya me he inclinado tres veces, por si acaso."
+        },
+        {
+            "key": "DLG_CANDYLAND_03",
+            "value": "¿Liam? ¿Desde cuándo hablas... así?"
+        },
+        {
+            "key": "DLG_CANDYLAND_04",
+            "value": "Desde que me han dado esta casaca y una peluca de azúcar hilado. Funciona."
+        },
+        {
+            "key": "DLG_CANDYLAND_05",
+            "value": "Sonría, Majestad. Aquí NADIE frunce el ceño. Alegría constante, artículo primero de mi reino."
+        },
+        {
+            "key": "DLG_CANDYLAND_06",
+            "value": "¿Perdona? Yo no sonrío a la fuerza ni por un reino entero de nata montada."
+        },
+        {
+            "key": "DLG_CANDYLAND_07",
+            "value": "¿Se atreve a desobedecer? Mire bien lo que le espera a quien no sonríe lo suficiente."
+        },
+        {
+            "key": "DLG_CANDYLAND_08",
+            "value": "Llevo... llevo tres días intentando sonreír más fuerte..."
+        },
+        {
+            "key": "DLG_CANDYLAND_09",
+            "value": "Eso es lo más triste que he oído nunca. Y eso que yo como fatal cuando estoy triste. No pienso fingir ser \"dulce\" para nadie. Nunca lo he sido y no pienso empezar hoy."
+        },
+        {
+            "key": "DLG_CANDYLAND_10",
+            "value": "Esa es la Estela que conocemos."
+        },
+        {
+            "key": "DLG_CANDYLAND_11",
+            "value": "(en voz baja, sin la voz de cortesano) Por una vez, coincido con el plan de no fingir nada. Aunque la casaca me la quedo, la verdad es que me favorece."
+        },
+        {
+            "key": "DLG_CANDYLAND_12",
+            "value": "¡Esto es traición a la Corona del Caramelo! ¡Guardias... guardias de mazapán, arréstenla!"
+        },
+        {
+            "key": "DLG_CANDYLAND_13",
+            "value": "Ni de broma. Se acabó fingir."
+        },
+        {
+            "key": "DLG_CANDYLAND_14",
+            "value": "¡Libre! ¡Por fin puedo fruncir el ceño en paz!"
+        },
+        {
+            "key": "DLG_CANDYLAND_15",
+            "value": "No... mi reino de mentiras... se desmorona..."
+        },
+        {
+            "key": "DLG_CANDYLAND_16",
+            "value": "Un reino menos fingiendo. Ahora... ¿alguien más tiene hambre? Todo esto de regaliz me ha dado un hambre horrible."
+        },
+        {
+            "key": "DLG_CANDYLAND_17",
+            "value": "Voy a fingir que no he oído eso."
+        },
+        {
+            "key": "DLG_ELDRAN_ARRESTO_DESPEDIDA",
+            "value": "Os espero aquí fuera. Intentaré hablar con alguien para que os dejen salir... aunque, sabiendo que vais con Estela, dudo que aguantéis mucho ahí dentro."
         },
         {
             "key": "DLG_ELDRAN_MISSION1_01",
@@ -377,8 +449,12 @@
             "value": "Toma, unas monedas por tu ayuda."
         },
         {
+            "key": "DLG_ELDRAN_MISSION3_COMEWITHME_01",
+            "value": "¡Muy bien, Will! Por cierto... ven conmigo, quiero enseñarte algo antes de irme."
+        },
+        {
             "key": "DLG_ELDRAN_MISSION3_COMPLETE",
-            "value": "¡Bien hecho! Te espero en la puerta de tu casa, ven cuando estes preparado."
+            "value": "Bien hecho, Will... de verdad. Pero de esto hablamos con calma luego. Ahora ven conmigo, quiero enseñarte algo antes de irnos."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_01",
@@ -414,7 +490,7 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_09",
-            "value": "Luego compra en cualquier tienda una <sprite name=\"lifePotion\">."
+            "value": "Luego compra en cualquier tienda una Poción de Vida <sprite name=\"lifePotion\">."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_10",
@@ -426,7 +502,7 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION5_PROGRESS_02",
-            "value": "La <sprite name=\"lifePotion\"> en cualquier tienda del reino la puedes encontrar."
+            "value": "La Poción de Vida <sprite name=\"lifePotion\"> en cualquier tienda del reino la puedes encontrar."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_PROGRESS_03",
@@ -497,8 +573,24 @@
             "value": "Bueno mejor será no hablar aquí, nos vemos en la taberna."
         },
         {
-            "key": "DLG_ELDRAN_MISSION6_TURNIN_05",
-            "value": "¡Por fin! que con el estómago vacío no puedo pensar."
+            "key": "DLG_ELDRAN_SAVEPOINT_01",
+            "value": "Esto es un Punto de Guardado, Will."
+        },
+        {
+            "key": "DLG_ELDRAN_SAVEPOINT_02",
+            "value": "Aquí podrás guardar tu partida y descansar para recuperar tu salud y tu maná, así que no dudes en usarlo cuando lo necesites."
+        },
+        {
+            "key": "DLG_ELDRAN_SAVEPOINT_03",
+            "value": "Bueno, con esto ya sabes lo importante. Te dejo seguir explorando."
+        },
+        {
+            "key": "DLG_ELDRAN_SAVEPOINT_TURNIN_01",
+            "value": "Ve con cuidado, Will. Nos vemos pronto."
+        },
+        {
+            "key": "DLG_ESTELA_ARRESTO_INDIGNADA",
+            "value": "¡¿Qué?! ¡Eso no es justo, todos estábamos ahí!"
         },
         {
             "key": "DLG_ESTELA_BOSQUE_00",
@@ -525,28 +617,8 @@
             "value": "Y ahora gracias a mi también puedes cambiar de personaje. Pulsa <sprite name=\"interactable_dpad_right\"> a la derecha y haz el cambio."
         },
         {
-            "key": "DLG_ESTELA_PRISION_00",
-            "value": "Estupendo... y ahora ¿qué hacemos?"
-        },
-        {
-            "key": "DLG_ESTELA_PRISION_01",
-            "value": "Pues está claro ¿no?"
-        },
-        {
             "key": "DLG_ESTELA_PRISION_02",
             "value": "Dejadmelo a mi y vuelo esto por los aires."
-        },
-        {
-            "key": "DLG_ESTELA_PRISION_03",
-            "value": "Calma chicos. Lo mejor es que intentemos razonar con el Rey."
-        },
-        {
-            "key": "DLG_ESTELA_PRISION_04",
-            "value": "La verdad que con demonios y golems amenazando el reino.... no me quedo muy tranquilo aquí dentro."
-        },
-        {
-            "key": "DLG_ESTELA_PRISION_05",
-            "value": "Tienes razón..."
         },
         {
             "key": "DLG_ESTELA_PRISION_06",
@@ -555,14 +627,6 @@
         {
             "key": "DLG_ESTELA_PRISION_07",
             "value": "¡No! Escuchad..."
-        },
-        {
-            "key": "DLG_ESTELA_PRISION_08",
-            "value": "Will vamos a buscar una forma de salir de aquí..."
-        },
-        {
-            "key": "DLG_ESTELA_PRISION_09",
-            "value": "Así al salir Eldran puede hablar con el Rey y contarle lo que ha pasado mientras nosotros intentamos averiguar qué ocurre."
         },
         {
             "key": "DLG_ESTELA_PRISION_10",
@@ -630,11 +694,11 @@
         },
         {
             "key": "DLG_GUARD_02",
-            "value": "Por órdenes de su majestad debéis acompañarme."
+            "value": "Por órdenes de su majestad, vosotros tres debéis acompañarme."
         },
         {
             "key": "DLG_GUARD_03",
-            "value": "Que no se quede nadie atrás."
+            "value": "¿Quién ha sido?"
         },
         {
             "key": "DLG_GUARD_04",
@@ -647,6 +711,22 @@
         {
             "key": "DLG_GUARD_06",
             "value": "Seguidme y no os quedéis atrás."
+        },
+        {
+            "key": "DLG_GUARDIABOSQUE_01",
+            "value": "Este bosque era tranquilo... hasta que las arañas tomaron los senderos."
+        },
+        {
+            "key": "DLG_GUARDIABOSQUE_02",
+            "value": "Si acabas con ellas, tendrás mi agradecimiento. Y algo más."
+        },
+        {
+            "key": "DLG_GUARDIABOSQUE_03",
+            "value": "Todavía se oyen arañas entre los árboles. No bajes la guardia."
+        },
+        {
+            "key": "DLG_GUARDIABOSQUE_04",
+            "value": "El bosque respira de nuevo. Toma esto, te lo has ganado."
         },
         {
             "key": "DLG_GUERRERACHINA_01",
@@ -691,6 +771,10 @@
         {
             "key": "DLG_GUERRERACHINA_DEFEAT",
             "value": "Sigue entrenando para ser un gran mago."
+        },
+        {
+            "key": "DLG_GUERRERACHINA_TARGETLOCK",
+            "value": "También puedes pulsar F o el stick derecho en cualquier combate para bloquear o liberar tu objetivo — útil si necesitas apartar la vista de tu enemigo."
         },
         {
             "key": "DLG_KING_01",
@@ -793,6 +877,18 @@
             "value": "Te espero en la entrada del reino."
         },
         {
+            "key": "DLG_LETY_ALERT_01",
+            "value": "Mira Vicky, una presa fácil."
+        },
+        {
+            "key": "DLG_LETY_ALERT_02",
+            "value": "Vamos a divertirnos un rato contigo."
+        },
+        {
+            "key": "DLG_LETY_DIZZY",
+            "value": "Corre Vicky, corre..."
+        },
+        {
             "key": "DLG_LETY_VICKY_ALERT_01",
             "value": "Mira Vicky, una presa fácil."
         },
@@ -813,32 +909,8 @@
             "value": "Corre Vicky, Corre..."
         },
         {
-            "key": "DLG_LETY_ALERT_01",
-            "value": "Mira Vicky, una presa fácil."
-        },
-        {
-            "key": "DLG_LETY_ALERT_02",
-            "value": "Vamos a divertirnos un rato contigo."
-        },
-        {
-            "key": "DLG_VICKY_ALERT_01",
-            "value": "Ya veo Lety... atento muchacho a nuestro ataque dual."
-        },
-        {
-            "key": "DLG_VICKY_ALERT_02",
-            "value": "Por cierto chico, cuando quieras cambiar el foco de tu ataque..."
-        },
-        {
-            "key": "DLG_VICKY_ALERT_03",
-            "value": "Puedes pulsar <sprite name=\"interactable_rb\"> o <sprite name=\"interactable_lb\">"
-        },
-        {
-            "key": "DLG_LETY_DIZZY",
-            "value": "Corre Vicky, corre..."
-        },
-        {
-            "key": "DLG_VICKY_DIZZY",
-            "value": "No... Lety, ten cuidado, ahora estás sola."
+            "key": "DLG_LIAM_ARRESTO_ACUSA",
+            "value": "¡Sí, ha sido ella!"
         },
         {
             "key": "DLG_MAGO#1_ALERT",
@@ -869,6 +941,22 @@
             "value": "Lo que ves entre esas columnas es un punto de guardado. Acércate y podrás guardar la partida."
         },
         {
+            "key": "DLG_MANUEL_POCIONES_01",
+            "value": "Menos mal que pasas por aquí. Mi abuela lleva unos días muy débil y no consigo pociones de vida en ningún sitio."
+        },
+        {
+            "key": "DLG_MANUEL_POCIONES_02",
+            "value": "¿Podrías conseguirme 2 pociones de vida? Te daré algo especial a cambio, te lo prometo."
+        },
+        {
+            "key": "DLG_MANUEL_POCIONES_03",
+            "value": "¿Tienes ya las pociones? Mi abuela las necesita cuanto antes."
+        },
+        {
+            "key": "DLG_MANUEL_POCIONES_04",
+            "value": "¡Muchísimas gracias! Esto le hará mucho bien. Toma, quería dártelo a ti, seguro que te queda genial."
+        },
+        {
             "key": "DLG_NIÑOPEZ_01",
             "value": "¡Glub! Perdón, a veces olvido hablar aire."
         },
@@ -878,7 +966,7 @@
         },
         {
             "key": "DLG_NIÑOPEZ_03",
-            "value": "Pero no puedo meterme en el agua sin mis <sprite name=\"algas\"> de camuflaje,"
+            "value": "Pero no puedo meterme en el agua sin mis Algas <sprite name=\"algas\"> de camuflaje,"
         },
         {
             "key": "DLG_NIÑOPEZ_04",
@@ -890,7 +978,7 @@
         },
         {
             "key": "DLG_NIÑOPEZ_ALGAS_PROGRRESS",
-            "value": "Seguro que alguien del Reino tiene <sprite name=\"algas\">..."
+            "value": "Seguro que alguien del Reino tiene Algas <sprite name=\"algas\">..."
         },
         {
             "key": "DLG_NIÑOPEZ_CARACOLA_01",
@@ -906,7 +994,7 @@
         },
         {
             "key": "DLG_NIÑOPEZ_TURNIN_01",
-            "value": "Oh Muchas gracias, ahora que tengo mis <sprite name=\"algas\"> puedo entrar al mar."
+            "value": "Oh Muchas gracias, ahora que tengo mis Algas <sprite name=\"algas\"> puedo entrar al mar."
         },
         {
             "key": "DLG_NIÑOPEZ_TURNIN_02",
@@ -919,6 +1007,22 @@
         {
             "key": "DLG_NORA_01",
             "value": "Me encantan los abrazos calentitos."
+        },
+        {
+            "key": "DLG_NORA_POCIONES_01",
+            "value": "¡Qué bien que apareces! Llevo días queriendo probar un hechizo nuevo, pero necesito más energía mágica de la que tengo."
+        },
+        {
+            "key": "DLG_NORA_POCIONES_02",
+            "value": "Si me consigues 3 pociones de magia, te compensaré bien, ¡lo prometo!"
+        },
+        {
+            "key": "DLG_NORA_POCIONES_03",
+            "value": "¿Ya tienes las 3 pociones de magia? Estoy deseando probar el hechizo."
+        },
+        {
+            "key": "DLG_NORA_POCIONES_04",
+            "value": "¡Genial, ya puedo intentarlo! Toma, esto es para ti, por las molestias."
         },
         {
             "key": "DLG_OLIVER_MENUS_01",
@@ -949,10 +1053,6 @@
             "value": "Con el menú de misiones abierto podrás editarlas si pulsas de nuevo <sprite name=\"interactable_dpad_up\"> <gpadonly>ARRIBA</gpadonly>."
         },
         {
-            "key": "DLG_OLIVER_MENUS_08",
-            "value": "Y ahora un descansito que menuda mañana..."
-        },
-        {
             "key": "DLG_PIRATE_01",
             "value": "¿Ves este ojo?"
         },
@@ -974,11 +1074,11 @@
         },
         {
             "key": "DLG_ROBERTO_02",
-            "value": "Si me traes una <sprite name=\"lifePotion\"> te puedo dar algo que te va a gustar..."
+            "value": "Si me traes una Poción de Vida <sprite name=\"lifePotion\"> te puedo dar algo que te va a gustar..."
         },
         {
             "key": "DLG_ROBERTO_03",
-            "value": "Ojalá puedas conseguir una <sprite name=\"lifePotion\"> para mi mareo."
+            "value": "Ojalá puedas conseguir una Poción de Vida <sprite name=\"lifePotion\"> para mi mareo."
         },
         {
             "key": "DLG_ROBERTO_04",
@@ -994,11 +1094,27 @@
         },
         {
             "key": "DLG_RUDOLFO_COMPLETE_03",
-            "value": "Espero que te quedaran bien mis <sprite name=\"boots\">. Chao."
+            "value": "Espero que te quedaran bien mis Botas <sprite name=\"boots\">. Chao."
         },
         {
             "key": "DLG_SARA_01",
             "value": "Te quiero."
+        },
+        {
+            "key": "DLG_TABERNERA_ALGAS_01",
+            "value": "Ay, qué cabeza... Anoche la fiesta en la taberna se alargó más de la cuenta. Necesito preparar mi remedio contra la resaca, pero se me han acabado las algas."
+        },
+        {
+            "key": "DLG_TABERNERA_ALGAS_02",
+            "value": "¿Podrías traerme 2 algas? Te pagaré bien por ellas, te lo prometo."
+        },
+        {
+            "key": "DLG_TABERNERA_ALGAS_03",
+            "value": "¿Ya tienes las algas? Las necesito para el remedio, cuanto antes mejor."
+        },
+        {
+            "key": "DLG_TABERNERA_ALGAS_04",
+            "value": "¡Perfecto, justo lo que necesitaba! Toma, esto es para ti. Ahora sí podré curarme esta resaca."
         },
         {
             "key": "DLG_TENDERA_01",
@@ -1006,7 +1122,23 @@
         },
         {
             "key": "DLG_TENDERA_02",
-            "value": "Pero toma un poco de <sprite name=\"algas\"> que me sobra un montón."
+            "value": "Pero toma un poco de Algas <sprite name=\"algas\"> que me sobra un montón."
+        },
+        {
+            "key": "DLG_TENDERA_ALGAS_01",
+            "value": "Necesito un par de pociones de magia para mis remedios, y se me han agotado en la tienda."
+        },
+        {
+            "key": "DLG_TENDERA_ALGAS_02",
+            "value": "Si me traes dos pociones de magia, te daré algas frescas a cambio — tengo de sobra."
+        },
+        {
+            "key": "DLG_TENDERA_ALGAS_03",
+            "value": "¿Ya tienes las pociones de magia? Las necesito para mis remedios."
+        },
+        {
+            "key": "DLG_TENDERA_ALGAS_04",
+            "value": "Justo lo que necesitaba. Toma, las algas son tuyas — buen trato."
         },
         {
             "key": "DLG_VERONICA_01",
@@ -1027,6 +1159,22 @@
         {
             "key": "DLG_VERONICA_05",
             "value": "Mejor no lo pruebes..."
+        },
+        {
+            "key": "DLG_VICKY_ALERT_01",
+            "value": "Ya veo Lety... atento muchacho a nuestro ataque dual."
+        },
+        {
+            "key": "DLG_VICKY_ALERT_02",
+            "value": "Por cierto chico, cuando quieras cambiar el foco de tu ataque..."
+        },
+        {
+            "key": "DLG_VICKY_ALERT_03",
+            "value": "Puedes pulsar <sprite name=\"interactable_rb\"> o <sprite name=\"interactable_lb\">"
+        },
+        {
+            "key": "DLG_VICKY_DIZZY",
+            "value": "No... Lety, ten cuidado, ahora estás sola."
         },
         {
             "key": "DLG_VICTORIA_01",
@@ -1053,6 +1201,10 @@
             "value": "Tengo la tienda cerrada. Vuelve más tarde."
         },
         {
+            "key": "DLG_WILL_ARRESTO_ACUSA",
+            "value": "¡Ha sido ella!"
+        },
+        {
             "key": "DLG_WOODS_GUARD",
             "value": "Solo los magos pueden pasar al bosque prohibido."
         },
@@ -1066,7 +1218,7 @@
         },
         {
             "key": "LORE_CELDA_11",
-            "value": "Ahora puedes usar la función de disolver el equipo así cada uno de nosotros podrá hacer una tarea."
+            "value": "Creo que si nos separamos podemos avanzar más rápido, cada uno puede encargarse de algo distinto."
         },
         {
             "key": "LORE_CELDA_12",
@@ -1090,7 +1242,7 @@
         },
         {
             "key": "LORE_CELDA_7",
-            "value": "Si se superan todas las pruebas el Sendero puede conceder un deseo a cada uno al final."
+            "value": "Si se superan todas las pruebas el Sendero puede conceder un único deseo al final."
         },
         {
             "key": "LORE_CELDA_8",
@@ -1165,112 +1317,8 @@
             "value": "Nada. A veces pienso que ese fue el día en que empecé a existir."
         },
         {
-            "key": "DLG_GUARDIABOSQUE_01",
-            "value": "Este bosque era tranquilo... hasta que las arañas tomaron los senderos."
-        },
-        {
-            "key": "DLG_GUARDIABOSQUE_02",
-            "value": "Si acabas con ellas, tendrás mi agradecimiento. Y algo más."
-        },
-        {
-            "key": "DLG_GUARDIABOSQUE_03",
-            "value": "Todavía se oyen arañas entre los árboles. No bajes la guardia."
-        },
-        {
-            "key": "DLG_GUARDIABOSQUE_04",
-            "value": "El bosque respira de nuevo. Toma esto, te lo has ganado."
-        },
-        {
-            "key": "DLG_TENDERA_ALGAS_01",
-            "value": "Necesito un par de pociones de magia para mis remedios, y se me han agotado en la tienda."
-        },
-        {
-            "key": "DLG_TENDERA_ALGAS_02",
-            "value": "Si me traes dos pociones de magia, te daré algas frescas a cambio — tengo de sobra."
-        },
-        {
-            "key": "DLG_TENDERA_ALGAS_03",
-            "value": "¿Ya tienes las pociones de magia? Las necesito para mis remedios."
-        },
-        {
-            "key": "DLG_TENDERA_ALGAS_04",
-            "value": "Justo lo que necesitaba. Toma, las algas son tuyas — buen trato."
-        },
-        {
             "key": "QUEST_ELDRAN_MISSION12_DESC_02",
             "value": "Habla con el Rey."
-        },
-        {
-            "key": "CHAR_TABERNERA",
-            "value": "Rosa"
-        },
-        {
-            "key": "DLG_TABERNERA_ALGAS_01",
-            "value": "Ay, qué cabeza... Anoche la fiesta en la taberna se alargó más de la cuenta. Necesito preparar mi remedio contra la resaca, pero se me han acabado las algas."
-        },
-        {
-            "key": "DLG_TABERNERA_ALGAS_02",
-            "value": "¿Podrías traerme 2 algas? Te pagaré bien por ellas, te lo prometo."
-        },
-        {
-            "key": "DLG_TABERNERA_ALGAS_03",
-            "value": "¿Ya tienes las algas? Las necesito para el remedio, cuanto antes mejor."
-        },
-        {
-            "key": "DLG_TABERNERA_ALGAS_04",
-            "value": "¡Perfecto, justo lo que necesitaba! Toma, esto es para ti. Ahora sí podré curarme esta resaca."
-        },
-        {
-            "key": "DLG_MANUEL_POCIONES_01",
-            "value": "Menos mal que pasas por aquí. Mi abuela lleva unos días muy débil y no consigo pociones de vida en ningún sitio."
-        },
-        {
-            "key": "DLG_MANUEL_POCIONES_02",
-            "value": "¿Podrías conseguirme 2 pociones de vida? Te daré algo especial a cambio, te lo prometo."
-        },
-        {
-            "key": "DLG_MANUEL_POCIONES_03",
-            "value": "¿Tienes ya las pociones? Mi abuela las necesita cuanto antes."
-        },
-        {
-            "key": "DLG_MANUEL_POCIONES_04",
-            "value": "¡Muchísimas gracias! Esto le hará mucho bien. Toma, quería dártelo a ti, seguro que te queda genial."
-        },
-        {
-            "key": "DLG_NORA_POCIONES_01",
-            "value": "¡Qué bien que apareces! Llevo días queriendo probar un hechizo nuevo, pero necesito más energía mágica de la que tengo."
-        },
-        {
-            "key": "DLG_NORA_POCIONES_02",
-            "value": "Si me consigues 3 pociones de magia, te compensaré bien, ¡lo prometo!"
-        },
-        {
-            "key": "DLG_NORA_POCIONES_03",
-            "value": "¿Ya tienes las 3 pociones de magia? Estoy deseando probar el hechizo."
-        },
-        {
-            "key": "DLG_NORA_POCIONES_04",
-            "value": "¡Genial, ya puedo intentarlo! Toma, esto es para ti, por las molestias."
-        },
-        {
-            "key": "DLG_ELDRAN_MISSION3_COMEWITHME_01",
-            "value": "¡Muy bien, Will! Por cierto... ven conmigo, quiero enseñarte algo antes de irme."
-        },
-        {
-            "key": "DLG_ELDRAN_SAVEPOINT_01",
-            "value": "Esto es un Punto de Guardado, Will."
-        },
-        {
-            "key": "DLG_ELDRAN_SAVEPOINT_02",
-            "value": "Aquí podrás guardar tu partida y descansar para recuperar tu salud y tu maná, así que no dudes en usarlo cuando lo necesites."
-        },
-        {
-            "key": "DLG_ELDRAN_SAVEPOINT_03",
-            "value": "Bueno, con esto ya sabes lo importante. Te dejo seguir explorando."
-        },
-        {
-            "key": "DLG_ELDRAN_SAVEPOINT_TURNIN_01",
-            "value": "Ve con cuidado, Will. Nos vemos pronto."
         }
     ]
 }

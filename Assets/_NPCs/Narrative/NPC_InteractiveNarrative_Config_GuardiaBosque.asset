@@ -203,7 +203,7 @@ MonoBehaviour:
     loopPauseDuration: 1
   persistState: 1
   persistenceId:
-  dialogueCharacterId: CHAR_GUARD
+  dialogueCharacterId: CHAR_GUARDIA_BOSQUE
   rotateToPlayerOnInteract: 1
   rotationDuration: 0.3
   initialLayer: 0

@@ -159,6 +159,50 @@ using UnityEngine;
 /// deja constancia aquí por si Raúl lo seguía viendo tras esta pasada, para no perder el aviso.
 /// Además, a petición explícita ("las estrellas deben estar más altas"): <see cref="minElevationDegrees"/>
 /// sube de 16 a 24 y <see cref="topBiasExponent"/> de 2.4 a 3.2 (ver tooltips de cada campo).
+///
+/// 30 ago 2026 — Raúl compartió una imagen de referencia de otro artista (pueblo nocturno con vista
+/// de telescopio) con el cielo que quiere para el juego (ver
+/// `referencia-visual-cielo-estrellado-2026-08-30.md` en el proyecto). Dos diferencias claras con el
+/// domo tal y como estaba: (1) la imagen muestra un campo de estrellas en CAPAS de tamaño/brillo
+/// (muchas pequeñas y tenues de fondo + unas pocas medianas más brillantes), no un tamaño más o
+/// menos homogéneo; y (2) hay una única estrella "protagonista", claramente más grande/brillante que
+/// el resto, sin formar parte de ninguna figura conectada — un papel distinto al de las 3
+/// constelaciones con nombre propio de <see cref="NightSkyConstellationSpawner"/>. Dos cambios,
+/// ninguno toca la oclusión (que se deja intacta, ver más arriba): **(1)** más capas de tamaño en el
+/// polvo ambiental — <see cref="starScreenSizePixelsRange"/> se ensancha de (5,16) a (4,20) y
+/// <see cref="sizeBiasExponent"/> sube de 2.4 a 3 (más estrellas cerca del extremo pequeño, las
+/// grandes cada vez más excepcionales); **(2)** nueva estrella protagonista opcional (ver
+/// <see cref="spawnHeroStar"/> y <see cref="SpawnHeroStar"/>): una sola estrella, notablemente más
+/// grande que el rango normal (<see cref="heroStarScreenSizePixels"/>), blanco cálido brillante en
+/// vez de dorado saturado (<see cref="heroStarColor"/>) y con parpadeo mucho más sutil
+/// (<see cref="heroStarTwinkleIntensity"/>) para que se lea como un punto fijo y estable, no como
+/// una estrella normal que también titila fuerte. Se coloca en una elevación aleatoria dentro de
+/// <see cref="heroStarElevationRangeDegrees"/> con acimut aleatorio, y respeta las mismas zonas de
+/// exclusión de constelaciones que el polvo normal (<see cref="AvoidConstellationZones"/>) para no
+/// acabar pegada a ninguna de las 3 formas existentes. El parpadeo pasa a calcularse por estrella
+/// (<see cref="_twinkleIntensityPerStar"/>) en vez de con el único <see cref="twinkleIntensity"/>
+/// global de antes, precisamente para que la protagonista pueda tener el suyo propio sin afectar al
+/// resto del domo. Los cuatro valores existentes que cambian de default
+/// (<see cref="starScreenSizePixelsRange"/>, <see cref="sizeBiasExponent"/>) ya estaban serializados
+/// en `MainWorld.unity` con los valores viejos — corregidos también ahí directamente en el archivo de
+/// escena, mismo motivo de siempre (Unity no aplica retroactivamente un nuevo default de C# a un
+/// campo ya serializado). Los campos nuevos de la estrella protagonista no existían antes en la
+/// escena, así que no tienen ese problema — se han añadido igualmente al bloque del componente en
+/// `MainWorld.unity` por explicitud, pero habrían funcionado igual solo con el default de C#.
+///
+/// 30 ago 2026 (misma tarde, pasada siguiente) — Raúl pidió que el color de las estrellas fuera
+/// "el de la imagen" (la misma referencia de más arriba). En vez de estimarlo a ojo, se ha
+/// muestreado la imagen por código (los píxeles de las propias estrellas, en una franja de cielo
+/// limpio sin el resplandor de las montañas, para no contaminar la muestra con ese degradado):
+/// tanto el polvo de fondo como la estrella protagonista son, en la imagen, blanco casi puro con
+/// una pizca de calidez (algo como RGB 255,255,242 en los píxeles más brillantes) — NO el dorado
+/// saturado que tenía <see cref="starColor"/> hasta ahora, ni el azul saturado de
+/// <see cref="starColorAlt"/>. <see cref="starColor"/>, <see cref="starColorAlt"/> y
+/// <see cref="heroStarColor"/> se han ajustado a esa medición (manteniendo la magnitud por encima
+/// de 1 de siempre, para el mismo aprovechamiento de Bloom) — blanco cálido muy sutil como color
+/// dominante, con <see cref="starColorAlt"/> ahora un blanco frío igual de sutil en vez de un azul
+/// marcado, para que la variedad entre estrellas siga existiendo sin desviarse del blanco casi puro
+/// de la referencia.
 /// </summary>
 public class NightSkyStarSpawner : MonoBehaviour
 {
@@ -176,17 +220,29 @@ public class NightSkyStarSpawner : MonoBehaviour
     [Tooltip("Sesga el reparto en ALTURA de las estrellas hacia la parte alta del cielo (cenit). 1 = reparto uniforme entre minElevationDegrees y el cenit (como antes del 25 ago 2026). Más alto = cada vez más estrellas se concentran cerca de la parte alta y menos cerca del horizonte, para que el domo no se lea como 'todo el cielo lleno por igual'. Se aplica en generación directa (sin descartar candidatos) en BuildDomeIfNeeded. Subido de 2.4 a 3.2 el 25 ago 2026 (pasada 5), junto con minElevationDegrees, para reforzar el mismo pedido ('más altas').")]
     [SerializeField, Range(1f, 6f)] private float topBiasExponent = 3.2f;
     [Tooltip("Tamaño de cada estrella en PÍXELES DE PANTALLA aproximados (mín/máx, elegido al azar por estrella con sesgo hacia el mínimo — ver sizeBiasExponent) — NO en unidades de mundo. Se convierte a tamaño de mundo usando el FOV vertical de la cámara activa y el radio real del domo. Campo renombrado el 24 ago 2026 (antes 'desiredScreenSizePixels') a propósito para que este valor nuevo, más pequeño, se aplique de verdad en vez de quedar tapado por un valor antiguo ya serializado en la escena — ver comentario de clase.")]
-    [SerializeField] private Vector2 starScreenSizePixelsRange = new Vector2(5f, 16f);
+    [SerializeField] private Vector2 starScreenSizePixelsRange = new Vector2(4f, 20f);
     [Tooltip("Sesga el sorteo del tamaño de cada estrella dentro de starScreenSizePixelsRange hacia el extremo pequeño. 1 = sorteo uniforme. Más alto = las estrellas grandes/brillantes son cada vez más excepcionales, como en un cielo real donde casi todas las estrellas son puntos pequeños y solo unas pocas destacan.")]
-    [SerializeField, Range(1f, 6f)] private float sizeBiasExponent = 2.4f;
-    [Tooltip("Color base de las estrellas — dorado cálido por defecto, coherente con 'El Sendero de las Estrellas'. Canales por encima de 1 a propósito: con Bloom activo en el Volume de la escena da un brillo extra; sin Bloom, se ve como un dorado saturado normal. Cada estrella varía ligeramente su brillo (ver brightnessVariance) para que el domo no se vea uniforme.")]
-    [SerializeField] private Color starColor = new Color(1.9f, 1.55f, 0.35f);
-    [Tooltip("Color alternativo 'frío' (plateado/azulado) que adoptan algunas estrellas sueltas — ver altStarChance. Rompe la monotonía de un domo enteramente dorado, como en un cielo real con estrellas de distinto tono.")]
-    [SerializeField] private Color starColorAlt = new Color(1.3f, 1.4f, 1.8f);
+    [SerializeField, Range(1f, 6f)] private float sizeBiasExponent = 3f;
+    [Tooltip("Color base de las estrellas — blanco cálido muy sutil, medido directamente de los píxeles de estrella en la imagen de referencia de Raúl (30 ago 2026, ver comentario de clase) en vez de un dorado saturado inventado. Canales por encima de 1 a propósito: con Bloom activo en el Volume de la escena da un brillo extra. Cada estrella varía ligeramente su brillo (ver brightnessVariance) para que el domo no se vea uniforme.")]
+    [SerializeField] private Color starColor = new Color(2f, 2f, 1.9f);
+    [Tooltip("Color alternativo, un blanco frío igual de sutil que starColor (ya no un azul marcado) — ver altStarChance. Rompe la monotonía sin desviarse del blanco casi puro medido en la imagen de referencia.")]
+    [SerializeField] private Color starColorAlt = new Color(1.85f, 1.9f, 2f);
     [Tooltip("Probabilidad (0-1) de que una estrella dada use starColorAlt en vez de starColor. Bajo a propósito (por defecto ~1 de cada 8) para que el domo siga leyéndose como 'dorado' con solo unos pocos acentos fríos.")]
     [SerializeField, Range(0f, 1f)] private float altStarChance = 0.12f;
     [Tooltip("Cuánto varía el brillo BASE de estrella a estrella (0 = todas iguales, 1 = algunas casi blancas y otras muy tenues). Se combina multiplicando con el parpadeo animado (ver twinkleIntensity).")]
     [SerializeField, Range(0f, 1f)] private float brightnessVariance = 0.6f;
+
+    [Header("Estrella protagonista (30 ago 2026 — ref. imagen de otro artista, ver comentario de clase)")]
+    [Tooltip("Añade UNA estrella suelta notablemente más grande y brillante que el resto del polvo — el 'foco' que se ve en la imagen de referencia (una única estrella grande y brillante, sin conectar a ninguna constelación, distinta de las 3 constelaciones con nombre propio de NightSkyConstellationSpawner). Se coloca UNA vez al construir el domo, igual que el resto del polvo, y respeta las mismas zonas de exclusión de constelaciones.")]
+    [SerializeField] private bool spawnHeroStar = true;
+    [Tooltip("Tamaño en píxeles de pantalla de la estrella protagonista — deliberadamente muy por encima de starScreenSizePixelsRange para que destaque como un único punto focal, no como 'la estrella más grande que ha tocado por sorteo'.")]
+    [SerializeField] private float heroStarScreenSizePixels = 34f;
+    [Tooltip("Rango de elevación (grados) en el que se coloca la estrella protagonista — alto en el cielo, dentro de la misma franja general que las constelaciones, pero no atada a ninguna forma. El acimut siempre es aleatorio.")]
+    [SerializeField] private Vector2 heroStarElevationRangeDegrees = new Vector2(55f, 78f);
+    [Tooltip("Color de la estrella protagonista — blanco casi puro con una pizca de calidez, medido directamente del píxel más brillante de la imagen de referencia (RGB ~255,255,242 — ver comentario de clase, 30 ago 2026). Canales por encima de 1 a propósito, igual que starColor, para aprovechar el Bloom del proyecto.")]
+    [SerializeField] private Color heroStarColor = new Color(2.3f, 2.3f, 2.2f);
+    [Tooltip("Parpadeo de la estrella protagonista — mucho más sutil que el del polvo normal (twinkleIntensity), para que se lea como un punto fijo y estable en vez de una estrella normal que también parpadea fuerte.")]
+    [SerializeField, Range(0f, 1f)] private float heroStarTwinkleIntensity = 0.12f;
 
     [Header("Parpadeo (fix 20 ago 2026 — antes las estrellas no brillaban, brillo fijo)")]
     [Tooltip("Cuánto varía el brillo de cada estrella con el tiempo. 0 = sin parpadeo (brillo fijo). 1 = en el valle de su ciclo casi se apaga del todo. Cada estrella tiene su propia fase y velocidad (ver twinkleSpeedRange) para que no parpadeen todas a la vez ni en fase.")]
@@ -230,6 +286,11 @@ public class NightSkyStarSpawner : MonoBehaviour
     private readonly List<float> _twinklePhase = new List<float>();
     private readonly List<float> _twinkleSpeed = new List<float>();
     private readonly List<Color> _starTint = new List<Color>();
+    // Parpadeo POR ESTRELLA (30 ago 2026) — antes twinkleIntensity era un único valor global aplicado
+    // a todas las estrellas por igual; la estrella protagonista (ver SpawnHeroStar) necesita su propio
+    // heroStarTwinkleIntensity, mucho más bajo, para leerse como un punto estable. El polvo normal
+    // sigue usando el twinkleIntensity global de siempre (ver SpawnStar).
+    private readonly List<float> _twinkleIntensityPerStar = new List<float>();
     private MaterialPropertyBlock _mpb;
     private Material _starMaterial;
     // Malla de "estrella" compartida por TODAS las instancias vía MeshFilter.sharedMesh — generada
@@ -469,6 +530,13 @@ public class NightSkyStarSpawner : MonoBehaviour
             SpawnStar(dir, verticalFovDeg, screenHeight);
         }
 
+        // Estrella protagonista (30 ago 2026, ver comentario de clase y Header("Estrella
+        // protagonista") más arriba) — UNA sola, notablemente más grande/brillante que el polvo,
+        // colocada alto en el cielo con acimut aleatorio. Reutiliza AvoidConstellationZones para que
+        // tampoco quede pegada a ninguna de las 3 constelaciones con nombre propio.
+        if (spawnHeroStar)
+            SpawnHeroStar(verticalFovDeg, screenHeight);
+
         _currentAlpha = 0f;
         ApplyAlpha(0f);
         _built = true;
@@ -538,7 +606,7 @@ public class NightSkyStarSpawner : MonoBehaviour
         return 2f * distance * Mathf.Tan(Mathf.Clamp(angularSizeDeg, 0f, 179f) * 0.5f * Mathf.Deg2Rad);
     }
 
-    void SpawnStar(Vector3 direction, float verticalFovDeg, float screenHeight)
+    void SpawnStar(Vector3 direction, float verticalFovDeg, float screenHeight, float? pixelSizeOverride = null, Color? colorOverride = null, float? twinkleIntensityOverride = null, float brightnessOverride = -1f)
     {
         // Malla de "estrella" real compartida (fix 25 ago 2026, ver GenerateStarMesh y comentario de
         // clase) — GameObject a pelo + MeshFilter/MeshRenderer en vez de CreatePrimitive: así nunca
@@ -551,8 +619,10 @@ public class NightSkyStarSpawner : MonoBehaviour
 
         // Sorteo sesgado hacia el extremo pequeño (ver sizeBiasExponent): la mayoría de estrellas
         // quedan como puntos discretos y solo unas pocas llegan cerca del máximo del rango.
+        // pixelSizeOverride (30 ago 2026) permite a SpawnHeroStar pedir un tamaño fijo muy por encima
+        // de este rango, en vez de participar en el sorteo del polvo normal.
         float t = Mathf.Pow(UnityEngine.Random.value, Mathf.Max(0.01f, sizeBiasExponent));
-        float pixelSize = Mathf.Lerp(starScreenSizePixelsRange.x, starScreenSizePixelsRange.y, t);
+        float pixelSize = pixelSizeOverride ?? Mathf.Lerp(starScreenSizePixelsRange.x, starScreenSizePixelsRange.y, t);
         float size = PixelSizeToWorldSize(pixelSize, verticalFovDeg, screenHeight, _activeDomeRadius);
         instance.transform.localScale = Vector3.one * size;
 
@@ -565,10 +635,40 @@ public class NightSkyStarSpawner : MonoBehaviour
         renderer.sharedMaterial = _starMaterial;
 
         _renderers.Add(renderer);
-        _rendererBrightness.Add(1f - UnityEngine.Random.value * brightnessVariance);
+        // brightnessOverride (30 ago 2026): -1 = comportamiento de siempre (polvo normal, brillo
+        // sorteado con variación); >= 0 = valor fijo (la estrella protagonista siempre a brillo
+        // máximo, sin la variación aleatoria del polvo).
+        _rendererBrightness.Add(brightnessOverride >= 0f ? brightnessOverride : 1f - UnityEngine.Random.value * brightnessVariance);
         _twinklePhase.Add(UnityEngine.Random.Range(0f, Mathf.PI * 2f));
         _twinkleSpeed.Add(UnityEngine.Random.Range(twinkleSpeedRange.x, twinkleSpeedRange.y));
-        _starTint.Add(UnityEngine.Random.value < altStarChance ? starColorAlt : starColor);
+        _twinkleIntensityPerStar.Add(twinkleIntensityOverride ?? twinkleIntensity);
+        _starTint.Add(colorOverride ?? (UnityEngine.Random.value < altStarChance ? starColorAlt : starColor));
+    }
+
+    /// <summary>
+    /// Estrella protagonista (30 ago 2026, ver Header("Estrella protagonista") y comentario de clase)
+    /// — pedida tras ver una imagen de referencia de otro artista con una única estrella grande y
+    /// brillante como foco del cielo, distinta de las 3 constelaciones con nombre propio ya existentes
+    /// (NightSkyConstellationSpawner). Azimut aleatorio, elevación dentro de
+    /// heroStarElevationRangeDegrees (alto en el cielo, misma franja general que las constelaciones) y
+    /// respeta las mismas zonas de exclusión (AvoidConstellationZones) para no acabar pegada a una de
+    /// ellas. Reutiliza SpawnStar con overrides en vez de duplicar la lógica de creación de GameObject.
+    /// </summary>
+    void SpawnHeroStar(float verticalFovDeg, float screenHeight)
+    {
+        float elevationDeg = UnityEngine.Random.Range(heroStarElevationRangeDegrees.x, heroStarElevationRangeDegrees.y);
+        float elevationRad = elevationDeg * Mathf.Deg2Rad;
+        float y = Mathf.Sin(elevationRad);
+        float radiusAtY = Mathf.Sqrt(Mathf.Max(0f, 1f - y * y));
+        float azimuth = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
+        Vector3 dir = new Vector3(Mathf.Cos(azimuth) * radiusAtY, y, Mathf.Sin(azimuth) * radiusAtY);
+        dir = AvoidConstellationZones(dir);
+
+        SpawnStar(dir, verticalFovDeg, screenHeight,
+            pixelSizeOverride: heroStarScreenSizePixels,
+            colorOverride: heroStarColor,
+            twinkleIntensityOverride: heroStarTwinkleIntensity,
+            brightnessOverride: 1f);
     }
 
     /// <summary>
@@ -709,7 +809,8 @@ public class NightSkyStarSpawner : MonoBehaviour
             float speed = i < _twinkleSpeed.Count ? _twinkleSpeed[i] : 1f;
             // Oscila entre (1 - twinkleIntensity) y 1: nunca más brillante que el "techo" fijado
             // por brightnessVariance, solo se atenúa periódicamente.
-            float twinkle = Mathf.Lerp(1f - twinkleIntensity, 1f, Mathf.Sin(time * speed + phase) * 0.5f + 0.5f);
+            float starTwinkleIntensity = i < _twinkleIntensityPerStar.Count ? _twinkleIntensityPerStar[i] : twinkleIntensity;
+            float twinkle = Mathf.Lerp(1f - starTwinkleIntensity, 1f, Mathf.Sin(time * speed + phase) * 0.5f + 0.5f);
 
             Color c = i < _starTint.Count ? _starTint[i] : starColor;
             c.a = alpha * brightness * twinkle;
@@ -731,6 +832,7 @@ public class NightSkyStarSpawner : MonoBehaviour
         _twinklePhase.Clear();
         _twinkleSpeed.Clear();
         _starTint.Clear();
+        _twinkleIntensityPerStar.Clear();
         _built = false;
         _currentAlpha = 0f;
     }

@@ -1,8 +1,136 @@
 {
     "texts": [
         {
+            "key": "ABILITIES_LEVEL_LABEL",
+            "value": "Nivel: {0}"
+        },
+        {
+            "key": "ABILITIES_MANA_LABEL",
+            "value": "Maná: {0}/{1}"
+        },
+        {
+            "key": "BOSS_DEMONIO_HEALTHBAR_NAME",
+            "value": "Boss Demonio"
+        },
+        {
+            "key": "BOSS_DEMONIO_NAME",
+            "value": "DEMONIO"
+        },
+        {
+            "key": "BOSS_GOLEM_HEALTHBAR_NAME",
+            "value": "Boss Golem"
+        },
+        {
+            "key": "BOSS_GOLEM_NAME",
+            "value": "GOLEM"
+        },
+        {
+            "key": "BOSS_MAGOOSCURO_NAME",
+            "value": "MAGO OSCURO"
+        },
+        {
+            "key": "BugReport_Error",
+            "value": "No se pudo enviar. Comprueba tu conexión e inténtalo de nuevo."
+        },
+        {
+            "key": "BugReport_ErrorBuild",
+            "value": "Escribe el número de build."
+        },
+        {
+            "key": "BugReport_ErrorDescripcion",
+            "value": "Describe el fallo antes de enviar."
+        },
+        {
+            "key": "BugReport_ErrorSeveridad",
+            "value": "Elige la severidad del fallo."
+        },
+        {
+            "key": "BugReport_HelpBuild",
+            "value": "Puedes encontrarlo en la esquina inferior izquierda de la pantalla"
+        },
+        {
+            "key": "BugReport_LabelBuild",
+            "value": "Número de Build *"
+        },
+        {
+            "key": "BugReport_LabelDescripcion",
+            "value": "Descripción del Fallo *"
+        },
+        {
+            "key": "BugReport_LabelPasos",
+            "value": "Pasos para Reproducirlo (opcional)"
+        },
+        {
+            "key": "BugReport_LabelSeveridad",
+            "value": "Severidad del Fallo *"
+        },
+        {
+            "key": "BugReport_PlaceholderBuild",
+            "value": "0.0.0"
+        },
+        {
+            "key": "BugReport_PlaceholderDescripcion",
+            "value": "Intenta ser lo más específico posible."
+        },
+        {
+            "key": "BugReport_PlaceholderPasos",
+            "value": "¿Cómo puedo reproducir el fallo?"
+        },
+        {
+            "key": "BugReport_Sending",
+            "value": "Enviando…"
+        },
+        {
+            "key": "BugReport_SeverityGameBreaking",
+            "value": "Game Breaking"
+        },
+        {
+            "key": "BugReport_SeverityMayor",
+            "value": "Fallo Mayor"
+        },
+        {
+            "key": "BugReport_SeverityMenor",
+            "value": "Fallo Menor"
+        },
+        {
+            "key": "BugReport_SeverityPuntual",
+            "value": "Fallo Puntual"
+        },
+        {
+            "key": "BugReport_Submit",
+            "value": "ENVIAR"
+        },
+        {
+            "key": "BugReport_Success",
+            "value": "¡Gracias! Reporte enviado."
+        },
+        {
+            "key": "BugReport_Title",
+            "value": "REPORTAR UN FALLO"
+        },
+        {
+            "key": "COMBAT_FLED_SOLO",
+            "value": "Te alejas del combate."
+        },
+        {
+            "key": "COMBAT_FLED_TEAM",
+            "value": "Te alejas del combate. Podrás retomarlo más tarde."
+        },
+        {
+            "key": "COMBAT_TARGET_LOCK_OFF",
+            "value": "Bloqueo de objetivo desactivado"
+        },
+        {
+            "key": "COMBAT_TARGET_LOCK_ON",
+            "value": "Bloqueo de objetivo activado"
+        },
+        {
             "key": "COMMON_NO",
             "value": "No\t"
+        },
+        {
+            "key": "COMMON_NONE",
+            "value": "Ninguno"
         },
         {
             "key": "COMMON_SEGURO",
@@ -23,6 +151,10 @@
         {
             "key": "CONFIRM_NEW_GAME",
             "value": "Se borrarán los datos de la partida actual. ¿Quieres continuar?"
+        },
+        {
+            "key": "CONTROLS_BIG_MAP",
+            "value": "Ver mapa grande"
         },
         {
             "key": "CONTROLS_CAMERA",
@@ -53,10 +185,6 @@
             "value": "Pausa / Menú"
         },
         {
-            "key": "CONTROLS_BIG_MAP",
-            "value": "Ver mapa grande"
-        },
-        {
             "key": "CONTROLS_SPELL_LEFT",
             "value": "Hechizo — slot izquierdo"
         },
@@ -79,6 +207,10 @@
         {
             "key": "CONTROLS_TARGET_PREV",
             "value": "Cambiar objetivo de combate (anterior)"
+        },
+        {
+            "key": "CONTROLS_TARGET_TOGGLE",
+            "value": "Activar/desactivar el bloqueo automático de objetivo"
         },
         {
             "key": "CONTROLS_TELEPORT",
@@ -121,16 +253,12 @@
             "value": "D-Pad derecha"
         },
         {
-            "key": "GLYPH_SHARE",
-            "value": "Share"
-        },
-        {
-            "key": "GLYPH_VIEW",
-            "value": "View"
-        },
-        {
             "key": "GLYPH_DPAD_UP",
             "value": "D-Pad arriba"
+        },
+        {
+            "key": "GLYPH_KEY_F",
+            "value": "F"
         },
         {
             "key": "GLYPH_KEY_SHIFT",
@@ -149,6 +277,10 @@
             "value": "Ratón"
         },
         {
+            "key": "GLYPH_SHARE",
+            "value": "Share"
+        },
+        {
             "key": "GLYPH_STICK",
             "value": "el Joystick"
         },
@@ -161,12 +293,28 @@
             "value": "Stick derecho"
         },
         {
+            "key": "GLYPH_STICK_RIGHT_CLICK",
+            "value": "Clic stick derecho (R3)"
+        },
+        {
+            "key": "GLYPH_VIEW",
+            "value": "View"
+        },
+        {
             "key": "GLYPH_WHEEL_DOWN",
             "value": "rueda abajo"
         },
         {
             "key": "GLYPH_WHEEL_UP",
             "value": "rueda arriba"
+        },
+        {
+            "key": "HUD_FOLLOW_PROMPT_FOLLOW",
+            "value": "Sígueme"
+        },
+        {
+            "key": "HUD_FOLLOW_PROMPT_STOP",
+            "value": "Dejar de seguir"
         },
         {
             "key": "HUD_FOLLOW_STATUS_FOLLOWING",
@@ -217,6 +365,390 @@
             "value": "Hablar"
         },
         {
+            "key": "INVENTORY_EMPTY",
+            "value": "Inventario vacío"
+        },
+        {
+            "key": "INVENTORY_NO_DESCRIPTION",
+            "value": "Sin descripción."
+        },
+        {
+            "key": "INVENTORY_QUANTITY_LABEL",
+            "value": "Cantidad: {0}"
+        },
+        {
+            "key": "INVENTORY_SELECT_ITEM",
+            "value": "Selecciona un objeto"
+        },
+        {
+            "key": "INVENTORY_UNAVAILABLE",
+            "value": "Inventario no disponible"
+        },
+        {
+            "key": "ITEM_AC01_HEART_DESC",
+            "value": "Un pequeño colgante con forma de corazón."
+        },
+        {
+            "key": "ITEM_AC01_HEART_NAME",
+            "value": "Corazón"
+        },
+        {
+            "key": "ITEM_AC02_LEAF_DESC",
+            "value": "Una hoja otoñal prendida como adorno."
+        },
+        {
+            "key": "ITEM_AC02_LEAF_NAME",
+            "value": "Hoja"
+        },
+        {
+            "key": "ITEM_AC03_BLACKGLASS_DESC",
+            "value": "Gafas de cristal oscuro, ideales para pasar desapercibido."
+        },
+        {
+            "key": "ITEM_AC03_BLACKGLASS_NAME",
+            "value": "Gafas Negras"
+        },
+        {
+            "key": "ITEM_AC03_HEAVYMETALGLASS_DESC",
+            "value": "Gafas con un aire rockero y rebelde."
+        },
+        {
+            "key": "ITEM_AC03_HEAVYMETALGLASS_NAME",
+            "value": "Gafas Heavy Metal"
+        },
+        {
+            "key": "ITEM_AC03_NERDGLASS_DESC",
+            "value": "Gafas de pasta gruesa, muy intelectuales."
+        },
+        {
+            "key": "ITEM_AC03_NERDGLASS_NAME",
+            "value": "Gafas de Empollón"
+        },
+        {
+            "key": "ITEM_AC03_NIGHTVISION_DESC",
+            "value": "Permiten ver mejor en la oscuridad... o eso parece."
+        },
+        {
+            "key": "ITEM_AC03_NIGHTVISION_NAME",
+            "value": "Gafas de Visión Nocturna"
+        },
+        {
+            "key": "ITEM_AC04_ANGELEARS_DESC",
+            "value": "Orejas de Ángel."
+        },
+        {
+            "key": "ITEM_AC04_ANGELEARS_NAME",
+            "value": "Orejas de Ángel"
+        },
+        {
+            "key": "ITEM_AC04_ANTHENAEARS_DESC",
+            "value": "Orejas con antenas, como de otro mundo."
+        },
+        {
+            "key": "ITEM_AC04_ANTHENAEARS_NAME",
+            "value": "Orejas de Antena"
+        },
+        {
+            "key": "ITEM_AC04_BUNNYEARS_DESC",
+            "value": "Orejas de Conejo."
+        },
+        {
+            "key": "ITEM_AC04_BUNNYEARS_NAME",
+            "value": "Orejas de Conejo"
+        },
+        {
+            "key": "ITEM_AC04_SHORTEARS_DESC",
+            "value": "Un par de orejas pequeñas y discretas."
+        },
+        {
+            "key": "ITEM_AC04_SHORTEARS_NAME",
+            "value": "Orejas Cortas"
+        },
+        {
+            "key": "ITEM_AC05_HORN01_DESC",
+            "value": "Un cuerno curvo, de aspecto demoníaco."
+        },
+        {
+            "key": "ITEM_AC05_HORN01_NAME",
+            "value": "Cuerno Curvo"
+        },
+        {
+            "key": "ITEM_AC05_HORN02_DESC",
+            "value": "Un cuerno recto y afilado."
+        },
+        {
+            "key": "ITEM_AC05_HORN02_NAME",
+            "value": "Cuerno Recto"
+        },
+        {
+            "key": "ITEM_AC05_HORN03_DESC",
+            "value": "Dos pequeños cuernos gemelos."
+        },
+        {
+            "key": "ITEM_AC05_HORN03_NAME",
+            "value": "Cuerno Doble"
+        },
+        {
+            "key": "ITEM_AC05_HORN04_DESC",
+            "value": "Un imponente cuerno con forma de dragón."
+        },
+        {
+            "key": "ITEM_AC05_HORN04_NAME",
+            "value": "Cuerno de Dragón"
+        },
+        {
+            "key": "ITEM_AC06_CROWN01_DESC",
+            "value": "Una corona reluciente digna de la realeza."
+        },
+        {
+            "key": "ITEM_AC06_CROWN01_NAME",
+            "value": "Corona de Oro"
+        },
+        {
+            "key": "ITEM_AC06_CROWN02_DESC",
+            "value": "Una corona sobria de plata pulida."
+        },
+        {
+            "key": "ITEM_AC06_CROWN02_NAME",
+            "value": "Corona de Plata"
+        },
+        {
+            "key": "ITEM_AC06_CROWN03_DESC",
+            "value": "Una corona tejida con flores del Sendero."
+        },
+        {
+            "key": "ITEM_AC06_CROWN03_NAME",
+            "value": "Corona de Flores"
+        },
+        {
+            "key": "ITEM_AC07_PIRATEPATCH_DESC",
+            "value": "Un parche que oculta un ojo... o un secreto."
+        },
+        {
+            "key": "ITEM_AC07_PIRATEPATCH_NAME",
+            "value": "Parche de Pirata"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK01_DESC",
+            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK01_NAME",
+            "value": "Máscara Ninja I"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK02_DESC",
+            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK02_NAME",
+            "value": "Máscara Ninja II"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK03_DESC",
+            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK03_NAME",
+            "value": "Máscara Ninja III"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK04_DESC",
+            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK04_NAME",
+            "value": "Máscara Ninja IV"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK05_DESC",
+            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK05_NAME",
+            "value": "Máscara Ninja V"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK06_DESC",
+            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK06_NAME",
+            "value": "Máscara Ninja VI"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK07_DESC",
+            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK07_NAME",
+            "value": "Máscara Ninja VII"
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK08_DESC",
+            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
+        },
+        {
+            "key": "ITEM_AC08_NINJAMASK08_NAME",
+            "value": "Máscara Ninja VIII"
+        },
+        {
+            "key": "ITEM_AC09_RIBBON_DESC",
+            "value": "Un lazo decorativo para dar un toque elegante."
+        },
+        {
+            "key": "ITEM_AC09_RIBBON_NAME",
+            "value": "Lazo"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE01_DESC",
+            "value": "Un bigote clásico, pulcro y bien peinado."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE01_NAME",
+            "value": "Bigote Clásico"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE02_DESC",
+            "value": "Un bigote fino y discreto."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE02_NAME",
+            "value": "Bigote Fino"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE03_DESC",
+            "value": "Un bigote con las puntas rizadas hacia arriba."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE03_NAME",
+            "value": "Bigote Rizado"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE04_DESC",
+            "value": "Un bigote grueso y frondoso."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE04_NAME",
+            "value": "Bigote Grueso"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE05_DESC",
+            "value": "Un bigote fino con un toque señorial."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE05_NAME",
+            "value": "Bigote Elegante"
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE06_DESC",
+            "value": "Un bigote enorme y muy llamativo."
+        },
+        {
+            "key": "ITEM_AC10_MUSTACHE06_NAME",
+            "value": "Bigote Extravagante"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE01_DESC",
+            "value": "Un bigote combinado con una barba corta y cuidada."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE01_NAME",
+            "value": "Bigote y Barba Corta"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE02_DESC",
+            "value": "Un bigote combinado con perilla."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE02_NAME",
+            "value": "Bigote y Perilla"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE03_DESC",
+            "value": "Un bigote combinado con una barba larga y poblada."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE03_NAME",
+            "value": "Bigote y Barba Larga"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE04_DESC",
+            "value": "Un bigote combinado con una barba trenzada."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE04_NAME",
+            "value": "Bigote y Barba Trenzada"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE05_DESC",
+            "value": "Un bigote y barba dignos de un rey."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE05_NAME",
+            "value": "Bigote Real"
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE06_DESC",
+            "value": "Un bigote y barba con un extraño brillo arcano."
+        },
+        {
+            "key": "ITEM_AC11_MUSTACHE06_NAME",
+            "value": "Bigote Mágico"
+        },
+        {
+            "key": "ITEM_ALGAS_NAME",
+            "value": "Algas"
+        },
+        {
+            "key": "ITEM_BOOTS_NAME",
+            "value": "Botas"
+        },
+        {
+            "key": "ITEM_CARACOLA_NAME",
+            "value": "Caracola"
+        },
+        {
+            "key": "ITEM_CHEST25COIN_NAME",
+            "value": "Cofre"
+        },
+        {
+            "key": "ITEM_CLOAK01_DESC",
+            "value": "Capa de Mago utilizada por los magos más poderosos."
+        },
+        {
+            "key": "ITEM_CLOAK01_NAME",
+            "value": "Capa de Mago Experto"
+        },
+        {
+            "key": "ITEM_COIN_NAME",
+            "value": "Moneda"
+        },
+        {
+            "key": "ITEM_KEY_DESC",
+            "value": "Llave que podría ser útil."
+        },
+        {
+            "key": "ITEM_KEY_NAME",
+            "value": "Llave"
+        },
+        {
+            "key": "ITEM_POCIONMAGIA_DESC",
+            "value": "Poción que recupera magia al consumirla. Recupera 25 MP."
+        },
+        {
+            "key": "ITEM_POCIONMAGIA_NAME",
+            "value": "Poción de magia"
+        },
+        {
+            "key": "ITEM_POCIONVIDA_DESC",
+            "value": "Poción que recupera vida al consumirla. Recupera 25 HP."
+        },
+        {
+            "key": "ITEM_POCIONVIDA_NAME",
+            "value": "Poción de vida"
+        },
+        {
             "key": "MainMenu_BugReport",
             "value": "Reportar un Fallo"
         },
@@ -249,96 +781,28 @@
             "value": "Configuración"
         },
         {
-            "key": "BugReport_Title",
-            "value": "REPORTAR UN FALLO"
-        },
-        {
-            "key": "BugReport_LabelSeveridad",
-            "value": "Severidad del Fallo *"
-        },
-        {
-            "key": "BugReport_SeverityGameBreaking",
-            "value": "Game Breaking"
-        },
-        {
-            "key": "BugReport_SeverityMayor",
-            "value": "Fallo Mayor"
-        },
-        {
-            "key": "BugReport_SeverityMenor",
-            "value": "Fallo Menor"
-        },
-        {
-            "key": "BugReport_SeverityPuntual",
-            "value": "Fallo Puntual"
-        },
-        {
-            "key": "BugReport_LabelBuild",
-            "value": "Número de Build *"
-        },
-        {
-            "key": "BugReport_PlaceholderBuild",
-            "value": "0.0.0"
-        },
-        {
-            "key": "BugReport_HelpBuild",
-            "value": "Puedes encontrarlo en la esquina inferior izquierda de la pantalla"
-        },
-        {
-            "key": "BugReport_LabelDescripcion",
-            "value": "Descripción del Fallo *"
-        },
-        {
-            "key": "BugReport_PlaceholderDescripcion",
-            "value": "Intenta ser lo más específico posible."
-        },
-        {
-            "key": "BugReport_LabelPasos",
-            "value": "Pasos para Reproducirlo (opcional)"
-        },
-        {
-            "key": "BugReport_PlaceholderPasos",
-            "value": "¿Cómo puedo reproducir el fallo?"
-        },
-        {
-            "key": "BugReport_Submit",
-            "value": "ENVIAR"
-        },
-        {
-            "key": "BugReport_ErrorSeveridad",
-            "value": "Elige la severidad del fallo."
-        },
-        {
-            "key": "BugReport_ErrorBuild",
-            "value": "Escribe el número de build."
-        },
-        {
-            "key": "BugReport_ErrorDescripcion",
-            "value": "Describe el fallo antes de enviar."
-        },
-        {
-            "key": "BugReport_Sending",
-            "value": "Enviando…"
-        },
-        {
-            "key": "BugReport_Success",
-            "value": "¡Gracias! Reporte enviado."
-        },
-        {
-            "key": "BugReport_Error",
-            "value": "No se pudo enviar. Comprueba tu conexión e inténtalo de nuevo."
+            "key": "NPC_REQUIRES_WILL",
+            "value": "Solo Will puede hablar con este personaje"
         },
         {
             "key": "PatchNotes_Title",
             "value": "NOTAS DEL PARCHE"
         },
         {
-            "key": "NPC_REQUIRES_WILL",
-            "value": "Solo Will puede hablar con este personaje"
-        },
-        {
             "key": "Pensamiento",
             "value": "Pensamiento"
+        },
+        {
+            "key": "QUEST_MENU_HEADER_HIDDEN",
+            "value": "Misiones ocultas ({0})"
+        },
+        {
+            "key": "QUEST_MENU_HEADER_MAIN",
+            "value": "Misiones (principal)"
+        },
+        {
+            "key": "QUEST_MENU_HEADER_VISIBLE",
+            "value": "Misiones visibles ({0})"
         },
         {
             "key": "ROOM_EXIT_BLOCKED",
@@ -365,20 +829,144 @@
             "value": "Audio"
         },
         {
+            "key": "SETTINGS_AUDIO",
+            "value": "Audio"
+        },
+        {
             "key": "Settings_Back",
             "value": "Volver"
+        },
+        {
+            "key": "SETTINGS_CAMERA_CONTROLS",
+            "value": "Cámara / Controles"
+        },
+        {
+            "key": "SETTINGS_CAMERA_SENSITIVITY",
+            "value": "Sensibilidad cámara"
         },
         {
             "key": "Settings_Controls",
             "value": "Controles"
         },
         {
+            "key": "SETTINGS_FULLSCREEN",
+            "value": "Pantalla completa"
+        },
+        {
+            "key": "SETTINGS_GENERAL",
+            "value": "General"
+        },
+        {
             "key": "Settings_Graphics",
             "value": "Gráficos"
         },
         {
+            "key": "SETTINGS_INVERT_LOOK_FLIGHT",
+            "value": "Invertir eje Y (vuelo)"
+        },
+        {
+            "key": "SETTINGS_INVERT_LOOK_GROUND",
+            "value": "Invertir eje Y (suelo)"
+        },
+        {
             "key": "Settings_Language",
             "value": "Idioma"
+        },
+        {
+            "key": "SETTINGS_LANGUAGE",
+            "value": "Idioma"
+        },
+        {
+            "key": "SETTINGS_MASTER_VOLUME",
+            "value": "Volumen general"
+        },
+        {
+            "key": "SETTINGS_MUSIC_VOLUME",
+            "value": "Volumen música"
+        },
+        {
+            "key": "SETTINGS_SFX_VOLUME",
+            "value": "Volumen SFX"
+        },
+        {
+            "key": "SETTINGS_TITLE",
+            "value": "Ajustes"
+        },
+        {
+            "key": "SETTINGS_VIBRATION",
+            "value": "Vibración"
+        },
+        {
+            "key": "SHOP_BUY_BUTTON",
+            "value": "COMPRAR"
+        },
+        {
+            "key": "SHOP_ITEM_AVAILABLE",
+            "value": "Disponible"
+        },
+        {
+            "key": "SHOP_MSG_INVALID_ITEM",
+            "value": "Item inválido."
+        },
+        {
+            "key": "SHOP_MSG_INVALID_SELECTION",
+            "value": "Selección inválida."
+        },
+        {
+            "key": "SHOP_MSG_ITEM_UNAVAILABLE",
+            "value": "Item no disponible."
+        },
+        {
+            "key": "SHOP_MSG_NO_CURRENCY_ITEM",
+            "value": "No se ha asignado item de monedas."
+        },
+        {
+            "key": "SHOP_MSG_NO_INVENTORY",
+            "value": "No hay inventario configurado."
+        },
+        {
+            "key": "SHOP_MSG_NOT_ENOUGH_CURRENCY",
+            "value": "No tienes suficientes monedas."
+        },
+        {
+            "key": "SHOP_MSG_NOT_ENOUGH_QUANTITY",
+            "value": "No tienes suficiente cantidad."
+        },
+        {
+            "key": "SHOP_MSG_OUT_OF_STOCK",
+            "value": "Producto agotado."
+        },
+        {
+            "key": "SHOP_PRICE_LABEL",
+            "value": "Precio: {0}"
+        },
+        {
+            "key": "SHOP_PURCHASE_FAILED",
+            "value": "No se pudo comprar."
+        },
+        {
+            "key": "SHOP_PURCHASE_SUCCESS",
+            "value": "¡Comprado!"
+        },
+        {
+            "key": "SHOP_SELL_BUTTON",
+            "value": "VENDER"
+        },
+        {
+            "key": "SHOP_SELL_NOT_IMPLEMENTED",
+            "value": "Función de venta no implementada aún."
+        },
+        {
+            "key": "SHOP_STOCK_IN_STOCK",
+            "value": "En stock"
+        },
+        {
+            "key": "SHOP_STOCK_OUT",
+            "value": "Agotado"
+        },
+        {
+            "key": "SHOP_STOCK_UNLIMITED",
+            "value": "Stock ilimitado"
         },
         {
             "key": "SHOP_TITTLE",
@@ -387,6 +975,74 @@
         {
             "key": "SHOP_VENDOR",
             "value": "¿Qué te apetece comprar hoy?"
+        },
+        {
+            "key": "SPELL_ASSIGN_HINT",
+            "value": "Pulsa A sobre un hechizo y luego escoge el slot al que asignarlo."
+        },
+        {
+            "key": "SPELL_AURA_ESTELAR_NAME",
+            "value": "Aura Estelar"
+        },
+        {
+            "key": "SPELL_BOLA_FUEGO_NAME",
+            "value": "Bola de Fuego"
+        },
+        {
+            "key": "SPELL_BOLA_PRISMA_NAME",
+            "value": "Bola Prisma"
+        },
+        {
+            "key": "SPELL_COOLDOWN_LABEL",
+            "value": "Cooldown: {0}s"
+        },
+        {
+            "key": "SPELL_CORAZON_ESTELAR_NAME",
+            "value": "Corazón Estelar"
+        },
+        {
+            "key": "SPELL_DAMAGE_LABEL",
+            "value": "Daño: {0}"
+        },
+        {
+            "key": "SPELL_LEVITATION_NAME",
+            "value": "Levitación"
+        },
+        {
+            "key": "SPELL_LLAMA_ASTRAL_NAME",
+            "value": "Llama Astral"
+        },
+        {
+            "key": "SPELL_MANA_COST_LABEL",
+            "value": "Coste de maná: {0}"
+        },
+        {
+            "key": "SPELL_NO_INFO",
+            "value": "Hechizo sin información."
+        },
+        {
+            "key": "SPELL_SELECT_SLOT_HINT",
+            "value": "Selecciona un slot con A o cancela con B."
+        },
+        {
+            "key": "SPELL_SELECT_SPELL_HINT",
+            "value": "Selecciona un hechizo con A o cancela con B."
+        },
+        {
+            "key": "SPELL_TORNADO_NAME",
+            "value": "Tornado"
+        },
+        {
+            "key": "SPELL_UNASSIGNED",
+            "value": "Sin asignar."
+        },
+        {
+            "key": "SPELL_UNASSIGNED_SHORT",
+            "value": "Sin asignar"
+        },
+        {
+            "key": "SPLASH_PRESENTA",
+            "value": "Presenta"
         },
         {
             "key": "System_Error",
@@ -399,6 +1055,10 @@
         {
             "key": "System_Saving",
             "value": "Guardando..."
+        },
+        {
+            "key": "TELEPORT_BLOCKED_BOSS",
+            "value": "No puedo teletransportarme fuera de aquí todavía."
         },
         {
             "key": "TELEPORT_POINT_BEDROOM",
@@ -493,6 +1153,18 @@
             "value": "Archivar"
         },
         {
+            "key": "UI_ACTIVAR",
+            "value": "Activar"
+        },
+        {
+            "key": "UI_CANCELAR_SALIR",
+            "value": "Cancelar / Salir"
+        },
+        {
+            "key": "UI_DESPLAZAMIENTO",
+            "value": "Desplazamiento"
+        },
+        {
             "key": "UI_Experience",
             "value": "Experiencia"
         },
@@ -565,8 +1237,16 @@
             "value": "Reanudar"
         },
         {
+            "key": "UI_SALIR_MENU",
+            "value": "Salir al menú"
+        },
+        {
             "key": "UI_SEGUIR",
             "value": "Seguir"
+        },
+        {
+            "key": "UI_SELECCION",
+            "value": "Selección"
         },
         {
             "key": "UI_SIGUIENDO",
@@ -575,6 +1255,10 @@
         {
             "key": "UI_TELETRANSPORTE",
             "value": "Teletransporte "
+        },
+        {
+            "key": "UI_USAR",
+            "value": "Usar"
         },
         {
             "key": "UI_VOLVER_MENU",
@@ -593,824 +1277,196 @@
             "value": "¿Descansar y esperar a que anochezca?"
         },
         {
-            "key": "WATER_ENTER_NEEDS",
-            "value": "Antes de entrar al agua, necesitas: "
-        },
-        {
-            "key": "WOODS_EXIT_BLOCKED",
-            "value": "Debería hablar con ese guarda."
-        },
-        {
-            "key": "SHOP_PRICE_LABEL",
-            "value": "Precio: {0}"
-        },
-        {
-            "key": "SHOP_STOCK_IN_STOCK",
-            "value": "En stock"
-        },
-        {
-            "key": "SHOP_STOCK_OUT",
-            "value": "Agotado"
-        },
-        {
-            "key": "SHOP_STOCK_UNLIMITED",
-            "value": "Stock ilimitado"
-        },
-        {
-            "key": "SHOP_SELL_NOT_IMPLEMENTED",
-            "value": "Función de venta no implementada aún."
-        },
-        {
-            "key": "SHOP_PURCHASE_SUCCESS",
-            "value": "¡Comprado!"
-        },
-        {
-            "key": "SHOP_PURCHASE_FAILED",
-            "value": "No se pudo comprar."
-        },
-        {
-            "key": "SHOP_MSG_INVALID_SELECTION",
-            "value": "Selección inválida."
-        },
-        {
-            "key": "SHOP_MSG_ITEM_UNAVAILABLE",
-            "value": "Item no disponible."
-        },
-        {
-            "key": "SHOP_MSG_OUT_OF_STOCK",
-            "value": "Producto agotado."
-        },
-        {
-            "key": "SHOP_MSG_NOT_ENOUGH_CURRENCY",
-            "value": "No tienes suficientes monedas."
-        },
-        {
-            "key": "SHOP_MSG_INVALID_ITEM",
-            "value": "Item inválido."
-        },
-        {
-            "key": "SHOP_MSG_NOT_ENOUGH_QUANTITY",
-            "value": "No tienes suficiente cantidad."
-        },
-        {
-            "key": "SHOP_MSG_NO_INVENTORY",
-            "value": "No hay inventario configurado."
-        },
-        {
-            "key": "SHOP_MSG_NO_CURRENCY_ITEM",
-            "value": "No se ha asignado item de monedas."
-        },
-        {
-            "key": "QUEST_MENU_HEADER_MAIN",
-            "value": "Misiones (principal)"
-        },
-        {
-            "key": "QUEST_MENU_HEADER_VISIBLE",
-            "value": "Misiones visibles ({0})"
-        },
-        {
-            "key": "QUEST_MENU_HEADER_HIDDEN",
-            "value": "Misiones ocultas ({0})"
-        },
-        {
-            "key": "COMMON_NONE",
-            "value": "Ninguno"
-        },
-        {
-            "key": "ABILITIES_LEVEL_LABEL",
-            "value": "Nivel: {0}"
-        },
-        {
-            "key": "ABILITIES_MANA_LABEL",
-            "value": "Maná: {0}/{1}"
-        },
-        {
-            "key": "INVENTORY_UNAVAILABLE",
-            "value": "Inventario no disponible"
-        },
-        {
-            "key": "INVENTORY_EMPTY",
-            "value": "Inventario vacío"
-        },
-        {
-            "key": "INVENTORY_SELECT_ITEM",
-            "value": "Selecciona un objeto"
-        },
-        {
-            "key": "INVENTORY_NO_DESCRIPTION",
-            "value": "Sin descripción."
-        },
-        {
-            "key": "INVENTORY_QUANTITY_LABEL",
-            "value": "Cantidad: {0}"
-        },
-        {
-            "key": "HUD_FOLLOW_PROMPT_FOLLOW",
-            "value": "Sígueme"
-        },
-        {
-            "key": "HUD_FOLLOW_PROMPT_STOP",
-            "value": "Dejar de seguir"
-        },
-        {
-            "key": "UI_DESPLAZAMIENTO",
-            "value": "Desplazamiento"
-        },
-        {
-            "key": "UI_SELECCION",
-            "value": "Selección"
-        },
-        {
-            "key": "UI_CANCELAR_SALIR",
-            "value": "Cancelar / Salir"
-        },
-        {
-            "key": "UI_SALIR_MENU",
-            "value": "Salir al menú"
-        },
-        {
-            "key": "UI_USAR",
-            "value": "Usar"
-        },
-        {
-            "key": "SPLASH_PRESENTA",
-            "value": "Presenta"
-        },
-        {
-            "key": "SPELL_AURA_ESTELAR_NAME",
-            "value": "Aura Estelar"
-        },
-        {
-            "key": "SPELL_BOLA_FUEGO_NAME",
-            "value": "Bola de Fuego"
-        },
-        {
-            "key": "SPELL_BOLA_PRISMA_NAME",
-            "value": "Bola Prisma"
-        },
-        {
-            "key": "SPELL_CORAZON_ESTELAR_NAME",
-            "value": "Corazón Estelar"
-        },
-        {
-            "key": "SPELL_LEVITATION_NAME",
-            "value": "Levitación"
-        },
-        {
-            "key": "SPELL_LLAMA_ASTRAL_NAME",
-            "value": "Llama Astral"
-        },
-        {
-            "key": "SPELL_TORNADO_NAME",
-            "value": "Tornado"
-        },
-        {
-            "key": "SPELL_DAMAGE_LABEL",
-            "value": "Daño: {0}"
-        },
-        {
-            "key": "SPELL_MANA_COST_LABEL",
-            "value": "Coste de maná: {0}"
-        },
-        {
-            "key": "SPELL_COOLDOWN_LABEL",
-            "value": "Cooldown: {0}s"
-        },
-        {
-            "key": "SPELL_UNASSIGNED",
-            "value": "Sin asignar."
-        },
-        {
-            "key": "SPELL_UNASSIGNED_SHORT",
-            "value": "Sin asignar"
-        },
-        {
-            "key": "SPELL_NO_INFO",
-            "value": "Hechizo sin información."
-        },
-        {
-            "key": "SPELL_SELECT_SPELL_HINT",
-            "value": "Selecciona un hechizo con A o cancela con B."
-        },
-        {
-            "key": "SPELL_SELECT_SLOT_HINT",
-            "value": "Selecciona un slot con A o cancela con B."
-        },
-        {
-            "key": "SPELL_ASSIGN_HINT",
-            "value": "Pulsa A sobre un hechizo y luego escoge el slot al que asignarlo."
-        },
-        {
-            "key": "ITEM_AC04_ANGELEARS_NAME",
-            "value": "Orejas de Ángel"
-        },
-        {
-            "key": "ITEM_AC04_ANGELEARS_DESC",
-            "value": "Orejas de Ángel."
-        },
-        {
-            "key": "ITEM_AC04_BUNNYEARS_NAME",
-            "value": "Orejas de Conejo"
-        },
-        {
-            "key": "ITEM_AC04_BUNNYEARS_DESC",
-            "value": "Orejas de Conejo."
-        },
-        {
-            "key": "ITEM_ALGAS_NAME",
-            "value": "Algas"
-        },
-        {
-            "key": "ITEM_BOOTS_NAME",
-            "value": "Botas"
-        },
-        {
-            "key": "ITEM_CARACOLA_NAME",
-            "value": "Caracola"
-        },
-        {
-            "key": "ITEM_CHEST25COIN_NAME",
-            "value": "Cofre"
-        },
-        {
-            "key": "ITEM_CLOAK01_NAME",
-            "value": "Capa de Mago Experto"
-        },
-        {
-            "key": "ITEM_CLOAK01_DESC",
-            "value": "Capa de Mago utilizada por los magos más poderosos."
-        },
-        {
-            "key": "ITEM_COIN_NAME",
-            "value": "Moneda"
-        },
-        {
-            "key": "ITEM_KEY_NAME",
-            "value": "Llave"
-        },
-        {
-            "key": "ITEM_KEY_DESC",
-            "value": "Llave que podría ser útil."
-        },
-        {
-            "key": "ITEM_POCIONMAGIA_NAME",
-            "value": "Poción de magia"
-        },
-        {
-            "key": "ITEM_POCIONMAGIA_DESC",
-            "value": "Poción que recupera magia al consumirla. Recupera 25 MP."
-        },
-        {
-            "key": "ITEM_POCIONVIDA_NAME",
-            "value": "Poción de vida"
-        },
-        {
-            "key": "ITEM_POCIONVIDA_DESC",
-            "value": "Poción que recupera vida al consumirla. Recupera 25 HP."
-        },
-        {
-            "key": "WARDROBE_BODY05_NAME",
-            "value": "Ropa de aldeano"
-        },
-        {
-            "key": "WARDROBE_BODY05_DESC",
-            "value": "Prendas sencillas que cualquier vecino del pueblo lleva en su día a día."
-        },
-        {
-            "key": "WARDROBE_CLOAK01_NAME",
-            "value": "Capa de mago experto."
-        },
-        {
-            "key": "WARDROBE_CLOAK01_DESC",
-            "value": "Capa mágica que portan los magos más poderosos."
-        },
-        {
-            "key": "WARDROBE_CLOAK02_NAME",
-            "value": "Capa de mago de principiante."
-        },
-        {
-            "key": "WARDROBE_CLOAK02_DESC",
-            "value": "Capa mágica usada por magos que comienzan su aventura."
-        },
-        {
-            "key": "WARDROBE_CLOAK03_NAME",
-            "value": "Capa de mago avanzado."
-        },
-        {
-            "key": "WARDROBE_CLOAK03_DESC",
-            "value": "Capa mágica que portan los magos que dominan la magia."
-        },
-        {
-            "key": "SETTINGS_TITLE",
-            "value": "Ajustes"
-        },
-        {
-            "key": "SETTINGS_INVERT_LOOK_GROUND",
-            "value": "Invertir eje Y (suelo)"
-        },
-        {
-            "key": "SETTINGS_SFX_VOLUME",
-            "value": "Volumen SFX"
-        },
-        {
-            "key": "SETTINGS_MUSIC_VOLUME",
-            "value": "Volumen música"
-        },
-        {
-            "key": "SETTINGS_CAMERA_CONTROLS",
-            "value": "Cámara / Controles"
-        },
-        {
-            "key": "SETTINGS_GENERAL",
-            "value": "General"
-        },
-        {
-            "key": "SETTINGS_FULLSCREEN",
-            "value": "Pantalla completa"
-        },
-        {
-            "key": "SETTINGS_MASTER_VOLUME",
-            "value": "Volumen general"
-        },
-        {
-            "key": "SETTINGS_VIBRATION",
-            "value": "Vibración"
-        },
-        {
-            "key": "SETTINGS_LANGUAGE",
-            "value": "Idioma"
-        },
-        {
-            "key": "SETTINGS_AUDIO",
-            "value": "Audio"
-        },
-        {
-            "key": "SETTINGS_CAMERA_SENSITIVITY",
-            "value": "Sensibilidad cámara"
-        },
-        {
-            "key": "SETTINGS_INVERT_LOOK_FLIGHT",
-            "value": "Invertir eje Y (vuelo)"
-        },
-        {
-            "key": "SHOP_BUY_BUTTON",
-            "value": "COMPRAR"
-        },
-        {
-            "key": "SHOP_SELL_BUTTON",
-            "value": "VENDER"
-        },
-        {
-            "key": "SHOP_ITEM_AVAILABLE",
-            "value": "Disponible"
+            "key": "WARDROBE_BODY01_DESC",
+            "value": "Ropa sencilla y remendada, típica de quien trabaja la tierra."
         },
         {
             "key": "WARDROBE_BODY01_NAME",
             "value": "Ropa de campesino"
         },
         {
-            "key": "WARDROBE_BODY01_DESC",
-            "value": "Ropa sencilla y remendada, típica de quien trabaja la tierra."
+            "key": "WARDROBE_BODY02_DESC",
+            "value": "Capas ligeras pensadas para largas caminatas por el Sendero."
         },
         {
             "key": "WARDROBE_BODY02_NAME",
             "value": "Ropa de viajero"
         },
         {
-            "key": "WARDROBE_BODY02_DESC",
-            "value": "Capas ligeras pensadas para largas caminatas por el Sendero."
+            "key": "WARDROBE_BODY03_DESC",
+            "value": "Una túnica sin adornos, cómoda para el día a día."
         },
         {
             "key": "WARDROBE_BODY03_NAME",
             "value": "Túnica humilde"
         },
         {
-            "key": "WARDROBE_BODY03_DESC",
-            "value": "Una túnica sin adornos, cómoda para el día a día."
+            "key": "WARDROBE_BODY04_DESC",
+            "value": "Cuero curtido que protege entre la maleza del bosque."
         },
         {
             "key": "WARDROBE_BODY04_NAME",
             "value": "Ropa de cazador"
         },
         {
-            "key": "WARDROBE_BODY04_DESC",
-            "value": "Cuero curtido que protege entre la maleza del bosque."
+            "key": "WARDROBE_BODY05_DESC",
+            "value": "Prendas sencillas que cualquier vecino del pueblo lleva en su día a día."
         },
         {
-            "key": "WARDROBE_BODY06_NAME",
-            "value": "Uniforme de guardia"
+            "key": "WARDROBE_BODY05_NAME",
+            "value": "Ropa de aldeano"
         },
         {
             "key": "WARDROBE_BODY06_DESC",
             "value": "El uniforme reglamentario de la guardia del pueblo."
         },
         {
-            "key": "WARDROBE_BODY07_NAME",
-            "value": "Túnica de aprendiz de mago"
+            "key": "WARDROBE_BODY06_NAME",
+            "value": "Uniforme de guardia"
         },
         {
             "key": "WARDROBE_BODY07_DESC",
             "value": "Tela impregnada de un leve resplandor arcano."
         },
         {
-            "key": "WARDROBE_BODY08_NAME",
-            "value": "Delantal de herrero"
+            "key": "WARDROBE_BODY07_NAME",
+            "value": "Túnica de aprendiz de mago"
         },
         {
             "key": "WARDROBE_BODY08_DESC",
             "value": "Cuero grueso resistente a chispas y al calor de la fragua."
         },
         {
-            "key": "WARDROBE_BODY09_NAME",
-            "value": "Ropa de pescador"
+            "key": "WARDROBE_BODY08_NAME",
+            "value": "Delantal de herrero"
         },
         {
             "key": "WARDROBE_BODY09_DESC",
             "value": "Impermeable y ligera, ideal para los días junto al río."
         },
         {
-            "key": "WARDROBE_BODY10_NAME",
-            "value": "Traje de comerciante"
+            "key": "WARDROBE_BODY09_NAME",
+            "value": "Ropa de pescador"
         },
         {
             "key": "WARDROBE_BODY10_DESC",
             "value": "Elegante pero práctico, pensado para cerrar buenos tratos."
         },
         {
-            "key": "WARDROBE_BODY11_NAME",
-            "value": "Vestido de noble"
+            "key": "WARDROBE_BODY10_NAME",
+            "value": "Traje de comerciante"
         },
         {
             "key": "WARDROBE_BODY11_DESC",
             "value": "Terciopelo y bordados dignos de la corte real."
         },
         {
-            "key": "WARDROBE_BODY12_NAME",
-            "value": "Túnica de erudito"
+            "key": "WARDROBE_BODY11_NAME",
+            "value": "Vestido de noble"
         },
         {
             "key": "WARDROBE_BODY12_DESC",
             "value": "Bolsillos llenos de notas y manchas de tinta."
         },
         {
-            "key": "WARDROBE_BODY13_NAME",
-            "value": "Traje de bardo"
+            "key": "WARDROBE_BODY12_NAME",
+            "value": "Túnica de erudito"
         },
         {
             "key": "WARDROBE_BODY13_DESC",
             "value": "Colores vivos que llaman la atención en cualquier taberna."
         },
         {
-            "key": "WARDROBE_BODY14_NAME",
-            "value": "Sotana de sacerdote"
+            "key": "WARDROBE_BODY13_NAME",
+            "value": "Traje de bardo"
         },
         {
             "key": "WARDROBE_BODY14_DESC",
             "value": "Tela sobria bendecida en los templos del Sendero."
         },
         {
-            "key": "WARDROBE_BODY15_NAME",
-            "value": "Ropa de ladrón"
+            "key": "WARDROBE_BODY14_NAME",
+            "value": "Sotana de sacerdote"
         },
         {
             "key": "WARDROBE_BODY15_DESC",
             "value": "Tonos oscuros pensados para pasar desapercibido."
         },
         {
-            "key": "WARDROBE_BODY16_NAME",
-            "value": "Armadura ligera de guerrero"
+            "key": "WARDROBE_BODY15_NAME",
+            "value": "Ropa de ladrón"
         },
         {
             "key": "WARDROBE_BODY16_DESC",
             "value": "Placas ligeras que no sacrifican movilidad."
         },
         {
-            "key": "WARDROBE_BODY17_NAME",
-            "value": "Ropa de anciano"
+            "key": "WARDROBE_BODY16_NAME",
+            "value": "Armadura ligera de guerrero"
         },
         {
             "key": "WARDROBE_BODY17_DESC",
             "value": "Abrigada y cómoda, perfecta para los años de sabiduría."
         },
         {
-            "key": "WARDROBE_BODY18_NAME",
-            "value": "Delantal de panadero"
+            "key": "WARDROBE_BODY17_NAME",
+            "value": "Ropa de anciano"
         },
         {
             "key": "WARDROBE_BODY18_DESC",
             "value": "Huele siempre a pan recién hecho."
         },
         {
-            "key": "WARDROBE_BODY19_NAME",
-            "value": "Ropa de herbolario"
+            "key": "WARDROBE_BODY18_NAME",
+            "value": "Delantal de panadero"
         },
         {
             "key": "WARDROBE_BODY19_DESC",
             "value": "Múltiples bolsillos para guardar hierbas y remedios."
         },
         {
-            "key": "WARDROBE_BODY20_NAME",
-            "value": "Traje de fiesta"
+            "key": "WARDROBE_BODY19_NAME",
+            "value": "Ropa de herbolario"
         },
         {
             "key": "WARDROBE_BODY20_DESC",
             "value": "Reservado para las grandes celebraciones del pueblo."
         },
         {
-            "key": "ITEM_AC01_HEART_NAME",
-            "value": "Corazón"
+            "key": "WARDROBE_BODY20_NAME",
+            "value": "Traje de fiesta"
         },
         {
-            "key": "ITEM_AC01_HEART_DESC",
-            "value": "Un pequeño colgante con forma de corazón."
+            "key": "WARDROBE_CLOAK01_DESC",
+            "value": "Capa mágica que portan los magos más poderosos."
         },
         {
-            "key": "ITEM_AC02_LEAF_NAME",
-            "value": "Hoja"
+            "key": "WARDROBE_CLOAK01_NAME",
+            "value": "Capa de mago experto."
         },
         {
-            "key": "ITEM_AC02_LEAF_DESC",
-            "value": "Una hoja otoñal prendida como adorno."
+            "key": "WARDROBE_CLOAK02_DESC",
+            "value": "Capa mágica usada por magos que comienzan su aventura."
         },
         {
-            "key": "ITEM_AC03_BLACKGLASS_NAME",
-            "value": "Gafas Negras"
+            "key": "WARDROBE_CLOAK02_NAME",
+            "value": "Capa de mago de principiante."
         },
         {
-            "key": "ITEM_AC03_BLACKGLASS_DESC",
-            "value": "Gafas de cristal oscuro, ideales para pasar desapercibido."
+            "key": "WARDROBE_CLOAK03_DESC",
+            "value": "Capa mágica que portan los magos que dominan la magia."
         },
         {
-            "key": "ITEM_AC03_HEAVYMETALGLASS_NAME",
-            "value": "Gafas Heavy Metal"
+            "key": "WARDROBE_CLOAK03_NAME",
+            "value": "Capa de mago avanzado."
         },
         {
-            "key": "ITEM_AC03_HEAVYMETALGLASS_DESC",
-            "value": "Gafas con un aire rockero y rebelde."
+            "key": "WATER_ENTER_NEEDS",
+            "value": "Antes de entrar al agua, necesitas: "
         },
         {
-            "key": "ITEM_AC03_NERDGLASS_NAME",
-            "value": "Gafas de Empollón"
-        },
-        {
-            "key": "ITEM_AC03_NERDGLASS_DESC",
-            "value": "Gafas de pasta gruesa, muy intelectuales."
-        },
-        {
-            "key": "ITEM_AC03_NIGHTVISION_NAME",
-            "value": "Gafas de Visión Nocturna"
-        },
-        {
-            "key": "ITEM_AC03_NIGHTVISION_DESC",
-            "value": "Permiten ver mejor en la oscuridad... o eso parece."
-        },
-        {
-            "key": "ITEM_AC04_ANTHENAEARS_NAME",
-            "value": "Orejas de Antena"
-        },
-        {
-            "key": "ITEM_AC04_ANTHENAEARS_DESC",
-            "value": "Orejas con antenas, como de otro mundo."
-        },
-        {
-            "key": "ITEM_AC04_SHORTEARS_NAME",
-            "value": "Orejas Cortas"
-        },
-        {
-            "key": "ITEM_AC04_SHORTEARS_DESC",
-            "value": "Un par de orejas pequeñas y discretas."
-        },
-        {
-            "key": "ITEM_AC05_HORN01_NAME",
-            "value": "Cuerno Curvo"
-        },
-        {
-            "key": "ITEM_AC05_HORN01_DESC",
-            "value": "Un cuerno curvo, de aspecto demoníaco."
-        },
-        {
-            "key": "ITEM_AC05_HORN02_NAME",
-            "value": "Cuerno Recto"
-        },
-        {
-            "key": "ITEM_AC05_HORN02_DESC",
-            "value": "Un cuerno recto y afilado."
-        },
-        {
-            "key": "ITEM_AC05_HORN03_NAME",
-            "value": "Cuerno Doble"
-        },
-        {
-            "key": "ITEM_AC05_HORN03_DESC",
-            "value": "Dos pequeños cuernos gemelos."
-        },
-        {
-            "key": "ITEM_AC05_HORN04_NAME",
-            "value": "Cuerno de Dragón"
-        },
-        {
-            "key": "ITEM_AC05_HORN04_DESC",
-            "value": "Un imponente cuerno con forma de dragón."
-        },
-        {
-            "key": "ITEM_AC06_CROWN01_NAME",
-            "value": "Corona de Oro"
-        },
-        {
-            "key": "ITEM_AC06_CROWN01_DESC",
-            "value": "Una corona reluciente digna de la realeza."
-        },
-        {
-            "key": "ITEM_AC06_CROWN02_NAME",
-            "value": "Corona de Plata"
-        },
-        {
-            "key": "ITEM_AC06_CROWN02_DESC",
-            "value": "Una corona sobria de plata pulida."
-        },
-        {
-            "key": "ITEM_AC06_CROWN03_NAME",
-            "value": "Corona de Flores"
-        },
-        {
-            "key": "ITEM_AC06_CROWN03_DESC",
-            "value": "Una corona tejida con flores del Sendero."
-        },
-        {
-            "key": "ITEM_AC07_PIRATEPATCH_NAME",
-            "value": "Parche de Pirata"
-        },
-        {
-            "key": "ITEM_AC07_PIRATEPATCH_DESC",
-            "value": "Un parche que oculta un ojo... o un secreto."
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK01_NAME",
-            "value": "Máscara Ninja I"
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK01_DESC",
-            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK02_NAME",
-            "value": "Máscara Ninja II"
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK02_DESC",
-            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK03_NAME",
-            "value": "Máscara Ninja III"
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK03_DESC",
-            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK04_NAME",
-            "value": "Máscara Ninja IV"
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK04_DESC",
-            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK05_NAME",
-            "value": "Máscara Ninja V"
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK05_DESC",
-            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK06_NAME",
-            "value": "Máscara Ninja VI"
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK06_DESC",
-            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK07_NAME",
-            "value": "Máscara Ninja VII"
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK07_DESC",
-            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK08_NAME",
-            "value": "Máscara Ninja VIII"
-        },
-        {
-            "key": "ITEM_AC08_NINJAMASK08_DESC",
-            "value": "Una máscara oscura que oculta el rostro, perfecta para el sigilo."
-        },
-        {
-            "key": "ITEM_AC09_RIBBON_NAME",
-            "value": "Lazo"
-        },
-        {
-            "key": "ITEM_AC09_RIBBON_DESC",
-            "value": "Un lazo decorativo para dar un toque elegante."
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE01_NAME",
-            "value": "Bigote Clásico"
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE01_DESC",
-            "value": "Un bigote clásico, pulcro y bien peinado."
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE02_NAME",
-            "value": "Bigote Fino"
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE02_DESC",
-            "value": "Un bigote fino y discreto."
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE03_NAME",
-            "value": "Bigote Rizado"
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE03_DESC",
-            "value": "Un bigote con las puntas rizadas hacia arriba."
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE04_NAME",
-            "value": "Bigote Grueso"
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE04_DESC",
-            "value": "Un bigote grueso y frondoso."
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE05_NAME",
-            "value": "Bigote Elegante"
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE05_DESC",
-            "value": "Un bigote fino con un toque señorial."
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE06_NAME",
-            "value": "Bigote Extravagante"
-        },
-        {
-            "key": "ITEM_AC10_MUSTACHE06_DESC",
-            "value": "Un bigote enorme y muy llamativo."
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE01_NAME",
-            "value": "Bigote y Barba Corta"
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE01_DESC",
-            "value": "Un bigote combinado con una barba corta y cuidada."
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE02_NAME",
-            "value": "Bigote y Perilla"
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE02_DESC",
-            "value": "Un bigote combinado con perilla."
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE03_NAME",
-            "value": "Bigote y Barba Larga"
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE03_DESC",
-            "value": "Un bigote combinado con una barba larga y poblada."
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE04_NAME",
-            "value": "Bigote y Barba Trenzada"
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE04_DESC",
-            "value": "Un bigote combinado con una barba trenzada."
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE05_NAME",
-            "value": "Bigote Real"
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE05_DESC",
-            "value": "Un bigote y barba dignos de un rey."
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE06_NAME",
-            "value": "Bigote Mágico"
-        },
-        {
-            "key": "ITEM_AC11_MUSTACHE06_DESC",
-            "value": "Un bigote y barba con un extraño brillo arcano."
+            "key": "WOODS_EXIT_BLOCKED",
+            "value": "Debería hablar con ese guarda."
         }
     ]
 }

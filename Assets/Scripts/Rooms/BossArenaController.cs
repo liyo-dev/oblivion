@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using System.Collections.Generic;
 using UnityEngine.AI;
+using Game.NPC; // Necesario para NPCBehaviourManagerV2 (bosses basados en FSM, p.ej. Mago Oscuro)
 
 public class BossArenaController : MonoBehaviour
 {
@@ -60,8 +61,18 @@ public class BossArenaController : MonoBehaviour
     [Tooltip("Componente opcional para presentación cinemática del boss")]
     [SerializeField] private BossIntroPresentation bossIntroPresentation;
     
-    [Tooltip("Nombre del boss para mostrar en la presentación (ej: 'DEMONIO')")]
+    [Tooltip("ID de localización para el nombre del boss (ej: 'BOSS_DEMONIO_NAME'). Si está vacío, usa bossDisplayName.")]
+    [SerializeField] private string bossDisplayNameId;
+    [Tooltip("Nombre del boss para mostrar en la presentación (ej: 'DEMONIO'). Fallback si bossDisplayNameId no resuelve.")]
     [SerializeField] private string bossDisplayName = "DEMONIO";
+
+    /// <summary>Obtiene el nombre localizado del boss (usa bossDisplayNameId si está definido).</summary>
+    public string GetLocalizedBossName()
+    {
+        if (!string.IsNullOrEmpty(bossDisplayNameId) && LocalizationManager.Instance != null)
+            return LocalizationManager.Instance.Get(bossDisplayNameId, bossDisplayName);
+        return bossDisplayName;
+    }
 
     [Header("Refs")]
     public RoomGoal roomGoal;
@@ -479,7 +490,7 @@ public class BossArenaController : MonoBehaviour
         Debug.Log($"[BossArenaController] 📷 Cámara encontrada: '{bossCamera.name}' en boss '{boss.name}'");
         
         // Configurar y reproducir presentación
-        bossIntroPresentation.SetupBoss(boss.transform, bossCamera, bossDisplayName);
+        bossIntroPresentation.SetupBoss(boss.transform, bossCamera, GetLocalizedBossName());
         yield return StartCoroutine(bossIntroPresentation.PlayIntroduction());
         
         // Después de la presentación:
@@ -512,6 +523,35 @@ public class BossArenaController : MonoBehaviour
         {
             golemBossAI.canStartCombat = true;
             Debug.Log("[BossArenaController] Combate del boss (Golem) activado.");
+            return;
+        }
+
+        // Bosses basados en el FSM genérico NPCBehaviourManagerV2 (p.ej. Mago Oscuro, batalla final).
+        // A diferencia de ImpDemonAI/GolemBossAI (flag canStartCombat leído por su propio Update),
+        // NPCBehaviourManagerV2 expone EnterCombat() como entrada directa: registra el NPC en
+        // ActiveCombatRegistry y fuerza el cambio a CombatState de inmediato.
+        var npcManager = boss.GetComponent<NPCBehaviourManagerV2>();
+        if (npcManager != null)
+        {
+            // FIX (ronda 16): mientras el boss permanezca en su layer ambiente "Interactable",
+            // los hechizos lanzados por aliados (p.ej. Estela) nunca le hacen daño: MagicProjectileSpawner
+            // calcula hitLayers = LayerMask.GetMask("Enemy", "Boss") y MagicProjectil.ResolveHit() descarta
+            // en silencio (sin log) cualquier impacto cuyo layer no esté en esa máscara. NPCCombatLifecycleHandler
+            // ya revierte a "Interactable" al terminar el combate (SetupPostCombatInteraction), así que aquí
+            // hacemos el cambio simétrico de entrada a combate.
+            int enemyLayer = LayerMask.NameToLayer("Enemy");
+            if (enemyLayer != -1)
+            {
+                boss.layer = enemyLayer;
+                Debug.Log("[BossArenaController] Layer del boss cambiado a 'Enemy' para permitir recibir daño.");
+            }
+            else
+            {
+                Debug.LogWarning("[BossArenaController] No se encontró el layer 'Enemy' en el proyecto; el boss podría no recibir daño.");
+            }
+
+            npcManager.EnterCombat();
+            Debug.Log("[BossArenaController] Combate del boss (NPCBehaviourManagerV2) activado.");
             return;
         }
         

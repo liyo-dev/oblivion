@@ -871,6 +871,11 @@ public class GameBootProfile : ScriptableObject
         return preset.npcPositions.Count;
     }
 
+    // FIX INC-028: segundos de margen de gracia tras restaurar la posición/rotación
+    // persistida de un NPC (ver ApplyNpcPositionsToScene) durante los que FollowPlayerState
+    // ignora la distancia al jugador y no lo pone a caminar.
+    private const float NpcFollowGraceAfterLoadSeconds = 1.5f;
+
     /// <summary>
     /// Aplica las posiciones de NPC guardadas en el preset a los NPCs presentes en la escena actual.
     /// </summary>
@@ -979,6 +984,33 @@ public class GameBootProfile : ScriptableObject
                     npc.transform.rotation = entry.rotation;
                     if (agent != null && agent.isOnNavMesh)
                         agent.nextPosition = npc.transform.position;
+
+                    // FIX INC-028: NPCSimpleAnimator cachea su propio objetivo de rotación suave
+                    // (_targetRotation) una sola vez en Awake(), con la rotación que el NPC tiene
+                    // en la escena en ESE momento (normalmente antes de que este método se
+                    // ejecute). Sin resincronizarlo aquí, ApplySmoothRotation() lo arrastra en los
+                    // siguientes frames de vuelta hacia esa rotación de escena por defecto — y como
+                    // SyncWithNavMeshAgent() no actualiza el objetivo mientras el agente está
+                    // parado/sin path, un NPC quieto (p.ej. Eldran esperando fuera de la taberna
+                    // tras el bosque prohibido) se queda visualmente con la rotación equivocada de
+                    // forma indefinida, aunque el transform.rotation de arriba se haya aplicado bien.
+                    npc.GetComponent<NPCSimpleAnimator>()?.SyncTargetRotation();
+
+                    // FIX INC-028 (continuación): SyncTargetRotation() arregla el objetivo de
+                    // rotación suave, pero FollowPlayerState puede seguir pisándolo en el
+                    // mismísimo frame siguiente: el jugador se restaura solo a un ancla
+                    // aproximada (PlayerSaveData no guarda su Vector3/Quaternion exacto), así
+                    // que casi siempre queda a más de `stopDist` de este NPC nada más cargar,
+                    // y FollowPlayerState.OnUpdate() empieza a mover al NPC hacia él de
+                    // inmediato — NPCSimpleAnimator.SyncWithNavMeshAgent() gira entonces el NPC
+                    // hacia la dirección de marcha en cuanto agent.velocity > 0, sustituyendo
+                    // la rotación recién restaurada antes de que llegue a verse en pantalla.
+                    // Se concede un margen de gracia breve (ver NPCStateContext.FollowGraceUntil
+                    // y el check equivalente en FollowPlayerState.OnUpdate) durante el cual el
+                    // NPC se mantiene quieto pase lo que pase con la distancia al jugador, dando
+                    // tiempo a que la cámara/el jugador vean la pose restaurada antes de que
+                    // el NPC arranque a caminar hacia él con normalidad.
+                    npc.Context.FollowGraceUntil = Time.time + NpcFollowGraceAfterLoadSeconds;
                 }
 
                 // Aplicar estado activo si se guardó

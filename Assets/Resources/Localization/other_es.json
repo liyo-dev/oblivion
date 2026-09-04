@@ -1,72 +1,12 @@
 {
     "texts": [
         {
-            "key": "FORAGE_CAUGHT",
-            "value": "¡Casi me pillan!"
-        },
-        {
-            "key": "FORAGE_COUNTER",
-            "value": "Provisiones: {0}/{1}"
-        },
-        {
-            "key": "FORAGE_INSTRUCTION",
-            "value": "Acércate a cada puesto y pulsa <sprite name=\"interactable_A\"> para coger algo.\n\n¡Ojo! Si hay alguien mirando, tendrás que esperar.\n\nEstela se mueve muy despacio. No llames la atención."
-        },
-        {
-            "key": "FORAGE_LOSE",
-            "value": "¡Me han pillado!"
-        },
-        {
-            "key": "FORAGE_MONOLOGUE_01",
-            "value": "Sin dinero… Sin dinero… ¡Sin un maldito cobre!"
-        },
-        {
-            "key": "FORAGE_MONOLOGUE_02",
-            "value": "Bueno… tampoco es robar del todo. Es más bien… redistribuir los recursos."
-        },
-        {
-            "key": "FORAGE_MONOLOGUE_03",
-            "value": "Solo tengo que pillar algo de cada puesto sin que me vean. Fácil. Soy invisible cuando quiero."
-        },
-        {
-            "key": "FORAGE_MONOLOGUE_NEXT",
-            "value": "Pulsa <sprite name=\"interactable_A\"> para continuar"
-        },
-        {
-            "key": "FORAGE_MONOLOGUE_START",
-            "value": "Pulsa <sprite name=\"interactable_A\"> para ver instrucciones"
-        },
-        {
-            "key": "FORAGE_NPC_NEARBY",
-            "value": "Espera... hay alguien mirando."
-        },
-        {
-            "key": "FORAGE_START_PROMPT",
-            "value": "Pulsa <sprite name=\"interactable_A\"> para empezar"
-        },
-        {
-            "key": "FORAGE_WIN",
-            "value": "¡Hecho! Nadie me ha visto... creo."
-        },
-        {
-            "key": "MINIGAME_CAUGHT_MESSAGE",
-            "value": "¡Te atraparon!"
-        },
-        {
             "key": "MINIGAME_ESCAPE",
             "value": "¡Sal del Reino!"
         },
         {
             "key": "MINIGAME_OBJECTIVE_FORMAT",
             "value": "Protegidos: {0}/{1}"
-        },
-        {
-            "key": "MINIGAME_PROTECT_NPC",
-            "value": "¡Protegido! {0}/{1}"
-        },
-        {
-            "key": "MINIGAME_START_MESSAGE",
-            "value": "¡CORRE!"
         },
         {
             "key": "MINIGAME_TAG_EXIT_HINT",
@@ -77,20 +17,12 @@
             "value": "¡Estela está enfadada!\nEvita que te atrape durante el tiempo indicado.\n\nPulsa {SPRINT} para sprintar.\n\nAcércate a la gente del Reino y pulsa el botón que aparezca sobre ellos para protegerlos.\n\nPulsa <sprite name=\"interactable_confirm\"> para comenzar"
         },
         {
-            "key": "MINIGAME_TAG_START_PROMPT",
-            "value": "Pulsa <sprite name=\"interactable_confirm\"> para comenzar"
-        },
-        {
             "key": "MINIGAME_TASK",
             "value": " Pulsa {SPRINT}  para sprintar y protege a la gente del Reino."
         },
         {
-            "key": "MINIGAME_TIME_FAILED",
-            "value": "¡Se acabó el tiempo! "
-        },
-        {
-            "key": "MINIGAME_WIN",
-            "value": "¡Escapaste!"
+            "key": "NIGHTMARE_AGAIN",
+            "value": "Otra vez esa pesadilla."
         },
         {
             "key": "TUTORIAL_MOVE_INSPECT",
@@ -99,10 +31,6 @@
         {
             "key": "TUTORIAL_WAKE_UP",
             "value": "Pulsa {BOTON} para despertar a Will"
-        },
-        {
-            "key": "NIGHTMARE_AGAIN",
-            "value": "Otra vez esa pesadilla."
         }
     ]
 }

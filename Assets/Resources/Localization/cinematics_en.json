@@ -9,48 +9,16 @@
             "text": "Here, our hero Will lives."
         },
         {
-            "id": "CH1_03",
-            "text": "His neighbor is named Eldran, and he has taken care of him since he was little."
-        },
-        {
             "id": "CH1_04",
             "text": "There's a letter on the table... What might it contain?"
         },
         {
-            "id": "CIV_01",
-            "text": "So... the star has finally awakened."
+            "id": "ESTELA_EXPLAINS_EPILOGUE",
+            "text": "Before he destroyed the Path, he used the forbidden spell of resurrection.\nThat's why you're alive. That's why... he's gone."
         },
         {
-            "id": "CIV_02",
-            "text": "The first step is complete..."
-        },
-        {
-            "id": "EVT_01",
-            "text": "Will arrives with the fruit box."
-        },
-        {
-            "id": "EVT_02",
-            "text": "Suddenly, he senses something."
-        },
-        {
-            "id": "EVT_03",
-            "text": "A fireball is heading towards them."
-        },
-        {
-            "id": "EVT_04",
-            "text": "Will closes his eyes and unknowingly unleashes powerful magic."
-        },
-        {
-            "id": "EVT_05",
-            "text": "And a fireball shoots from his hands, completely deflecting the projectile."
-        },
-        {
-            "id": "EVT_06",
-            "text": "Will is confused about what just happened when suddenly..."
-        },
-        {
-            "id": "EVT_07",
-            "text": "The ground trembles and a dark figure emerges amid smoke and fire: a demon."
+            "id": "ESTELA_PROTEST_PORTAL",
+            "text": "Will, what are you doing? Get out of there!"
         },
         {
             "id": "EVT_08",
@@ -81,10 +49,6 @@
             "text": "Take that!"
         },
         {
-            "id": "EVT_AWAKEN_04",
-            "text": "No... this can't be!"
-        },
-        {
             "id": "EVT_AWAKEN_05",
             "text": "What... what was that?"
         },
@@ -103,38 +67,6 @@
         {
             "id": "EVT_ELDRAN_CHEER_03",
             "text": "Don't give up! Finish it once and for all!"
-        },
-        {
-            "id": "EVT_ESTELA_01",
-            "text": "The spiders thought they had cornered a helpless prey. They didn't know they had just locked themselves in with Estela."
-        },
-        {
-            "id": "EVT_ESTELA_02",
-            "text": "With a defiant smile, Estela unleashed her true power."
-        },
-        {
-            "id": "EVT_ESTELA_03",
-            "text": "With a mischievous wink and a satisfied grin, Estela looked upon her work. Not a single spider was left standing."
-        },
-        {
-            "id": "EVT_ESTELA_APP_01",
-            "text": "ESTELA: Out of my way!"
-        },
-        {
-            "id": "EVT_ESTELA_APP_02",
-            "text": "ESTELA: Spiders? How disappointing."
-        },
-        {
-            "id": "EVT_ESTELA_APP_03",
-            "text": "ESTELA: Take that!"
-        },
-        {
-            "id": "EVT_ESTELA_APP_04",
-            "text": "ESTELA: You have no idea who you're dealing with."
-        },
-        {
-            "id": "EVT_ESTELA_APP_05",
-            "text": "ESTELA: There goes the last one!"
         },
         {
             "id": "EVT_ESTELA_ARAÑA_1",
@@ -169,34 +101,6 @@
             "text": "That fool is going to ruin my plans..."
         },
         {
-            "id": "EVT_GOLEM_02",
-            "text": "LIAM: Let's see if she's as strong as they say..."
-        },
-        {
-            "id": "EVT_GOLEM_END_01",
-            "text": "Estela: Hmph. Just as I predicted. The explosion trajectory was perfect."
-        },
-        {
-            "id": "EVT_GOLEM_END_02",
-            "text": "Estela: I had it all calculated."
-        },
-        {
-            "id": "EVT_GOLEM_END_03",
-            "text": "Will: Calculated? You tripped before shooting! Just admit it..."
-        },
-        {
-            "id": "EVT_GOLEM_END_04",
-            "text": "Will: It was a miracle we didn't end up as mush."
-        },
-        {
-            "id": "EVT_GOLEM_END_05",
-            "text": "Liam (from the shadows): That sorceress is an unforeseen problem in my equation."
-        },
-        {
-            "id": "EVT_GOLEM_END_06",
-            "text": "Liam: The Golem has failed. If I want the boy to reach the end, I'll have to guide him myself."
-        },
-        {
             "id": "EVT_LIAM_CRYSTAL_01",
             "text": "So… that's the pure-hearted boy who will open the Path."
         },
@@ -219,10 +123,6 @@
         {
             "id": "EVT_MOUNTAIN_01",
             "text": "Nobody interrupts me while I'm eating!"
-        },
-        {
-            "id": "EVT_MOUNTAIN_02",
-            "text": "So take this!"
         },
         {
             "id": "EVT_MOUNTAIN_ELDRAN_RUN",
@@ -293,42 +193,6 @@
             "text": "WHAT?!"
         },
         {
-            "id": "EVT_TABERNA_01",
-            "text": "Eldran, Will, and Estela discuss what happened and try to find a solution..."
-        },
-        {
-            "id": "EVT_TABERNA_02",
-            "text": "When suddenly, Estela's stomach growled ferociously."
-        },
-        {
-            "id": "EVT_TABERNA_03",
-            "text": "The food finally arrives, and our heroes prepare to eat."
-        },
-        {
-            "id": "EVT_TABERNA_04",
-            "text": "Estela does it in a rather... unique way..."
-        },
-        {
-            "id": "EVT_TABERNA_05",
-            "text": "Eldran and Will, shocked by Estela's eating manners, lose their appetite."
-        },
-        {
-            "id": "EVT_TABERNA_06",
-            "text": "At that moment, Liam approaches, having eavesdropped on the conversation from afar."
-        },
-        {
-            "id": "EVT_TABERNA_07",
-            "text": "He tries to tell the group something, but catches the attention of Estela, who could only think about food at that moment."
-        },
-        {
-            "id": "EVT_TABERNA_08",
-            "text": "Furious about the interruption, Estela conjures a fireball."
-        },
-        {
-            "id": "EVT_TABERNA_09",
-            "text": "The three of them are caught completely off guard..."
-        },
-        {
             "id": "EVT_TABERNA_10",
             "text": "Run! Flee from Estela until her anger blows over!"
         },
@@ -353,8 +217,64 @@
             "text": "Good grief..."
         },
         {
-            "id": "EVT_WILL_POST_GOLEM",
-            "text": "Did you see that, Estela? Now a golem! This has never happened before... Run, let's get back to Eldran!"
+            "id": "LIAM_LAST_WORDS",
+            "text": "Take care of my brother."
+        },
+        {
+            "id": "MAGOOSCURO_MONOLOGUE",
+            "text": "Why do you think you're alive, boy?\nHave you never wondered why you remember nothing of yourself, or your past?\nI'll tell you why — you remember nothing of yourself, your family, or your village,\nbecause eons ago you died fighting me.\nYou died that day. You are the reincarnation of the only mage who ever managed to stop me!\nYou forced me to unleash my ultimate spell of destruction, but back then I couldn't control it.\nWhen it all slipped beyond my grasp, I bound my soul to the Path,\nwaiting for the day some other fool would clear its trials\nand wish me back to life.\nTo keep the spell from touching your family and your pitiful village,\nyou poured every last drop of magic inside you into a protective spell —\none that saved your people, but destroyed you.\nWhat I don't understand is how, after dying, you're still here…"
+        },
+        {
+            "id": "TIME_SPELL_TUTORIAL",
+            "text": "Forbidden Spell: Temporal Regression!\nTurn back time... and this time, dodge it."
+        },
+        {
+            "id": "VOICE_VISION_EXPLANATION",
+            "text": "Your magic, in the moment of your death,\nsearched through time and space\nfor a vessel to hold your soul.\nYour wish to protect your people, your family,\nto end that man's tyranny,\nled you to a sick boy\nwhose heart had just stopped beating,\nright as your soul arrived."
+        },
+        {
+            "id": "VOICE_VISION_MUST_END_SENDERO",
+            "text": "You must end the Path.\nThere is no other way to stop mages like him\nfrom using this place for their own gain, ever again."
+        },
+        {
+            "id": "VOICE_VISION_PROTECT_THEM",
+            "text": "You must protect them.\nThem, and all of humanity that comes after.\nOnly then will you truly prove, once and for all, who you really are."
+        },
+        {
+            "id": "VOICE_VISION_REASSURANCE",
+            "text": "No, Will. You are here, and there.\nYou are wherever you want to be.\nThis is only your power, your magic,\nthe fruit of the good you have done throughout your life."
+        },
+        {
+            "id": "WILL_CALM_REPLY",
+            "text": "It's all right, Estela. Don't worry... I've got it all figured out."
+        },
+        {
+            "id": "WILL_FAREWELL",
+            "text": "Take care of each other. I've already made it home."
+        },
+        {
+            "id": "WILL_FINAL_WISH",
+            "text": "Heal his brother. That's the only thing I ask."
+        },
+        {
+            "id": "WILL_FLASHBACK_REVELATION",
+            "text": "Now... now I remember it all.\nThe protective spell. My parents. My village…\nBut what am I doing here? How is this possible? And in this body…"
+        },
+        {
+            "id": "WILL_VISION_AM_I_DEAD",
+            "text": "Have I gotten my memory back… and I'm dead?"
+        },
+        {
+            "id": "WILL_VISION_THEN_I",
+            "text": "Then I…"
+        },
+        {
+            "id": "WILL_VISION_WHAT_ABOUT_FRIENDS",
+            "text": "Destroy the Path… What about Estela? And Liam?"
+        },
+        {
+            "id": "WILL_VISION_WHERE_AM_I",
+            "text": "Where am I?"
         }
     ]
 }

@@ -1381,9 +1381,79 @@ public class DialogueManager : MonoBehaviour
     private void ActivateSpeakerTalkAnimation(DialogueLine line)
     {
         // Determinar quién está hablando
-        string speakerId = !string.IsNullOrEmpty(line.speakerNameId) ? line.speakerNameId : 
+        string speakerId = !string.IsNullOrEmpty(line.speakerNameId) ? line.speakerNameId :
                           line.isPlayerSpeaking ? "Player" : "MainNPC";
         bool speakerIsPlayer = line.isPlayerSpeaking || speakerId == "Player";
+
+        // FIX "el personaje activo se vuelve invisible al hablar" (mismo bug ya corregido para la
+        // cámara/mirada grupal en DialogueCinematicController.FindSpeakerTransform, ver su propio
+        // comentario): las líneas de diálogo están escritas asumiendo un player fijo, así que un
+        // personaje como Liam o Estela siempre trae isPlayerSpeaking=false, incluso cuando en esa
+        // partida concreta lo está controlando el jugador. Si speakerId identifica al party member
+        // que ActiveCharacterSwapper tiene oculto ahora mismo (el jugador YA representa físicamente
+        // a ese personaje), el hablante real y visible es el player, no ese NPCPartyMember con los
+        // renderers apagados — sin esto, la animación de hablar se dispara sobre un cuerpo invisible
+        // y el que se ve en pantalla se queda en Idle.
+        // 'promotedFromHiddenDecoy' distingue POR QUÉ speakerIsPlayer es true: true real (línea de
+        // Will, o speakerId=="Player") vs. promovida aquí abajo porque el speaker es el party member
+        // que ActiveCharacterSwapper tiene oculto (Liam/Estela siendo controlados). Sin esta
+        // distinción, el guard de "línea de Will" de más abajo no podía diferenciar ambos casos y
+        // secuestraba también las líneas propias de Liam/Estela — INC-147, ver commit de hoy.
+        bool promotedFromHiddenDecoy = false;
+        if (!speakerIsPlayer && ActiveCharacterSwapper.Instance != null)
+        {
+            var hiddenNpc = ActiveCharacterSwapper.Instance.HiddenNpc;
+            if (hiddenNpc != null && hiddenNpc.NPCManager != null)
+            {
+                var hiddenMgr = hiddenNpc.NPCManager;
+                bool isHiddenSpeaker = (!string.IsNullOrEmpty(hiddenMgr.DialogueCharacterId) && hiddenMgr.DialogueCharacterId == speakerId)
+                    || hiddenMgr.PersistenceId == speakerId
+                    || hiddenNpc.gameObject.name == speakerId;
+                if (isHiddenSpeaker)
+                {
+                    speakerIsPlayer = true;
+                    promotedFromHiddenDecoy = true;
+                }
+            }
+        }
+
+        // FIX (1 sep 2026, INC-136/INC-138 seguimiento) "línea de Will anima al personaje físico
+        // controlado en vez de a Will": las líneas marcadas isPlayerSpeaking (o speakerId=="Player")
+        // están escritas asumiendo que Will ES el player — igual que el fix de más arriba asume que
+        // un NPC con el DialogueCharacterId del personaje activo oculto es en realidad el player.
+        // Pero cuando el player físico está controlando a Liam o Estela, Will deja de ser ese cuerpo:
+        // pasa a ser un NPCPartyMember visible aparte (ActiveCharacterSwapper.WillNpcInstance, no
+        // nulo exactamente en ese caso — ver SwitchCharacter() paso 6, "instanciar al alejarse de
+        // Will, destruir al volver"). Sin este guard, SetPlayerTalkingAnimation() animaba el cuerpo
+        // físico controlado (p.ej. Liam) para una línea que en pantalla se atribuye a Will.
+        //
+        // FIX (1 sep 2026, INC-147) "'!promotedFromHiddenDecoy' añadido": este guard usaba solo
+        // 'speakerIsPlayer', así que también disparaba para la propia línea de Liam/Estela cuando
+        // el fix de arriba la promociona a speakerIsPlayer=true (ella siendo el hidden decoy). Eso
+        // secuestraba la animación de Estela/Liam y la redirigía a Will, dejando al personaje
+        // realmente hablando (visible en pantalla) en Idle. Repro: hablar con el Rey controlando a
+        // Estela — su línea "Ya verás cuando te pille" animaba a Will en vez de a ella.
+        if (speakerIsPlayer && !promotedFromHiddenDecoy && ActiveCharacterSwapper.Instance != null && ActiveCharacterSwapper.Instance.WillNpcInstance != null)
+        {
+            var willAnimator = ActiveCharacterSwapper.Instance.WillNpcInstance.GetComponent<NPCSimpleAnimator>();
+            if (willAnimator != null)
+            {
+                if (!_activeDialogueSpeakerIsPlayer && _activeDialogueSpeakerAnimator == willAnimator)
+                {
+                    willAnimator.SetTalking(true);
+                    willAnimator.PlayBodyEmotion(line.emotion);
+                    return;
+                }
+
+                ClearActiveSpeakerAnimations();
+                willAnimator.BeginInteraction();
+                willAnimator.SetTalking(true);
+                willAnimator.PlayBodyEmotion(line.emotion);
+                _activeDialogueSpeakerAnimator = willAnimator;
+                if (verboseLogging) Debug.Log("[DialogueManager] 🗣️ Speaker 'Will (NPC)' activado -- el controller físico es otro personaje");
+                return;
+            }
+        }
 
         if (speakerIsPlayer)
         {

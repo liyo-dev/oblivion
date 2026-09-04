@@ -120,6 +120,18 @@ public class AbilityUnlockPopupUI : MonoBehaviour, ISceneBoundUIHideGuard
 
     private void HandleAbilityUnlockedKey(AbilityKey key)
     {
+        // FIX 4 sep 2026 (petición de Raúl: "cuando hablo con Erika esta saliendo en el pop up lo
+        // del escudo y dijimos de quitarlo"): el Escudo se desbloquea automáticamente en el mismo
+        // instante que Bola Prisma, justo al ganar la batalla con Erika (ver
+        // PlayerShieldController.OnSpellUnlocked, INC-078). El desbloqueo funcional NO cambia (el
+        // jugador sigue obteniendo la protección de inmediato) — solo se suprime el popup de
+        // anuncio para esta habilidad en concreto, que Raúl ya había pedido quitar.
+        if (key == AbilityKey.Shield)
+        {
+            GameLog.Log("AbilityUnlockPopupUI", "Evento recibido: AbilityUnlockedKey(Shield) — popup suprimido a propósito (ver fix 4 sep 2026).");
+            return;
+        }
+
         GameLog.Log("AbilityUnlockPopupUI", $"Evento recibido: AbilityUnlockedKey({key})");
         _pendingAbilityKey = key;
         _pendingAbility = null;
@@ -169,7 +181,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour, ISceneBoundUIHideGuard
             MarkFlag(flag);
             SetTexts(p.title, p.description, p.icon);
         }
-        else
+        else if (_pendingSpell != null)
         {
             string flag = GetSpellFlag(_pendingSpell.Value);
             if (HasSeenFlag(flag))
@@ -181,6 +193,10 @@ public class AbilityUnlockPopupUI : MonoBehaviour, ISceneBoundUIHideGuard
             var p = SpellPresentationLookup.Resolve(_pendingSpell.Value, spellPresentations);
             MarkFlag(flag);
             SetTexts(p.title, p.description, p.icon);
+        }
+        else
+        {
+            return;
         }
 
         if (SceneBoundUI.IsBossIntroActive)

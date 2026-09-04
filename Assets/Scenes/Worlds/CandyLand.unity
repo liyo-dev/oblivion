@@ -28855,7 +28855,7 @@ GameObject:
   m_Component:
   - component: {fileID: 404895239}
   m_Layer: 0
-  m_Name: //WORLD
+  m_Name: WORLD
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -30292,7 +30292,7 @@ GameObject:
   m_Component:
   - component: {fileID: 431005953}
   m_Layer: 0
-  m_Name: $CONFIG
+  m_Name: CONFIG
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -44107,27 +44107,27 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 9171980722928935, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 206955243820471005, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 238272532394400607, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2052766923886183289, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3032424197757487374, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3714833892687663537, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4909843728885285984, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_Name
@@ -44135,19 +44135,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5254754835644330641, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6673899346828621514, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -39.23088
+      value: 92.4
       objectReference: {fileID: 0}
     - target: {fileID: 6673899346828621514, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.20001
+      value: 14.5
       objectReference: {fileID: 0}
     - target: {fileID: 6673899346828621514, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 26.34182
+      value: 222.7
       objectReference: {fileID: 0}
     - target: {fileID: 6673899346828621514, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_LocalRotation.w
@@ -44155,15 +44155,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6673899346828621514, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6673899346828621514, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6673899346828621514, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6673899346828621514, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -44179,23 +44179,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7501852539256436559, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7612423805484779947, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7947486230458501707, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8136900788614217912, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8872017054573630166, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9089431727824238727, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -63793,7 +63797,7 @@ GameObject:
   m_Component:
   - component: {fileID: 961567648}
   m_Layer: 0
-  m_Name: '%SAVE POINTS'
+  m_Name: SAVE POINTS
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -64990,7 +64994,7 @@ GameObject:
   m_Component:
   - component: {fileID: 981071325}
   m_Layer: 0
-  m_Name: ///Teleports
+  m_Name: Teleports
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -76039,15 +76043,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2579269338894335740, guid: de7b566c44b3b6949964c333227535b2, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 46.37
+      value: 92.4
       objectReference: {fileID: 0}
     - target: {fileID: 2579269338894335740, guid: de7b566c44b3b6949964c333227535b2, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.87
+      value: 14.5
       objectReference: {fileID: 0}
     - target: {fileID: 2579269338894335740, guid: de7b566c44b3b6949964c333227535b2, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 54.01
+      value: 222.7
       objectReference: {fileID: 0}
     - target: {fileID: 2579269338894335740, guid: de7b566c44b3b6949964c333227535b2, type: 3}
       propertyPath: m_LocalRotation.w
@@ -77284,6 +77288,7 @@ MonoBehaviour:
   anchorIdOverride: CandyLand
   displayNameOverride: ChucheLandia
   autoUnlockOnEnter: 1
+  requiredDefeatedBossId: 
 --- !u!65 &1150733775
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -77359,6 +77364,7 @@ MonoBehaviour:
   OnConsumed:
     m_PersistentCalls:
       m_Calls: []
+  defaultSightHeight: 1.4
 --- !u!199 &1150733777
 ParticleSystemRenderer:
   serializedVersion: 7
@@ -82275,7 +82281,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1151182868}
   m_Layer: 0
-  m_Name: '!AI'
+  m_Name: AI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -97334,6 +97340,11 @@ MonoBehaviour:
   timeSettings:
   - timeOfDay: 6
     skybox: {fileID: 2100000, guid: 9991b6265f7f87d43b7e3c676739f203, type: 2}
+    skyboxTint: {r: 1, g: 1, b: 1, a: 1}
+    skyboxIntensity: 1
+    skyboxExponent: 1
+    skyboxDirectionYaw: 0
+    skyboxDirectionPitch: 0
     lightColor: {r: 1, g: 1, b: 1, a: 1}
     lightIntensity: 1.2
     sunRotationX: 50
@@ -97343,25 +97354,13 @@ MonoBehaviour:
     fogColor: {r: 0.68, g: 0.78, b: 0.92, a: 1}
     fogDensity: 0.008
     duration: 120
-    forceRain: 0
-    rainChance: 0
-    fogChance: 0
-  - timeOfDay: 1
-    skybox: {fileID: 2100000, guid: 0b846be1b116429409a7669cacf2a62e, type: 2}
-    lightColor: {r: 1, g: 1, b: 1, a: 1}
-    lightIntensity: 1.4
-    sunRotationX: 60
-    sunRotationY: 120
-    ambientColor: {r: 0.38, g: 0.37, b: 0.33, a: 1}
-    ambientIntensity: 1
-    fogColor: {r: 0.88, g: 0.9, b: 0.92, a: 1}
-    fogDensity: 0.005
-    duration: 90
-    forceRain: 0
-    rainChance: 0
-    fogChance: 0
   - timeOfDay: 0
     skybox: {fileID: 2100000, guid: 1cf32c17fea93ef4fb120e8e0cdfbef1, type: 2}
+    skyboxTint: {r: 1, g: 1, b: 1, a: 1}
+    skyboxIntensity: 1
+    skyboxExponent: 1
+    skyboxDirectionYaw: 0
+    skyboxDirectionPitch: 0
     lightColor: {r: 1, g: 1, b: 1, a: 1}
     lightIntensity: 1.3
     sunRotationX: 80
@@ -97371,25 +97370,13 @@ MonoBehaviour:
     fogColor: {r: 0.85, g: 0.85, b: 0.85, a: 1}
     fogDensity: 0.004
     duration: 120
-    forceRain: 0
-    rainChance: 0
-    fogChance: 0
-  - timeOfDay: 3
-    skybox: {fileID: 2100000, guid: 82b660520bdecce4daf45d270ec93fe4, type: 2}
-    lightColor: {r: 1, g: 1, b: 1, a: 1}
-    lightIntensity: 0.9
-    sunRotationX: 100
-    sunRotationY: 210
-    ambientColor: {r: 0.36, g: 0.28, b: 0.22, a: 1}
-    ambientIntensity: 0.85
-    fogColor: {r: 0.78, g: 0.65, b: 0.52, a: 1}
-    fogDensity: 0.009
-    duration: 60
-    forceRain: 0
-    rainChance: 0
-    fogChance: 0
   - timeOfDay: 8
     skybox: {fileID: 2100000, guid: ac2eeb98f1b423941b373f537bc56e18, type: 2}
+    skyboxTint: {r: 1, g: 1, b: 1, a: 1}
+    skyboxIntensity: 1
+    skyboxExponent: 1
+    skyboxDirectionYaw: 0
+    skyboxDirectionPitch: 0
     lightColor: {r: 1, g: 1, b: 1, a: 1}
     lightIntensity: 0.6
     sunRotationX: 110
@@ -97399,11 +97386,13 @@ MonoBehaviour:
     fogColor: {r: 0.9, g: 0.55, b: 0.3, a: 1}
     fogDensity: 0.013
     duration: 45
-    forceRain: 0
-    rainChance: 0
-    fogChance: 0
   - timeOfDay: 7
     skybox: {fileID: 2100000, guid: 493bfb50af5d9424da505ba945c86600, type: 2}
+    skyboxTint: {r: 1, g: 1, b: 1, a: 1}
+    skyboxIntensity: 1
+    skyboxExponent: 1
+    skyboxDirectionYaw: 0
+    skyboxDirectionPitch: 0
     lightColor: {r: 1, g: 1, b: 1, a: 1}
     lightIntensity: 0.3
     sunRotationX: 140
@@ -97413,30 +97402,14 @@ MonoBehaviour:
     fogColor: {r: 0.08, g: 0.08, b: 0.18, a: 1}
     fogDensity: 0.016
     duration: 90
-    forceRain: 0
-    rainChance: 0
-    fogChance: 0
-  - timeOfDay: 5
-    skybox: {fileID: 2100000, guid: 97637a2a763b7f24b8da4e139e4144ca, type: 2}
-    lightColor: {r: 1, g: 1, b: 1, a: 1}
-    lightIntensity: 0.2
-    sunRotationX: 180
-    sunRotationY: 355
-    ambientColor: {r: 0.04, g: 0.04, b: 0.1, a: 1}
-    ambientIntensity: 0.3
-    fogColor: {r: 0.04, g: 0.04, b: 0.1, a: 1}
-    fogDensity: 0.022
-    duration: 60
-    forceRain: 0
-    rainChance: 0
-    fogChance: 0
-  directionalLight: {fileID: 1449852867}
-  transitionDuration: 10
+  sharedSkyboxMaterial: {fileID: 0}
+  directionalLight: {fileID: 0}
+  transitionDuration: 16
   useSmoothTransitions: 1
   controlAmbientLight: 1
   controlFog: 1
-  rainPrefab: {fileID: 3292688598545588766, guid: 1b7e584853e241a1956d417c4436d159, type: 3}
-  rainLastsWholePeriod: 0
+  rainPrefab: {fileID: 0}
+  rainDurationRange: {x: 40, y: 100}
   rainFadeOutTime: 3
   stormSkybox: {fileID: 0}
   rainLightIntensityMultiplier: 0.55
@@ -97446,16 +97419,37 @@ MonoBehaviour:
   rainMinLightIntensity: 0.28
   rainDarkenTransitionDuration: 4
   mistPrefab: {fileID: 0}
-  mistLastsWholePeriod: 0
   mistDurationRange: {x: 20, y: 45}
   mistFadeOutTime: 4
   mistFogDensityMultiplier: 4
   mistTransitionDuration: 8
+  windPrefab: {fileID: 0}
+  windDurationRange: {x: 30, y: 90}
+  windFadeOutTime: 3
+  thunderstormLightningIntervalRange: {x: 8, y: 22}
+  thunderstormFlashIntensity: 3.5
+  thunderstormFlashDuration: 0.12
+  thunderstormThunderDelayRange: {x: 0.3, y: 1.8}
+  thunderstormBoltHeight: 220
+  thunderstormBoltDistanceRange: {x: 18, y: 55}
+  thunderstormBoltWidth: 1.4
+  thunderstormBoltColor: {r: 2.2, g: 2.3, b: 2.7, a: 1}
+  thunderstormBoltSegments: 7
+  thunderstormBoltJitter: 7
+  thunderstormBoltVisibleDuration: 0.3
+  weatherCheckIntervalRange: {x: 45, y: 110}
+  thunderstormChancePerCheck: 0.05
+  rainChancePerCheck: 0.18
+  windChancePerCheck: 0.15
+  mistChancePerCheck: 0.12
   cloudsBuildingUpSfxKey: 
   rainStartedSfxKey: 
   rainStoppedSfxKey: 
   mistStartedSfxKey: 
   mistStoppedSfxKey: 
+  windStartedSfxKey: 
+  windStoppedSfxKey: 
+  thunderstormThunderSfxKey: 
   autoAdvance: 1
   startingTimeIndex: 0
   onTimeOfDayChanged:
@@ -97474,6 +97468,18 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   onMistStopped:
+    m_PersistentCalls:
+      m_Calls: []
+  onWindStarted:
+    m_PersistentCalls:
+      m_Calls: []
+  onWindStopped:
+    m_PersistentCalls:
+      m_Calls: []
+  onThunderstormStarted:
+    m_PersistentCalls:
+      m_Calls: []
+  onThunderstormStopped:
     m_PersistentCalls:
       m_Calls: []
 --- !u!114 &1311901900
@@ -97500,11 +97506,27 @@ MonoBehaviour:
   jitter: 0.5
   scaleRange: {x: 5, y: 9}
   maxCloudInstances: 300
+  heightJitter: 16
   minClearanceAboveFollowTarget: 25
+  horizonElevationDegrees: 30
   recenterCheckInterval: 2
+  recenterPanDuration: 4
   stormCloudColor: {r: 0.42, g: 0.43, b: 0.47, a: 1}
+  stormShadowAmount: 0.55
+  cloudShaderMode: 0
+  visibleAlphaThreshold: 0.5
+  billboard: 1
+  arrivalExtraDistance: 220
+  arrivalExtraHeight: 65
+  waveSpreadDuration: 14
+  perCloudTravelDuration: 9
+  durationJitter: 0.35
+  departureDurationMultiplier: 1.3
+  cutDepartingCloudsOutsideCamera: 1
+  cameraCullCheckEveryNFrames: 3
   syncWithRainDarken: 1
   fadeDuration: 6
+  departureAlphaFraction: 0.55
 --- !u!1001 &1312132202
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -105801,31 +105823,31 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7730161297972038515, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -465.64
+      value: 92.4
       objectReference: {fileID: 0}
     - target: {fileID: 7730161297972038515, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 14.5
       objectReference: {fileID: 0}
     - target: {fileID: 7730161297972038515, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 468.69
+      value: 222.7
       objectReference: {fileID: 0}
     - target: {fileID: 7730161297972038515, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.48239565
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7730161297972038515, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7730161297972038515, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.8759535
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7730161297972038515, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7730161297972038515, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -105833,7 +105855,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7730161297972038515, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 122.316
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7730161297972038515, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
@@ -160486,7 +160508,7 @@ MonoBehaviour:
   m_OverrideVoxelSize: 0
   m_VoxelSize: 0.2
   m_MinRegionArea: 2
-  m_NavMeshData: {fileID: 23800000, guid: c9173b0f87764664d979d72bdef1c13d, type: 2}
+  m_NavMeshData: {fileID: 23800000, guid: 000369eec6788c343b0678e4bd5a9290, type: 2}
   m_BuildHeightMesh: 0
 --- !u!1001 &2026823083
 PrefabInstance:
